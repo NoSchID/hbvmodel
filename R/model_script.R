@@ -85,6 +85,7 @@ lines(out[, "time"], out[, "acute"], col = "red")
 lines(out[, "time"], out[, "chronic"], col = "blue")
 
 plot(out[, "time"], out[, "chronic_prevalence"], type = "l", ylim = c(0,0.15))
+plot(out[, "time"], out[, "cum_incid"], type = "l")
 
 ### Run model checks
 #devtools::test() # this doesn't work properly at the moment (not updating parameter values)
