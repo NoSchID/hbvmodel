@@ -21,7 +21,7 @@ hbv_model <- function(times, pop, parameters){
 
   with(as.list(parameters), {  # this tells R to look into parameters vector to find values
 
-    foi <- beta * ((A + 0.16*I)/total_pop)
+    foi <- beta * ((A + alpha*I)/total_pop)
 
     # Differential equations
     dS <- (-foi * S) - (mu * S) + (b * total_pop)
@@ -58,7 +58,7 @@ run_model <- function(init_pop, parameters) {
 
 ## DEMOGRAPHY
 # Initial population
-init_pop <- c(S0 = 78500, A0 = 1500, I0 = 50000, R0 = 350000, cum_incid = 0)
+init_pop <- c(S0 = 180000, A0 = 2000, I0 = 68000, R0 = 250000, cum_incid = 0)
 # Initial number in each compartment was estimated by output obtained with foi = 0.111
 # corresponding to a prevalence of 4%
 mu <- 0.014
@@ -71,12 +71,11 @@ b <- mu
 # gamma_acute = rate of recovery from acute infection, sag_loss = rate of HBsAg loss (recovery),
 # mu_hbv = rate of HBV-specific deaths,
 # rate unit is annual so each time in the model is 1 year
-edmunds_parameters <- c(beta = 9, p_chronic = 0.3, gamma_acute = 4, sag_loss = 0.01,
-                        mu = mu, mu_hbv = 0.0003, b = b) # foi = 0.111
-
+parameters <- c(beta = 9, p_chronic = 0.3, gamma_acute = 4, sag_loss = 0.01,
+                alpha = 0.16, mu = mu, mu_hbv = 0.0003, b = b) # foi = 0.111
 
 #### Run the model ----
-out <- run_model(init_pop, edmunds_parameters)
+out <- run_model(init_pop, parameters)
 
 ### Present output
 plot(out[, "time"], out[, "immune"], type = "l", ylim = c(0,500000))
@@ -88,6 +87,5 @@ plot(out[, "time"], out[, "chronic_prevalence"], type = "l", ylim = c(0,0.15))
 plot(out[, "time"], out[, "cum_incid"], type = "l")
 
 ### Run model checks
-#devtools::test() # this doesn't work properly at the moment (not updating parameter values)
-
+# devtools::test()
 
