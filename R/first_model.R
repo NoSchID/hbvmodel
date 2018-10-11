@@ -8,16 +8,44 @@
 require(deSolve)
 library(here)
 
-#### Data ----
-gambia_data <- read.csv(here("testdata", "edmunds_gambia_prev.csv"))
+#### Data preparation ----
+gambia_prevdata <- read.csv(here("testdata", "edmunds_gambia_prev.csv"))
+gambia_lifeexpectancy <- read.csv(here("testdata", "gambia_1980-1985_lifeexpectancy.csv"))
 
+# Calculate age-specific mortality rates
+# Interpolate life expectancy for missing yearly age groups (only available in 5-year groups)
+missing_age_exp <- 0:80
+life_expectancy <- as.data.frame(approx(x = gambia_lifeexpectancy$age, y = gambia_lifeexpectancy$life_expectancy,
+                   xout = missing_age_exp))
+mortality_rates_0to80 <- 1/life_expectancy$y
+mortality_rates_0to80 <- mortality_rates_0to80[-length(mortality_rates_0to80)]
+
+# Fertility rates of women of childbearing age from UN WPP
+gambia_fertility <- data.frame(age = c("15-19", "20-24", "25-29", "30-34", "35-39",
+                                             "40-44", "45-49"),
+                              fertility_rate = c(0.2013, 0.2822, 0.2760,
+                                                 0.2255, 0.1588, 0.0903, 0.0243))
+# Assume all women in the 5 year age groups have the same fertility rate
+fertility_rates_0to80 <- c(rep(0,15),
+                           rep(gambia_fertility$fertility_rate,each = 5),
+                           rep(0,30))
+
+# Annual rate (proportion) of HBsAg loss by age from Shimakawa paper
+shimakawa_sagloss <- data.frame(age = c("0-9", "10-19", "20-29", "30-39", "40-49",
+                                        "50-70"),
+                                sagloss_rate = c(0.001, 0.0046, 0.0101,
+                                                0.0105, 0.0232, 0.0239))
+# Assume everyone in the 10/20 year age groups has the same rate and 70-80 year
+# olds have the same rate as 50-70 year olds
+sagloss_rates_0to80 <- c(rep(shimakawa_sagloss$sagloss_rate,each = 10),
+                         rep(shimakawa_sagloss$sagloss_rate[which(shimakawa_sagloss == "50-70")], 20))
 
 #### Preparation of simulation parameters and notation ----
 
 ## TIMES
 stepsize <- 0.1
 runtime <- 210 # years
-times <- seq(1890, 1890+runtime, stepsize) # Model simulates HBV epidemic from 1890 to 2100
+times <- seq(0, 0+runtime, stepsize) # Model simulates HBV epidemic from 1890 to 2100
 
 ## AGE GROUPS
 da <- 1                     # time spent in each age group = 1 year
@@ -35,7 +63,6 @@ childindex <- 1:which(ages == 5)                 # Age groups 0-5 years
 juvindex <- which(ages == 6):which(ages == 15)   # Age groups 6-15 years
 adultindex <- which(ages == 16):n_agecat         # Age groups 16-80 years
 
-
 #### Functions ----
 ### The model: specify ODEs
 hbv_model <- function(times, pop, parameters){
@@ -51,6 +78,8 @@ hbv_model <- function(times, pop, parameters){
   with(as.list(parameters), {
 
     foi <- beta %*% ((A + alpha*I)/total_pop_byage)
+ #  births <- fertility_rates_0to80 * total_pop_byage/2
+ #  births <- b * total_pop_byage
 
     # Differential equations
     dS <- - (diff(c(0,S))/da) - (foi * S) - (mu * S)
@@ -59,8 +88,13 @@ hbv_model <- function(times, pop, parameters){
     dR <- - (diff(c(0,R))/da) + ((1-p_chronic) * gamma_acute * A) + (sag_loss * I) - (mu * R)
 
     # Demography: restore additional deaths from last age group as births for constant population size
-    dS[1] <- dS[1] + (b * N) + S[n_agecat]/da + A[n_agecat]/da + I[n_agecat]/da + R[n_agecat]/da
-    # all babies are born susceptible
+    # putting mortality instead of fertility rates and not dividing by 2 for now to keep pop constant
+    infected_births <- ((mtct_prob_a * A + mtct_prob_i * I)) * mortality_rates_0to80
+    uninfected_births <- ((total_pop_byage) * mortality_rates_0to80) - infected_births
+
+    dS[1] <- dS[1] + sum(uninfected_births) + S[n_agecat]/da + A[n_agecat]/da + I[n_agecat]/da + R[n_agecat]/da
+    dA[1] <- dA[1] + sum(infected_births)
+     # all babies are born susceptible
 
     # Output of interest
  #   dcum_incid  <-  foi * S   # check how to add this to output
@@ -106,13 +140,13 @@ init_pop <- c(
 
 N0 <- sum(init_pop)
 
-mu <- 0.014   # background mortality rate, assumed based on 70 years life expectancy
+mu <- mortality_rates_0to80   # background mortality rate, assumed based on 70 years life expectancy
 b <- mu       # birth rate is assumed to equal the mortality rate
 
 ## TRANSMISSION
 b1 <- 0.4     # beta-child (up to 5-year olds)
-b2 <- 0.05   # beta-young (up to 15-year olds)
-b3 <- 0.015   # beta-all (over 5-year olds)
+b2 <- 0.06   # beta-young (up to 15-year olds)
+b3 <- 0.02   # beta-all (over 5-year olds)
 
 # WAIFW matrix
 # Assuming no effective contact between children and adults
@@ -130,8 +164,10 @@ beta[adultindex, juvindex] <- b3                   # transmission from adults to
 # gamma_acute = rate of recovery from acute infection, sag_loss = rate of HBsAg loss (recovery),
 # mu_hbv = rate of HBV-specific deaths,
 # rate unit is annual so each time in the model is 1 year
-parameters <- c(gamma_acute = 4, sag_loss = 0.01,
-                alpha = 0.16, mu = mu, mu_hbv = 0, b = b) # mu_hbv =0.0003
+sag_loss <- sagloss_rates_0to80 # 0.025
+parameters <- c(gamma_acute = 8, sag_loss = sag_loss,   # 0.01
+                alpha = 0.16, mu = mu, mu_hbv = 0.0003, b = b,
+                mtct_prob_a = 0.711, mtct_prob_i = 0.109) # mu_hbv =0.0003
 # gamma_acute changed manually to fit prevalence, was 4 in Edmunds
 
 # Age-dependent probability of becoming a chronic carrier:
@@ -179,7 +215,7 @@ lines(time,apply(acute,1,sum),col= "green")
 lines(time,apply(sus,1,sum),col= "red")
 lines(time,apply(immune,1,sum),col= "blue")
 
-# Chronic prevalence by age group over time
+# Chronic carrier numbers by age group over time
 plot(time, apply(carriers[,childindex],1,sum), type = "l", ylim = c(0,N0))
 lines(time, apply(carriers[,juvindex],1,sum), col = "red")
 lines(time, apply(carriers[,adultindex],1,sum), col = "blue")
@@ -187,11 +223,11 @@ lines(time, apply(carriers[,adultindex],1,sum), col = "blue")
 # Prevalence by age at 1 time point (after equilibrium is reached)
 plot(1:n_agecat, carriers[2000,]/agespec_pop[2000,], type = "l", ylim = c(0,0.3))
 # Add Gambia data
-points(gambia_data$age, gambia_data$edmunds_prev)
+points(gambia_prevdata$age, gambia_prevdata$edmunds_prev)
 
 # Proportion ever infected at 1 time point (after equilibrium is reached)
 plot(1:n_agecat, ever_infected[2000,]/agespec_pop[2000,], type = "l", ylim = c(0,1))
-points(gambia_data$age, gambia_data$edmunds_prop_ever_infected)
+points(gambia_prevdata$age, gambia_prevdata$edmunds_prop_ever_infected)
 
 ### Run model checks
 # devtools::test()
