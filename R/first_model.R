@@ -1,5 +1,5 @@
 #################################
-### Simple HBV model 10/10/18 ###
+### Simple HBV model 22/10/18 ###
 #################################
 # Version 2: SIR model with demography and age structure
 # 4 compartments: Susceptible, Acute infection, Chronic infection, and Immune
@@ -40,6 +40,12 @@ shimakawa_sagloss <- data.frame(age = c("0-9", "10-19", "20-29", "30-39", "40-49
 sagloss_rates_0to80 <- c(rep(shimakawa_sagloss$sagloss_rate,each = 10),
                          rep(shimakawa_sagloss$sagloss_rate[which(shimakawa_sagloss == "50-70")], 20))
 
+# Prepare data to fit to: age-specific prevalence for each year age group (0-79)
+edmunds_prev_by_age <- as.data.frame(approx(x = gambia_prevdata$age, y = gambia_prevdata$edmunds_prev,
+                                            xout = 0:79))
+edmunds_prev_by_age$y <- round(edmunds_prev_by_age$y, 2)
+edmunds_prev_by_age$y[c(1,77:80)] <- edmunds_prev_by_age$y[76]
+
 #### Preparation of simulation parameters and notation ----
 
 ## TIMES
@@ -77,6 +83,19 @@ hbv_model <- function(times, pop, parameters){
 
   with(as.list(parameters), {
 
+    # Horizontal transmission: WAIFW matrix
+    # Assuming no effective contact between children and adults
+    beta <- matrix(0, nrow = n_agecat, ncol = n_agecat)# matrix of transmission rates
+    beta[childindex,childindex] <- b1                  # transmission among children (1-5 years)
+    beta[juvindex,juvindex] <- b2                      # transmission among juveniles (6-15 years)
+    beta[adultindex,adultindex] <- b3                  # transmission among adults (16-100 years)
+    beta[childindex,juvindex] <- b2                    # transmission from children to juveniles
+    beta[juvindex, childindex] <- b2                   # transmission from juveniles to children
+    beta[juvindex, adultindex] <- b3                   # transmission from juveniles to adults
+    beta[adultindex, juvindex] <- b3                   # transmission from adults to juveniles
+
+    # Partial differential equations
+
     foi <- beta %*% ((A + alpha*I)/total_pop_byage)
  #  births <- fertility_rates_0to80 * total_pop_byage/2
  #  births <- b * total_pop_byage
@@ -92,38 +111,51 @@ hbv_model <- function(times, pop, parameters){
     infected_births <- ((mtct_prob_a * A + mtct_prob_i * I)) * mortality_rates_0to80
     uninfected_births <- ((total_pop_byage) * mortality_rates_0to80) - infected_births
 
+    # Births
     dS[1] <- dS[1] + sum(uninfected_births) + S[n_agecat]/da + A[n_agecat]/da + I[n_agecat]/da + R[n_agecat]/da
     dA[1] <- dA[1] + sum(infected_births)
-     # all babies are born susceptible
-
-    # Output of interest
- #   dcum_incid  <-  foi * S   # check how to add this to output
 
     # Return results
-    res <-  cbind(dS, dA, dI, dR)  #dcum_incid
+    res <-  cbind(dS, dA, dI, dR)
     list(res)
   })
 }
 
 ### Function to run the model (solver r4k, with initial conditions and timesteps)
-run_model <- function(init_pop, times, parameters) {
+run_model <- function(b1, b2, b3,
+                      alpha, gamma_acute, p_chronic,
+                      sag_loss, mu_hbv,
+                      mtct_prob_a, mtct_prob_i, mu, b) {
+
+  # Add parameters into list
+  parameters <- list(b1 = b1, b2 = b2, b3 = b3,
+                     alpha = alpha, gamma_acute = gamma_acute, p_chronic = p_chronic,
+                     sag_loss = sag_loss, mu_hbv = mu_hbv,
+                     mtct_prob_a = mtct_prob_a, mtct_prob_i = mtct_prob_i, mu = mu, b = b)
 
   out <- as.data.frame(ode.1D(y = init_pop, times = times, func = hbv_model,
                               parms = parameters, nspec = 4, names = c("S", "A", "I", "R")))
 
-  # Label output table columns   !!!REDO THIS!!!
-#  names(out) <- c("time", "susceptible", "acute", "chronic", "immune", "cum_incid")
-#  out$total_pop <- (out$susceptible + out$acute + out$chronic + out$immune)
-#  out$chronic_prevalence <- (out$chronic/out$total_pop)
+  # Code carrier prevalence output
+  pop_by_age <- out[,1+sindex] + out[,1+aindex] + out[,1+iindex] + out[,1+rindex]
+  prev_by_age <- out[,1+iindex]/pop_by_age
 
-  return(out)
+  data <- as.numeric(edmunds_prev_by_age$y*pop_by_age[2000,])
+
+  LL <- sum(dbinom(x = round(data), size = round(as.numeric(pop_by_age[2000,])), prob = as.numeric(prev_by_age[2000,]), log = TRUE))
+  toReturn <- c(modelprev = as.numeric(prev_by_age[2000,]*100), LL = LL)
+
+  return(toReturn)
+#  return(out)
 }
+
+
 
 
 #### Input ----
 
 ## DEMOGRAPHY
-# Initial population
+# Set up initial population
 init_pop <- c(
   S = c(rep(17000,6), rep(5050,10), rep(1350,30), rep(186,34)),
   A = c(rep(500,6), rep(200,10), rep(50,30), rep(14,34)),
@@ -140,42 +172,50 @@ init_pop <- c(
 
 N0 <- sum(init_pop)
 
-mu <- mortality_rates_0to80   # background mortality rate, assumed based on 70 years life expectancy
-b <- mu       # birth rate is assumed to equal the mortality rate
-
 ## TRANSMISSION
-b1 <- 0.4     # beta-child (up to 5-year olds)
-b2 <- 0.06   # beta-young (up to 15-year olds)
-b3 <- 0.02   # beta-all (over 5-year olds)
-
-# WAIFW matrix
-# Assuming no effective contact between children and adults
-beta <- matrix(0, nrow = n_agecat, ncol = n_agecat)# matrix of transmission rates
-beta[childindex,childindex] <- b1                  # transmission among children (1-5 years)
-beta[juvindex,juvindex] <- b2                      # transmission among juveniles (6-15 years)
-beta[adultindex,adultindex] <- b3                  # transmission among adults (16-100 years)
-beta[childindex,juvindex] <- b2                    # transmission from children to juveniles
-beta[juvindex, childindex] <- b2                   # transmission from juveniles to children
-beta[juvindex, adultindex] <- b3                   # transmission from juveniles to adults
-beta[adultindex, juvindex] <- b3                   # transmission from adults to juveniles
+b1 <- 0.45     # beta-child (up to 5-year olds) 0.4
+b2 <- 0.01   # beta-young (up to 15-year olds)0.06
+b3 <- 0.005   # beta-all (over 5-year olds) 0.02
 
 ## NATURAL HISTORY (parameterised from Edmunds)
 # foi = force of infection, p_chronic = probability of becoming a chronic carrier,
 # gamma_acute = rate of recovery from acute infection, sag_loss = rate of HBsAg loss (recovery),
 # mu_hbv = rate of HBV-specific deaths,
 # rate unit is annual so each time in the model is 1 year
-sag_loss <- sagloss_rates_0to80 # 0.025
-parameters <- c(gamma_acute = 8, sag_loss = sag_loss,   # 0.01
-                alpha = 0.16, mu = mu, mu_hbv = 0.0003, b = b,
-                mtct_prob_a = 0.711, mtct_prob_i = 0.109) # mu_hbv =0.0003
-# gamma_acute changed manually to fit prevalence, was 4 in Edmunds
-
+alpha <- 0.16
+gamma_acute <- 8 # gamma_acute changed manually to fit prevalence, was 4 in Edmunds
 # Age-dependent probability of becoming a chronic carrier:
 # Edmunds approach (except 0.89 for whole first year instead of just 0.5 years):
 p_chronic <- c(0.89, exp(-0.65*ages[-1]^0.46))
+sag_loss <- sagloss_rates_0to80 # 0.01, 0.025
+mu_hbv <- 0.0003
+mtct_prob_a <- 0.711
+mtct_prob_i <- 0.109
+
+## DEMOGRAPHY
+# Mortality and birth input parameters
+mu <- mortality_rates_0to80   # background mortality rate, assumed based on 70 years life expectancy
+b <- mu       # birth rate is assumed to equal the mortality rate
+
+
+#### Try fitting
+loglikelihood_function <- function(parms_to_estimate) {
+  temp <- run_model(b1 = parms_to_estimate[1], b2 = parms_to_estimate[2], b3 = parms_to_estimate[3],
+                    alpha = alpha, gamma_acute = gamma_acute, p_chronic = p_chronic,
+                    sag_loss = sag_loss, mu_hbv = mu_hbv,
+                    mtct_prob_a = mtct_prob_a, mtct_prob_i = mtct_prob_i, mu = mu, b = b)
+  LL <- temp["LL"]
+  return(LL) }
+
+inits_test <- c(0.1, 0.01, 0.01)
+optim(fn=loglikelihood_function, par = inits_test, control = list(fnscale=-1))
+# estimates were b1 = 0.45, b2 = 0.01, b3 = 0.005
 
 #### Output ----
-out <- run_model(init_pop, times, parameters)
+out <- run_model(b1 = b1, b2 = b2, b3 = b3,
+                 alpha = alpha, gamma_acute = gamma_acute, p_chronic = p_chronic,
+                 sag_loss = sag_loss, mu_hbv = mu_hbv,
+                 mtct_prob_a = mtct_prob_a, mtct_prob_i = mtct_prob_i, mu = mu, b = b)
 
 ## Tables/vectors with output
 time <- out[,1]
