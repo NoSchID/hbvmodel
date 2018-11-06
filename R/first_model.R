@@ -1,7 +1,7 @@
 #################################
-### Simple HBV model 22/10/18 ###
+### Simple HBV model 06/11/18 ###
 #################################
-# Version 2: SIR model with demography and age structure
+# Version 2: SAIR model with demography and age structure
 # 4 compartments: Susceptible, Acute infection, Chronic infection, and Immune
 
 #### Load packages ----
@@ -15,11 +15,12 @@ gambia_lifeexpectancy <- read.csv(here("testdata", "gambia_1980-1985_lifeexpecta
 
 # Calculate age-specific mortality rates
 # Interpolate life expectancy for missing yearly age groups (only available in 5-year groups)
-missing_age_exp <- 0:80
 life_expectancy <- as.data.frame(approx(x = gambia_lifeexpectancy$age, y = gambia_lifeexpectancy$life_expectancy,
-                   xout = missing_age_exp))
-mortality_rates_0to80 <- 1/life_expectancy$y
-mortality_rates_0to80 <- mortality_rates_0to80[-length(mortality_rates_0to80)]
+                   xout = 0:80))
+mortality_rates_by_age <- 1/life_expectancy$y
+mortality_rates_by_age[82:100] <- 0.5
+#mortality_rates_by_age <- mortality_rates_by_age[-length(mortality_rates_by_age)]
+
 
 # Fertility rates of women of childbearing age from UN WPP
 gambia_fertility <- data.frame(age = c("15-19", "20-24", "25-29", "30-34", "35-39",
@@ -27,7 +28,7 @@ gambia_fertility <- data.frame(age = c("15-19", "20-24", "25-29", "30-34", "35-3
                               fertility_rate = c(0.2013, 0.2822, 0.2760,
                                                  0.2255, 0.1588, 0.0903, 0.0243))
 # Assume all women in the 5 year age groups have the same fertility rate
-fertility_rates_0to80 <- c(rep(0,15),
+fertility_rates_by_age <- c(rep(0,15),
                            rep(gambia_fertility$fertility_rate,each = 5),
                            rep(0,30))
 
@@ -63,7 +64,7 @@ times <- seq(0, 0+runtime, stepsize) # Model simulates HBV epidemic from 1890 to
 
 ## AGE GROUPS
 da <- 1                     # time spent in each age group = 1 year
-ages <- seq(0,80-da,da)     # Age at the beginning of each age group - max age reached is 80
+ages <- seq(0,100-da,da)     # Age at the beginning of each age group - max age reached is 80
 n_agecat <- length(ages)    # 100 age groups of 1 year
 
 ## DEFINITION OF INDICES
@@ -106,21 +107,21 @@ hbv_model <- function(times, pop, parameters){
     foi <- beta %*% ((A + alpha*I)/pop_by_age)
 
     # Partial differential equations
-    dS <- - (diff(c(0,S))/da) - (foi * S) - (mu * S)
-    dA <- - (diff(c(0,A))/da) + (foi * S) - (p_chronic * gamma_acute * A) - ((1-p_chronic) * gamma_acute * A) - (mu * A)
-    dI <- - (diff(c(0,I))/da) + (p_chronic * gamma_acute * A) - (sag_loss * I) - (mu * I) - (mu_hbv * I)
-    dR <- - (diff(c(0,R))/da) + ((1-p_chronic) * gamma_acute * A) + (sag_loss * I) - (mu * R)
+    dS <- - (diff(c(0,S[-length(sindex)],0))/da) - (foi * S) - (mu * S)
+    dA <- - (diff(c(0,A[-length(aindex)],0))/da) + (foi * S) - (p_chronic * gamma_acute * A) - ((1-p_chronic) * gamma_acute * A) - (mu * A)
+    dI <- - (diff(c(0,I[-length(iindex)],0))/da) + (p_chronic * gamma_acute * A) - (sag_loss * I) - (mu * I) - (mu_hbv * I)
+    dR <- - (diff(c(0,R[-length(rindex)],0))/da) + ((1-p_chronic) * gamma_acute * A) + (sag_loss * I) - (mu * R)
 
     # Demography
     # Putting mortality instead of fertility rates and not dividing by 2 for now to keep pop constant
-    infected_births <- ((mtct_prob_a * A + mtct_prob_i * I)) * mortality_rates_0to80
-    uninfected_births <- ((pop_by_age) * mortality_rates_0to80) - infected_births
-    #  births <- fertility_rates_0to80 * total_pop_byage/2
+    infected_births <- ((mtct_prob_a * A + mtct_prob_i * I)) * mortality_rates_by_age
+    uninfected_births <- ((pop_by_age) * mortality_rates_by_age) - infected_births
+    #  births <- fertility_rates_by_age * total_pop_byage/2
     #  births <- b * total_pop_byage
 
     # Births
     # Restore additional deaths from last age group as births for constant population size
-    dS[1] <- dS[1] + sum(uninfected_births) + S[n_agecat]/da + A[n_agecat]/da + I[n_agecat]/da + R[n_agecat]/da
+    dS[1] <- dS[1] + sum(uninfected_births)# + S[n_agecat]/da + A[n_agecat]/da + I[n_agecat]/da + R[n_agecat]/da
     dA[1] <- dA[1] + sum(infected_births)
 
     # Return results
@@ -190,15 +191,16 @@ loglikelihood_function <- function(parms_to_estimate) {
 ## DEMOGRAPHY
 # Set up initial population
 init_pop <- c(
-  S = c(rep(17000,6), rep(5050,10), rep(1350,30), rep(186,34)),
-  A = c(rep(500,6), rep(200,10), rep(50,30), rep(14,34)),
-  I = c(rep(4959,6), rep(4375,10), rep(1400,30), rep(160,34)),
-  R = c(rep(6708,6), rep(7875,10), rep(6533,30), rep(1640,34))
+  S = c(rep(17000,6/da), rep(5050,10/da), rep(1350,30/da), rep(186,34/da), rep(1,20/da)),
+  A = c(rep(500,6/da), rep(200,10/da), rep(50,30/da), rep(14,34/da), rep(1,20/da)),
+  I = c(rep(4959,6/da), rep(4375,10/da), rep(1400,30/da), rep(160,34/da), rep(1,20/da)),
+  R = c(rep(6708,6/da), rep(7875,10/da), rep(6533,30/da), rep(1640,34/da), rep(1,20/da))
 )
+
 N0 <- sum(init_pop)
 
 # Mortality and birth input parameters
-mu <- mortality_rates_0to80   # background mortality rate
+mu <- mortality_rates_by_age   # background mortality rate
 b <- mu                       # birth rate is assumed to equal the mortality rate
 
 ## TRANSMISSION PARAMETERS
@@ -217,8 +219,9 @@ b3 <- 0.005    # beta-all (over 5-year olds)
 alpha <- 0.16
 gamma_acute <- 8 # gamma_acute changed manually to fit prevalence, was 4 in Edmunds
 p_chronic <- c(0.89, exp(-0.65*ages[-1]^0.46))
-sag_loss <- sagloss_rates_0to80 # 0.01, 0.025
-mu_hbv <- 0.0003
+sag_loss <- 0.025
+#sag_loss <- sagloss_rates_0to80 # 0.01, 0.025
+mu_hbv <- 0  #0.0003
 mtct_prob_a <- 0.711
 mtct_prob_i <- 0.109
 
@@ -235,6 +238,7 @@ out <- return_compartment_output(b1 = b1, b2 = b2, b3 = b3,
                  alpha = alpha, gamma_acute = gamma_acute, p_chronic = p_chronic,
                  sag_loss = sag_loss, mu_hbv = mu_hbv,
                  mtct_prob_a = mtct_prob_a, mtct_prob_i = mtct_prob_i, mu = mu, b = b)
+
 
 ## Tables/vectors with output
 time <- out[,1]
