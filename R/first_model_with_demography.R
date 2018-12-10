@@ -1,5 +1,5 @@
 #################################
-### Gambia HBV model 07/12/18 ###
+### Gambia HBV model 10/12/18 ###
 #################################
 # Version 3: SAIR model with Gambia demography and age structure
 # 4 compartments: Susceptible, Acute infection, Chronic infection, and Immune
@@ -10,33 +10,6 @@ require(dplyr)
 require(deSolve)
 require(tictoc)
 require(here)
-
-### Infection data preparation ----
-gambia_prevdata <- read.csv(here("testdata", "edmunds_gambia_prev.csv"))
-gambia_lifeexpectancy <- read.csv(here("testdata", "gambia_1980-1985_lifeexpectancy.csv"))
-
-# Annual rate (proportion) of HBsAg loss by age from Shimakawa paper
-shimakawa_sagloss <- data.frame(age = c("0-9", "10-19", "20-29", "30-39", "40-49",
-                                        "50-70"),
-                                sagloss_rate = c(0.001, 0.0046, 0.0101,
-                                                0.0105, 0.0232, 0.0239))
-# Assume everyone in the 10/20 year age groups has the same rate and 70-80 year
-# olds have the same rate as 50-70 year olds
-sagloss_rates_0to80 <- c(rep(shimakawa_sagloss$sagloss_rate,each = 10),
-                         rep(shimakawa_sagloss$sagloss_rate[which(shimakawa_sagloss == "50-70")], 20))
-
-# Prepare data to fit to:
-# age-specific prevalence for each year age group (0-79)
-edmunds_prev_by_age <- as.data.frame(approx(x = gambia_prevdata$age, y = gambia_prevdata$edmunds_prev,
-                                            xout = 0:79))
-edmunds_prev_by_age$y <- round(edmunds_prev_by_age$y, 2)
-edmunds_prev_by_age$y[c(1,77:80)] <- edmunds_prev_by_age$y[76]
-# age-specific proportion ever infected (0-79)
-edmunds_everinf_by_age <- as.data.frame(approx(x = gambia_prevdata$age, y = gambia_prevdata$edmunds_prop_ever_infected,
-                                               xout = 0:79))
-edmunds_everinf_by_age$y <- round(edmunds_everinf_by_age$y, 2)
-edmunds_everinf_by_age$y[1] <- 0.10
-edmunds_everinf_by_age$y[77:80] <- edmunds_everinf_by_age$y[76]
 
 ### Simulation parameters ----
 ## Country (gambia or senegal)
@@ -65,15 +38,52 @@ ageindex_wocba <- ages_wocba+1        # index for age group 15-49 years (women o
 
 # Infection compartments
 infectionindex <- 1:n_infectioncat
-indS <- 1                           # Susceptible
-indA <- 2                           # Acute infection
-indI <- 3                           # Chronic infection
-indR <- 4                           # Immune
 
 # Age groupings
 childindex <- 1:which(ages == 5)                 # Age groups 0-5 years
 juvindex <- which(ages == 6):which(ages == 15)   # Age groups 6-15 years
 adultindex <- which(ages == 16):n_agecat         # Age groups 16-80 years
+
+### Infection data preparation ----
+gambia_prevdata <- read.csv(here("testdata", "edmunds_gambia_prev.csv"), stringsAsFactors = FALSE)
+gambia_lifeexpectancy <- read.csv(here("testdata", "gambia_1980-1985_lifeexpectancy.csv"))
+
+# Interpolate prevalence and prop. ever infected
+gambia_prevdata$age[gambia_prevdata$age == 0.5] <- 0
+gambia_prevdata <- rbind(gambia_prevdata, data.frame(age = 99, edmunds_prev = 0.05, edmunds_prop_ever_infected = 0.95))
+gambia_prev <- approx(x = gambia_prevdata$age, y = gambia_prevdata$edmunds_prev, xout = ages)
+gambia_prev <- data.frame(age = gambia_prev$x, prev = gambia_prev$y)
+gambia_ever_inf <- approx(x = gambia_prevdata$age, y = gambia_prevdata$edmunds_prop_ever_infected, xout = ages)
+gambia_ever_inf <- data.frame(age = gambia_ever_inf$x, ever_inf = gambia_ever_inf$y)
+
+# Calculate the number of susceptibles, acutely infected, chronic infected and recovered
+gambia_immune <- gambia_ever_inf$ever_inf - gambia_prev$prev
+gambia_acute <- 0.05*gambia_prev$prev
+gambia_chronic <- 0.95 * gambia_prev$prev
+gambia_sus <- 1- gambia_ever_inf$ever_inf
+
+# Annual rate (proportion) of HBsAg loss by age from Shimakawa paper
+shimakawa_sagloss <- data.frame(age = c("0-9", "10-19", "20-29", "30-39", "40-49",
+                                        "50-70"),
+                                sagloss_rate = c(0.001, 0.0046, 0.0101,
+                                                0.0105, 0.0232, 0.0239))
+# Assume everyone in the 10/20 year age groups has the same rate and 70-80 year
+# olds have the same rate as 50-70 year olds
+sagloss_rates_0to80 <- c(rep(shimakawa_sagloss$sagloss_rate,each = 10),
+                         rep(shimakawa_sagloss$sagloss_rate[which(shimakawa_sagloss == "50-70")], 20))
+
+# Prepare data to fit to:
+# age-specific prevalence for each year age group (0-79)
+edmunds_prev_by_age <- as.data.frame(approx(x = gambia_prevdata$age, y = gambia_prevdata$edmunds_prev,
+                                            xout = 0:79))
+edmunds_prev_by_age$y <- round(edmunds_prev_by_age$y, 2)
+edmunds_prev_by_age$y[c(1,77:80)] <- edmunds_prev_by_age$y[76]
+# age-specific proportion ever infected (0-79)
+edmunds_everinf_by_age <- as.data.frame(approx(x = gambia_prevdata$age, y = gambia_prevdata$edmunds_prop_ever_infected,
+                                               xout = 0:79))
+edmunds_everinf_by_age$y <- round(edmunds_everinf_by_age$y, 2)
+edmunds_everinf_by_age$y[1] <- 0.10
+edmunds_everinf_by_age$y[77:80] <- edmunds_everinf_by_age$y[76]
 
 ### Load demographic datasets ----
 # Manual data preparation in Excel:
@@ -473,7 +483,7 @@ timevary_parameters <- function(timestep, dataset) {
 } # spline
 
 ## The model
-hbv_model <- function(times, pop, parameters){
+hbv_model <- function(timestep, pop, parameters){
 
   with(as.list(parameters), {
 
@@ -493,17 +503,22 @@ hbv_model <- function(times, pop, parameters){
     # matrix 1 = females, matrix 2 = males, rows = agesteps, columns = infection compartments
     pop <- array(unlist(pop[1:(2 * n_infectioncat * n_agecat)]),dim=c(n_agecat,n_infectioncat,2))
 
-    # Define compartments for ease of reading:
-    Sf  <-  pop[index,indS,1]          # Susceptible compartment - women
-    Sm  <-  pop[index,indS,2]          # Susceptible compartment - men
-    Af  <-  pop[index,indA,1]          # Acute infection compartment - women
-    Am  <-  pop[index,indA,2]          # Acute infection compartment - women
-    If  <-  pop[index,indI,1]          # Chronic infection compartment - women
-    Im  <-  pop[index,indI,2]          # Chronic infection compartment - men
-    Rf  <-  pop[index,indR,1]          # Immune compartment - women
-    Rm  <-  pop[index,indR,2]          # Immune compartment - men
-    pop_by_age  <- Sf + Sm + Af + Am + If + Im + Rf + Rm    # Total population in each age group
-    N <- sum(pop)                      # Total population
+    # Label infection compartments
+    S <- 1                           # Susceptible
+    A <- 2                           # Acute infection
+    I <- 3                           # Chronic infection
+    R <- 4                           # Immune
+
+   # Sf  <-  pop[index,indS,1]          # Susceptible compartment - women
+    #Sm  <-  pop[index,indS,2]          # Susceptible compartment - men
+   # Af  <-  pop[index,indA,1]          # Acute infection compartment - women
+    #Am  <-  pop[index,indA,2]          # Acute infection compartment - women
+    #If  <-  pop[index,indI,1]          # Chronic infection compartment - women
+   # Im  <-  pop[index,indI,2]          # Chronic infection compartment - men
+   # Rf  <-  pop[index,indR,1]          # Immune compartment - women
+   # Rm  <-  pop[index,indR,2]          # Immune compartment - men
+   # pop_by_age  <- Sf + Sm + Af + Am + If + Im + Rf + Rm    # Total population in each age group
+   # N <- sum(pop)                      # Total population
 
     # Horizontal transmission: WAIFW matrix - TO ADAPT LATER
     # Assuming no effective contact between children and adults
@@ -524,130 +539,95 @@ hbv_model <- function(times, pop, parameters){
     deaths <- array(rep(0,2 * n_infectioncat * n_agecat),dim=c(n_agecat,n_infectioncat,2))    # female and male incident deaths
     migrants <- array(rep(0,2 * n_infectioncat * n_agecat),dim=c(n_agecat,n_infectioncat,2))  # female and male incident migrants
 
-    # Partial differential equations - TO ADAPT
+    # Partial differential equations
     births <- sum(fertility_rate * pop[ageindex_wocba,infectionindex,1])   # applying the same age-specific fertility rate to every infection compartment
 
     for (i in 1:2) {        # i = sex [1 = female, 2 = male]
+      deaths[index,infectionindex,i] <- mortality_rate[index,i] * pop[index,infectionindex,i] # works: applying same age-specific mortality rate to every infection compartment
+      migrants[index,infectionindex,i] <-  migration_rate[index,i] * pop[index,infectionindex,i]
 
-      deaths[index,1,i] <- mortality_rate[index,i] * S[index,1,i]
-      migrants[index,1,i] <-  migration_rate[index,i] * S[index,1,i]
+      # Susceptibles
+      dpop[index,S,i] <- -(diff(c(0,pop[-length(index),S,i],0))/da) - deaths[index,S,i] + migrants[index,S,i] - (foi * pop[index,S,i])
+      # Acutes
+      dpop[index,A,i] <- -(diff(c(0,pop[-length(index),A,i],0))/da) - deaths[index,A,i] + migrants[index,A,i] + (foi * pop[index,S,i]) - (p_chronic * gamma_acute * pop[index,A,i]) - ((1-p_chronic) * gamma_acute * pop[index,A,i])
+      # Chronics
+      dpop[index,I,i] <- -(diff(c(0,pop[-length(index),I,i],0))/da) - deaths[index,I,i] + migrants[index,I,i] + (p_chronic * gamma_acute * pop[index,A,i]) - (sag_loss * pop[index,I,i]) - (mu_hbv * pop[index,I,i])
+      # Immunes
+      dpop[index,R,i] <- -(diff(c(0,pop[-length(index),R,i],0))/da) - deaths[index,R,i] + migrants[index,R,i] + ((1-p_chronic) * gamma_acute * pop[index,A,i]) + (sag_loss * pop[index,I,i])
 
-      dS[index,1,i] <- -(diff(c(0,S[-length(index),1,i],0))/da) - deaths[index,1,i] + migrants[index,1,i] #+ migration_rate * S[index,1,i]
-      dS[1,1,i] <- dS[1,1,i] + sex_ratio[i] * births
+      # At the moment all babies are born susceptible (compartment 1, age group 1)
+      dpop[1,S,i] <- dpop[1,S,i] + sex_ratio[i] * births
 
     }
 
-    # Partial differential equations
-    dS <- - (diff(c(0,S[-length(sindex)],0))/da) - (foi * S) - (mu * S)
-    dA <- - (diff(c(0,A[-length(aindex)],0))/da) + (foi * S) - (p_chronic * gamma_acute * A) - ((1-p_chronic) * gamma_acute * A) - (mu * A)
-    dI <- - (diff(c(0,I[-length(iindex)],0))/da) + (p_chronic * gamma_acute * A) - (sag_loss * I) - (mu * I) - (mu_hbv * I)
-    dR <- - (diff(c(0,R[-length(rindex)],0))/da) + ((1-p_chronic) * gamma_acute * A) + (sag_loss * I) - (mu * R)
+    # Partial differential equations - incorporated above
+    #dS <- - (diff(c(0,S[-length(sindex)],0))/da) - (foi * S) - (mu * S)
+    #dA <- - (diff(c(0,A[-length(aindex)],0))/da) + (foi * S) - (p_chronic * gamma_acute * A) - ((1-p_chronic) * gamma_acute * A) - (mu * A)
+    #dI <- - (diff(c(0,I[-length(iindex)],0))/da) + (p_chronic * gamma_acute * A) - (sag_loss * I) - (mu * I) - (mu_hbv * I)
+    #dR <- - (diff(c(0,R[-length(rindex)],0))/da) + ((1-p_chronic) * gamma_acute * A) + (sag_loss * I) - (mu * R)
 
-    # Demography
+    # TO ADD LATER: infected births
     # Putting mortality instead of fertility rates and not dividing by 2 for now to keep pop constant
-    infected_births <- ((mtct_prob_a * A + mtct_prob_i * I)) * mortality_rates_by_age
-    uninfected_births <- ((pop_by_age) * mortality_rates_by_age) - infected_births
+    #infected_births <- ((mtct_prob_a * A + mtct_prob_i * I)) * mortality_rates_by_age
+    #uninfected_births <- ((pop_by_age) * mortality_rates_by_age) - infected_births
     #  births <- fertility_rates_by_age * total_pop_byage/2
     #  births <- b * total_pop_byage
-
     # Births
     # Restore additional deaths from last age group as births for constant population size
-    dS[1] <- dS[1] + sum(uninfected_births)# + S[n_agecat]/da + A[n_agecat]/da + I[n_agecat]/da + R[n_agecat]/da
-    dA[1] <- dA[1] + sum(infected_births)
+    #dS[1] <- dS[1] + sum(uninfected_births)# + S[n_agecat]/da + A[n_agecat]/da + I[n_agecat]/da + R[n_agecat]/da
+    #dA[1] <- dA[1] + sum(infected_births)
 
     # Return results
-    res <-  cbind(dS, dA, dI, dR)
-    list(res)
-  })
-}
-
-aging_model <- function(timestep, pop, parameters){
-
-  with(as.list(parameters), {
-
-    # Define time-varying parameters
-    mortality_rate <- matrix(c(timevary_parameters(timestep, dataset = mort_rates_female),
-                               timevary_parameters(timestep, dataset = mort_rates_male)),
-                             ncol = 2)    # 2 columns for sex-specific rates
-    #migration_rate <- timevary_parameters(timestep, dataset = input_migration_data)
-    #birth_rate <- timevary_parameters(timestep, dataset = input_birthrate_data)
-    fertility_rate <- timevary_parameters(timestep, dataset = fert_rates)
-
-    migration_rate <- matrix(c(timevary_parameters(timestep, dataset = migration_rates_female),
-                               timevary_parameters(timestep, dataset = migration_rates_male)),
-                             ncol = 2)    # 2 columns for sex-specific rates
-
-    # Set up population array with initial population size:
-    # matrix 1 = females, matrix 2 = males, rows = agesteps, columns = infection stage (1)
-    pop <- array(unlist(pop[1:(2*n_agecat)]),dim=c(n_agecat,1,2))
-    S <- pop
-    N <- sum(S) # total population
-
-    # Initialise output arrays
-    dS <- array(rep(0,2*n_agecat),dim=c(n_agecat,1,2))          # female and male population
-    deaths <- array(rep(0,2*n_agecat),dim=c(n_agecat,1,2))      # female and male incident deaths
-    migrants <- array(rep(0,2*n_agecat),dim=c(n_agecat,1,2))    # female and male incident migrants
-
-    # Differential equations
-    #births <- birth_rate * N
-    births <- sum(fertility_rate * S[ageindex_wocba,1,1])
-
-    for (i in 1:2) {        # i = sex [1 = female, 2 = male]
-
-      deaths[index,1,i] <- mortality_rate[index,i] * S[index,1,i]
-      migrants[index,1,i] <-  migration_rate[index,i] * S[index,1,i]
-
-      dS[index,1,i] <- -(diff(c(0,S[-length(index),1,i],0))/da) - deaths[index,1,i] + migrants[index,1,i] #+ migration_rate * S[index,1,i]
-      dS[1,1,i] <- dS[1,1,i] + sex_ratio[i] * births
-
-    }
-
-    res <- c(dS, deaths, migrants, births)
+    res <- c(dpop)
+    #res <- c(dpop, deaths, migrants, births)
     list(res)
   })
 }
 
 
 ## Function to run the model
-run_model <- function(b1, b2, b3,
+run_model <- function(foi,                                           #b1, b2, b3,
                       alpha, gamma_acute, p_chronic,
                       sag_loss, mu_hbv,
-                      mtct_prob_a, mtct_prob_i, mu, b) {
+                      mtct_prob_a, mtct_prob_i) {
 
   # Add parameters into list
-  parameters <- list(b1 = b1, b2 = b2, b3 = b3,
+  parameters <- list(foi = foi,                                                #b1 = b1, b2 = b2, b3 = b3,
                      alpha = alpha, gamma_acute = gamma_acute, p_chronic = p_chronic,
                      sag_loss = sag_loss, mu_hbv = mu_hbv,
-                     mtct_prob_a = mtct_prob_a, mtct_prob_i = mtct_prob_i, mu = mu, b = b)
+                     mtct_prob_a = mtct_prob_a, mtct_prob_i = mtct_prob_i)
 
   # Run simulation
   out <- as.data.frame(ode.1D(y = init_pop, times = times, func = hbv_model,
-                              parms = parameters, nspec = 4, names = c("S", "A", "I", "R")))
+                              parms = parameters, nspec = 4,
+                              names = c("S", "A", "I", "R"), method = "lsoda"))
+  out$time   <-  out$time + starttime
 
   # Code carrier prevalence as output
-  pop_by_age <- out[,1+sindex] + out[,1+aindex] + out[,1+iindex] + out[,1+rindex]
-  prev_by_age <- out[,1+iindex]/pop_by_age
-  prop_everinf_by_age <- (out[,1+aindex] + out[,1+iindex] + out[,1+rindex])/pop_by_age
+  #pop_by_age <- out[,1+sindex] + out[,1+aindex] + out[,1+iindex] + out[,1+rindex]
+  #prev_by_age <- out[,1+iindex]/pop_by_age
+  #prop_everinf_by_age <- (out[,1+aindex] + out[,1+iindex] + out[,1+rindex])/pop_by_age
 
   # Data of number infected to fit to
-  data_prev <- as.numeric(edmunds_prev_by_age$y*pop_by_age[2000,])
-  data_everinf <- as.numeric(edmunds_everinf_by_age$y*pop_by_age[2000,])
+  #data_prev <- as.numeric(edmunds_prev_by_age$y*pop_by_age[2000,])
+  #data_everinf <- as.numeric(edmunds_everinf_by_age$y*pop_by_age[2000,])
 
   # Log likelihood
-  LL <- sum(dbinom(x = round(data_prev), size = round(as.numeric(pop_by_age[2000,])),
-                   prob = as.numeric(prev_by_age[2000,]), log = TRUE))
+#  LL <- sum(dbinom(x = round(data_prev), size = round(as.numeric(pop_by_age[2000,])),
+#                   prob = as.numeric(prev_by_age[2000,]), log = TRUE))
 
-  toreturn <- list(out = out, prev_by_age = prev_by_age, loglikelihood = LL)
+  toreturn <- out
+  #toreturn <- list(out = out, prev_by_age = prev_by_age, loglikelihood = LL)
   #toReturn <- c(modelprev = as.numeric(prev_by_age[2000,]*100), LL = LL)
 
   return(toreturn)
 }
 
 ## Functions to return output of interest
-return_compartment_output <- function(b1, b2, b3,
-                                      alpha, gamma_acute, p_chronic,
-                                      sag_loss, mu_hbv,
-                                      mtct_prob_a, mtct_prob_i, mu, b) {
+#return_compartment_output <- function(b1, b2, b3,
+#                                      alpha, gamma_acute, p_chronic,
+#                                      sag_loss, mu_hbv,
+#                                      mtct_prob_a, mtct_prob_i, mu, b) {
   temp <- run_model(b1 = b1, b2 = b2, b3 = b3,
                     alpha = alpha, gamma_acute = gamma_acute, p_chronic = p_chronic,
                     sag_loss = sag_loss, mu_hbv = mu_hbv,
@@ -655,7 +635,7 @@ return_compartment_output <- function(b1, b2, b3,
   out <- temp$out
   return(out) }
 
-loglikelihood_function <- function(parms_to_estimate) {
+#loglikelihood_function <- function(parms_to_estimate) {
   temp <- run_model(b1 = parms_to_estimate[1], b2 = parms_to_estimate[2], b3 = parms_to_estimate[3],
                     alpha = alpha, gamma_acute = gamma_acute, p_chronic = p_chronic,
                     sag_loss = sag_loss, mu_hbv = mu_hbv,
@@ -668,23 +648,26 @@ loglikelihood_function <- function(parms_to_estimate) {
 
 ## DEMOGRAPHY
 # Set up initial population
-init_pop <- c(
-  S = c(rep(17000,6/da), rep(5050,10/da), rep(1350,30/da), rep(186,34/da), rep(1,20/da)),
-  A = c(rep(500,6/da), rep(200,10/da), rep(50,30/da), rep(14,34/da), rep(1,20/da)),
-  I = c(rep(4959,6/da), rep(4375,10/da), rep(1400,30/da), rep(160,34/da), rep(1,20/da)),
-  R = c(rep(6708,6/da), rep(7875,10/da), rep(6533,30/da), rep(1640,34/da), rep(1,20/da))
-)
+# Initial population = age- and sex-specific population size in 1950
+#init_pop <- c("Sf" = popsize_1950$pop_female, "Sm" = popsize_1950$pop_male,
+#              "cum_deathsf" = deaths_1950$deaths_female*dt, "cum_deathsm"t = deaths_1950$deaths_female*dt,
+#              "cum_migrantsf" = rep(0, n_agecat), "cum_migrantsm" = rep(0, n_agecat),
+#              "cum_births" = 0)
 
+init_pop <- c("Sf" = popsize_1950$pop_female*gambia_sus,
+              "Af" = popsize_1950$pop_female*gambia_acute,
+              "If" = popsize_1950$pop_female*gambia_chronic,
+              "Rf" = popsize_1950$pop_female*gambia_immune,
+              "Sm" = popsize_1950$pop_male*gambia_sus,
+              "Am" = popsize_1950$pop_male*gambia_acute,
+              "Im" = popsize_1950$pop_male*gambia_chronic,
+              "Rm" = popsize_1950$pop_male*gambia_immune)
 N0 <- sum(init_pop)
 
-# Mortality and birth input parameters
-mu <- mortality_rates_by_age   # background mortality rate
-b <- mu                       # birth rate is assumed to equal the mortality rate
-
 ## TRANSMISSION PARAMETERS
-b1 <- 0.45     # beta-child (up to 5-year olds)
-b2 <- 0.01     # beta-young (up to 15-year olds)
-b3 <- 0.005    # beta-all (over 5-year olds)
+#b1 <- 0.45     # beta-child (up to 5-year olds)
+#b2 <- 0.01     # beta-young (up to 15-year olds)
+#b3 <- 0.005    # beta-all (over 5-year olds)
 
 ## NATURAL HISTORY PARAMETERS (annual rates parameterised from Edmunds and Shimakawa)
 # foi = force of infection, p_chronic = probability of becoming a chronic carrier,
@@ -694,14 +677,17 @@ b3 <- 0.005    # beta-all (over 5-year olds)
 # mtct_prob_i = probability of perinatal transmission from carrier mother.
 # Age-dependent probability of becoming a chronic carrier: Edmunds approach
 # except 0.89 for whole first year instead of just 0.5 years).
+foi <- 0.111
 alpha <- 0.16
 gamma_acute <- 8 # gamma_acute changed manually to fit prevalence, was 4 in Edmunds
-p_chronic <- c(0.89, exp(-0.65*ages[-1]^0.46))
+#p_chronic <- c(0.89, exp(-0.65*ages[-1]^0.46))
+p_chronic <- 0.3
 sag_loss <- 0.025
 #sag_loss <- sagloss_rates_0to80 # 0.01, 0.025
 mu_hbv <- 0  #0.0003
 mtct_prob_a <- 0.711
 mtct_prob_i <- 0.109
+sex_ratio <- c(0.4926, 0.5074)
 
 #### Try fitting transmission parameters to prevalence ----
 #beta_guess <- c(0.1, 0.01, 0.01)
@@ -712,21 +698,38 @@ mtct_prob_i <- 0.109
 
 
 #### Output ----
-out <- return_compartment_output(b1 = b1, b2 = b2, b3 = b3,
+tic()
+out <- run_model(foi = foi,
                  alpha = alpha, gamma_acute = gamma_acute, p_chronic = p_chronic,
                  sag_loss = sag_loss, mu_hbv = mu_hbv,
-                 mtct_prob_a = mtct_prob_a, mtct_prob_i = mtct_prob_i, mu = mu, b = b)
+                 mtct_prob_a = mtct_prob_a, mtct_prob_i = mtct_prob_i)
+toc()
+
+#out <- return_compartment_output(b1 = b1, b2 = b2, b3 = b3,
+#                 alpha = alpha, gamma_acute = gamma_acute, p_chronic = p_chronic,
+#                 sag_loss = sag_loss, mu_hbv = mu_hbv,
+#                 mtct_prob_a = mtct_prob_a, mtct_prob_i = mtct_prob_i, mu = mu, b = b)
 
 
 ## Tables/vectors with output
-time <- out[,1]
-sus <- out[,(1+sindex)]
-acute <- out[,(1+aindex)]
-carriers <- out[,(1+iindex)]
-immune <- out[,(1+rindex)]
-ever_infected <- acute + carriers + immune
-totalpop <- apply(out[,-1], 1, sum)
-agespec_pop <- sus + acute + carriers + immune
+out_sf <- select(out, starts_with("Sf"))
+out_sm <- select(out, starts_with("Sm"))
+out_af <- select(out, starts_with("Af"))
+out_am <- select(out, starts_with("Am"))
+out_if <- select(out, starts_with("If"))
+out_im <- select(out, starts_with("Im"))
+out_rf <- select(out, starts_with("Rf"))
+out_rm <- select(out, starts_with("Rm"))
+
+out_sus <- out_sf + out_sm
+out_acute <- select(out, starts_with("A"))
+out_carriers <- select(out, starts_with("I"))
+out_immune <- select(out, starts_with("R"))
+out_totalpop <- apply(out[,-1], 1, sum)
+
+#ever_infected <- acute + carriers + immune
+
+#agespec_pop <- sus + acute + carriers + immune
 
 ## Visualisation of population dynamics and aging
 # Evolution of aging in 3 broad groups (children, juveniles, adults)
@@ -748,13 +751,6 @@ lines(time, all_adults, col = "blue")
 
 # Age distribution after equilibrium is reached (takes long to stabilise)
 plot(1:n_agecat, agespec_pop[1000,])
-
-## Visualisation of infection dynamics
-# Susceptibles, infectious and immune (all age groups added)
-plot(time,apply(carriers,1,sum),type = "l", ylim = c(0,N0))
-lines(time,apply(acute,1,sum),col= "green")
-lines(time,apply(sus,1,sum),col= "red")
-lines(time,apply(immune,1,sum),col= "blue")
 
 # Chronic carrier numbers by age group over time
 plot(time, apply(carriers[,childindex],1,sum), type = "l", ylim = c(0,N0))
