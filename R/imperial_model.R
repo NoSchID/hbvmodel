@@ -1,13 +1,8 @@
 ###################################
-### Imperial HBV model 17/12/18 ###
+### Imperial HBV model 18/12/18 ###
 ###################################
 # Model described in Shevanthi's thesis with some adaptations
 # Currently only infant vaccination at 1 year of age, no birth dose or treatment
-
-
-# 4 compartments: Susceptible, Acute infection, Chronic infection, and Immune
-# With horizontal transmission (FOI) and MTCT
-# With infant vaccine
 
 ### Load packages ----
 require(tidyr)
@@ -502,7 +497,7 @@ sum_pop_by_age <- function(time = out$time, output) {
 
 ### Model-related functions ----
 
-## Function to interpolate demographic parameters over time
+## Function to interpolate demographic parameters over time - specific to these datasets
 timevary_parameters <- function(timestep, dataset) {
   # Input datasets are age-specific mortality rates, birth rate and migration rate for every 5-year period
   dataset$time <- seq(1952-starttime, 2012-starttime, 5)    # convert time to number starting from 0, this is specific to the datasets used in the model
@@ -516,12 +511,15 @@ timevary_parameters <- function(timestep, dataset) {
   return(res)
 } # spline
 
-## The model
+## THE MODEL
 imperial_model <- function(timestep, pop, parameters){
 
   with(as.list(parameters), {
 
+    # PREPARATION
+
     # Set up population array with infection compartments
+
     # matrix 1 = females, matrix 2 = males, rows = agesteps, columns = infection compartments
     # Example: pop[ages,infectionstatus,sex]
     pop <- array(unlist(pop[1:(2 * n_infectioncat * n_agecat)]),dim=c(n_agecat,n_infectioncat,2))
@@ -537,7 +535,7 @@ imperial_model <- function(timestep, pop, parameters){
                                timevary_parameters(timestep, dataset = migration_rates_male)),
                              ncol = 2)    # 2 columns for sex-specific rates
 
-    # Label infection compartments
+    # Notation: label infection compartments
     S <- 1                           # Susceptible
     IT <- 2                           # Chronic infection: immune tolerant
     IR <- 3                           # Chronic infection: immune reactive
@@ -553,7 +551,7 @@ imperial_model <- function(timestep, pop, parameters){
     # Horizontal transmission: define WAIFW matrix
     # Assuming no effective contact between children and adults
     beta <- matrix(0, nrow = n_agecat, ncol = n_agecat) # matrix of transmission rates
-    beta[index$ages_1to5, index$ages_1to5] <- b1        # transmission among children (0-5 years)
+    beta[index$ages_1to5, index$ages_1to5] <- b1        # transmission among children (1-5 years)
     beta[index$ages_6to15, index$ages_6to15] <- b2      # transmission among juveniles (6-15 years)
     beta[index$ages_16to100, index$ages_16to100] <- b3  # transmission among adults (16-100 years)
     beta[index$ages_1to5, index$ages_6to15] <- b2       # transmission from children to juveniles
@@ -561,20 +559,25 @@ imperial_model <- function(timestep, pop, parameters){
     beta[index$ages_6to15, index$ages_16to100] <- b3    # transmission from juveniles to adults
     beta[index$ages_16to100, index$ages_6to15] <- b3    # transmission from adults to juveniles
 
-    # Set date for introduction of vaccination:
-    if (timestep < (vacc_introtime-starttime)) {
-      vacc_cov = 0
-    } else {
+    # Infant vaccination: set date for introduction
+    # Vaccination coverage is 0 until the specified starttime and only if vaccine switch is on
+    if (apply_vacc == 1 & timestep >= (vacc_introtime-starttime)) {
       vacc_cov = vacc_cov
+    } else {
+      vacc_cov = 0
     }
 
-    # Initialise output arrays
-    dpop <- array(rep(0,2 * n_infectioncat * n_agecat),dim=c(n_agecat,n_infectioncat,2))      # female and male population in each infection comp
-    deaths <- array(rep(0,2 * n_infectioncat * n_agecat),dim=c(n_agecat,n_infectioncat,2))    # female and male incident deaths in each infection comp
-    migrants <- array(rep(0,2 * n_infectioncat * n_agecat),dim=c(n_agecat,n_infectioncat,2))  # female and male incident migrants in each infection comp
-    infections <- matrix(rep(0, 2* n_agecat), ncol = 2, nrow = n_agecat)                      # female and male incident infections
+    # Initialise arrays for storage of outputs
+    dpop <- array(rep(0,2 * n_infectioncat * n_agecat),
+                  dim=c(n_agecat,n_infectioncat,2))      # female and male population in each infection comp
+    deaths <- array(rep(0,2 * n_infectioncat * n_agecat),
+                    dim=c(n_agecat,n_infectioncat,2))    # female and male incident deaths in each infection comp
+    migrants <- array(rep(0,2 * n_infectioncat * n_agecat),
+                      dim=c(n_agecat,n_infectioncat,2))  # female and male incident migrants in each infection comp
+    infections <- matrix(rep(0, 2* n_agecat),
+                         ncol = 2, nrow = n_agecat)      # female and male incident infections
 
-    # Model equations
+    # MODEL EQUATIONS
 
     # Mother-to-child transmission and births
 
@@ -584,6 +587,7 @@ imperial_model <- function(timestep, pop, parameters){
     # applying the same age-specific fertility rate to every infection compartment
 
     # Age-specific force of infection (same for men and women)
+
     foi <- (beta %*%
               (apply(pop[index$ages_all,HBeAg_neg,1:2],1,sum) +
                apply(alpha * pop[index$ages_all,HBeAg_pos,1:2],1,sum)))/
@@ -594,20 +598,22 @@ imperial_model <- function(timestep, pop, parameters){
     # Returns a vector with force of infection for every age - 4 different values:
     # 0 in 0-year olds, different values for 1-5, 6-15 and 16-100 year olds
 
+    # Partial differential equations (solving for each sex separately)
+
     for (i in 1:2) {        # i = sex [1 = female, 2 = male]
 
-      # Incident deaths and migrants
+      # Demography: Incident deaths and migrants
       deaths[index$ages_all,index$infcat_all,i] <- mortality_rate[index$ages_all,i] *
         pop[index$ages_all,index$infcat_all,i]
       migrants[index$ages_all,index$infcat_all,i] <-  migration_rate[index$ages_all,i] * pop[index$ages_all,index$infcat_all,i]
       # Applying same age-specific mortality rate to every infection compartment
       # Returns an array with indicent deaths and net migrants for every age (rows), infection state (columns) and sex (arrays)
 
-      # Incident infections
+      # Infection: Incident infections
       infections[index$ages_all,i] <- foi * pop[index$ages_all,S,i]
       # Returns a matrix with incident infections for every age (rows) and every sex (columns)
 
-      # Partial differential equations
+    # Transitions between compartments:
 
       # Susceptibles
       dpop[index$ages_all,S,i] <- -(diff(c(0,pop[-length(index$ages_all),S,i],0))/da) -
@@ -694,9 +700,44 @@ imperial_model <- function(timestep, pop, parameters){
   })
 }
 
+## Functions to run the model
 
-## Function to run the model
-run_model <- function(b1 = b1, b2 = b2, b3 = b3, alpha = alpha,
+# Function to define/update parameter values for model run
+generate_parameters <- function(..., default_parameter_list, parms_to_change = list(...)) {
+
+  # Default situation: using input parameters
+  defaults <- default_parameter_list
+  if (length(parms_to_change) == 0L) {
+    print("Using default parameter values")
+    return(defaults)
+  }
+
+  # Alternative: parameter values to change are specified in function call
+  # Check they are named correctly
+  if (is.null(names(parms_to_change)) || !all(nzchar(names(parms_to_change)))) {
+    stop("All arguments must be named")
+  }
+
+  # Check if specified parameters exist in default list
+  new_parms_added <- setdiff(names(parms_to_change), names(defaults))
+
+  # If not in list, print warning message for newly added parameters
+  if (length(new_parms_added) > 0L) {
+    print(paste0("WARNING! New parameters added: ", new_parms_added))
+  } else {
+    print("Using parameter values specified in function call")
+  }
+  # NOTE: could change this to check if the value has been updated
+
+  # Final parameter set to use in model run: updated default parameter list
+  final_parms <- modifyList(defaults, parms_to_change)
+  return(final_parms)
+
+}
+
+# Run the model
+# Old function, not used anymore
+run_model_old <- function(b1 = b1, b2 = b2, b3 = b3, alpha = alpha,
                       mtct_prob_e = mtct_prob_e, mtct_prob_s = mtct_prob_s,
                       p_chronic = p_chronic, pr_it_ir = pr_it_ir, pr_ir_ic = pr_ir_ic,
                       pr_ir_enchb = pr_ir_enchb, pr_ic_enchb = pr_ic_enchb, sag_loss = sag_loss,
@@ -741,14 +782,14 @@ run_model <- function(b1 = b1, b2 = b2, b3 = b3, alpha = alpha,
   return(toreturn)
 }
 
-run_model_parmslist <- function(parameter_list = parameter_list,
-                                parms_to_change = NULL, new_parm_values = NULL) {
+run_model <- function(..., default_parameter_list, parms_to_change = list(...)) {
 
-  # Add parameters into list
-  parameters <- parameter_list
-  parameters[parms_to_change] = new_parm_values
+  ## Define parameter values for model run:
+  # Using default input parameter list or with updated values specified in parms_to_change
+  parameters <- generate_parameters(default_parameter_list = default_parameter_list,
+                                    parms_to_change = parms_to_change)
 
-  # Run simulation
+  ## Run model simulation
   out <- as.data.frame(ode.1D(y = init_pop, times = times, func = imperial_model,
                               parms = parameters, nspec = 1, method = "lsoda"))
   out$time   <-  out$time + starttime
@@ -761,11 +802,12 @@ run_model_parmslist <- function(parameter_list = parameter_list,
 
 ### Model input ----
 
-## DEMOGRAPHY
-# Set up initial population
-# Initial population = age- and sex-specific population size in 1950
+# DEMOGRAPHY: SEE ABOVE
 
+# INITIAL POPULATION
+# Set up initial population: age- and sex-specific population size in 1950
 # Note: names in initial population vector is reproduced in output
+# guessed proportion in each compartment
 init_pop <- c("Sf" = popsize_1950$pop_female*gambia_sus,
               "ITf" = popsize_1950$pop_female*gambia_infected*gambia_eag*0.6,
               "IRf" = popsize_1950$pop_female*gambia_infected*gambia_eag*0.4,
@@ -785,86 +827,58 @@ init_pop <- c("Sf" = popsize_1950$pop_female*gambia_sus,
               "HCCm" = popsize_1950$pop_male*gambia_infected*(1-gambia_eag)*0.01,
               "Rm" = popsize_1950$pop_male*gambia_immune,
               "cum_births" = 0, "cum_infected_births" = 0)
-# made up percentages in each compartment
+# Total population in 1950:
 N0 <- sum(init_pop[1:(n_infectioncat * n_agecat * 2)])
 
-## TRANSMISSION PARAMETERS
-#b1 <- 0.0627
-#b2 <- 0.001
-#b3 <- 0.001
-b1 <- 0.15     # beta-child (up to 5-year olds)
-b2 <- 0.05      # beta-young (up to 15-year olds)
-b3 <- 0.05      # beta-all (over 5-year olds)
+## TRANSMISSION, NATURAL HISTORY AND INTERVENTION PARAMETERS
+# p_chronic: Edmunds approach adapted by using 0.89 for whole first year instead of just 0.5 years
 
+parameter_list <- list(
+  # TRANSMISSION PARAMETERS
+  b1 = 0.17,          # beta-child Shevanthi 0.0627
+  b2 = 0.04,          # beta-young Shevanthi 0.001
+  b3 = 0.001,          # beta-all Shevanthi 0.001
+  alpha = 15,         # Shevanthi value, relative infectiousness of eAg-positives
+  mtct_prob_e = 0.9,  # Shevanthi value, probability of perinatal transmission from HBeAg-positive mother
+  mtct_prob_s = 0.05, # Shevanthi model value, probability of perinatal transmission from HBeAg-negative infected mother
+  # NATURAL HISTORY PROGRESSION RATES
+  p_chronic = c(0.89, exp(-0.65*ages[-1]^0.46)),     # Age-dependent probability of chronic carriage. Adapted Edmunds
+  pr_it_ir = 0.1 * eag_loss,
+  pr_ir_ic = 0.05 * eag_loss,
+  pr_ir_enchb = 0.005,
+  pr_ic_enchb = 0.01,
+  sag_loss = 0.01,  # Shevanthi value, inactive carrier to recovered transition
+  #sag_loss = sagloss_rates_0to80,
+  ccrate = 0.04,  # Progression to CC (from ENCHB)
+  dccrate = 0.04,  # Progression to DCC (from CC)
+  # PROGRESSION RATES TO HEPATOCELLULAR CARCINOMA
+  hccr_it = matrix(data = c(cancer_prog_female, cancer_prog_male), nrow = n_agecat, ncol = 2),
+  hccr_ir = matrix(data = c(2*cancer_prog_female, 2*cancer_prog_male), nrow = n_agecat, ncol = 2),
+  hccr_ic = matrix(data = c(0.5*cancer_prog_female, 0.5*cancer_prog_male), nrow = n_agecat, ncol = 2),
+  hccr_enchb = matrix(data = c(2*cancer_prog_female, 2*cancer_prog_male), nrow = n_agecat, ncol = 2),
+  hccr_cc = matrix(data = c(13*cancer_prog_female, 13*cancer_prog_male), nrow = n_agecat, ncol = 2),
+  hccr_dcc = 0.04,
+  # HBV-RELATED MORTALITY RATES (MORTALITY FROM LIVER DISEASE)
+  mu_cc = 0.039,
+  mu_dcc = 0.314,
+  mu_hcc = 0.5,
+  # INFANT VACCINATION PARAMETERS
+  vacc_cov = c(0, 0.92, rep(0,n_agecat-2)),  # vaccine is only applied in 1-year olds, need to get time-varying data
+  vacc_eff = 0.95,                           # vaccine efficacy
+  vacc_introtime = 1991,                     # year of vaccine introduction
+  # INTERVENTION ON/OFF SWITCH (1/0)
+  apply_vacc = 1)
 
-## NATURAL HISTORY PARAMETERS (annual rates parameterised from Edmunds and Shimakawa)
-# p_chronic = probability of becoming a chronic carrier,
-# sag_loss = rate of HBsAg loss (recovery), alpha = relative infectiousness of eAg-positives,
-# mtct_prob_e = probability of perinatal transmission from HBeAg-positive mother,
-# mtct_prob_s = probability of perinatal transmission from HBeAg-negative infected mother.
-# Age-dependent probability of becoming a chronic carrier: Edmunds approach
-# except 0.89 for whole first year instead of just 0.5 years).
-
-# Transmission parameters
-alpha <- 15 # Shevanthi value
-mtct_prob_e <- 0.9  # Shevanthi value
-mtct_prob_s <- 0.05   # Shevanthi model value
-# Natural history progression rates
-p_chronic <- c(0.89, exp(-0.65*ages[-1]^0.46))
-pr_it_ir <- 0.1 * eag_loss
-pr_ir_ic <- 0.05 * eag_loss
-pr_ir_enchb <- 0.005
-pr_ic_enchb <- 0.01
-sag_loss <- 0.01 # Shevanthi value
-#sag_loss <- sagloss_rates_0to80
-ccrate <- 0.04  # Progression to CC (from ENCHB)
-dccrate <- 0.04  # Progression to DCC (from CC)
-# Progression rates to HCC
-hccr_it <- matrix(data = c(cancer_prog_female, cancer_prog_male), nrow = n_agecat, ncol = 2)
-hccr_ir <- matrix(data = c(2*cancer_prog_female, 2*cancer_prog_male), nrow = n_agecat, ncol = 2)
-hccr_ic <- matrix(data = c(0.5*cancer_prog_female, 0.5*cancer_prog_male), nrow = n_agecat, ncol = 2)
-hccr_enchb <- matrix(data = c(2*cancer_prog_female, 2*cancer_prog_male), nrow = n_agecat, ncol = 2)
-hccr_cc <- matrix(data = c(13*cancer_prog_female, 13*cancer_prog_male), nrow = n_agecat, ncol = 2)
-hccr_dcc <- 0.04
-# HBV-related mortality rates (mortality from liver disease)
-mu_cc <- 0.039
-mu_dcc <- 0.314
-mu_hcc <- 0.5
-
-## INTERVENTION PARAMETERS
-vacc_cov <- c(0, 0.92, rep(0,n_agecat-2)) # vaccine is only applied in 1-year olds, need to get time-varying data
-vacc_eff <- 0 # 0.95
-vacc_introtime <- 1991 # year of vaccine introduction
-
-## Sum up in parameter list
-parameter_list <- list(b1 = b1,
-                       b2 = b2,
-                       b3 = b3,
-                       alpha = alpha,
-                       mtct_prob_e = mtct_prob_e,
-                       mtct_prob_s = mtct_prob_s,
-                       p_chronic = p_chronic,
-                       pr_it_ir = pr_it_ir, pr_ir_ic = pr_ir_ic,
-                       pr_ir_enchb = pr_ir_enchb, pr_ic_enchb = pr_ic_enchb, sag_loss = sag_loss,
-                       ccrate = ccrate, dccrate = dccrate,
-                       hccr_it, hccr_ir, hccr_ic, hccr_enchb, hccr_cc, hccr_dcc,
-                       mu_cc = mu_cc, mu_dcc = mu_dcc, mu_hcc = mu_hcc,
-                       vacc_cov = vacc_cov, vacc_eff = vacc_eff, vacc_introtime = vacc_introtime)
-
-### Try fitting transmission parameters to prevalence ----
-#beta_guess <- c(0.1, 0.01, 0.01)
-#tic()
-#optim(fn = loglikelihood_function, par = beta_guess, control = list(fnscale=-1))
-#toc()
-# estimates were b1 = 0.45, b2 = 0.01, b3 = 0.005, takes 217.79 sec
-
+# Store names of all parameters
+parameter_names <- names(parameter_list)
 
 ### Run the model ----
+
+# Default intervention: infant vaccine (apply_vacc = 1)
+# Switch off by setting to 0 in function call
 tic()
-out <- run_model(b1, b2, b3, alpha, mtct_prob_e, mtct_prob_s, p_chronic, pr_it_ir, pr_ir_ic,
-                 pr_ir_enchb, pr_ic_enchb, sag_loss,
-                 ccrate, dccrate, hccr_it, hccr_ir, hccr_ic, hccr_enchb, hccr_cc, hccr_dcc,
-                 mu_cc, mu_dcc, mu_hcc, vacc_cov, vacc_eff, vacc_introtime)
+out <- run_model(default_parameter_list = parameter_list,
+                 parms_to_change = list(apply_vacc = 1))
 toc()
 
 #out <- return_compartment_output(b1 = b1, b2 = b2, b3 = b3,
@@ -896,25 +910,6 @@ out_hccm <- select(out, starts_with("HCCm"))
 out_rf <- select(out, starts_with("Rf"))
 out_rm <- select(out, starts_with("Rm"))
 
-#apply(out_sf,1,sum)
-#apply(out_itf,1,sum)
-#apply(out_irf,1,sum)
-#apply(out_icf,1,sum)
-#apply(out_enchbf,1,sum)
-#apply(out_ccf,1,sum)
-#apply(out_dccf,1,sum)
-#apply(out_hccf,1,sum)
-#apply(out_rf,1,sum)
-#apply(out_sm,1,sum)
-#apply(out_itm,1,sum)
-#apply(out_irm,1,sum)
-#apply(out_icm,1,sum)
-#apply(out_enchbm,1,sum)
-#apply(out_ccm,1,sum)
-#apply(out_dccm,1,sum)
-#apply(out_hccm,1,sum)
-#apply(out_rm,1,sum)
-
 # Population
 out_popf <- select(out[,2:(n_agecat*n_infectioncat*2+1)], contains("f"))
 out_popm <- select(out[,2:(n_agecat*n_infectioncat*2+1)], contains("m"))
@@ -938,6 +933,7 @@ model_infectioncat_total <- data.frame(time = out$time,
                                 sus = apply(model_sus[,-1], 1, sum),
                                 carriers = apply(model_carriers[,-1], 1, sum),
                                 immune = apply(model_immune[,-1], 1, sum))
+
 #ever_infected <- acute + carriers + immune
 
 ## Code demography outputs
@@ -968,8 +964,6 @@ model_births_group5 <- model_births %>%
   group_by(timegroup) %>%
   summarise_all(sum) %>%
   select(-time)
-
-## Plots
 
 ### Plots ----
 
@@ -1009,15 +1003,16 @@ points(x = seq(2,102,5),
 ## INFECTION DYNAMICS
 
 # Total number in each infection compartment per timestep
-plot(out$time,model_infectioncat_total$carriers,type = "l", ylim = c(0,2000000))
+plot(out$time,model_infectioncat_total$carriers,type = "l", ylim = c(0,1000000))
 lines(out$time,model_infectioncat_total$sus,col= "red")
 lines(out$time,model_infectioncat_total$immune,col= "blue")
 
 # Carrier prevalence over time
-plot(out$time,model_infectioncat_total$carriers/model_pop_total$pop_total)
+plot(out$time,model_infectioncat_total$carriers/model_pop_total$pop_total, ylim = c(0,0.25))
 
-plot(x = model_carriers[,1], y = as.numeric(unlist(model_carriers[,2]/model_pop[,2])))
-plot(x = model_carriers[,1], y = as.numeric(unlist(model_carriers[,3]/model_pop[,3])))
+plot(x = model_carriers[,1], y = as.numeric(unlist(model_carriers[,2]/model_pop[,2]))) # age 0
+plot(x = model_carriers[,1], y = as.numeric(unlist(model_carriers[,3]/model_pop[,3]))) # age 1
+plot(x = model_carriers[,1], y = as.numeric(unlist(model_carriers[,4]/model_pop[,4]))) # age 2
 
 # Running model with vaccine and no MTCT: acute and carrier prevalence go to 0
 # With vaccine AND MTCT: no visual difference to without MTCT
@@ -1025,8 +1020,9 @@ plot(x = model_carriers[,1], y = as.numeric(unlist(model_carriers[,3]/model_pop[
 
 # Carrier prevalence by age in 1980
 plot(ages, model_carriers[which(model_carriers$time == 1980),-1]/model_pop[which(model_pop$time == 1980),-1], type = "l", ylim = c(0,0.3))
-# Add Gambia data
-points(gambia_prevdata$age, gambia_prevdata$edmunds_prev, col = "red")
+
+plot(ages, model_carriers[which(model_carriers$time == 2000),-1]/model_pop[which(model_pop$time == 2000),-1], type = "l", ylim = c(0,0.3))
+
 
 # Proportion ever infected at 1 time point (after equilibrium is reached)
 plot(1:n_agecat, ever_infected[1000,]/agespec_pop[1000,], type = "l", ylim = c(0,1))
@@ -1050,6 +1046,4 @@ has.neg.col <- apply(out, 2, function(col) any(col < 0))
 
 View(has.neg.col[has.neg.col == TRUE])
 which(has.neg.col)
-
-
 
