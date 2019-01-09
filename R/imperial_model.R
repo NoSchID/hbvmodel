@@ -1,8 +1,14 @@
 ###################################
-### Imperial HBV model 18/12/18 ###
+### Imperial HBV model 09/01/19 ###
 ###################################
 # Model described in Shevanthi's thesis with some adaptations
 # Currently only infant vaccination at 1 year of age, no birth dose or treatment
+
+# TO DO:
+# check that the event works correctly regarding age distribution and infection dynamics
+# adapt model so it can start in 1850
+# adapt demographic rates so they are repeated from 1850-1950 and 1950 upwards
+# add projected rates and ensure age step can be changed
 
 ### Load packages ----
 require(tidyr)
@@ -97,10 +103,14 @@ cancer_prog_female <- 1e-07 * ((ages * 100* 0.2) + 2 * exp(0.0953 * ages))
 cancer_prog_male <- 5 * cancer_prog_female
 
 ### Load demographic datasets ----
-# Manual data preparation in Excel:
+# Manual data preparation in Excel for 1950-2015 data:
 # copy relevant data in a new file
 # all datasets need the first column being labelled "time"
-# set cells with estimates to "number" format
+# set cells with estimates to "number" format and display full decimals
+# save as CSV
+# Manual data preparation in Excel for 2015-2100 data:
+# deleted top rows and logo up until the header
+# set cells with estimates to "number" format and display 4 decimals
 input_birthrate_data <- read.csv(here("data", countryname, "birthrate.csv"),
                                  stringsAsFactors = FALSE)  # already divided this by 1000
 
@@ -114,12 +124,39 @@ input_popsize_female <- read.csv(here("data", countryname, "popsize_female.csv")
 input_popsize_male <- read.csv(here("data", countryname, "popsize_male.csv"),
                                header = TRUE, check.names = FALSE,
                                stringsAsFactors = FALSE)
-input_mortality_female <- read.csv(here("data", countryname, "mortality_female.csv"),
-                                   header = TRUE, check.names = FALSE,
-                                   stringsAsFactors = FALSE)
-input_mortality_male <- read.csv(here("data", countryname, "mortality_male.csv"),
-                                 header = TRUE, check.names = FALSE,
-                                 stringsAsFactors = FALSE)
+
+# Abridged life tables for mortality rates and survival ratio (to calculate migration rates)
+input_lifetables_male_1950to2015 <- read.csv(here("data",
+                                                  countryname,
+                                                  "WPP2017_MORT_F17_2_ABRIDGED_LIFE_TABLE_MALE_1950_2015.csv"),
+                                             header = TRUE, check.names = FALSE,
+                                             stringsAsFactors = FALSE)
+input_lifetables_male_2015to2050 <- read.csv(here("data",
+                                                  countryname,
+                                                  "WPP2017_MORT_F17_2_ABRIDGED_LIFE_TABLE_MALE_MEDIUM_2015_2050.csv"),
+                                             header = TRUE, check.names = FALSE,
+                                             stringsAsFactors = FALSE)
+input_lifetables_male_2050to2100 <- read.csv(here("data",
+                                                  countryname,
+                                                  "WPP2017_MORT_F17_2_ABRIDGED_LIFE_TABLE_MALE_MEDIUM_2050_2100.csv"),
+                                             header = TRUE, check.names = FALSE,
+                                             stringsAsFactors = FALSE)
+
+input_lifetables_female_1950to2015 <- read.csv(here("data",
+                                                    countryname,
+                                                    "WPP2017_MORT_F17_3_ABRIDGED_LIFE_TABLE_FEMALE_1950_2015.csv"),
+                                               header = TRUE, check.names = FALSE,
+                                               stringsAsFactors = FALSE)
+input_lifetables_female_2015to2050 <- read.csv(here("data",
+                                                    countryname,
+                                                    "WPP2017_MORT_F17_3_ABRIDGED_LIFE_TABLE_FEMALE_MEDIUM_2015_2050.csv"),
+                                               header = TRUE, check.names = FALSE,
+                                               stringsAsFactors = FALSE)
+input_lifetables_female_2050to2100 <- read.csv(here("data",
+                                                    countryname,
+                                                    "WPP2017_MORT_F17_3_ABRIDGED_LIFE_TABLE_FEMALE_MEDIUM_2050_2100.csv"),
+                                               header = TRUE, check.names = FALSE,
+                                               stringsAsFactors = FALSE)
 
 # 5-year survival rates (survival ratio) from abridged life tables for migration rates
 input_survivalratio_female <- read.csv(here("data", countryname, "survivalratio_female.csv"),
@@ -130,9 +167,16 @@ input_survivalratio_male <- read.csv(here("data", countryname, "survivalratio_ma
                                      stringsAsFactors = FALSE)
 
 # Age-specific fertility rates 1950-2015
-input_fertility_data <- read.csv(here("data", countryname, "fertility_rates.csv"),
+input_fertility_1950to2015 <- read.csv(here("data",
+                                            countryname,
+                                            "WPP2017_FERT_F07_AGE_SPECIFIC_FERTILITY_1950_2015.csv"),
                                  header = TRUE, check.names = FALSE,
                                  stringsAsFactors = FALSE)
+input_fertility_2015to2100 <- read.csv(here("data",
+                                            countryname,
+                                            "WPP2017_FERT_F07_AGE_SPECIFIC_FERTILITY_MEDIUM_2015_2100.csv"),
+                                       header = TRUE, check.names = FALSE,
+                                       stringsAsFactors = FALSE)
 
 # For validation
 input_deaths_female <- read.csv(here("data", countryname, "deaths_female.csv"),
@@ -145,11 +189,67 @@ input_births_total <- read.csv(here("data", countryname, "births_total.csv"),
                                header = TRUE, check.names = FALSE,
                                stringsAsFactors = FALSE)
 
-
 ### Functions for demographic data cleaning and preparation ----
+
+#### NEW DATA POST 2015
+
+# Function to clean fertility rates datasets
+clean_fertility_data <- function(fertility_dataset, country) {
+  colnames(fertility_dataset) <- c("index", "variant", "location",
+                                   "notes", "country_code", "time",
+                                   fertility_dataset[1,7:13])  # set correct headers
+  fertility_dataset_clean <- fertility_dataset[-1,] %>%  # delete header row from data
+    filter(location == "Gambia") %>%  # subset data from desired country. This can be made more generic by looking for country code
+    select(-index, -variant, -location, -notes, -country_code)
+  # Now the dataset is the same as input_fertility_data
+  return(fertility_dataset_clean)
+}
+
+input_fertility_1950to2015_clean <- clean_fertility_data(input_fertility_1950to2015)
+input_fertility_2015to2100_clean <- clean_fertility_data(input_fertility_2015to2100)
+input_fertility <- rbind(input_fertility_1950to2015_clean,
+                         input_fertility_2015to2100_clean)
+
+## NEED TO MAKE COLUMNS NUMERIC FOR PREPARE
+
+
+# Function to clean abridged life tables
+clean_lifetables <- function(lifetable_dataset, country) {
+  colnames(lifetable_dataset) <- c("index", "variant", "location",
+                                   "notes", "country_code", "time",
+                                   "age", "age_interval", "mortality_rate",
+                                   lifetable_dataset[1,10:14],
+                                   "survival_ratio", lifetable_dataset[1,16:18])  # set correct headers
+  lifetable_dataset_clean <- lifetable_dataset[-1,] %>% # delete header row from data
+    filter(location == country) %>% # subset desired country
+    select(time, age, age_interval, mortality_rate, survival_ratio)  # remove unused data columns
+
+  return(lifetable_dataset_clean)
+}
+
+# Create clean and complete lifetables dataset
+# Males
+input_lifetables_male_1950to2015_clean <- clean_lifetables(input_lifetables_male_1950to2015, "Gambia")
+input_lifetables_male_2015to2050_clean <- clean_lifetables(input_lifetables_male_2015to2050, "Gambia")
+input_lifetables_male_2050to2100_clean <- clean_lifetables(input_lifetables_male_2050to2100, "Gambia")
+input_lifetables_male <- rbind(input_lifetables_male_1950to2015_clean,
+                               input_lifetables_male_2015to2050_clean,
+                               input_lifetables_male_2050to2100_clean)
+# Females
+input_lifetables_female_1950to2015_clean <- clean_lifetables(input_lifetables_female_1950to2015, "Gambia")
+input_lifetables_female_2015to2050_clean <- clean_lifetables(input_lifetables_female_2015to2050, "Gambia")
+input_lifetables_female_2050to2100_clean <- clean_lifetables(input_lifetables_female_2050to2100, "Gambia")
+input_lifetables_female <- rbind(input_lifetables_female_1950to2015_clean,
+                                 input_lifetables_female_2015to2050_clean,
+                                 input_lifetables_female_2050to2100_clean)
+
+###################
+
+
 # NOTE: "prepare" functions prepare the data for input into model
 # Function to prepare age-specific (columns) mortality rates by broad time period (rows)
 prepare_mort_rates <- function(mortality_dataset) {
+  mortality_dataset <- select(mortality_dataset, time, age, age_interval, mortality_rate)
   # Input dataset is a mortality rate for ages 0, 1-5, 5-10, ..., 80-85, 85-100
   # Add a row for the final age group (99) and assign same value as for final data point (85)
   lastrow <- group_by(mortality_dataset, time) %>%
@@ -427,7 +527,7 @@ prepare_demogrates_for_timevary <- function(dataset) {
   # Input datasets are age-specific mortality rates, birth rate and migration rate for every 5-year period
   timeperiod_labels <- dataset$time
   dataset <- data.matrix(dataset)   # convert data frame to matrix for faster manipulation
-  dataset[,1] <- seq(1952-starttime, 2012-starttime, 5)   # convert time to number starting from 0 and midpoint of time period
+  dataset[,1] <- seq(1952-1950, 2097-1950, 5)   # convert time to number starting from 0 and midpoint of time period
   lastrow <- dataset[nrow(dataset),]
   lastrow[1] <- times[length(times)]  # repeat the last time point for the final timestep in model
   dataset <- rbind(dataset, lastrow)
@@ -436,13 +536,12 @@ prepare_demogrates_for_timevary <- function(dataset) {
 }
 
 
-
 ### Prepare demographic data ----
 
 ## Prepare age- and sex-specific mortality rates by broad time period
 # Input: central death rate in abridged life tables
-mort_rates_female <- prepare_mort_rates(input_mortality_female)
-mort_rates_male <- prepare_mort_rates(input_mortality_male)
+mort_rates_female <- prepare_mort_rates(input_lifetables_female)
+mort_rates_male <- prepare_mort_rates(input_lifetables_male)
 
 ## Prepare age-specific fertility rates by broad time period
 # Input: age-specific fertility rates for age groups 15-50
