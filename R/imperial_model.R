@@ -1,5 +1,5 @@
 ###################################
-### Imperial HBV model 14/01/19 ###
+### Imperial HBV model 15/01/19 ###
 ###################################
 # Model described in Shevanthi's thesis with some adaptations
 # Currently only infant vaccination at 1 year of age, no birth dose or treatment
@@ -9,8 +9,9 @@
 require(tidyr)
 require(dplyr)
 require(deSolve)
-require(tictoc)
+library(tictoc)
 require(here)
+library(profvis)
 
 ### Simulation parameters ----
 ## Country
@@ -739,10 +740,13 @@ sum_pop_by_age <- function(time = out$time, output) {
     gather(key = "agegroup", value = "pop", -time) %>%       # turn into wide format
     arrange(time) %>%                                        # order by timestep
     mutate(agegroup = as.numeric(replace(agegroup,           # remove infection information
-                                         values = as.numeric(gsub("\\D", "", agegroup))))) %>%
+                                         values = ages))) %>%
     group_by(time, agegroup) %>%
     summarise(pop = sum(pop)) %>%                            # sum numbers for each age group at each timestep
     spread(key = "agegroup", value = "pop")                  # return to wide format
+
+  # Note: this code is quicker than using do.call(cbind, by(t(output), rep(0:99,9), FUN = colSums))
+  # slowest step is ordering by time
 
   return(as.data.frame(out))
 }
@@ -810,14 +814,14 @@ imperial_model <- function(timestep, pop, parameters){
 
     # Horizontal transmission: define WAIFW matrix
     # Assuming no effective contact between children and adults
-    beta <- matrix(0, nrow = n_agecat, ncol = n_agecat) # matrix of transmission rates
-    beta[index$ages_1to5, index$ages_1to5] <- b1        # transmission among children (1-5 years)
-    beta[index$ages_6to15, index$ages_6to15] <- b2      # transmission among juveniles (6-15 years)
-    beta[index$ages_16to100, index$ages_16to100] <- b3  # transmission among adults (16-100 years)
-    beta[index$ages_1to5, index$ages_6to15] <- b2       # transmission from children to juveniles
-    beta[index$ages_6to15, index$ages_1to5] <- b2       # transmission from juveniles to children
-    beta[index$ages_6to15, index$ages_16to100] <- b3    # transmission from juveniles to adults
-    beta[index$ages_16to100, index$ages_6to15] <- b3    # transmission from adults to juveniles
+    #beta <- matrix(0, nrow = n_agecat, ncol = n_agecat) # matrix of transmission rates
+    #beta[index$ages_1to5, index$ages_1to5] <- b1        # transmission among children (1-5 years)
+    #beta[index$ages_6to15, index$ages_6to15] <- b2      # transmission among juveniles (6-15 years)
+    #beta[index$ages_16to100, index$ages_16to100] <- b3  # transmission among adults (16-100 years)
+    #beta[index$ages_1to5, index$ages_6to15] <- b2       # transmission from children to juveniles
+    #beta[index$ages_6to15, index$ages_1to5] <- b2       # transmission from juveniles to children
+    #beta[index$ages_6to15, index$ages_16to100] <- b3    # transmission from juveniles to adults
+    #beta[index$ages_16to100, index$ages_6to15] <- b3    # transmission from adults to juveniles
 
     # Infant vaccination: set date for introduction
     # Vaccination coverage is 0 until the specified starttime and only if vaccine switch is on
@@ -849,16 +853,28 @@ imperial_model <- function(timestep, pop, parameters){
 
     # Age-specific force of infection (same for men and women)
 
-    foi <- (beta %*%
-              (apply(pop[index$ages_all,HBeAg_neg,1:2],1,sum) +
-               apply(alpha * pop[index$ages_all,HBeAg_pos,1:2],1,sum)))/
-               sum(pop[index$ages_all,index$infcat_all,1:2])
+ #   foi <- (beta %*%
+#              (apply(pop[index$ages_all,HBeAg_neg,1:2],1,sum) +
+#               apply(alpha * pop[index$ages_all,HBeAg_pos,1:2],1,sum)))/
+#               sum(pop[index$ages_all,index$infcat_all,1:2])
 
     # Multiply WAIFW matrix by proportion in infectious compartments (IT, IR, IC, ENCHB, CC, DCC, HCC)
     # (= proportion of total population size (1 number) at each time step)
     # HBeAg-positive individuals (IT, IR) are more infectious than HBeAg-negatives (multiply by alpha)
     # Returns a vector with force of infection for every age - 4 different values:
     # 0 in 0-year olds, different values for 1-5, 6-15 and 16-100 year olds
+
+    # Imperial model FOI
+
+    foi <- rep(0,100)
+    foi[index$ages_1to5] <- b1 * sum(apply(pop[index$ages_1to5,HBeAg_neg,1:2],1,sum))/sum(pop[index$ages_1to5,index$infcat_all,1:2]) +
+                            min(1,b1 * alpha) * sum(apply(pop[index$ages_1to5,HBeAg_pos,1:2],1,sum))/sum(pop[index$ages_1to5,index$infcat_all,1:2])
+
+    foi[2:16] <- foi[2:16] + b2 * sum(apply(pop[2:16,HBeAg_neg,1:2],1,sum))/sum(pop[2:16,index$infcat_all,1:2]) +
+                            (b2 * alpha) * sum(apply(pop[2:16,HBeAg_pos,1:2],1,sum))/sum(pop[2:16,index$infcat_all,1:2])
+
+    foi[6:100] <- foi[6:100] + b3 * sum(apply(pop[6:100,HBeAg_neg,1:2],1,sum))/sum(pop[6:100,index$infcat_all,1:2]) +
+                              (b3 * alpha) * sum(apply(pop[6:100,HBeAg_pos,1:2],1,sum))/sum(pop[6:100,index$infcat_all,1:2])
 
     # Partial differential equations (solving for each sex separately)
 
@@ -881,8 +897,8 @@ imperial_model <- function(timestep, pop, parameters){
         dpop[index$ages_all,S,i] <- -(diff(c(0,pop[-length(index$ages_all),S,i],0))/da) -
           p_chronic * infections[index$ages_all,i] -
           (1-p_chronic) * infections[index$ages_all,i] -
-          (vacc_cov * vacc_eff * pop[index$ages_all,S,i]) -
           deaths[index$ages_all,S,i] + migrants[index$ages_all,S,i]
+        #  - (vacc_cov * vacc_eff * pop[index$ages_all,S,i])
 
         # Immune tolerant
         dpop[index$ages_all,IT,i] <- -(diff(c(0,pop[-length(index$ages_all),IT,i],0))/da) +
@@ -944,14 +960,18 @@ imperial_model <- function(timestep, pop, parameters){
         # Immunes
         dpop[index$ages_all,R,i] <- -(diff(c(0,pop[-length(index$ages_all),R,i],0))/da) +
           (1-p_chronic) * infections[index$ages_all,i] +
-          sag_loss * pop[index$ages_all,IC,i] +
-          vacc_cov * vacc_eff * pop[index$ages_all,S,i] -
+          sag_loss * pop[index$ages_all,IC,i] -
           deaths[index$ages_all,R,i] + migrants[index$ages_all,R,i]
+        #+ vacc_cov * vacc_eff * pop[index$ages_all,S,i]
 
         # Babies are born susceptible or infected (age group 1)
         dpop[1,S,i] <- dpop[1,S,i] + sex_ratio[i] * uninfected_births
         dpop[1,IT,i] <- dpop[1,IT,i] + sex_ratio[i] * infected_births
         #dpop[1,R,i] <- dpop[1,R,i] + sex_ratio[i] * (1-p_chronic[1]) * infected_births
+
+        # Vaccination: applied at 1 year of age
+        dpop[2,S,i] <- dpop[2,S,i] - (vacc_cov * vacc_eff * pop[2,S,i])
+        dpop[2,R,i] <- dpop[2,R,i] + (vacc_cov * vacc_eff * pop[2,S,i])
 
       }
 
@@ -1112,9 +1132,9 @@ N0 <- sum(init_pop[1:(n_infectioncat * n_agecat * 2)])
 
 parameter_list <- list(
   # TRANSMISSION PARAMETERS
-  b1 = 0.17,          # beta-child Shevanthi 0.0627
-  b2 = 0.04,          # beta-young Shevanthi 0.001
-  b3 = 0.001,          # beta-all Shevanthi 0.001
+  b1 = 0.04,
+  b2 = 0.001,
+  b3 = 0.001,
   alpha = 15,         # Shevanthi value, relative infectiousness of eAg-positives
   mtct_prob_e = 0.9,  # Shevanthi value, probability of perinatal transmission from HBeAg-positive mother
   mtct_prob_s = 0.05, # Shevanthi model value, probability of perinatal transmission from HBeAg-negative infected mother
@@ -1124,8 +1144,8 @@ parameter_list <- list(
   pr_ir_ic = 0.05 * eag_loss,
   pr_ir_enchb = 0.005,
   pr_ic_enchb = 0.01,
-  #sag_loss = 0.01,  # Shevanthi value, inactive carrier to recovered transition
-  sag_loss = sagloss_rates_0to80,
+  sag_loss = 0.01,  # Shevanthi value, inactive carrier to recovered transition
+  #sag_loss = sagloss_rates_0to80,
   ccrate = 0.04,  # Progression to CC (from ENCHB)
   dccrate = 0.04,  # Progression to DCC (from CC)
   # PROGRESSION RATES TO HEPATOCELLULAR CARCINOMA
@@ -1140,7 +1160,8 @@ parameter_list <- list(
   mu_dcc = 0.314,
   mu_hcc = 0.5,
   # INFANT VACCINATION PARAMETERS
-  vacc_cov = c(0, 0.92, rep(0,n_agecat-2)),  # vaccine is only applied in 1-year olds, need to get time-varying data
+#  vacc_cov = c(0, 0.92, rep(0,n_agecat-2)),  # vaccine is only applied in 1-year olds, need to get time-varying data
+  vacc_cov = 0.92,
   vacc_eff = 0.95,                           # vaccine efficacy
   vacc_introtime = 1991,                     # year of vaccine introduction
   # INTERVENTION ON/OFF SWITCH (1/0)
@@ -1155,10 +1176,9 @@ parameter_names <- names(parameter_list)
 # Switch off by setting to 0 in function call
 tic()
 output <- run_model(default_parameter_list = parameter_list,
-                 parms_to_change = list(apply_vacc = 0, b1 = 0.27, b2 = 0.001, b3 = 0.001))
+                 parms_to_change = list(apply_vacc = 0))
 toc()
 
-# b1 = 0.27, b2 = 0.001, b3 = 0.0001
 
 #out <- return_compartment_output(b1 = b1, b2 = b2, b3 = b3,
 #                 alpha = alpha, gamma_acute = gamma_acute, p_chronic = p_chronic,
@@ -1262,7 +1282,7 @@ names(model_horizontal_infections_male)[-1] <- sprintf("incidence%d",ages)
 # Age-specific and total (last column) population per time step
 model_pop_female <- sum_pop_by_age(output = out_popf)
 model_pop_male <- sum_pop_by_age(output = out_popm)
-model_pop <- sum_pop_by_age(output = out_pop)
+model_pop <- cbind(time = model_pop_female$time, model_pop_female[,-1] + model_pop_male[,-1])
 
 # Total female, male and both population per time step
 model_pop_total <- data.frame(time = out$time,
@@ -1314,6 +1334,7 @@ model_deaths_total_group5 <- model_deaths_total %>%
 all.equal(model_sus[,-1] + model_carriers[,-1] + model_immune[,-1], model_pop[,-1], check.names = FALSE)
 all.equal(model_infectioncat_total$sus + model_infectioncat_total$carriers + model_infectioncat_total$immune,
           model_pop_total$pop_total, check.names = FALSE)
+
 
 
 ### Plots ----
@@ -1376,7 +1397,7 @@ points(x = seq(2,102,5),
 ## INFECTION DYNAMICS
 
 # Total number in each infection compartment per timestep
-plot(out$time,model_infectioncat_total$carriers,type = "l", ylim = c(0,2000000))
+plot(out$time,model_infectioncat_total$carriers,type = "l", ylim = c(0,4000000))
 lines(out$time,model_infectioncat_total$sus,col= "red")
 lines(out$time,model_infectioncat_total$immune,col= "blue")
 
@@ -1390,6 +1411,9 @@ plot(out$time,model_infectioncat_total$carriers/model_pop_total$pop_total, ylim 
 lines(out$time,apply(model_carriers_female[,-1],1,sum)/model_pop_total$pop_female, col = "pink")
 lines(out$time,apply(model_carriers_male[,-1],1,sum)/model_pop_total$pop_male, col = "blue")
 
+model_infectioncat_total$carriers[which(model_infectioncat_total$time == 1990)]/
+  model_pop_total$pop_total[which(model_pop_total$time == 1990)]
+
 model_infectioncat_total$carriers[which(model_infectioncat_total$time == 2015)]/
   model_pop_total$pop_total[which(model_pop_total$time == 2015)]
 
@@ -1397,11 +1421,16 @@ model_infectioncat_total$carriers[which(model_infectioncat_total$time == 2015)]/
 plot(x = model_carriers[,1], y = as.numeric(unlist(model_carriers[,2]/model_pop[,2]))) # age 0
 plot(x = model_carriers[,1], y = as.numeric(unlist(model_carriers[,3]/model_pop[,3]))) # age 1
 plot(x = model_carriers[,1], y = as.numeric(unlist(model_carriers[,4]/model_pop[,4]))) # age 2
+plot(x = model_carriers[,1], y = as.numeric(unlist(model_carriers[,22]/model_pop[,22]))) # age 20
 
 # Carrier prevalence by age in 1980
 plot(ages, model_carriers[which(model_carriers$time == 1980),-1]/
        model_pop[which(model_pop$time == 1980),-1], type = "l", ylim = c(0,0.3))
 points(gambia_prevdata$age, gambia_prevdata$edmunds_prev, col = "red")
+
+# Carrier prevalence by age in 2015
+plot(ages, model_carriers[which(model_carriers$time == 2015),-1]/
+       model_pop[which(model_pop$time == 2015),-1], type = "l", ylim = c(0,0.3))
 
 # Proportion ever infected in 1980
 plot(ages, model_ever_inf[which(model_ever_inf$time == 1980),-1]/
@@ -1427,8 +1456,6 @@ plot(x = out$time, apply(out_hccf,1,sum)/apply(out[,-1],1,sum), ylim = c(0,0.05)
 plot(x = out$time, apply(out_hccm,1,sum)/apply(out[,-1],1,sum), ylim = c(0,0.05))
 plot(x = out$time, apply(out_rf,1,sum)/apply(out[,-1],1,sum), ylim = c(0,0.5))
 plot(x = out$time, apply(out_rm,1,sum)/apply(out[,-1],1,sum), ylim = c(0,0.5))
-
-plot(x = out$time, (out_rm[,50] +out_rf[,50])/out[,51])
 
 ### Run model checks
 # devtools::test()
