@@ -1,5 +1,5 @@
 ###################################
-### Imperial HBV model 15/01/19 ###
+### Imperial HBV model 21/01/19 ###
 ###################################
 # Model described in Shevanthi's thesis with some adaptations
 # Currently only infant vaccination at 1 year of age, no birth dose or treatment
@@ -68,6 +68,11 @@ shimakawa_sagloss <- data.frame(age = c("0-9", "10-19", "20-29", "30-39", "40-49
                                         "50-70"),
                                 sagloss_rate = c(0.001, 0.0046, 0.0101,
                                                 0.0105, 0.0232, 0.0239))
+
+## Calculate age-specific HBeAg-loss function (Shevanthi)
+#eag_loss <- 19.8873 * exp(-0.977 * ages) # 19.8873 is the factor in Shevanthi's model
+eag_loss <- 15 * exp(-0.977 * ages)
+
 # Assume everyone in the 10/20 year age groups has the same rate and 70-80 year
 # olds have the same rate as 50-70 year olds
 sagloss_rates_0to80 <- c(rep(shimakawa_sagloss$sagloss_rate,each = 10),
@@ -85,9 +90,6 @@ edmunds_everinf_by_age <- as.data.frame(approx(x = gambia_prevdata$age, y = gamb
 edmunds_everinf_by_age$y <- round(edmunds_everinf_by_age$y, 2)
 edmunds_everinf_by_age$y[1] <- 0.10
 edmunds_everinf_by_age$y[77:80] <- edmunds_everinf_by_age$y[76]
-
-## Calculate age-specific HBeAg-loss function (Shevanthi)
-eag_loss <- 19.8873 * exp(-0.977 * ages)
 
 ## Calculate age-specific cancer rate progression function (Shevanthi)
 cancer_prog_female <- 1e-07 * ((ages * 100* 0.2) + 2 * exp(0.0953 * ages))
@@ -799,7 +801,8 @@ imperial_model <- function(timestep, pop, parameters){
                                migration_rates_male[timestep*10+1,-1]),
                              ncol = 2)    # 2 columns for sex-specific rates
 
-    # Notation: label infection compartments
+    # Notation:
+    # Indices for infection compartments
     S <- 1                           # Susceptible
     IT <- 2                           # Chronic infection: immune tolerant
     IR <- 3                           # Chronic infection: immune reactive
@@ -809,19 +812,9 @@ imperial_model <- function(timestep, pop, parameters){
     DCC <- 7                          # Chronic disease: decompensated cirrhosis
     HCC <- 8                          # Chronic disease: hepatocellular carcinoma
     R <- 9                           # Immune
+    # Grouping of infected compartments
     HBeAg_neg <- IC:HCC               # HBeAg-negative infected compartments
     HBeAg_pos <- c(IT,IR)             # HBeAg-positive infected compartments
-
-    # Horizontal transmission: define WAIFW matrix
-    # Assuming no effective contact between children and adults
-    #beta <- matrix(0, nrow = n_agecat, ncol = n_agecat) # matrix of transmission rates
-    #beta[index$ages_1to5, index$ages_1to5] <- b1        # transmission among children (1-5 years)
-    #beta[index$ages_6to15, index$ages_6to15] <- b2      # transmission among juveniles (6-15 years)
-    #beta[index$ages_16to100, index$ages_16to100] <- b3  # transmission among adults (16-100 years)
-    #beta[index$ages_1to5, index$ages_6to15] <- b2       # transmission from children to juveniles
-    #beta[index$ages_6to15, index$ages_1to5] <- b2       # transmission from juveniles to children
-    #beta[index$ages_6to15, index$ages_16to100] <- b3    # transmission from juveniles to adults
-    #beta[index$ages_16to100, index$ages_6to15] <- b3    # transmission from adults to juveniles
 
     # Infant vaccination: set date for introduction
     # Vaccination coverage is 0 until the specified starttime and only if vaccine switch is on
@@ -830,7 +823,6 @@ imperial_model <- function(timestep, pop, parameters){
     } else {
       vacc_cov = 0
     }
-
 
     # Initialise arrays for storage of outputs
     dpop <- array(rep(0,2 * n_infectioncat * n_agecat),
@@ -843,40 +835,69 @@ imperial_model <- function(timestep, pop, parameters){
                          ncol = 2, nrow = n_agecat)      # female and male incident infections
 
 
-    # MODEL EQUATIONS
+    # TRANSMISSION
 
     # Mother-to-child transmission and births
+
     infected_births <- sum(p_chronic[1] * fertility_rate * (apply(mtct_prob_e * pop[index$ages_wocba,c(IT,IR),1],1,sum) + apply(mtct_prob_s * pop[index$ages_wocba,IC:HCC,1],1,sum)))    # infected births come from acute and chronic women of childbearing age
     uninfected_births <- sum(fertility_rate * pop[index$ages_wocba,index$infcat_all,1]) - infected_births  # uninfected births = all births - infected babies
     births <- infected_births + uninfected_births
     # applying the same age-specific fertility rate to every infection compartment
 
-    # Age-specific force of infection (same for men and women)
-
- #   foi <- (beta %*%
-#              (apply(pop[index$ages_all,HBeAg_neg,1:2],1,sum) +
-#               apply(alpha * pop[index$ages_all,HBeAg_pos,1:2],1,sum)))/
-#               sum(pop[index$ages_all,index$infcat_all,1:2])
-
-    # Multiply WAIFW matrix by proportion in infectious compartments (IT, IR, IC, ENCHB, CC, DCC, HCC)
-    # (= proportion of total population size (1 number) at each time step)
-    # HBeAg-positive individuals (IT, IR) are more infectious than HBeAg-negatives (multiply by alpha)
-    # Returns a vector with force of infection for every age - 4 different values:
-    # 0 in 0-year olds, different values for 1-5, 6-15 and 16-100 year olds
+    # Horizontal transmission: Age-specific force of infection (same for men and women)
 
     # Imperial model FOI
 
-    foi <- rep(0,100)
-    foi[index$ages_1to5] <- b1 * sum(apply(pop[index$ages_1to5,HBeAg_neg,1:2],1,sum))/sum(pop[index$ages_1to5,index$infcat_all,1:2]) +
-                            min(1,b1 * alpha) * sum(apply(pop[index$ages_1to5,HBeAg_pos,1:2],1,sum))/sum(pop[index$ages_1to5,index$infcat_all,1:2])
+    #  foi <- rep(0,100)
+    #  foi[index$ages_1to5] <- b1 * sum(apply(pop[index$ages_1to5,HBeAg_neg,1:2],1,sum))/sum(pop[index$ages_1to5,index$infcat_all,1:2]) +
+    #                          min(1,b1 * alpha) * sum(apply(pop[index$ages_1to5,HBeAg_pos,1:2],1,sum))/sum(pop[index$ages_1to5,index$infcat_all,1:2])
 
-    foi[2:16] <- foi[2:16] + b2 * sum(apply(pop[2:16,HBeAg_neg,1:2],1,sum))/sum(pop[2:16,index$infcat_all,1:2]) +
-                            (b2 * alpha) * sum(apply(pop[2:16,HBeAg_pos,1:2],1,sum))/sum(pop[2:16,index$infcat_all,1:2])
+    # foi[2:16] <- foi[2:16] + b2 * sum(apply(pop[2:16,HBeAg_neg,1:2],1,sum))/sum(pop[2:16,index$infcat_all,1:2]) +
+    #                          (b2 * alpha) * sum(apply(pop[2:16,HBeAg_pos,1:2],1,sum))/sum(pop[2:16,index$infcat_all,1:2])
 
-    foi[6:100] <- foi[6:100] + b3 * sum(apply(pop[6:100,HBeAg_neg,1:2],1,sum))/sum(pop[6:100,index$infcat_all,1:2]) +
-                              (b3 * alpha) * sum(apply(pop[6:100,HBeAg_pos,1:2],1,sum))/sum(pop[6:100,index$infcat_all,1:2])
+    #  foi[7:100] <- foi[7:100] + b3 * sum(apply(pop[7:100,HBeAg_neg,1:2],1,sum))/sum(pop[7:100,index$infcat_all,1:2]) +
+    #                            (b3 * alpha) * sum(apply(pop[7:100,HBeAg_pos,1:2],1,sum))/sum(pop[7:100,index$infcat_all,1:2])
 
-    # Partial differential equations (solving for each sex separately)
+    # Alternative force of infection definition with WAIFW matrix
+
+    # Define WAIFW matrix
+    # Age-dependent mixing between 4 age groups: 0 year olds, 1-5 years, 6-15 years, 16-100 years
+    # Assuming no effective contact between children (1-5 years) and adults (>15 years)
+    # Assuming no horizontal transmission from and to infants (0 years old)
+    beta <- matrix(0, nrow = 4, ncol = 4)  # matrix of transmission parameters
+    beta[2,2] <- b1                        # transmission among children 1-5 years
+    beta[3,3] <- b2                        # transmission among juveniles 6-15 years
+    beta[4,4] <- b3                        # transmission among adults 16-100 years
+    beta[2,3] <- b2                        # transmission from juveniles to children
+    beta[3,2] <- b2                        # = transmission from children to juveniles
+    beta[3,4] <- b3                        # transmission from adults to juveniles
+    beta[4,3] <- b3                        # = transmission from juveniles to adults
+
+    # Define a vector of the age-specific prevalence of infectious individuals:
+    # Infectious compartments are IT, IR, IC, ENCHB, CC, DCC, HCC
+    # HBeAg-positive individuals (IT, IR) are more infectious than HBeAg-negatives (multiply by alpha)
+    # Sum prevalence in HBeAg-negatives and HBeAg-positives multiplied by alpha
+    # Returns 1 number per transmission age group (4 total)
+    infectious_vector <- c(sum(pop[1,4:8,1:2])/sum(pop[1,index$infcat_all,1:2]) +
+                             (alpha * sum(pop[1,2:3,1:2])/sum(pop[1,index$infcat_all,1:2])), # 0 year olds
+                           sum(pop[index$ages_1to5,4:8,1:2])/sum(pop[index$ages_1to5,index$infcat_all,1:2]) +
+                             (alpha * sum(pop[index$ages_1to5,2:3,1:2])/sum(pop[index$ages_1to5,index$infcat_all,1:2])), # 1-5 year olds
+                           sum(pop[index$ages_6to15,4:8,1:2])/sum(pop[index$ages_6to15,index$infcat_all,1:2]) +
+                             (alpha * sum(pop[index$ages_6to15,2:3,1:2])/sum(pop[index$ages_6to15,index$infcat_all,1:2])), # 6-15 year olds
+                           sum(pop[index$ages_16to100,4:8,1:2])/sum(pop[index$ages_16to100,index$infcat_all,1:2]) +
+                             (alpha * sum(pop[index$ages_16to100,2:3,1:2])/sum(pop[index$ages_16to100,index$infcat_all,1:2]))) # 16-100 year olds
+
+    # Multiply WAIFW matrix by the age-specific proportion of infectious individuals
+    # Returns a vector with force of infection for every age - 4 different values:
+    # 0 in 0-year olds, different values for 1-5, 6-15 and 16-100 year olds
+    foi_unique <- beta %*% infectious_vector
+    # Repeat these values for every 1 year age group
+    foi <- c(foi_unique[1],
+            rep(foi_unique[2], times = length(index$ages_1to5)),
+            rep(foi_unique[3], times = length(index$ages_6to15)),
+            rep(foi_unique[4], times = length(index$ages_16to100)))
+
+    # PARTIAL DIFFERENTIAL EQUATIONS (solving for each sex separately)
 
       for (i in 1:2) {        # i = sex [1 = female, 2 = male]
 
@@ -1167,6 +1188,7 @@ parameter_list <- list(
   # INTERVENTION ON/OFF SWITCH (1/0)
   apply_vacc = 1)
 
+
 # Store names of all parameters
 parameter_names <- names(parameter_list)
 
@@ -1176,9 +1198,8 @@ parameter_names <- names(parameter_list)
 # Switch off by setting to 0 in function call
 tic()
 output <- run_model(default_parameter_list = parameter_list,
-                 parms_to_change = list(apply_vacc = 0))
+                 parms_to_change = list(apply_vacc = 1, b1 = 0.037, b2 = 0.0001, b3 = 0.0001))
 toc()
-
 
 #out <- return_compartment_output(b1 = b1, b2 = b2, b3 = b3,
 #                 alpha = alpha, gamma_acute = gamma_acute, p_chronic = p_chronic,
@@ -1411,8 +1432,8 @@ plot(out$time,model_infectioncat_total$carriers/model_pop_total$pop_total, ylim 
 lines(out$time,apply(model_carriers_female[,-1],1,sum)/model_pop_total$pop_female, col = "pink")
 lines(out$time,apply(model_carriers_male[,-1],1,sum)/model_pop_total$pop_male, col = "blue")
 
-model_infectioncat_total$carriers[which(model_infectioncat_total$time == 1990)]/
-  model_pop_total$pop_total[which(model_pop_total$time == 1990)]
+model_infectioncat_total$carriers[which(model_infectioncat_total$time == 1980)]/
+  model_pop_total$pop_total[which(model_pop_total$time == 1980)]
 
 model_infectioncat_total$carriers[which(model_infectioncat_total$time == 2015)]/
   model_pop_total$pop_total[which(model_pop_total$time == 2015)]
