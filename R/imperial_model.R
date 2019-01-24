@@ -1,5 +1,5 @@
 ###################################
-### Imperial HBV model 21/01/19 ###
+### Imperial HBV model 24/01/19 ###
 ###################################
 # Model described in Shevanthi's thesis with some adaptations
 # Currently only infant vaccination at 1 year of age, no birth dose or treatment
@@ -21,18 +21,18 @@ countryname <- "gambia"
 dt <- 0.1                             # timesteps
 starttime <- 1850
 runtime <- 250-dt                     # number of years to run the model for
-times <- seq(0, runtime, dt)          # vector of all timesteps
+times <- round((0:(runtime/dt))*dt,2)
 times_labels <- times+starttime
 
 ## Age groups
-da <- 0.5                               # time spent in each age group
-ages <- seq(0,100-da,da)              # vector of all age groups
+da <- 1                              # time spent in each age group
+ages <- round((0:((100-da)/da))*da,2)  # vector of all age groups
 n_agecat <- length(ages)              # number of age groups
 
-ages_wocba <- seq(15,50-da,da)        # age groups 15-49 years (women of childbearing age)
+ages_wocba <- round(((15/da):((50-da)/da))*da,2)        # age groups 15-49 years (women of childbearing age)
 
 ## Infection compartments
-n_infectioncat <- 9                   # Number of infection compartments
+n_infectioncat <- 9                      # Number of infection compartments
 
 ## Definition of indices
 index <- list("infcat_all" = 1:n_infectioncat,            # index for all infection status compartments
@@ -43,8 +43,6 @@ index <- list("infcat_all" = 1:n_infectioncat,            # index for all infect
               "ages_6to15" = which(ages == 6):which(ages == 16-da),     # index for age groups 6-15 years
               "ages_16to100" = which(ages == 16):n_agecat)          # index for age groups 16-100 years
 
-# Indices for age-dependent mixing group
-ages_0to1 <-1:(1/da)
 
 ### Infection data preparation ----
 gambia_prevdata <- read.csv(here("testdata", "edmunds_gambia_prev.csv"), stringsAsFactors = FALSE)
@@ -80,8 +78,8 @@ sagloss_rates <- c(rep(shimakawa_sagloss$sagloss_rate,each = 10/da),
                        40/da))
 
 ## Calculate age-specific HBeAg-loss function (Shevanthi)
-#eag_loss <- 19.8873 * exp(-0.977 * ages) # 19.8873 is the factor in Shevanthi's model
-eag_loss <- 15 * exp(-0.977 * ages)
+eag_loss <- 19.8873 * exp(-0.977 * ages) # 19.8873 is the factor in Shevanthi's model
+#eag_loss <- 15 * exp(-0.977 * ages)
 
 ## Calculate age-specific cancer rate progression function (Shevanthi)
 cancer_prog_female <- 1e-07 * ((ages * 100* 0.2) + 2 * exp(0.0953 * ages))
@@ -493,14 +491,6 @@ prepare_migration_rates <- function(survival_dataset, pop_dataset, survival_data
   migrants$migration_rate[migrants$age == 0] <- migrants_under5$migration_rate_under5
 
   # Prepare age-specific rates for model
-  # Add a row for the final age group (99) and assign same value as for final data point (80)
-#  lastrow <- group_by(migrants, time) %>%
-#    filter(age == max(age)) %>%
-#    mutate(age = replace(age, values = max(ages)))
-
-#  migration_rates <- bind_rows(migrants, lastrow) %>%
-#    arrange(time, age)
-
   migration_rates <- migrants
 
   # Constant interpolation for missing ages
@@ -774,12 +764,19 @@ imperial_model <- function(timestep, pop, parameters){
     pop <- array(unlist(pop[1:(2 * n_infectioncat * n_agecat)]),dim=c(n_agecat,n_infectioncat,2))
 
     # Demography: define time-varying parameters (calls the row corresponding to current timestep)
-    mortality_rate <- matrix(c(mort_rates_female[timestep*10+1,-1],
-                               mort_rates_male[timestep*10+1,-1]),
+  #  mortality_rate <- matrix(c(mort_rates_female[timestep*10+1,-1],
+  #                             mort_rates_male[timestep*10+1,-1]),
+  #                           ncol = 2)    # 2 columns for sex-specific rates
+    mortality_rate <- matrix(c(mort_rates_female[which(times == timestep),-1],
+                               mort_rates_male[which(times == timestep),-1]),
                              ncol = 2)    # 2 columns for sex-specific rates
-    fertility_rate <- fert_rates[timestep*10+1,-1]
-    migration_rate <- matrix(c(migration_rates_female[timestep*10+1,-1],
-                               migration_rates_male[timestep*10+1,-1]),
+   # fertility_rate <- fert_rates[timestep*10+1,-1]
+   # migration_rate <- matrix(c(migration_rates_female[timestep*10+1,-1],
+   #                            migration_rates_male[timestep*10+1,-1]),
+   #                          ncol = 2)    # 2 columns for sex-specific rates
+    fertility_rate <- fert_rates[which(times == timestep),-1]
+    migration_rate <- matrix(c(migration_rates_female[which(times == timestep),-1],
+                               migration_rates_male[which(times == timestep),-1]),
                              ncol = 2)    # 2 columns for sex-specific rates
 
     # Notation:
@@ -825,6 +822,7 @@ imperial_model <- function(timestep, pop, parameters){
     uninfected_births <- sum(fertility_rate * pop[index$ages_wocba,index$infcat_all,1]) -
       infected_births  # uninfected births = all births - infected babies
     births <- infected_births + uninfected_births
+    #births <- sum(fertility_rate * pop[index$ages_wocba,index$infcat_all,1])
     # applying the same age-specific fertility rate to every infection compartment
 
     # Horizontal transmission: Age-specific force of infection (same for men and women)
@@ -887,7 +885,7 @@ imperial_model <- function(timestep, pop, parameters){
         # Demography: Incident deaths and migrants
         deaths[index$ages_all,index$infcat_all,i] <- mortality_rate[index$ages_all,i] *
           pop[index$ages_all,index$infcat_all,i]
-        migrants[index$ages_all,index$infcat_all,i] <-  migration_rate[index$ages_all,i] * pop[index$ages_all,index$infcat_all,i]
+        migrants[index$ages_all,index$infcat_all,i] <- migration_rate[index$ages_all,i] * pop[index$ages_all,index$infcat_all,i]
         # Applying same age-specific mortality rate to every infection compartment
         # Returns an array with indicent deaths and net migrants for every age (rows), infection state (columns) and sex (arrays)
 
@@ -898,21 +896,21 @@ imperial_model <- function(timestep, pop, parameters){
         # Transitions between compartments:
 
         # Susceptibles
-        dpop[index$ages_all,S,i] <- -(diff(c(0,pop[-length(index$ages_all),S,i],0))/da) -
+        dpop[index$ages_all,S,i] <- -(diff(c(0,pop[-length(index$ages_all),S,i],0))) -
           p_chronic * infections[index$ages_all,i] -
           (1-p_chronic) * infections[index$ages_all,i] -
           deaths[index$ages_all,S,i] + migrants[index$ages_all,S,i]
-        #  - (vacc_cov * vacc_eff * pop[index$ages_all,S,i])
+          #- (vacc_cov * vacc_eff * pop[index$ages_all,S,i])
 
         # Immune tolerant
-        dpop[index$ages_all,IT,i] <- -(diff(c(0,pop[-length(index$ages_all),IT,i],0))/da) +
+        dpop[index$ages_all,IT,i] <- -(diff(c(0,pop[-length(index$ages_all),IT,i],0))) +
           p_chronic * infections[index$ages_all,i] -
           pr_it_ir * pop[index$ages_all,IT,i] -
           hccr_it[index$ages_all,i] * pop[index$ages_all,IT,i] -
           deaths[index$ages_all,IT,i] + migrants[index$ages_all,IT,i]
 
         # Immune reactive
-        dpop[index$ages_all,IR,i] <- -(diff(c(0,pop[-length(index$ages_all),IR,i],0))/da) +
+        dpop[index$ages_all,IR,i] <- -(diff(c(0,pop[-length(index$ages_all),IR,i],0))) +
           pr_it_ir * pop[index$ages_all,IT,i] -
           pr_ir_ic * pop[index$ages_all,IR,i] -
           pr_ir_enchb * pop[index$ages_all,IR,i] -
@@ -920,7 +918,7 @@ imperial_model <- function(timestep, pop, parameters){
           deaths[index$ages_all,IR,i] + migrants[index$ages_all,IR,i]
 
         # Inactive carrier
-        dpop[index$ages_all,IC,i] <- -(diff(c(0,pop[-length(index$ages_all),IC,i],0))/da) +
+        dpop[index$ages_all,IC,i] <- -(diff(c(0,pop[-length(index$ages_all),IC,i],0))) +
           pr_ir_ic * pop[index$ages_all,IR,i] -
           pr_ic_enchb * pop[index$ages_all,IC,i] -
           sag_loss * pop[index$ages_all,IC,i] -
@@ -928,7 +926,7 @@ imperial_model <- function(timestep, pop, parameters){
           deaths[index$ages_all,IC,i] + migrants[index$ages_all,IC,i]
 
         # HBeAg-negative CHB
-        dpop[index$ages_all,ENCHB,i] <- -(diff(c(0,pop[-length(index$ages_all),ENCHB,i],0))/da) +
+        dpop[index$ages_all,ENCHB,i] <- -(diff(c(0,pop[-length(index$ages_all),ENCHB,i],0))) +
           pr_ir_enchb * pop[index$ages_all,IR,i] +
           pr_ic_enchb * pop[index$ages_all,IC,i] -
           ccrate * pop[index$ages_all,ENCHB,i] -
@@ -936,7 +934,7 @@ imperial_model <- function(timestep, pop, parameters){
           deaths[index$ages_all,ENCHB,i] + migrants[index$ages_all,ENCHB,i]
 
         # Compensated cirrhosis
-        dpop[index$ages_all,CC,i] <- -(diff(c(0,pop[-length(index$ages_all),CC,i],0))/da) +
+        dpop[index$ages_all,CC,i] <- -(diff(c(0,pop[-length(index$ages_all),CC,i],0))) +
           ccrate * pop[index$ages_all,ENCHB,i] -
           dccrate * pop[index$ages_all,CC,i] -
           hccr_cc[index$ages_all,i] * pop[index$ages_all,CC,i] -
@@ -944,14 +942,14 @@ imperial_model <- function(timestep, pop, parameters){
           deaths[index$ages_all,CC,i] + migrants[index$ages_all,CC,i]
 
         # Decompensated cirrhosis
-        dpop[index$ages_all,DCC,i] <- -(diff(c(0,pop[-length(index$ages_all),DCC,i],0))/da) +
+        dpop[index$ages_all,DCC,i] <- -(diff(c(0,pop[-length(index$ages_all),DCC,i],0))) +
           dccrate * pop[index$ages_all,CC,i] -
           hccr_dcc * pop[index$ages_all,DCC,i] -
           mu_dcc * pop[index$ages_all,DCC,i] -
           deaths[index$ages_all,DCC,i] + migrants[index$ages_all,DCC,i]
 
         # HCC
-        dpop[index$ages_all,HCC,i] <- -(diff(c(0,pop[-length(index$ages_all),HCC,i],0))/da) +
+        dpop[index$ages_all,HCC,i] <- -(diff(c(0,pop[-length(index$ages_all),HCC,i],0))) +
           hccr_it[index$ages_all,i] * pop[index$ages_all,IT,i] +
           hccr_ir[index$ages_all,i] * pop[index$ages_all,IR,i] +
           hccr_ic[index$ages_all,i] * pop[index$ages_all,IC,i] +
@@ -962,13 +960,14 @@ imperial_model <- function(timestep, pop, parameters){
           deaths[index$ages_all,HCC,i] + migrants[index$ages_all,HCC,i]
 
         # Immunes
-        dpop[index$ages_all,R,i] <- -(diff(c(0,pop[-length(index$ages_all),R,i],0))/da) +
+        dpop[index$ages_all,R,i] <- -(diff(c(0,pop[-length(index$ages_all),R,i],0))) +
           (1-p_chronic) * infections[index$ages_all,i] +
           sag_loss * pop[index$ages_all,IC,i] -
           deaths[index$ages_all,R,i] + migrants[index$ages_all,R,i]
-        #+ vacc_cov * vacc_eff * pop[index$ages_all,S,i]
+          #vacc_cov * vacc_eff * pop[index$ages_all,S,i]
 
         # Babies are born susceptible or infected (age group 1)
+        #dpop[1,S,i] <- dpop[1,S,i] + sex_ratio[i] * births
         dpop[1,S,i] <- dpop[1,S,i] + sex_ratio[i] * uninfected_births
         dpop[1,IT,i] <- dpop[1,IT,i] + sex_ratio[i] * infected_births
         #dpop[1,R,i] <- dpop[1,R,i] + sex_ratio[i] * (1-p_chronic[1]) * infected_births
@@ -1167,49 +1166,12 @@ parameter_list <- list(
   mu_dcc = 0.314,
   mu_hcc = 0.5,
   # INFANT VACCINATION PARAMETERS
-#  vacc_cov = c(0, 0.92, rep(0,n_agecat-2)),  # vaccine is only applied in 1-year olds, need to get time-varying data
+  #vacc_cov = c(0, 0.92, rep(0,n_agecat-2)),  # vaccine is only applied in 1-year olds, need to get time-varying data
   vacc_cov = 0.92,
   vacc_eff = 0.95,                           # vaccine efficacy
   vacc_introtime = 1991,                     # year of vaccine introduction
   # INTERVENTION ON/OFF SWITCH (1/0)
   apply_vacc = 1)
-
-parameter_list <- list(
-  # TRANSMISSION PARAMETERS
-  b1 = 0,
-  b2 = 0,
-  b3 = 0,
-  alpha = 0,         # Shevanthi value, relative infectiousness of eAg-positives
-  mtct_prob_e = 0,  # Shevanthi value, probability of perinatal transmission from HBeAg-positive mother
-  mtct_prob_s = 0, # Shevanthi model value, probability of perinatal transmission from HBeAg-negative infected mother
-  # NATURAL HISTORY PROGRESSION RATES
-  p_chronic = c(0.89*0, 0*exp(-0.65*ages[-1]^0.46)),     # Age-dependent probability of chronic carriage. Adapted Edmunds
-  pr_it_ir = 0.1 * eag_loss * 0,
-  pr_ir_ic = 0.05 * eag_loss * 0,
-  pr_ir_enchb = 0,
-  pr_ic_enchb = 0,
-  sag_loss = 0,  # Shevanthi value, inactive carrier to recovered transition
-  #sag_loss = sagloss_rates,
-  ccrate = 0,  # Progression to CC (from ENCHB)
-  dccrate = 0,  # Progression to DCC (from CC)
-  # PROGRESSION RATES TO HEPATOCELLULAR CARCINOMA
-  hccr_it = matrix(data = c(cancer_prog_female*0, cancer_prog_male*0), nrow = n_agecat, ncol = 2),
-  hccr_ir = matrix(data = c(2*cancer_prog_female*0, 2*cancer_prog_male*0), nrow = n_agecat, ncol = 2),
-  hccr_ic = matrix(data = c(0.5*cancer_prog_female*0, 0.5*cancer_prog_male*0), nrow = n_agecat, ncol = 2),
-  hccr_enchb = matrix(data = c(2*cancer_prog_female*0, 2*cancer_prog_male*0), nrow = n_agecat, ncol = 2),
-  hccr_cc = matrix(data = c(13*cancer_prog_female*0, 13*cancer_prog_male*0), nrow = n_agecat, ncol = 2),
-  hccr_dcc = 0,
-  # HBV-RELATED MORTALITY RATES (MORTALITY FROM LIVER DISEASE)
-  mu_cc = 0,
-  mu_dcc = 0,
-  mu_hcc = 0,
-  # INFANT VACCINATION PARAMETERS
-  #  vacc_cov = c(0, 0.92, rep(0,n_agecat-2)),  # vaccine is only applied in 1-year olds, need to get time-varying data
-  vacc_cov = 0,
-  vacc_eff = 0,                           # vaccine efficacy
-  vacc_introtime = 1991,                     # year of vaccine introduction
-  # INTERVENTION ON/OFF SWITCH (1/0)
-  apply_vacc = 0)
 
 
 # Store names of all parameters
@@ -1219,12 +1181,15 @@ parameter_names <- names(parameter_list)
 
 # Default intervention: infant vaccine (apply_vacc = 1)
 # Switch off by setting to 0 in function call
+parameter_list <- lapply(parameter_list, FUN= function(x) x*0)
+
 tic()
 output <- run_model(default_parameter_list = parameter_list,
-                 parms_to_change = list(apply_vacc = 0, b1 = 0.037, b2 = 0.0001, b3 = 0.0001))
+                 parms_to_change = list(apply_vacc = 0))
 toc()
 
 
+#b1 = 0.037, b2 = 0.0001, b3 = 0.0001
 #out <- return_compartment_output(b1 = b1, b2 = b2, b3 = b3,
 #                 alpha = alpha, gamma_acute = gamma_acute, p_chronic = p_chronic,
 #                 sag_loss = sag_loss, mu_hbv = mu_hbv,
@@ -1382,22 +1347,26 @@ all.equal(model_infectioncat_total$sus + model_infectioncat_total$carriers + mod
 
 
 
+
 ### Plots ----
 
 ## DEMOGRAPHY
+
+any(out < 0)
 
 ## Total population, births, deaths
 
 # Plot total population size over timesteps
 plot(model_pop_total$time, model_pop_total$pop_total,
-     xlab = "Year", ylab = "Population size")
+     xlab = "Year", ylab = "Population size", xlim= c(1950,2000))
 points(popsize_total$time, popsize_total$pop, col = "red")
 
 # Plot total number of births over time periods
-plot(x = as.numeric(strtrim(input_births_clean$time, width = 4)),
-     y = input_births_clean$births, col = "red",
-     xlab = "5-year time periods", ylab = "Total number of births")
-lines(model_births_group5$timegroup, model_births_group5$births)
+plot(model_births_group5$timegroup, model_births_group5$births,
+     xlab = "5-year time periods", ylab = "Total number of births",
+     type = "l", ylim = c(0,600000))
+points(x = as.numeric(strtrim(input_births_clean$time, width = 4)),
+       y = input_births_clean$births, col = "red")
 
 # Plot total number of deaths over time periods
 plot(x = as.numeric(strtrim(deaths_total$time, width = 4)),
@@ -1406,6 +1375,23 @@ plot(x = as.numeric(strtrim(deaths_total$time, width = 4)),
 lines(model_deaths_total_group5$timegroup, model_deaths_total_group5$total)
 
 ## Age structure
+
+# Plot female age structure in 1970
+plot(x = ages,
+     y = model_pop_female[which(model_pop_female$time == 1970),index$ages_all+1]/da,
+     type = "l", xlab = "Age", ylab = "Population", main = "1970 - women")
+points(x = seq(2,82,5),
+       y = input_popsize_female_clean$pop[input_popsize_female_clean$time == "1970"]/5,
+       col = "red")
+
+# Plot female age structure in 1970
+plot(x = ages,
+     y = model_pop_female[which(model_pop_female$time == 1851),index$ages_all+1]/da,
+     type = "l", xlab = "Age", ylab = "Population", main = "1970 - women")
+points(x = seq(2,82,5),
+       y = input_popsize_female_clean$pop[input_popsize_female_clean$time == "1850"]/5,
+       col = "red")
+
 
 # Plot female age structure in 1970
 plot(x = ages,
@@ -1520,4 +1506,5 @@ has.neg.col <- apply(out, 2, function(col) any(col < 0))
 
 View(has.neg.col[has.neg.col == TRUE])
 which(has.neg.col)
+
 
