@@ -1,8 +1,9 @@
 ###################################
-### Imperial HBV model 04/02/19 ###
+### Imperial HBV model 06/02/19 ###
 ###################################
 # Model described in Shevanthi's thesis with some adaptations
-# Currently only infant vaccination at 1 year of age, no birth dose or treatment
+# Currently only infant vaccination in second age group, no birth dose or treatment
+# Solving using ODE45
 
 
 ### Load packages ----
@@ -18,14 +19,14 @@ library(profvis)
 countryname <- "gambia"
 
 ## Times
-dt <- 0.1                            # timesteps
+dt <- 0.5                            # timesteps
 starttime <- 1850
 runtime <- 250-dt                     # number of years to run the model for
 times <- round((0:(runtime/dt))*dt,2)
 times_labels <- times+starttime
 
 ## Age groups
-da <- 0.1                              # time spent in each age group
+da <- 0.5                              # time spent in each age group
 ages <- round((0:((100-da)/da))*da,2)  # vector of all age groups
 n_agecat <- length(ages)              # number of age groups
 
@@ -989,6 +990,11 @@ imperial_model <- function(timestep, pop, parameters){
     # Sum age-specific number of incident deaths across infection compartments
     deaths_out <- apply(deaths,c(1,3),sum)
 
+    # Condition to set negative numbers to 0
+    #if(any(dpop < 0)) {
+    #  dpop[dpop < 0] <- 0
+    #}
+
     # Return results
     res <- c(dpop, deaths_out, infections)
     # births, infected_births
@@ -1079,6 +1085,16 @@ run_model_old <- function(b1 = b1, b2 = b2, b3 = b3, alpha = alpha,
   return(toreturn)
 }
 
+# Try to prevent negative numbers using event (not working so far)
+positive_fun <- function(timestep, pop, parameters){
+  with(as.list(pop), {
+    pop <- array(unlist(pop[1:(2 * n_infectioncat * n_agecat)]),dim=c(n_agecat,n_infectioncat,2))
+    pop[pop<1e-6] <- 0   # also tried with < 0
+    return(c(pop, rep(0,n_agecat), rep(0,n_agecat), rep(0,n_agecat), rep(0,n_agecat)))
+  })
+}
+
+
 run_model <- function(..., default_parameter_list, parms_to_change = list(...)) {
 
   ## Define parameter values for model run:
@@ -1091,6 +1107,9 @@ run_model <- function(..., default_parameter_list, parms_to_change = list(...)) 
                               parms = parameters, nspec = 22, method = "ode45",
                               events = list(func = reset_pop_1950, time = 100)))
   out$time   <-  out$time + starttime
+
+  #list(func = positive_fun, time = times)
+  #events = list(func = reset_pop_1950, time = 100)
 
   ## Store different types of outputs as a list
   pop <- data.frame(time = out$time, out[,2:(n_agecat*n_infectioncat*2+1)])
@@ -1189,18 +1208,15 @@ parameter_names <- names(parameter_list)
 
 # Default intervention: infant vaccine (apply_vacc = 1)
 # Switch off by setting to 0 in function call
+
+# Set all infection parms to zero:
 #parameter_list <- lapply(parameter_list, FUN= function(x) x*0)
+
 tic()
 output <- run_model(default_parameter_list = parameter_list,
-                 parms_to_change = list(apply_vacc = 0, b1 = 0.037, b2 = 0.001, b3 = 0.0001))
+                 parms_to_change = list(apply_vacc = 0, b1 = 0.037, b2 = 0.001, b3 = 0.0001,
+                                        mu_cc = 0, mu_dcc = 0, mu_hcc = 0))
 toc()
-
-
-#b1 = 0.037, b2 = 0.0001, b3 = 0.0001
-#out <- return_compartment_output(b1 = b1, b2 = b2, b3 = b3,
-#                 alpha = alpha, gamma_acute = gamma_acute, p_chronic = p_chronic,
-#                 sag_loss = sag_loss, mu_hbv = mu_hbv,
-#                 mtct_prob_a = mtct_prob_a, mtct_prob_i = mtct_prob_i, mu = mu, b = b)
 
 ### Code output ----
 
@@ -1367,10 +1383,10 @@ any(out < 0)
 
 # Plot total population size over timesteps
 plot(model_pop_total$time, model_pop_total$pop_total,
-     xlab = "Year", ylab = "Population size")
+     xlab = "Year", ylab = "Population size", ylim = c(0,7000000))
 points(popsize_total$time, popsize_total$pop, col = "red")
 
-# Plot total number of births over time periods
+ # Plot total number of births over time periods
 plot(model_births_group5$timegroup, model_births_group5$births,
      xlab = "5-year time periods", ylab = "Total number of births",
      type = "l", ylim = c(0,600000))
