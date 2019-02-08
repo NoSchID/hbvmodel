@@ -863,22 +863,32 @@ imperial_model <- function(timestep, pop, parameters){
     # HBeAg-positive individuals (IT, IR) are more infectious than HBeAg-negatives (multiply by alpha)
     # Sum prevalence in HBeAg-negatives and HBeAg-positives multiplied by alpha
     # Returns 1 number per transmission age group (4 total)
-    infectious_vector <- c(sum(pop[index$ages_0to1,HBeAg_neg,1:2])/sum(pop[index$ages_0to1,index$infcat_all,1:2]) +
-                             (alpha * sum(pop[index$ages_0to1,HBeAg_pos,1:2])/sum(pop[index$ages_0to1,index$infcat_all,1:2])), # 0 year olds
-                           sum(pop[index$ages_1to5,HBeAg_neg,1:2])/sum(pop[index$ages_1to5,index$infcat_all,1:2]) +
-                             (alpha * sum(pop[index$ages_1to5,HBeAg_pos,1:2])/sum(pop[index$ages_1to5,index$infcat_all,1:2])), # 1-5 year olds
+   # infectious_vector <- c(sum(pop[index$ages_0to1,HBeAg_neg,1:2])/sum(pop[index$ages_0to1,index$infcat_all,1:2]) +
+  #                           (alpha * sum(pop[index$ages_0to1,HBeAg_pos,1:2])/sum(pop[index$ages_0to1,index$infcat_all,1:2])), # 0 year olds
+  #                         sum(pop[index$ages_1to5,HBeAg_neg,1:2])/sum(pop[index$ages_1to5,index$infcat_all,1:2]) +
+  #                           (alpha * sum(pop[index$ages_1to5,HBeAg_pos,1:2])/sum(pop[index$ages_1to5,index$infcat_all,1:2])), # 1-5 year olds
+  #                         sum(pop[index$ages_6to15,HBeAg_neg,1:2])/sum(pop[index$ages_6to15,index$infcat_all,1:2]) +
+  #                           (alpha * sum(pop[index$ages_6to15,HBeAg_pos,1:2])/sum(pop[index$ages_6to15,index$infcat_all,1:2])), # 6-15 year olds
+  #                         sum(pop[index$ages_16to100,HBeAg_neg,1:2])/sum(pop[index$ages_16to100,index$infcat_all,1:2]) +
+  #                           (alpha * sum(pop[index$ages_16to100,HBeAg_pos,1:2])/sum(pop[index$ages_16to100,index$infcat_all,1:2]))) # 16-100 year olds
+
+    infectious_vector <- c(sum(pop[1,HBeAg_neg,1:2])/sum(pop[1,index$infcat_all,1:2]) +
+                             (alpha * sum(pop[1,HBeAg_pos,1:2])/sum(pop[1,index$infcat_all,1:2])), # 0 year olds
+                           sum(pop[c(2,index$ages_1to5),HBeAg_neg,1:2])/sum(pop[c(2,index$ages_1to5),index$infcat_all,1:2]) +
+                             (alpha * sum(pop[c(2,index$ages_1to5),HBeAg_pos,1:2])/sum(pop[c(2,index$ages_1to5),index$infcat_all,1:2])), # 1-5 year olds
                            sum(pop[index$ages_6to15,HBeAg_neg,1:2])/sum(pop[index$ages_6to15,index$infcat_all,1:2]) +
                              (alpha * sum(pop[index$ages_6to15,HBeAg_pos,1:2])/sum(pop[index$ages_6to15,index$infcat_all,1:2])), # 6-15 year olds
                            sum(pop[index$ages_16to100,HBeAg_neg,1:2])/sum(pop[index$ages_16to100,index$infcat_all,1:2]) +
                              (alpha * sum(pop[index$ages_16to100,HBeAg_pos,1:2])/sum(pop[index$ages_16to100,index$infcat_all,1:2]))) # 16-100 year olds
+
 
     # Multiply WAIFW matrix by the age-specific proportion of infectious individuals
     # Returns a vector with force of infection for every age - 4 different values:
     # 0 in 0-year olds, different values for 1-5, 6-15 and 16-100 year olds
     foi_unique <- beta %*% infectious_vector
     # Repeat these values for every 1 year age group
-    foi <- c(rep(foi_unique[1], times = length(index$ages_0to1)),
-             rep(foi_unique[2], times = length(index$ages_1to5)),
+    foi <- c(rep(foi_unique[1], times = 1),
+             rep(foi_unique[2], times = length(c(2,index$ages_1to5))),
              rep(foi_unique[3], times = length(index$ages_6to15)),
              rep(foi_unique[4], times = length(index$ages_16to100)))
 
@@ -903,10 +913,11 @@ imperial_model <- function(timestep, pop, parameters){
 
         # Susceptibles
         dpop[index$ages_all,S,i] <- -(diff(c(0,pop[index$ages_all,S,i]))/da) -
+          (vacc_cov * vacc_eff * pop[index$ages_all,S,i]) -
           p_chronic * infections[index$ages_all,i] -
           (1-p_chronic) * infections[index$ages_all,i] -
           deaths[index$ages_all,S,i] + migrants[index$ages_all,S,i]
-        #- (vacc_cov * vacc_eff * pop[index$ages_all,S,i])
+
 
         # Immune tolerant
         dpop[index$ages_all,IT,i] <- -(diff(c(0,pop[index$ages_all,IT,i]))/da) +
@@ -967,10 +978,11 @@ imperial_model <- function(timestep, pop, parameters){
 
         # Immunes
         dpop[index$ages_all,R,i] <- -(diff(c(0,pop[index$ages_all,R,i]))/da) +
+          vacc_cov * vacc_eff * pop[index$ages_all,S,i] +
           (1-p_chronic) * infections[index$ages_all,i] +
           sag_loss * pop[index$ages_all,IC,i] -
           deaths[index$ages_all,R,i] + migrants[index$ages_all,R,i]
-        #vacc_cov * vacc_eff * pop[index$ages_all,S,i]
+
 
 
         # Babies are born susceptible or infected (age group 1)
@@ -980,8 +992,8 @@ imperial_model <- function(timestep, pop, parameters){
 
         # Vaccination: applied at 0.5 years of age (this only makes sense if
         # age step is 0.5!)
-        dpop[2,S,i] <- dpop[2,S,i] - (vacc_cov * vacc_eff * pop[2,S,i])
-        dpop[2,R,i] <- dpop[2,R,i] + (vacc_cov * vacc_eff * pop[2,S,i])
+        #dpop[1,S,i] <- dpop[1,S,i] - (vacc_cov * vacc_eff * pop[1,S,i])
+        #dpop[1,R,i] <- dpop[1,R,i] + (vacc_cov * vacc_eff * pop[1,S,i])
 
       }
 
@@ -1001,6 +1013,7 @@ imperial_model <- function(timestep, pop, parameters){
     list(res)
 
   })
+
 }
 
 ## Functions to run the model
@@ -1154,6 +1167,30 @@ init_pop <- c("Sf" = popsize_1950$pop_female*(1-gambia_infected),
                "cum_deathsf" = rep(0,n_agecat), "cum_deathsm" = rep(0,n_agecat),
                "cum_incidencef" = rep(0,n_agecat), "cum_incidencem" = rep(0,n_agecat))
 
+gambia_infected <- gambia_infected / 1.36
+
+init_pop <- c("Sf" = popsize_1950$pop_female*(1-gambia_infected),
+              "ITf" = popsize_1950$pop_female*gambia_infected*gambia_eag*0.5,
+              "IRf" = popsize_1950$pop_female*gambia_infected*gambia_eag*0.5,
+              "ICf" = popsize_1950$pop_female*gambia_infected*(1-gambia_eag)*0.2,
+              "ENCHBf" = popsize_1950$pop_female*gambia_infected*(1-gambia_eag)*0.2,
+              "CCf" = popsize_1950$pop_female*gambia_infected*(1-gambia_eag)*0.2,
+              "DCCf" = popsize_1950$pop_female*gambia_infected*(1-gambia_eag)*0.2,
+              "HCCf" = popsize_1950$pop_female*gambia_infected*(1-gambia_eag)*0.2,
+              "Rf" = rep(0,n_agecat),
+              "Sm" = popsize_1950$pop_male*(1-gambia_infected),
+              "ITm" = popsize_1950$pop_male*gambia_infected*gambia_eag*0.5,
+              "IRm" = popsize_1950$pop_male*gambia_infected*gambia_eag*0.5,
+              "ICm" = popsize_1950$pop_male*gambia_infected*(1-gambia_eag)*0.2,
+              "ENCHBm" = popsize_1950$pop_male*gambia_infected*(1-gambia_eag)*0.2,
+              "CCm" = popsize_1950$pop_male*gambia_infected*(1-gambia_eag)*0.2,
+              "DCCm" = popsize_1950$pop_male*gambia_infected*(1-gambia_eag)*0.2,
+              "HCCm" = popsize_1950$pop_male*gambia_infected*(1-gambia_eag)*0.2,
+              "Rm" = rep(0,n_agecat),
+              #"cum_births" = 0, "cum_infected_births" = 0,
+              "cum_deathsf" = rep(0,n_agecat), "cum_deathsm" = rep(0,n_agecat),
+              "cum_incidencef" = rep(0,n_agecat), "cum_incidencem" = rep(0,n_agecat))
+
 # Check initial population vector is the right size
 length(init_pop) == n_infectioncat*n_agecat*2+4*n_agecat
 
@@ -1169,7 +1206,7 @@ parameter_list <- list(
   b2 = 0.001,
   b3 = 0.001,
   alpha = 15,         # Shevanthi value, relative infectiousness of eAg-positives
-  mtct_prob_e = 0.9,  # Shevanthi value, probability of perinatal transmission from HBeAg-positive mother
+  mtct_prob_e = 0.4,  # Shevanthi value, probability of perinatal transmission from HBeAg-positive mother
   mtct_prob_s = 0.05, # Shevanthi model value, probability of perinatal transmission from HBeAg-negative infected mother
   # NATURAL HISTORY PROGRESSION RATES
   p_chronic = c(0.89, exp(-0.65*ages[-1]^0.46)),     # Age-dependent probability of chronic carriage. Adapted Edmunds
@@ -1193,8 +1230,8 @@ parameter_list <- list(
   mu_dcc = 0.314,
   mu_hcc = 0.5,
   # INFANT VACCINATION PARAMETERS
-  #vacc_cov = c(0, 0.92, rep(0,n_agecat-2)),  # vaccine is only applied in 1-year olds, need to get time-varying data
-  vacc_cov = 0.92,
+  vacc_cov = c(0, 0.92, rep(0,n_agecat-2)),  # vaccine is only applied in 1-year olds, need to get time-varying data
+  #vacc_cov = 0.92,
   vacc_eff = 0.95,                           # vaccine efficacy
   vacc_introtime = 1991,                     # year of vaccine introduction
   # INTERVENTION ON/OFF SWITCH (1/0)
@@ -1214,9 +1251,10 @@ parameter_names <- names(parameter_list)
 
 tic()
 output <- run_model(default_parameter_list = parameter_list,
-                 parms_to_change = list(apply_vacc = 0, b1 = 0.037, b2 = 0.001, b3 = 0.0001,
-                                        mu_cc = 0, mu_dcc = 0, mu_hcc = 0))
+                 parms_to_change = list(apply_vacc = 1, b1 = 0.05, b2 = 0.001, b3 = 0.0001))
 toc()
+
+#b1 = 0.035, b2 = 0.001, b3 = 0.0001
 
 ### Code output ----
 
@@ -1453,14 +1491,23 @@ lines(out$time,apply(model_carriers_male[,-1],1,sum)/model_pop_total$pop_male, c
 model_infectioncat_total$carriers[which(model_infectioncat_total$time == 1980)]/
   model_pop_total$pop_total[which(model_pop_total$time == 1980)]
 
+model_infectioncat_total$carriers[which(model_infectioncat_total$time == 1990)]/
+  model_pop_total$pop_total[which(model_pop_total$time == 1990)]
+
 model_infectioncat_total$carriers[which(model_infectioncat_total$time == 2015)]/
   model_pop_total$pop_total[which(model_pop_total$time == 2015)]
 
 # Carrier prevalence over time in different age groups
 plot(x = model_carriers[,1], y = as.numeric(unlist(model_carriers[,2]/model_pop[,2]))) # age 0
-plot(x = model_carriers[,1], y = as.numeric(unlist(model_carriers[,3]/model_pop[,3]))) # age 1
-plot(x = model_carriers[,1], y = as.numeric(unlist(model_carriers[,4]/model_pop[,4]))) # age 2
+abline(v = 1991)
+plot(x = model_carriers[,1], y = as.numeric(unlist(model_carriers[,3]/model_pop[,3]))) # age 0.5
+abline(v = 1991)
+plot(x = model_carriers[,1], y = as.numeric(unlist(model_carriers[,4]/model_pop[,4]))) # age 1
+abline(v = 1991)
+plot(x = model_carriers[,1], y = as.numeric(unlist(model_carriers[,5]/model_pop[,5]))) # age 1.5
+abline(v = 1991)
 plot(x = model_carriers[,1], y = as.numeric(unlist(model_carriers[,22]/model_pop[,22]))) # age 20
+abline(v = 1991)
 plot(x = model_carriers[,1], y = as.numeric(unlist(model_carriers[,700]/model_pop[,22]))) # age 70
 
 
