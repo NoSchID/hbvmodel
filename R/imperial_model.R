@@ -1,5 +1,5 @@
 ###################################
-### Imperial HBV model 06/02/19 ###
+### Imperial HBV model 12/02/19 ###
 ###################################
 # Model described in Shevanthi's thesis with some adaptations
 # Currently only infant vaccination in second age group, no birth dose or treatment
@@ -730,12 +730,12 @@ reset_pop_1950 <- function(timestep, pop, parameters){
     scaler <- array(c(rep(pop_increase[,1], n_infectioncat),
                       rep(pop_increase[,2], n_infectioncat)), dim = c(n_agecat,n_infectioncat,2))
     pop <- scaler * pop
-    return(c(pop, rep(0,n_agecat), rep(0,n_agecat), rep(0,n_agecat), rep(0,n_agecat)))
+    return(c(pop, rep(0,n_agecat), rep(0,n_agecat), rep(0,n_agecat), rep(0,n_agecat), 0, 0))
   })
 }
 
 ## THE MODEL
-imperial_model <- function(timestep, pop, parameters){
+imperial_model <- function(timestep, pop, parameters) {
 
   with(as.list(parameters), {
 
@@ -796,18 +796,18 @@ imperial_model <- function(timestep, pop, parameters){
                     dim=c(n_agecat,n_infectioncat,2))    # female and male incident deaths in each infection comp
     migrants <- array(rep(0,2 * n_infectioncat * n_agecat),
                       dim=c(n_agecat,n_infectioncat,2))  # female and male incident migrants in each infection comp
-    infections <- matrix(rep(0, 2* n_agecat),
+    dcum_infections <- matrix(rep(0, 2* n_agecat),
                          ncol = 2, nrow = n_agecat)      # female and male incident infections
 
     # TRANSMISSION
 
     # Mother-to-child transmission and births
-    infected_births <- sum(p_chronic[1] * fertility_rate *
+    dcum_infected_births <- sum(p_chronic[1] * fertility_rate *
                              (apply(mtct_prob_e * pop[index$ages_wocba,c(IT,IR),1],1,sum) +
                                 apply(mtct_prob_s * pop[index$ages_wocba,IC:HCC,1],1,sum)))    # infected births come from acute and chronic women of childbearing age
-    uninfected_births <- sum(fertility_rate * pop[index$ages_wocba,index$infcat_all,1]) -
-      infected_births  # uninfected births = all births - infected babies
-    births <- infected_births + uninfected_births
+    dcum_uninfected_births <- sum(fertility_rate * pop[index$ages_wocba,index$infcat_all,1]) -
+      dcum_infected_births  # uninfected births = all births - infected babies
+    dcum_births <- dcum_infected_births + dcum_uninfected_births
 
     #births <- sum(fertility_rate * pop[index$ages_wocba,index$infcat_all,1])
     # applying the same age-specific fertility rate to every infection compartment
@@ -889,22 +889,22 @@ imperial_model <- function(timestep, pop, parameters){
         # Returns an array with indicent deaths and net migrants for every age (rows), infection state (columns) and sex (arrays)
 
         # Infection: Incident infections
-        infections[index$ages_all,i] <- foi * pop[index$ages_all,S,i]
+        dcum_infections[index$ages_all,i] <- foi * pop[index$ages_all,S,i]
         # Returns a matrix with incident infections for every age (rows) and every sex (columns)
 
         # Transitions between compartments:
 
         # Susceptibles
         dpop[index$ages_all,S,i] <- -(diff(c(0,pop[index$ages_all,S,i]))/da) -
-          (vacc_cov * vacc_eff * pop[index$ages_all,S,i]) -
-          p_chronic * infections[index$ages_all,i] -
-          (1-p_chronic) * infections[index$ages_all,i] -
+         # (vacc_cov * vacc_eff * pop[index$ages_all,S,i]) -
+          p_chronic * dcum_infections[index$ages_all,i] -
+          (1-p_chronic) * dcum_infections[index$ages_all,i] -
           deaths[index$ages_all,S,i] + migrants[index$ages_all,S,i]
 
 
         # Immune tolerant
         dpop[index$ages_all,IT,i] <- -(diff(c(0,pop[index$ages_all,IT,i]))/da) +
-          p_chronic * infections[index$ages_all,i] -
+          p_chronic * dcum_infections[index$ages_all,i] -
           pr_it_ir * pop[index$ages_all,IT,i] -
           hccr_it[index$ages_all,i] * pop[index$ages_all,IT,i] -
           deaths[index$ages_all,IT,i] + migrants[index$ages_all,IT,i]
@@ -961,29 +961,28 @@ imperial_model <- function(timestep, pop, parameters){
 
         # Immunes
         dpop[index$ages_all,R,i] <- -(diff(c(0,pop[index$ages_all,R,i]))/da) +
-          vacc_cov * vacc_eff * pop[index$ages_all,S,i] +
-          (1-p_chronic) * infections[index$ages_all,i] +
+         # vacc_cov * vacc_eff * pop[index$ages_all,S,i] +
+          (1-p_chronic) * dcum_infections[index$ages_all,i] +
           sag_loss * pop[index$ages_all,IC,i] -
           deaths[index$ages_all,R,i] + migrants[index$ages_all,R,i]
 
 
-
         # Babies are born susceptible or infected (age group 1)
-        dpop[1,S,i] <- dpop[1,S,i] + sex_ratio[i] * uninfected_births
-        dpop[1,IT,i] <- dpop[1,IT,i] + sex_ratio[i] * infected_births
+        dpop[1,S,i] <- dpop[1,S,i] + sex_ratio[i] * dcum_uninfected_births
+        dpop[1,IT,i] <- dpop[1,IT,i] + sex_ratio[i] * dcum_infected_births
         #dpop[1,R,i] <- dpop[1,R,i] + sex_ratio[i] * (1-p_chronic[1]) * infected_births
 
         # Vaccination: applied at 0.5 years of age (this only makes sense if
         # age step is 0.5!)
-        #dpop[1,S,i] <- dpop[1,S,i] - (vacc_cov * vacc_eff * pop[1,S,i])
-        #dpop[1,R,i] <- dpop[1,R,i] + (vacc_cov * vacc_eff * pop[1,S,i])
+        dpop[2,S,i] <- dpop[2,S,i] - (vacc_cov * vacc_eff * pop[2,S,i])
+        dpop[2,R,i] <- dpop[2,R,i] + (vacc_cov * vacc_eff * pop[2,S,i])
 
       }
 
     # OUTPUT
 
-    # Sum age-specific number of incident deaths across infection compartments
-    deaths_out <- apply(deaths,c(1,3),sum)
+    # Sum age-specific number of incident deaths across infection compartments four output
+    dcum_deaths <- apply(deaths,c(1,3),sum)
 
     # Condition to set negative numbers to 0
     #if(any(dpop < 0)) {
@@ -991,8 +990,7 @@ imperial_model <- function(timestep, pop, parameters){
     #}
 
     # Return results
-    res <- c(dpop, deaths_out, infections)
-    # births, infected_births
+    res <- c(dpop, dcum_deaths, dcum_infections, dcum_births, dcum_infected_births)
     list(res)
 
   })
@@ -1110,7 +1108,7 @@ run_model <- function(..., default_parameter_list, parms_to_change = list(...),
 
   ## Run model simulation
   out <- as.data.frame(ode.1D(y = init_pop, times = times, func = imperial_model,
-                              parms = parameters, nspec = 22, method = "ode45",
+                              parms = parameters, nspec = 1, method = "ode45",
                               events = list(func = reset_pop_1950, time = 100)))
   out$time   <-  out$time + starttime
 
@@ -1118,13 +1116,19 @@ run_model <- function(..., default_parameter_list, parms_to_change = list(...),
   #events = list(func = reset_pop_1950, time = 100)
 
   ## Store different types of outputs as a list
-  pop <- data.frame(time = out$time, out[,2:(n_agecat*n_infectioncat*2+1)])
-#  births <- data.frame(time = out$time, select(out, contains("births")))
-  deaths <- data.frame(time = out$time, select(out, contains("deaths")))
-  infections <- data.frame(time = out$time, select(out, contains("incidence")))
+  pop <- out[,2:(n_agecat*n_infectioncat*2+1)]
+  cum_deaths <- select(out, contains("deaths"))
+  cum_infections <- select(out, contains("incidence"))
+  cum_births <- select(out, contains("cum_births"))
+  cum_infected_births <- select(out, contains("infected_births"))
+ # pop <- data.frame(time = out$time, out[,2:(n_agecat*n_infectioncat*2+1)])
+  #cum_deaths <- data.frame(time = out$time, select(out, contains("deaths")))
+  #cum_infections <- data.frame(time = out$time, select(out, contains("incidence")))
+  #cum_births <- data.frame(time = out$time, select(out, contains("cum_births")))
+  #cum_infected_births <- data.frame(time = out$time, select(out, contains("infected_births")))
 
-  toreturn <- list(out = pop, deaths = deaths, incidence = infections)
-  #  births = births,
+  toreturn <- list(time = out$time, out = pop, cum_deaths = cum_deaths, cum_births = cum_births,
+                   cum_infections = cum_infections, cum_infected_births = cum_infected_births)
 
   return(toreturn)
 }
@@ -1195,141 +1199,153 @@ code_model_output <- function(output) {
   out_rm <- select(out, starts_with("Rm"))
 
   # Population
-  out_popf <- select(out[,2:(n_agecat*n_infectioncat*2+1)], contains("f"))
-  out_popm <- select(out[,2:(n_agecat*n_infectioncat*2+1)], contains("m"))
+  out_popf <- select(out, contains("f"))
+  out_popm <- select(out, contains("m"))
   out_pop <- cbind(out_popf, out_popm)
 
   # Cumulative deaths
-  out_cum_deathsf <- select(output$deaths, starts_with("cum_deathsf"))
-  out_cum_deathsm <- select(output$deaths, starts_with("cum_deathsm"))
+  out_cum_deathsf <- select(output$cum_deaths, starts_with("cum_deathsf"))
+  out_cum_deathsm <- select(output$cum_deaths, starts_with("cum_deathsm"))
+
+  # Cumulative births
+  out_cum_births <- unlist(output$cum_births)
 
   # Cumulative HBV incidence from horizontal transmission only
-  out_cum_incidencef <- select(output$incidence, starts_with("cum_incidencef"))
-  out_cum_incidencem <- select(output$incidence, starts_with("cum_incidencem"))
+  out_cum_infectionsf <- select(output$cum_infections, starts_with("cum_incidencef"))
+  out_cum_infectionsm <- select(output$cum_infections, starts_with("cum_incidencem"))
+
+  # Cumulative number of infected births
+  out_cum_infected_births <- unlist(output$cum_infected_births)
 
   ## Code infection outputs
 
   # Age-specific number in each infection compartment per time step
-  model_sus <- data.frame(time = out$time, pop = out_sf + out_sm)   # need to change the column names
-  model_carriers <- data.frame(time = out$time,
-                               pop = (out_itf + out_itm +
+  sus <- data.frame(time = output$time,
+                                pop = out_sf + out_sm)   # need to change the column names
+  carriers <- data.frame(time = output$time,
+                                    pop = (out_itf + out_itm +
                                         out_irf + out_irm +
                                         out_icf+out_icm+
                                         out_enchbf+out_enchbm+
                                         out_ccf+out_ccm+
                                         out_dccf+out_dccm+
                                         out_hccf+out_hccm))
-  model_carriers_female <- data.frame(time = out$time,
+  carriers_female <- data.frame(time = output$time,
                                       pop = (out_itf+
                                                out_irf+
                                                out_icf+
                                                out_enchbf+
                                                out_ccf+out_dccf+out_hccf))
-  model_carriers_male <- data.frame(time = out$time,
+  carriers_male <- data.frame(time = output$time,
                                     pop = (out_itm+
                                              out_irm+
                                              out_icm+
                                              out_enchbm+
                                              out_ccm+out_dccm+out_hccm))
-  model_immune <- data.frame(time = out$time, pop = out_rf + out_rm)
-  model_ever_inf <- data.frame(time = out$time,
-                               pop = model_carriers[,-1] + model_immune[,-1])
+  immune <- data.frame(time = output$time, pop = out_rf + out_rm)
+  ever_inf <- data.frame(time = output$time, pop = carriers[,-1] + immune[,-1])
 
   # Total number in each infection compartment per time step
-  model_infectioncat_total <- data.frame(time = out$time,
-                                         sus = apply(model_sus[,-1], 1, sum),
-                                         carriers = apply(model_carriers[,-1], 1, sum),
-                                         immune = apply(model_immune[,-1], 1, sum),
-                                         ever_infected = apply(model_ever_inf[,-1],1,sum))
+  infectioncat_total <- data.frame(time = output$time,
+                                         sus = apply(sus[,-1], 1, sum),
+                                         carriers = apply(carriers[,-1], 1, sum),
+                                         immune = apply(immune[,-1], 1, sum),
+                                         ever_infected = apply(ever_inf[,-1],1,sum))
 
   # Age-specific HBV incidence from horizontal transmission only - for women, men and both (total)
-  model_horizontal_infections_female <- data.frame(time = out$time,
-                                                   incidence = rbind(out_cum_incidencef[1,],
-                                                                     apply(out_cum_incidencef,
+  horizontal_infections_female <- data.frame(time = output$time,
+                                                   incidence = rbind(out_cum_infectionsf[1,],
+                                                                     apply(out_cum_infectionsf,
                                                                            2, diff, lag = 1)))
-  names(model_horizontal_infections_female)[-1] <- sprintf("incidence%g",ages)
+  names(horizontal_infections_female)[-1] <- sprintf("incidence%g",ages)
 
-  model_horizontal_infections_male <- data.frame(time = out$time,
-                                                 incidence = rbind(out_cum_incidencem[1,],
-                                                                   apply(out_cum_incidencem,
+  horizontal_infections_male <- data.frame(time = output$time,
+                                                 incidence = rbind(out_cum_infectionsm[1,],
+                                                                   apply(out_cum_infectionsm,
                                                                          2, diff, lag = 1)))
-  names(model_horizontal_infections_male)[-1] <- sprintf("incidence%g",ages)
+  names(horizontal_infections_male)[-1] <- sprintf("incidence%g",ages)
 
+  # Total number of infected births per time step
+  incident_infections <- data.frame(time = output$time,
+                                          horizontal_infections = apply(horizontal_infections_female[,-1], 1, sum) +
+                                          apply(horizontal_infections_male[,-1], 1, sum),
+                                          infected_births = c(out_cum_infected_births[1],
+                                                              diff(out_cum_infected_births,
+                                                                   lag = 1)))
 
-  #ever_infected <- acute + carriers + immune
 
   ## Code demography outputs
 
   # Population:
 
-
-
   # Age-specific and total (last column) population per time step
-  model_pop_female <- sum_pop_by_age(time = out$time, pop_output_file = out_popf)
-  model_pop_male <- sum_pop_by_age(time = out$time, pop_output_file = out_popm)
-  model_pop <- cbind(time = model_pop_female$time, model_pop_female[,-1] + model_pop_male[,-1])
+  pop_female <- sum_pop_by_age(time = output$time, pop_output_file = out_popf)
+  pop_male <- sum_pop_by_age(time = output$time, pop_output_file = out_popm)
+  pop <- cbind(time = output$time, pop_female[,-1] + pop_male[,-1])
 
   # Total female, male and both population per time step
-  model_pop_total <- data.frame(time = out$time,
-                                pop_female = apply(model_pop_female[,-1], 1, sum),
-                                pop_male = apply(model_pop_male[,-1], 1, sum)) %>%
+  pop_total <- data.frame(time = output$time,
+                                pop_female = apply(pop_female[,-1], 1, sum),
+                                pop_male = apply(pop_male[,-1], 1, sum)) %>%
     mutate(pop_total = pop_female + pop_male)
 
   # Births:
 
   # Total number of births at each timestep
-  #model_births <- data.frame(time = out$time,
-  #                           births = c(output$births$cum_births[1],
-  #                                      diff(output$births$cum_births, lag = 1)))
-  #names(model_births) <- c("time", "births")
+  births <- data.frame(time = output$time,
+                      births = c(out_cum_births[1],
+                                 diff(out_cum_births, lag = 1)))
+  names(births) <- c("time", "births")
 
   # Total number of births grouped in 5-year time periods
-  #model_births_group5 <- model_births %>%
-  #  mutate(timegroup = floor(time / 5) * 5) %>%
-  #  group_by(timegroup) %>%
-  #  summarise_all(sum) %>%
-  #  select(-time)
+  births_group5 <- births %>%
+    mutate(timegroup = floor(time / 5) * 5) %>%
+    group_by(timegroup) %>%
+    summarise_all(sum) %>%
+    select(-time)
 
   # Deaths:
 
   # Age-specific and total deaths per time step - for women, men and both (total)
-  model_deaths_female <- data.frame(time = out$time,
+  deaths_female <- data.frame(time = output$time,
                                     deaths = rbind(out_cum_deathsf[1,],
                                                    apply(out_cum_deathsf, 2, diff, lag = 1)))
-  names(model_deaths_female)[-1] <- sprintf("deaths%g",ages)
-  model_deaths_female$total <- apply(model_deaths_female[,-1], 1, sum)
-  model_deaths_male <- data.frame(time = out$time,
+  names(deaths_female)[-1] <- sprintf("deaths%g",ages)
+  deaths_female$total <- apply(deaths_female[,-1], 1, sum)
+  deaths_male <- data.frame(time = output$time,
                                   deaths = rbind(out_cum_deathsm[1,],
                                                  apply(out_cum_deathsm, 2, diff, lag = 1)))
-  names(model_deaths_male)[-1] <- sprintf("deaths%g",ages)
-  model_deaths_male$total <- apply(model_deaths_male[,-1], 1, sum)
-  model_deaths_total <- data.frame(time = out$time,
-                                   deaths = model_deaths_female[,-1] + model_deaths_male[,-1])
-  names(model_deaths_total)[-1] <- c(sprintf("deaths%g",ages), "total")
+  names(deaths_male)[-1] <- sprintf("deaths%g",ages)
+  deaths_male$total <- apply(deaths_male[,-1], 1, sum)
+ deaths_total <- data.frame(time = output$time,
+                                   deaths = deaths_female[,-1] + deaths_male[,-1])
+  names(deaths_total)[-1] <- c(sprintf("deaths%g",ages), "total")
 
   # Total number of deaths grouped in 5-year time periods
-  model_deaths_total_group5 <- model_deaths_total %>%
+  deaths_total_group5 <- deaths_total %>%
     mutate(timegroup = floor(time / 5) * 5) %>%
     group_by(timegroup) %>%
     summarise_all(sum) %>%
     select(-time)
 
   # Check:
-  all.equal(model_sus[,-1] + model_carriers[,-1] + model_immune[,-1], model_pop[,-1], check.names = FALSE)
-  all.equal(model_infectioncat_total$sus + model_infectioncat_total$carriers + model_infectioncat_total$immune,
-            model_pop_total$pop_total, check.names = FALSE)
+  all.equal(sus[,-1] + carriers[,-1] + immune[,-1], pop[,-1], check.names = FALSE)
+  all.equal(infectioncat_total$sus + infectioncat_total$carriers + infectioncat_total$immune,
+            pop_total$pop_total, check.names = FALSE)
 
-  toreturn <- list("time" = out$time,
-                   "model_sus" = model_sus,
-                   "model_carriers" = model_carriers,
-                   "model_immune" = model_immune,
-                   "model_ever_inf" = model_ever_inf,
-                   "model_infectioncat_total" = model_infectioncat_total,
-                   "model_pop_female" = model_pop_female,
-                   "model_pop_male" = model_pop_male,
-                   "model_pop" = model_pop,
-                   "model_pop_total" = model_pop_total,
-                   "model_deaths_total_group5" = model_deaths_total_group5,
+  toreturn <- list("time" = output$time,
+                   "sus" = sus,
+                   "carriers" = carriers,
+                   "immune" = immune,
+                   "ever_inf" = ever_inf,
+                   "infectioncat_total" = infectioncat_total,
+                   "pop_female" = pop_female,
+                   "pop_male" = pop_male,
+                   "pop" = pop,
+                   "pop_total" = pop_total,
+                   "deaths_total_group5" = deaths_total_group5,
+                   "births_group5" =  births_group5,
+                   "incident_infections" = incident_infections,
                    "full_output" = output)
   return(toreturn)
 
@@ -1362,12 +1378,12 @@ init_pop <- c("Sf" = popsize_1950$pop_female*(1-gambia_infected),
                "DCCm" = popsize_1950$pop_male*gambia_infected*(1-gambia_eag)*0.2,
                "HCCm" = popsize_1950$pop_male*gambia_infected*(1-gambia_eag)*0.2,
                "Rm" = rep(0,n_agecat),
-               #"cum_births" = 0, "cum_infected_births" = 0,
                "cum_deathsf" = rep(0,n_agecat), "cum_deathsm" = rep(0,n_agecat),
-               "cum_incidencef" = rep(0,n_agecat), "cum_incidencem" = rep(0,n_agecat))
+               "cum_incidencef" = rep(0,n_agecat), "cum_incidencem" = rep(0,n_agecat),
+               "cum_births" = 0, "cum_infected_births" = 0)
 
 # Check initial population vector is the right size
-length(init_pop) == n_infectioncat*n_agecat*2+4*n_agecat
+length(init_pop) == n_infectioncat*n_agecat*2+4*n_agecat+2
 
 # Total population in 1950:
 N0 <- sum(init_pop[1:(n_infectioncat * n_agecat * 2)])
@@ -1405,8 +1421,8 @@ parameter_list <- list(
   mu_dcc = 0.314,
   mu_hcc = 0.5,
   # INFANT VACCINATION PARAMETERS
-  vacc_cov = c(0, 0.92, rep(0,n_agecat-2)),  # vaccine is only applied in 1-year olds, need to get time-varying data
-  #vacc_cov = 0.92,
+  #vacc_cov = c(0, 0.92, rep(0,n_agecat-2)),  # vaccine is only applied in 1-year olds, need to get time-varying data
+  vacc_cov = 0.92,
   vacc_eff = 0.95,                           # vaccine efficacy
   vacc_introtime = 1991,                     # year of vaccine introduction
   # INTERVENTION ON/OFF SWITCH (1/0)
@@ -1424,7 +1440,7 @@ parameter_names <- names(parameter_list)
 tic()
 sim <- run_model(default_parameter_list = parameter_list,
                  parms_to_change = list(b1 = 0.05, b2 = 0.001, b3 = 0.0001),
-                 scenario = "no_vacc")
+                 scenario = "vacc")
 out <- code_model_output(sim)
 toc()
 
@@ -1434,39 +1450,42 @@ out <- run_scenarios(default_parameter_list = parameter_list,
                       parms_to_change = list(b1 = 0.05, b2 = 0.001, b3 = 0.0001))
 toc()
 
+
+# Prevalence over time
 par(mfrow=c(1,2))
-plot(out$scenario_vacc$time, out$scenario_vacc$model_infectioncat_total$carriers/
-       out$scenario_vacc$model_pop_total$pop_total,
+plot(out$scenario_vacc$time, out$scenario_vacc$infectioncat_total$carriers/
+       out$scenario_vacc$pop_total$pop_total,
      type = "l", xlim = c(1850,2100), ylim = c(0,1),
      xlab = "Time", ylab = "Carrier/sus (red)/immune (blue) prevalence", main = "Vaccine")
-lines(out$scenario_vacc$time,out$scenario_vacc$model_infectioncat_total$sus/
-        out$scenario_vacc$model_pop_total$pop_total,col= "red")
-lines(out$scenario_vacc$time,out$scenario_vacc$model_infectioncat_total$immune/
-        out$scenario_vacc$model_pop_total$pop_total,col= "blue")
-plot(out$scenario_no_vacc$time,out$scenario_no_vacc$model_infectioncat_total$carriers/
-       out$scenario_no_vacc$model_pop_total$pop_total,
+lines(out$scenario_vacc$time,out$scenario_vacc$infectioncat_total$sus/
+        out$scenario_vacc$pop_total$pop_total,col= "red")
+lines(out$scenario_vacc$time,out$scenario_vacc$infectioncat_total$immune/
+        out$scenario_vacc$pop_total$pop_total,col= "blue")
+plot(out$scenario_no_vacc$time,out$scenario_no_vacc$infectioncat_total$carriers/
+       out$scenario_no_vacc$pop_total$pop_total,
      type = "l", xlim = c(1850,2100), ylim = c(0,1),
      xlab = "Time", ylab = "Carrier/sus (red)/immune (blue) prevalence", main = "No vaccine")
-lines(out$scenario_no_vacc$time,out$scenario_no_vacc$model_infectioncat_total$sus/
-        out$scenario_no_vacc$model_pop_total$pop_total,col= "red")
-lines(out$scenario_no_vacc$time,out$scenario_no_vacc$model_infectioncat_total$immune/
-        out$scenario_no_vacc$model_pop_total$pop_total,col= "blue")
+lines(out$scenario_no_vacc$time,out$scenario_no_vacc$infectioncat_total$sus/
+        out$scenario_no_vacc$pop_total$pop_total,col= "red")
+lines(out$scenario_no_vacc$time,out$scenario_no_vacc$infectioncat_total$immune/
+        out$scenario_no_vacc$pop_total$pop_total,col= "blue")
 
 #b1 = 0.035, b2 = 0.001, b3 = 0.0001
 
 ### Plots ----
+outpath <- out
 
 ## DEMOGRAPHY
 
 ## Total population, births, deaths
 
 # Plot total population size over timesteps
-plot(model_pop_total$time, model_pop_total$pop_total,
+plot(outpath$pop_total$time, outpath$pop_total$pop_total,
      xlab = "Year", ylab = "Population size", ylim = c(0,7000000))
 points(popsize_total$time, popsize_total$pop, col = "red")
 
- # Plot total number of births over time periods
-plot(model_births_group5$timegroup, model_births_group5$births,
+# Plot total number of births over time periods
+plot(outpath$births_group5$timegroup, outpath$births_group5$births,
      xlab = "5-year time periods", ylab = "Total number of births",
      type = "l", ylim = c(0,600000))
 points(x = as.numeric(strtrim(input_births_clean$time, width = 4)),
@@ -1476,13 +1495,13 @@ points(x = as.numeric(strtrim(input_births_clean$time, width = 4)),
 plot(x = as.numeric(strtrim(deaths_total$time, width = 4)),
      y = deaths_total$deaths, col = "red",
      xlab = "5-year time periods", ylab = "Total number of deaths")
-lines(model_deaths_total_group5$timegroup, model_deaths_total_group5$total)
+lines(outpath$deaths_total_group5$timegroup, outpath$deaths_total_group5$total)
 
 ## Age structure
 
 # Plot female age structure in 1970
 plot(x = ages,
-     y = model_pop_female[which(model_pop_female$time == 1970),index$ages_all+1]/da,
+     y = outpath$pop_female[which(outpath$pop_female$time == 1970),index$ages_all+1]/da,
      type = "l", xlab = "Age", ylab = "Population", main = "1970 - women")
 points(x = seq(2,82,5),
        y = input_popsize_female_clean$pop[input_popsize_female_clean$time == "1970"]/5,
@@ -1490,7 +1509,7 @@ points(x = seq(2,82,5),
 
 # Plot male age structure in 2005
 plot(x = ages,
-     y = model_pop_male[which(model_pop_male$time == 2005),index$ages_all+1]/da,
+     y = outpath$pop_male[which(outpath$pop_male$time == 2005),index$ages_all+1]/da,
      type = "l", xlab = "Age", ylab = "Population", main = "2005 - men")
 points(x = seq(2,102,5),
        y = input_popsize_male_clean$pop[input_popsize_male_clean$time == "2005"]/5,
@@ -1498,7 +1517,7 @@ points(x = seq(2,102,5),
 
 # Plot male age structure in 2070
 plot(x = ages,
-     y = model_pop_male[which(model_pop_male$time == 2070),index$ages_all+1]/da,
+     y = outpath$pop_male[which(outpath$pop_male$time == 2070),index$ages_all+1]/da,
      type = "l", xlab = "Age", ylab = "Population", main = "2070 - men")
 points(x = seq(2,102,5),
        y = input_popsize_male_clean$pop[input_popsize_male_clean$time == "2070"]/5,
@@ -1506,7 +1525,7 @@ points(x = seq(2,102,5),
 
 # Plot female age structure in 2050
 plot(x = ages,
-     y = model_pop_female[which(model_pop_female$time == 2050),index$ages_all+1]/da,
+     y = outpath$pop_female[which(outpath$pop_female$time == 2050),index$ages_all+1]/da,
      type = "l", xlab = "Age", ylab = "Population", main = "2050 - women")
 points(x = seq(2,102,5),
        y = input_popsize_female_clean$pop[input_popsize_female_clean$time == "2050"]/5,
@@ -1515,76 +1534,47 @@ points(x = seq(2,102,5),
 ## INFECTION DYNAMICS
 
 # Total number in each infection compartment per timestep
-plot(out$time,model_infectioncat_total$carriers,type = "l", ylim = c(0,4000000))
-lines(out$time,model_infectioncat_total$sus,col= "red")
-lines(out$time,model_infectioncat_total$immune,col= "blue")
+plot(outpath$time,outpath$infectioncat_total$carriers,type = "l", ylim = c(0,4000000))
+lines(outpath$time,outpath$infectioncat_total$sus,col= "red")
+lines(outpath$time,outpath$infectioncat_total$immune,col= "blue")
 
 # Proportion in each infection compartment per timestep
-plot(out$time,out$model_infectioncat_total$carriers/out$model_pop_total$pop_total,type = "l", ylim = c(0,0.7))
-lines(out$time,model_infectioncat_total$sus/model_pop_total$pop_total,col= "red")
-lines(out$time,model_infectioncat_total$immune/model_pop_total$pop_total,col= "blue")
+plot(outpath$time,outpath$infectioncat_total$carriers/outpath$pop_total$pop_total,type = "l", ylim = c(0,0.7))
+lines(outpath$time,outpath$infectioncat_total$sus/outpath$pop_total$pop_total,col= "red")
+lines(outpath$time,outpath$infectioncat_total$immune/outpath$pop_total$pop_total,col= "blue")
 
-# Carrier prevalence over time
-plot(out$time,model_infectioncat_total$carriers/model_pop_total$pop_total, ylim = c(0,0.5))
-lines(out$time,apply(model_carriers_female[,-1],1,sum)/model_pop_total$pop_female, col = "pink")
-lines(out$time,apply(model_carriers_male[,-1],1,sum)/model_pop_total$pop_male, col = "blue")
-
-model_infectioncat_total$carriers[which(model_infectioncat_total$time == 1980)]/
-  model_pop_total$pop_total[which(model_pop_total$time == 1980)]
-
-model_infectioncat_total$carriers[which(model_infectioncat_total$time == 1990)]/
-  model_pop_total$pop_total[which(model_pop_total$time == 1990)]
-
-model_infectioncat_total$carriers[which(model_infectioncat_total$time == 2015)]/
-  model_pop_total$pop_total[which(model_pop_total$time == 2015)]
+# Carrier prevalence in 1980
+outpath$infectioncat_total$carriers[which(outpath$infectioncat_total$time == 1980)]/
+  outpath$pop_total$pop_total[which(outpath$pop_total$time == 1980)]
+# Carrier prevalence in 1990
+outpath$infectioncat_total$carriers[which(outpath$infectioncat_total$time == 1990)]/
+  outpath$pop_total$pop_total[which(outpath$pop_total$time == 1990)]
+# Carrier prevalence in 2015
+outpath$infectioncat_total$carriers[which(outpath$infectioncat_total$time == 2015)]/
+  outpath$pop_total$pop_total[which(outpath$pop_total$time == 2015)]
 
 # Carrier prevalence over time in different age groups
-plot(x = model_carriers[,1], y = as.numeric(unlist(model_carriers[,2]/model_pop[,2]))) # age 0
+plot(x = outpath$carriers[,1], y = as.numeric(unlist(outpath$carriers[,2]/outpath$pop[,2]))) # age 0
 abline(v = 1991)
-plot(x = model_carriers[,1], y = as.numeric(unlist(model_carriers[,3]/model_pop[,3]))) # age 0.5
+plot(x = outpath$carriers[,1], y = as.numeric(unlist(outpath$carriers[,3]/outpath$pop[,3]))) # age 0.5
 abline(v = 1991)
-plot(x = model_carriers[,1], y = as.numeric(unlist(model_carriers[,4]/model_pop[,4]))) # age 1
+plot(x = outpath$carriers[,1], y = as.numeric(unlist(outpath$carriers[,4]/outpath$pop[,4]))) # age 1
 abline(v = 1991)
-plot(x = model_carriers[,1], y = as.numeric(unlist(model_carriers[,5]/model_pop[,5]))) # age 1.5
+plot(x = outpath$carriers[,1], y = as.numeric(unlist(outpath$carriers[,5]/outpath$pop[,5]))) # age 1.5
 abline(v = 1991)
-plot(x = model_carriers[,1], y = as.numeric(unlist(model_carriers[,22]/model_pop[,22]))) # age 20
+plot(x = outpath$carriers[,1], y = as.numeric(unlist(outpath$carriers[,22]/outpath$pop[,22]))) # age 20
 abline(v = 1991)
-plot(x = model_carriers[,1], y = as.numeric(unlist(model_carriers[,700]/model_pop[,22]))) # age 70
+plot(x = outpath$carriers[,1], y = as.numeric(unlist(outpath$carriers[,700]/outpath$pop[,22]))) # age 70
 
 
 # Carrier prevalence by age in 1980
-plot(ages, model_carriers[which(model_carriers$time == 1980),-1]/
-       model_pop[which(model_pop$time == 1980),-1], type = "l", ylim = c(0,0.3))
+plot(ages, outpath$carriers[which(outpath$carriers$time == 1980),-1]/
+       outpath$pop[which(outpath$pop$time == 1980),-1], type = "l", ylim = c(0,0.3))
 points(gambia_prevdata$age, gambia_prevdata$edmunds_prev, col = "red")
 
 # Carrier prevalence by age in 2015
-plot(ages, model_carriers[which(model_carriers$time == 2015),-1]/
-       model_pop[which(model_pop$time == 2015),-1], type = "l", ylim = c(0,0.3))
-
-# Proportion ever infected in 1980
-#plot(ages, model_ever_inf[which(model_ever_inf$time == 1980),-1]/
-#       model_pop[which(model_pop$time == 1980),-1], type = "l", ylim = c(0,1))
-#points(gambia_prevdata$age, gambia_prevdata$edmunds_prop_ever_infected, col = "red")
-
-
-plot(x = out$time, apply(out_sf,1,sum)/apply(out[,-1],1,sum), ylim = c(0,0.5))
-plot(x = out$time, apply(out_sm,1,sum)/apply(out[,-1],1,sum), ylim = c(0,0.5))
-plot(x = out$time, apply(out_itf,1,sum)/apply(out[,-1],1,sum), ylim = c(0,0.5))
-plot(x = out$time, apply(out_itm,1,sum)/apply(out[,-1],1,sum), ylim = c(0,0.5))
-plot(x = out$time, apply(out_irf,1,sum)/apply(out[,-1],1,sum), ylim = c(0,0.2))
-plot(x = out$time, apply(out_irm,1,sum)/apply(out[,-1],1,sum), ylim = c(0,0.2))
-plot(x = out$time, apply(out_icf,1,sum)/apply(out[,-1],1,sum), ylim = c(0,0.2))
-plot(x = out$time, apply(out_icm,1,sum)/apply(out[,-1],1,sum), ylim = c(0,0.2))
-plot(x = out$time, apply(out_enchbf,1,sum)/apply(out[,-1],1,sum), ylim = c(0,0.1))
-plot(x = out$time, apply(out_enchbm,1,sum)/apply(out[,-1],1,sum), ylim = c(0,0.1))
-plot(x = out$time, apply(out_ccf,1,sum)/apply(out[,-1],1,sum), ylim = c(0,0.05))
-plot(x = out$time, apply(out_ccm,1,sum)/apply(out[,-1],1,sum), ylim = c(0,0.05))
-plot(x = out$time, apply(out_dccf,1,sum)/apply(out[,-1],1,sum), ylim = c(0,0.05))
-plot(x = out$time, apply(out_dccm,1,sum)/apply(out[,-1],1,sum), ylim = c(0,0.05))
-plot(x = out$time, apply(out_hccf,1,sum)/apply(out[,-1],1,sum), ylim = c(0,0.05))
-plot(x = out$time, apply(out_hccm,1,sum)/apply(out[,-1],1,sum), ylim = c(0,0.05))
-plot(x = out$time, apply(out_rf,1,sum)/apply(out[,-1],1,sum), ylim = c(0,0.5))
-plot(x = out$time, apply(out_rm,1,sum)/apply(out[,-1],1,sum), ylim = c(0,0.5))
+plot(ages, outpath$carriers[which(outpath$carriers$time == 2015),-1]/
+       outpath$pop[which(outpath$pop$time == 2015),-1], type = "l", ylim = c(0,0.3))
 
 ### Run model checks
 # devtools::test()
