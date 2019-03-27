@@ -1,10 +1,9 @@
 ###################################
-### Imperial HBV model 12/02/19 ###
+### Imperial HBV model 27/03/19 ###
 ###################################
 # Model described in Shevanthi's thesis with some adaptations
 # Currently only infant vaccination in second age group, no birth dose or treatment
 # Solving using ODE45
-
 
 ### Load packages ----
 require(tidyr)
@@ -730,7 +729,8 @@ reset_pop_1950 <- function(timestep, pop, parameters){
     scaler <- array(c(rep(pop_increase[,1], n_infectioncat),
                       rep(pop_increase[,2], n_infectioncat)), dim = c(n_agecat,n_infectioncat,2))
     pop <- scaler * pop
-    return(c(pop, rep(0,n_agecat), rep(0,n_agecat), rep(0,n_agecat), rep(0,n_agecat), 0, 0))
+    return(c(pop, rep(0,n_agecat), rep(0,n_agecat), rep(0,n_agecat), rep(0,n_agecat), 0, 0,
+             rep(0,n_agecat), rep(0,n_agecat)))
   })
 }
 
@@ -798,6 +798,9 @@ imperial_model <- function(timestep, pop, parameters) {
                       dim=c(n_agecat,n_infectioncat,2))  # female and male incident migrants in each infection comp
     dcum_infections <- matrix(rep(0, 2* n_agecat),
                          ncol = 2, nrow = n_agecat)      # female and male incident infections
+    dcum_hbv_deaths <- matrix(rep(0, 2* n_agecat),
+                              ncol = 2, nrow = n_agecat)      # female and male incident HBV-related deaths
+
 
     # TRANSMISSION
 
@@ -888,9 +891,14 @@ imperial_model <- function(timestep, pop, parameters) {
         # Applying same age-specific mortality rate to every infection compartment
         # Returns an array with indicent deaths and net migrants for every age (rows), infection state (columns) and sex (arrays)
 
-        # Infection: Incident infections
+        # Infection: Incident infections (all) and incident chronic infections
         dcum_infections[index$ages_all,i] <- foi * pop[index$ages_all,S,i]
         # Returns a matrix with incident infections for every age (rows) and every sex (columns)
+
+        # Incident deaths due to HBV (from cirrhosis and HCC)
+        dcum_hbv_deaths[index$ages_all,i] <- mu_cc * pop[index$ages_all,CC,i] +
+          mu_dcc * pop[index$ages_all,DCC,i] + mu_hcc * pop[index$ages_all,HCC,i]
+        # Returns a matrix with incident HBV deaths for every age (rows) and every sex (columns)
 
         # Transitions between compartments:
 
@@ -990,7 +998,8 @@ imperial_model <- function(timestep, pop, parameters) {
     #}
 
     # Return results
-    res <- c(dpop, dcum_deaths, dcum_infections, dcum_births, dcum_infected_births)
+    res <- c(dpop, dcum_deaths, dcum_infections, dcum_births, dcum_infected_births,
+             dcum_hbv_deaths)
     list(res)
 
   })
@@ -1033,7 +1042,7 @@ generate_parameters <- function(..., default_parameter_list, parms_to_change = l
 }
 
 # Run the model
-# Old function, not used anymore
+# Old function, not used anymore but has likelihood
 run_model_old <- function(b1 = b1, b2 = b2, b3 = b3, alpha = alpha,
                       mtct_prob_e = mtct_prob_e, mtct_prob_s = mtct_prob_s,
                       p_chronic = p_chronic, pr_it_ir = pr_it_ir, pr_ir_ic = pr_ir_ic,
@@ -1121,6 +1130,7 @@ run_model <- function(..., default_parameter_list, parms_to_change = list(...),
   cum_infections <- select(out, contains("incidence"))
   cum_births <- select(out, contains("cum_births"))
   cum_infected_births <- select(out, contains("infected_births"))
+  cum_hbv_deaths <- select(out, contains("cum_hbv_deaths"))
  # pop <- data.frame(time = out$time, out[,2:(n_agecat*n_infectioncat*2+1)])
   #cum_deaths <- data.frame(time = out$time, select(out, contains("deaths")))
   #cum_infections <- data.frame(time = out$time, select(out, contains("incidence")))
@@ -1128,7 +1138,8 @@ run_model <- function(..., default_parameter_list, parms_to_change = list(...),
   #cum_infected_births <- data.frame(time = out$time, select(out, contains("infected_births")))
 
   toreturn <- list(time = out$time, out = pop, cum_deaths = cum_deaths, cum_births = cum_births,
-                   cum_infections = cum_infections, cum_infected_births = cum_infected_births)
+                   cum_infections = cum_infections, cum_infected_births = cum_infected_births,
+                   cum_hbv_deaths = cum_hbv_deaths)
 
   return(toreturn)
 }
@@ -1217,6 +1228,10 @@ code_model_output <- function(output) {
   # Cumulative number of infected births
   out_cum_infected_births <- unlist(output$cum_infected_births)
 
+  # Cumulative number of HBV-related deaths (from cirrhosis and HCC)
+  out_cum_hbv_deathsf <- select(output$cum_hbv_deaths, starts_with("cum_hbv_deathsf"))
+  out_cum_hbv_deathsm <- select(output$cum_hbv_deaths, starts_with("cum_hbv_deathsm"))
+
   ## Code infection outputs
 
   # Age-specific number in each infection compartment per time step
@@ -1272,6 +1287,23 @@ code_model_output <- function(output) {
                                           infected_births = c(out_cum_infected_births[1],
                                                               diff(out_cum_infected_births,
                                                                    lag = 1)))
+
+  # Age-specific number of HBV-related deaths - for women and men
+  hbv_deaths_female <- data.frame(time = output$time,
+                                            hbv_deaths = rbind(out_cum_hbv_deathsf[1,],
+                                                               apply(out_cum_hbv_deathsf,
+                                                                     2, diff, lag = 1)))
+  names(hbv_deaths_female)[-1] <- sprintf("deaths%g",ages)
+  hbv_deaths_male <- data.frame(time = output$time,
+                                  hbv_deaths = rbind(out_cum_hbv_deathsm[1,],
+                                                     apply(out_cum_hbv_deathsm,
+                                                           2, diff, lag = 1)))
+  names(hbv_deaths_male)[-1] <- sprintf("deaths%g",ages)
+  # Total number of HBV deaths per time step
+  hbv_deaths <- data.frame(time = output$time,
+                           deathsf = apply(hbv_deaths_female[,-1], 1, sum),
+                           deathsm = apply(hbv_deaths_male[,-1], 1, sum))
+  hbv_deaths$deaths_total <- hbv_deaths$deathsf + hbv_deaths$deathsm
 
 
   ## Code demography outputs
@@ -1346,6 +1378,7 @@ code_model_output <- function(output) {
                    "deaths_total_group5" = deaths_total_group5,
                    "births_group5" =  births_group5,
                    "incident_infections" = incident_infections,
+                   "hbv_deaths" = hbv_deaths,
                    "full_output" = output)
   return(toreturn)
 
@@ -1380,7 +1413,8 @@ init_pop <- c("Sf" = popsize_1950$pop_female*(1-gambia_infected),
                "Rm" = rep(0,n_agecat),
                "cum_deathsf" = rep(0,n_agecat), "cum_deathsm" = rep(0,n_agecat),
                "cum_incidencef" = rep(0,n_agecat), "cum_incidencem" = rep(0,n_agecat),
-               "cum_births" = 0, "cum_infected_births" = 0)
+               "cum_births" = 0, "cum_infected_births" = 0,
+               "cum_hbv_deathsf" = rep(0,n_agecat), "cum_hbv_deathsm" = rep(0,n_agecat))
 
 # Check initial population vector is the right size
 length(init_pop) == n_infectioncat*n_agecat*2+4*n_agecat+2
@@ -1451,85 +1485,51 @@ out <- run_scenarios(default_parameter_list = parameter_list,
 toc()
 
 
-# Prevalence over time
-par(mfrow=c(1,2))
+### Output plots with vaccine impact ----
+# Carrier prevalence over time with/without infant vaccine
 plot(out$scenario_vacc$time, out$scenario_vacc$infectioncat_total$carriers/
        out$scenario_vacc$pop_total$pop_total,
-     type = "l", xlim = c(1850,2100), ylim = c(0,1),
-     xlab = "Time", ylab = "Carrier/sus (red)/immune (blue) prevalence", main = "Vaccine")
-lines(out$scenario_vacc$time,out$scenario_vacc$infectioncat_total$sus/
-        out$scenario_vacc$pop_total$pop_total,col= "red")
-lines(out$scenario_vacc$time,out$scenario_vacc$infectioncat_total$immune/
-        out$scenario_vacc$pop_total$pop_total,col= "blue")
-plot(out$scenario_no_vacc$time,out$scenario_no_vacc$infectioncat_total$carriers/
-       out$scenario_no_vacc$pop_total$pop_total,
-     type = "l", xlim = c(1850,2100), ylim = c(0,1),
-     xlab = "Time", ylab = "Carrier/sus (red)/immune (blue) prevalence", main = "No vaccine")
+     type = "l", xlim = c(1850,2100), ylim = c(0,0.4), col = "red",
+     xlab = "Time", ylab = "Carrier prevalence", main = "No vaccine (black) vs infant vaccine (red)")
+lines(out$scenario_no_vacc$time,out$scenario_no_vacc$infectioncat_total$carriers/
+       out$scenario_no_vacc$pop_total$pop_total, col = "black")
+
+# Number of people living with chronic HBV at each timestep with/without infant vaccine
+plot(out$scenario_no_vacc$time,out$scenario_no_vacc$infectioncat_total$carriers,
+     type = "l", xlim = c(1960,2100),
+     xlab = "Time", ylab = "Number of people living with chronic HBV", main = "No vaccine (black) vs infant vaccine (red)")
+lines(out$scenario_vacc$time, out$scenario_vacc$infectioncat_total$carriers, col = "red")
+
+# Susceptible prevalence over time with/without infant vaccine
+plot(out$scenario_vacc$time, out$scenario_vacc$infectioncat_total$sus/
+       out$scenario_vacc$pop_total$pop_total,
+     type = "l", xlim = c(1850,2100), ylim = c(0,1), col = "red",
+     xlab = "Time", ylab = "Prevalence in susceptible compartment", main = "No vaccine (black) vs infant vaccine (red)")
 lines(out$scenario_no_vacc$time,out$scenario_no_vacc$infectioncat_total$sus/
-        out$scenario_no_vacc$pop_total$pop_total,col= "red")
+        out$scenario_no_vacc$pop_total$pop_total, col = "black")
+
+# Immune prevalence over time with/without infant vaccine
+plot(out$scenario_vacc$time, out$scenario_vacc$infectioncat_total$immune/
+       out$scenario_vacc$pop_total$pop_total,
+     type = "l", xlim = c(1850,2100), ylim = c(0,1), col = "red",
+     xlab = "Time", ylab = "Prevalence in immune compartment", main = "No vaccine (black) vs infant vaccine (red)")
 lines(out$scenario_no_vacc$time,out$scenario_no_vacc$infectioncat_total$immune/
-        out$scenario_no_vacc$pop_total$pop_total,col= "blue")
+        out$scenario_no_vacc$pop_total$pop_total, col = "black")
 
-#b1 = 0.035, b2 = 0.001, b3 = 0.0001
+# Number of HBV-related deaths at each timestep with/without infant vaccine
+plot(out$scenario_no_vacc$time, out$scenario_no_vacc$hbv_deaths$deaths_total,
+     type = "l", xlim = c(1960,2100), ylim = c(0, 1100),
+     xlab = "Time", ylab = "HBV-related deaths at each timestep",
+     main = "No vaccine (black) vs infant vaccine (red), deaths among males = dashed")
+lines(out$scenario_vacc$time, out$scenario_vacc$hbv_deaths$deaths_total, col = "red")
+lines(out$scenario_no_vacc$time, out$scenario_no_vacc$hbv_deaths$deathsm,
+      lty = "dashed")
+lines(out$scenario_no_vacc$time, out$scenario_vacc$hbv_deaths$deathsm,
+      col = "red", lty = "dashed")
 
-### Plots ----
-outpath <- out
 
-## DEMOGRAPHY
-
-## Total population, births, deaths
-
-# Plot total population size over timesteps
-plot(outpath$pop_total$time, outpath$pop_total$pop_total,
-     xlab = "Year", ylab = "Population size", ylim = c(0,7000000))
-points(popsize_total$time, popsize_total$pop, col = "red")
-
-# Plot total number of births over time periods
-plot(outpath$births_group5$timegroup, outpath$births_group5$births,
-     xlab = "5-year time periods", ylab = "Total number of births",
-     type = "l", ylim = c(0,600000))
-points(x = as.numeric(strtrim(input_births_clean$time, width = 4)),
-       y = input_births_clean$births, col = "red")
-
-# Plot total number of deaths over time periods
-plot(x = as.numeric(strtrim(deaths_total$time, width = 4)),
-     y = deaths_total$deaths, col = "red",
-     xlab = "5-year time periods", ylab = "Total number of deaths")
-lines(outpath$deaths_total_group5$timegroup, outpath$deaths_total_group5$total)
-
-## Age structure
-
-# Plot female age structure in 1970
-plot(x = ages,
-     y = outpath$pop_female[which(outpath$pop_female$time == 1970),index$ages_all+1]/da,
-     type = "l", xlab = "Age", ylab = "Population", main = "1970 - women")
-points(x = seq(2,82,5),
-       y = input_popsize_female_clean$pop[input_popsize_female_clean$time == "1970"]/5,
-       col = "red")
-
-# Plot male age structure in 2005
-plot(x = ages,
-     y = outpath$pop_male[which(outpath$pop_male$time == 2005),index$ages_all+1]/da,
-     type = "l", xlab = "Age", ylab = "Population", main = "2005 - men")
-points(x = seq(2,102,5),
-       y = input_popsize_male_clean$pop[input_popsize_male_clean$time == "2005"]/5,
-       col = "red")
-
-# Plot male age structure in 2070
-plot(x = ages,
-     y = outpath$pop_male[which(outpath$pop_male$time == 2070),index$ages_all+1]/da,
-     type = "l", xlab = "Age", ylab = "Population", main = "2070 - men")
-points(x = seq(2,102,5),
-       y = input_popsize_male_clean$pop[input_popsize_male_clean$time == "2070"]/5,
-       col = "red")
-
-# Plot female age structure in 2050
-plot(x = ages,
-     y = outpath$pop_female[which(outpath$pop_female$time == 2050),index$ages_all+1]/da,
-     type = "l", xlab = "Age", ylab = "Population", main = "2050 - women")
-points(x = seq(2,102,5),
-       y = input_popsize_female_clean$pop[input_popsize_female_clean$time == "2050"]/5,
-       col = "red")
+### Separate plots ----
+outpath <- out$scenario_vacc
 
 ## INFECTION DYNAMICS
 
@@ -1554,30 +1554,217 @@ outpath$infectioncat_total$carriers[which(outpath$infectioncat_total$time == 201
   outpath$pop_total$pop_total[which(outpath$pop_total$time == 2015)]
 
 # Carrier prevalence over time in different age groups
-plot(x = outpath$carriers[,1], y = as.numeric(unlist(outpath$carriers[,2]/outpath$pop[,2]))) # age 0
+plot(x = outpath$carriers[,1], y = as.numeric(unlist(outpath$carriers[,2]/outpath$pop[,2]))) # age 0.5
 abline(v = 1991)
-plot(x = outpath$carriers[,1], y = as.numeric(unlist(outpath$carriers[,3]/outpath$pop[,3]))) # age 0.5
+plot(x = outpath$carriers[,1], y = as.numeric(unlist(outpath$carriers[,3]/outpath$pop[,3]))) # age 1
 abline(v = 1991)
-plot(x = outpath$carriers[,1], y = as.numeric(unlist(outpath$carriers[,4]/outpath$pop[,4]))) # age 1
+plot(x = outpath$carriers[,1], y = as.numeric(unlist(outpath$carriers[,4]/outpath$pop[,4]))) # age 1.5
 abline(v = 1991)
-plot(x = outpath$carriers[,1], y = as.numeric(unlist(outpath$carriers[,5]/outpath$pop[,5]))) # age 1.5
+plot(x = outpath$carriers[,1], y = as.numeric(unlist(outpath$carriers[,5]/outpath$pop[,5]))) # age 2
 abline(v = 1991)
-plot(x = outpath$carriers[,1], y = as.numeric(unlist(outpath$carriers[,22]/outpath$pop[,22]))) # age 20
+plot(x = outpath$carriers[,1], y = as.numeric(unlist(outpath$carriers[,22]/outpath$pop[,22]))) #
 abline(v = 1991)
-plot(x = outpath$carriers[,1], y = as.numeric(unlist(outpath$carriers[,700]/outpath$pop[,22]))) # age 70
-
 
 # Carrier prevalence by age in 1980
 plot(ages, outpath$carriers[which(outpath$carriers$time == 1980),-1]/
        outpath$pop[which(outpath$pop$time == 1980),-1], type = "l", ylim = c(0,0.3))
-points(gambia_prevdata$age, gambia_prevdata$edmunds_prev, col = "red")
+#points(gambia_prevdata$age, gambia_prevdata$edmunds_prev, col = "red")
 
 # Carrier prevalence by age in 2015
 plot(ages, outpath$carriers[which(outpath$carriers$time == 2015),-1]/
        outpath$pop[which(outpath$pop$time == 2015),-1], type = "l", ylim = c(0,0.3))
 
-### Run model checks
+# Contribution of MTCT to incidence
+# No vaccine
+View(out$scenario_no_vacc$incident_infections %>%
+       filter(time > 1950.5) %>%
+       mutate(total_infections = horizontal_infections + infected_births,
+              prop_mtct = infected_births/total_infections))
+# Vaccine
+View(out$scenario_vacc$incident_infections %>%
+       filter(time > 1950.5) %>%
+       mutate(total_infections = horizontal_infections + infected_births,
+              prop_mtct = infected_births/total_infections))
+
+### MODEL CHECKS: DEMOGRAPHY PLOTS ----
+
+## Total population, births, deaths
+
+# Plot total population size over timesteps
+plot(outpath$pop_total$time, outpath$pop_total$pop_total,
+     xlab = "Year", ylab = "Population size", type = "l", ylim = c(0,7000000))
+points(popsize_total$time, popsize_total$pop, col = "red")
+
+# Plot total number of births over time periods
+plot(outpath$births_group5$timegroup, outpath$births_group5$births,
+     xlab = "5-year time periods", ylab = "Total number of births",
+     type = "l", ylim = c(0,600000))
+points(x = as.numeric(strtrim(input_births_clean$time, width = 4)),
+       y = input_births_clean$births, col = "red")
+
+# Plot total number of deaths over time periods
+plot(x = outpath$deaths_total_group5$timegroup,
+     y = outpath$deaths_total_group5$total,
+     ylim = c(0,400000), type = "l", xlab = "5-year time periods", ylab = "Total number of deaths")
+points(x = as.numeric(strtrim(deaths_total$time, width = 4)),
+     y = deaths_total$deaths, col = "red")
+
+## Age structure plots ----
+
+# Plots 1950-1990
+par(mfrow=c(4,2))
+# Female age structure in 1950
+plot(x = ages,
+     y = outpath$pop_female[which(outpath$pop_female$time == 1950.5),index$ages_all+1]/da,
+     type = "l", xlab = "Age", ylab = "Population", main = "1950 - women")
+points(x = seq(2,82,5),
+       y = input_popsize_female_clean$pop[input_popsize_female_clean$time == "1950"]/5,
+       col = "red")
+# Male age structure in 1950
+plot(x = ages,
+     y = outpath$pop_male[which(outpath$pop_male$time == 1950.5),index$ages_all+1]/da,
+     type = "l", xlab = "Age", ylab = "Population", main = "1950 - men")
+points(x = seq(2,82,5),
+       y = input_popsize_male_clean$pop[input_popsize_male_clean$time == "1950"]/5,
+       col = "red")
+# Female age structure in 1970
+plot(x = ages,
+     y = outpath$pop_female[which(outpath$pop_female$time == 1970),index$ages_all+1]/da,
+     type = "l", xlab = "Age", ylab = "Population", main = "1970 - women")
+points(x = seq(2,82,5),
+       y = input_popsize_female_clean$pop[input_popsize_female_clean$time == "1970"]/5,
+       col = "red")
+# Male age structure in 1970
+plot(x = ages,
+     y = outpath$pop_male[which(outpath$pop_male$time == 1970),index$ages_all+1]/da,
+     type = "l", xlab = "Age", ylab = "Population", main = "1970 - men")
+points(x = seq(2,82,5),
+       y = input_popsize_male_clean$pop[input_popsize_male_clean$time == "1970"]/5,
+       col = "red")
+# Female age structure in 1980
+plot(x = ages,
+     y = outpath$pop_female[which(outpath$pop_female$time == 1980),index$ages_all+1]/da,
+     type = "l", xlab = "Age", ylab = "Population", main = "1980 - women")
+points(x = seq(2,82,5),
+       y = input_popsize_female_clean$pop[input_popsize_female_clean$time == "1980"]/5,
+       col = "red")
+# Male age structure in 1980
+plot(x = ages,
+     y = outpath$pop_male[which(outpath$pop_male$time == 1980),index$ages_all+1]/da,
+     type = "l", xlab = "Age", ylab = "Population", main = "1980 - men")
+points(x = seq(2,82,5),
+       y = input_popsize_male_clean$pop[input_popsize_male_clean$time == "1980"]/5,
+       col = "red")
+# Female age structure in 1990
+plot(x = ages,
+     y = outpath$pop_female[which(outpath$pop_female$time == 1990),index$ages_all+1]/da,
+     type = "l", xlab = "Age", ylab = "Population", main = "1990 - women")
+points(x = seq(2,102,5),
+       y = input_popsize_female_clean$pop[input_popsize_female_clean$time == "1990"]/5,
+       col = "red")
+# Male age structure in 1990
+plot(x = ages,
+     y = outpath$pop_male[which(outpath$pop_male$time == 1990),index$ages_all+1]/da,
+     type = "l", xlab = "Age", ylab = "Population", main = "1990 - men")
+points(x = seq(2,102,5),
+       y = input_popsize_male_clean$pop[input_popsize_male_clean$time == "1990"]/5,
+       col = "red")
+
+# Plots 2000-2050
+par(mfrow=c(4,2))
+# Female age structure in 2000
+plot(x = ages,
+     y = outpath$pop_female[which(outpath$pop_female$time == 2000),index$ages_all+1]/da,
+     type = "l", xlab = "Age", ylab = "Population", main = "2000 - women")
+points(x = seq(2,102,5),
+       y = input_popsize_female_clean$pop[input_popsize_female_clean$time == "2000"]/5,
+       col = "red")
+# Male age structure in 2000
+plot(x = ages,
+     y = outpath$pop_male[which(outpath$pop_male$time == 2000),index$ages_all+1]/da,
+     type = "l", xlab = "Age", ylab = "Population", main = "2000 - men")
+points(x = seq(2,102,5),
+       y = input_popsize_male_clean$pop[input_popsize_male_clean$time == "2000"]/5,
+       col = "red")
+# Female age structure in 2010
+plot(x = ages,
+     y = outpath$pop_female[which(outpath$pop_female$time == 2010),index$ages_all+1]/da,
+     type = "l", xlab = "Age", ylab = "Population", main = "2010 - women")
+points(x = seq(2,102,5),
+       y = input_popsize_female_clean$pop[input_popsize_female_clean$time == "2010"]/5,
+       col = "red")
+# Male age structure in 2010
+plot(x = ages,
+     y = outpath$pop_male[which(outpath$pop_male$time == 2010),index$ages_all+1]/da,
+     type = "l", xlab = "Age", ylab = "Population", main = "2010 - men")
+points(x = seq(2,102,5),
+       y = input_popsize_male_clean$pop[input_popsize_male_clean$time == "2010"]/5,
+       col = "red")
+# Female age structure in 2020
+plot(x = ages,
+     y = outpath$pop_female[which(outpath$pop_female$time == 2020),index$ages_all+1]/da,
+     type = "l", xlab = "Age", ylab = "Population", main = "2020 - women")
+points(x = seq(2,102,5),
+       y = input_popsize_female_clean$pop[input_popsize_female_clean$time == "2020"]/5,
+       col = "red")
+# Male age structure in 2020
+plot(x = ages,
+     y = outpath$pop_male[which(outpath$pop_male$time == 2020),index$ages_all+1]/da,
+     type = "l", xlab = "Age", ylab = "Population", main = "2020 - men")
+points(x = seq(2,102,5),
+       y = input_popsize_male_clean$pop[input_popsize_male_clean$time == "2020"]/5,
+       col = "red")
+# Female age structure in 2050
+plot(x = ages,
+     y = outpath$pop_female[which(outpath$pop_female$time == 2050),index$ages_all+1]/da,
+     type = "l", xlab = "Age", ylab = "Population", main = "2050 - women")
+points(x = seq(2,102,5),
+       y = input_popsize_female_clean$pop[input_popsize_female_clean$time == "2050"]/5,
+       col = "red")
+# Male age structure in 2050
+plot(x = ages,
+     y = outpath$pop_male[which(outpath$pop_male$time == 2050),index$ages_all+1]/da,
+     type = "l", xlab = "Age", ylab = "Population", main = "2050 - men")
+points(x = seq(2,102,5),
+       y = input_popsize_male_clean$pop[input_popsize_male_clean$time == "2050"]/5,
+       col = "red")
+
+# Plots 2080-2100
+par(mfrow=c(2,2))
+# Female age structure in 2080
+plot(x = ages,
+     y = outpath$pop_female[which(outpath$pop_female$time == 2080),index$ages_all+1]/da,
+     type = "l", xlab = "Age", ylab = "Population", main = "2080 - women", ylim = c(0, 55000))
+points(x = seq(2,102,5),
+       y = input_popsize_female_clean$pop[input_popsize_female_clean$time == "2080"]/5,
+       col = "red")
+# Male age structure in 2080
+plot(x = ages,
+     y = outpath$pop_male[which(outpath$pop_male$time == 2080),index$ages_all+1]/da,
+     type = "l", xlab = "Age", ylab = "Population", main = "2080 - men", ylim = c(0, 55000))
+points(x = seq(2,102,5),
+       y = input_popsize_male_clean$pop[input_popsize_male_clean$time == "2080"]/5,
+       col = "red")
+# Female age structure in 2099.5 (last time point)
+plot(x = ages,
+     y = outpath$pop_female[which(outpath$pop_female$time == last(times_labels)),index$ages_all+1]/da,
+     type = "l", xlab = "Age", ylab = "Population", main = "2100 - women", ylim = c(0, 55000))
+points(x = seq(2,102,5),
+       y = input_popsize_female_clean$pop[input_popsize_female_clean$time == "2100"]/5,
+       col = "red")
+# Male age structure in 2099.5 (last time point)
+plot(x = ages,
+     y = outpath$pop_male[which(outpath$pop_male$time == last(times_labels)),index$ages_all+1]/da,
+     type = "l", xlab = "Age", ylab = "Population", main = "2100 - men", ylim = c(0, 55000))
+points(x = seq(2,102,5),
+       y = input_popsize_male_clean$pop[input_popsize_male_clean$time == "2100"]/5,
+       col = "red")
+par(mfrow=c(1,1))
+
+### Run model checks ----
 # devtools::test()
+
+# DEBUGGING CODE
 
 # Where do negative numbers appear at first timestep?
 out2 <- out[2,]
