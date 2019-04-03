@@ -76,10 +76,6 @@ sagloss_rates <- c(rep(shimakawa_sagloss$sagloss_rate,each = 10/da),
                    rep(shimakawa_sagloss$sagloss_rate[which(shimakawa_sagloss == "50-70")],
                        40/da))
 
-## Calculate age-specific HBeAg-loss function (Shevanthi)
-eag_loss <- 19.8873 * exp(-0.977 * ages) # 19.8873 is the factor in Shevanthi's model
-#eag_loss <- 15 * exp(-0.977 * ages)
-
 ## Calculate age-specific cancer rate progression function (Shevanthi)
 cancer_prog_female <- 1e-07 * ((ages * 100* 0.2) + 2 * exp(0.0953 * ages))
 cancer_prog_male <- 5 * cancer_prog_female
@@ -858,7 +854,13 @@ imperial_model <- function(timestep, pop, parameters) {
              rep(foi_unique[3], times = length(index$ages_6to15)),
              rep(foi_unique[4], times = length(index$ages_16to100)))
 
-    # PARTIAL DIFFERENTIAL EQUATIONS (solving for each sex separately)
+
+    # NATURAL HISTORY: PREPARE AGE-SPECIFIC PROGESSION RATES
+
+    # Age-specific function of progression from IT and IR to IC and ENCHB (represents eAg loss)
+    eag_loss_function <- infection_progression_parameter * exp(-eag_loss * ages)
+
+    # SIMULATE PROGRESSION: DIFFERENTIAL EQUATIONS (solving for each sex separately)
 
     for (i in 1:2) {        # i = sex [1 = female, 2 = male]
 
@@ -894,21 +896,21 @@ imperial_model <- function(timestep, pop, parameters) {
       # Immune tolerant
       dpop[index$ages_all,IT,i] <- -(diff(c(0,pop[index$ages_all,IT,i]))/da) +
         dcum_chronic_infections[index$ages_all,i] -
-        pr_it_ir * pop[index$ages_all,IT,i] -
+        pr_it_ir*eag_loss_function * pop[index$ages_all,IT,i] -
         hccr_it[index$ages_all,i] * pop[index$ages_all,IT,i] -
         deaths[index$ages_all,IT,i] + migrants[index$ages_all,IT,i]
 
       # Immune reactive
       dpop[index$ages_all,IR,i] <- -(diff(c(0,pop[index$ages_all,IR,i]))/da) +
-        pr_it_ir * pop[index$ages_all,IT,i] -
-        pr_ir_ic * pop[index$ages_all,IR,i] -
+        pr_it_ir*eag_loss_function * pop[index$ages_all,IT,i] -
+        pr_ir_ic*eag_loss_function * pop[index$ages_all,IR,i] -
         pr_ir_enchb * pop[index$ages_all,IR,i] -
         hccr_ir[index$ages_all,i] * pop[index$ages_all,IR,i] -
         deaths[index$ages_all,IR,i] + migrants[index$ages_all,IR,i]
 
       # Inactive carrier
       dpop[index$ages_all,IC,i] <- -(diff(c(0,pop[index$ages_all,IC,i]))/da) +
-        pr_ir_ic * pop[index$ages_all,IR,i] -
+        pr_ir_ic*eag_loss_function * pop[index$ages_all,IR,i] -
         pr_ic_enchb * pop[index$ages_all,IC,i] -
         sag_loss * pop[index$ages_all,IC,i] -
         hccr_ic[index$ages_all,i] * pop[index$ages_all,IC,i] -
@@ -1004,18 +1006,19 @@ timevary_parameters_old <- function(timestep, dataset) {
 ## Event function: reset population size to initial (1850) size in 1950
 reset_pop_1950 <- function(timestep, pop, parameters){
   with (as.list(pop),{
-    pop <- array(unlist(pop[1:(2 * n_infectioncat * n_agecat)]),dim=c(n_agecat,n_infectioncat,2))
+    pop_to_reset <- array(unlist(pop[1:(2 * n_infectioncat * n_agecat)]),dim=c(n_agecat,n_infectioncat,2))
     initialpop <- array(unlist(init_pop[1:(2 * n_infectioncat * n_agecat)]),dim=c(n_agecat,n_infectioncat,2))
 
-    current_pop <- apply(pop,c(1,3),sum)
+    current_pop <- apply(pop_to_reset,c(1,3),sum)
     pop_increase <- apply(initialpop, c(1,3), sum)/current_pop
     scaler <- array(c(rep(pop_increase[,1], n_infectioncat),
                       rep(pop_increase[,2], n_infectioncat)), dim = c(n_agecat,n_infectioncat,2))
-    pop <- scaler * pop
-    return(c(pop, rep(0,n_agecat), rep(0,n_agecat), rep(0,n_agecat),
-             rep(0,n_agecat), rep(0,n_agecat), rep(0,n_agecat),
-             0, 0, 0,
-             rep(0,n_agecat), rep(0,n_agecat)))
+    pop_to_reset <- scaler * pop_to_reset
+    return(c(pop_to_reset, unlist(init_pop[(2*n_infectioncat*n_agecat+1):length(init_pop)])))
+ #   return(c(pop_to_reset, rep(0,n_agecat), rep(0,n_agecat), rep(0,n_agecat),
+ #            rep(0,n_agecat), rep(0,n_agecat), rep(0,n_agecat),
+ #            0, 0, 0,
+ #            rep(0,n_agecat), rep(0,n_agecat)))
   })
 }
 
@@ -1489,8 +1492,10 @@ parameter_list <- list(
   mtct_prob_s = 0.05, # Shevanthi model value, probability of perinatal transmission from HBeAg-negative infected mother
   # NATURAL HISTORY PROGRESSION RATES
   p_chronic = c(0.89, exp(-0.65*ages[-1]^0.46)),     # Age-dependent probability of chronic carriage. Adapted Edmunds
-  pr_it_ir = 0.1 * eag_loss,
-  pr_ir_ic = 0.05 * eag_loss,
+  pr_it_ir = 0.1,
+  pr_ir_ic = 0.05,
+  infection_progression_parameter = 19.8873, # 9.5 in Margaret's Ethiopia fit
+  eag_loss = 0.977, # 0.1281 in Margaret's Ethiopia fit
   pr_ir_enchb = 0.005,
   pr_ic_enchb = 0.01,
   sag_loss = 0.01,  # Shevanthi value, inactive carrier to recovered transition
@@ -1539,59 +1544,32 @@ out <- run_scenarios(default_parameter_list = parameter_list,
 toc()
 
 
-### Output plots with vaccine impact ----
-# Carrier prevalence over time with/without infant vaccine
-plot(out$scenario_vacc$time, out$scenario_vacc$infectioncat_total$carriers/
-       out$scenario_vacc$pop_total$pop_total,
-     type = "l", xlim = c(1850,2100), ylim = c(0,0.4), col = "red",
-     xlab = "Time", ylab = "Carrier prevalence", main = "No vaccine (black) vs infant vaccine (red)")
-lines(out$scenario_no_vacc$time,out$scenario_no_vacc$infectioncat_total$carriers/
-       out$scenario_no_vacc$pop_total$pop_total, col = "black")
-
+### Output plots with and without vaccine impact ----
 # Number of people living with chronic HBV at each timestep with/without infant vaccine
 plot(out$scenario_no_vacc$time,out$scenario_no_vacc$infectioncat_total$carriers,
      type = "l", xlim = c(1960,2100),
      xlab = "Time", ylab = "Number of people living with chronic HBV", main = "No vaccine (black) vs infant vaccine (red)")
 lines(out$scenario_vacc$time, out$scenario_vacc$infectioncat_total$carriers, col = "red")
 
-# Susceptible prevalence over time with/without infant vaccine
-plot(out$scenario_vacc$time, out$scenario_vacc$infectioncat_total$sus/
+# Carrier prevalence over time with/without infant vaccine
+plot(out$scenario_vacc$time, out$scenario_vacc$infectioncat_total$carriers/
        out$scenario_vacc$pop_total$pop_total,
-     type = "l", xlim = c(1850,2100), ylim = c(0,1), col = "red",
-     xlab = "Time", ylab = "Prevalence in susceptible compartment", main = "No vaccine (black) vs infant vaccine (red)")
-lines(out$scenario_no_vacc$time,out$scenario_no_vacc$infectioncat_total$sus/
-        out$scenario_no_vacc$pop_total$pop_total, col = "black")
-
-# Immune prevalence over time with/without infant vaccine
-plot(out$scenario_vacc$time, out$scenario_vacc$infectioncat_total$immune/
-       out$scenario_vacc$pop_total$pop_total,
-     type = "l", xlim = c(1850,2100), ylim = c(0,1), col = "red",
-     xlab = "Time", ylab = "Prevalence in immune compartment", main = "No vaccine (black) vs infant vaccine (red)")
-lines(out$scenario_no_vacc$time,out$scenario_no_vacc$infectioncat_total$immune/
-        out$scenario_no_vacc$pop_total$pop_total, col = "black")
-
-# Number of HBV-related deaths at each timestep with/without infant vaccine
-plot(out$scenario_no_vacc$time, out$scenario_no_vacc$hbv_deaths$deaths_total,
-     type = "l", xlim = c(1960,2100), ylim = c(0, 1100),
-     xlab = "Time", ylab = "HBV-related deaths at each timestep",
-     main = "No vaccine (black) vs infant vaccine (red), deaths among males = dashed")
-lines(out$scenario_vacc$time, out$scenario_vacc$hbv_deaths$deaths_total, col = "red")
-lines(out$scenario_no_vacc$time, out$scenario_no_vacc$hbv_deaths$deathsm,
-      lty = "dashed")
-lines(out$scenario_no_vacc$time, out$scenario_vacc$hbv_deaths$deathsm,
-      col = "red", lty = "dashed")
+     type = "l", xlim = c(1850,2100), ylim = c(0,0.4), col = "red",
+     xlab = "Time", ylab = "Chronic carrier prevalence", main = "No vaccine (black) vs infant vaccine (red)")
+lines(out$scenario_no_vacc$time,out$scenario_no_vacc$infectioncat_total$carriers/
+       out$scenario_no_vacc$pop_total$pop_total, col = "black")
 
 # Number of new cases of chronic HBV carriage at each timestep with/without infant vaccine
 plot(out$scenario_no_vacc$time,
      (out$scenario_no_vacc$incident_chronic_infections$horizontal_chronic_infections+
-       out$scenario_no_vacc$incident_chronic_infections$chronic_births),
+        out$scenario_no_vacc$incident_chronic_infections$chronic_births),
      type = "l", xlim = c(1960,2100), ylim = c(0, 12000),
-     xlab = "Time", ylab = "New cases of chronic HBV carriage at each timestep",
+     xlab = "Time", ylab = "New cases of chronic HBV carriage per timestep",
      main = "No vaccine (black) vs infant vaccine (red), from MTCT = dashed")
 lines(out$scenario_vacc$time,
-     (out$scenario_vacc$incident_chronic_infections$horizontal_chronic_infections+
-        out$scenario_vacc$incident_chronic_infections$chronic_births),
-     col = "red")
+      (out$scenario_vacc$incident_chronic_infections$horizontal_chronic_infections+
+         out$scenario_vacc$incident_chronic_infections$chronic_births),
+      col = "red")
 lines(out$scenario_no_vacc$time,
       out$scenario_no_vacc$incident_chronic_infections$chronic_births,
       lty = "dashed")
@@ -1612,14 +1590,41 @@ lines(out$scenario_no_vacc$time,
         apply(out$scenario_no_vacc$sus,1,sum),
       lty = "dashed")
 lines(out$scenario_vacc$time,
-     (out$scenario_vacc$incident_chronic_infections$horizontal_chronic_infections+
-        out$scenario_vacc$incident_chronic_infections$chronic_births)*100000/
-       apply(out$scenario_vacc$sus,1,sum),
-     col = "red")
+      (out$scenario_vacc$incident_chronic_infections$horizontal_chronic_infections+
+         out$scenario_vacc$incident_chronic_infections$chronic_births)*100000/
+        apply(out$scenario_vacc$sus,1,sum),
+      col = "red")
 lines(out$scenario_vacc$time,
       out$scenario_vacc$incident_chronic_infections$chronic_births*100000/
         apply(out$scenario_vacc$sus,1,sum),
       lty = "dashed", col = "red")
+
+# Number of HBV-related deaths at each timestep with/without infant vaccine
+plot(out$scenario_no_vacc$time, out$scenario_no_vacc$hbv_deaths$deaths_total,
+     type = "l", xlim = c(1960,2100), ylim = c(0, 1100),
+     xlab = "Time", ylab = "HBV-related deaths per timestep",
+     main = "No vaccine (black) vs infant vaccine (red), deaths among males = dashed")
+lines(out$scenario_vacc$time, out$scenario_vacc$hbv_deaths$deaths_total, col = "red")
+lines(out$scenario_no_vacc$time, out$scenario_no_vacc$hbv_deaths$deathsm,
+      lty = "dashed")
+lines(out$scenario_no_vacc$time, out$scenario_vacc$hbv_deaths$deathsm,
+      col = "red", lty = "dashed")
+
+# Susceptible prevalence over time with/without infant vaccine
+plot(out$scenario_vacc$time, out$scenario_vacc$infectioncat_total$sus/
+       out$scenario_vacc$pop_total$pop_total,
+     type = "l", xlim = c(1850,2100), ylim = c(0,1), col = "red",
+     xlab = "Time", ylab = "Prevalence in susceptible compartment", main = "No vaccine (black) vs infant vaccine (red)")
+lines(out$scenario_no_vacc$time,out$scenario_no_vacc$infectioncat_total$sus/
+        out$scenario_no_vacc$pop_total$pop_total, col = "black")
+
+# Immune prevalence over time with/without infant vaccine
+plot(out$scenario_vacc$time, out$scenario_vacc$infectioncat_total$immune/
+       out$scenario_vacc$pop_total$pop_total,
+     type = "l", xlim = c(1850,2100), ylim = c(0,1), col = "red",
+     xlab = "Time", ylab = "Prevalence in immune compartment", main = "No vaccine (black) vs infant vaccine (red)")
+lines(out$scenario_no_vacc$time,out$scenario_no_vacc$infectioncat_total$immune/
+        out$scenario_no_vacc$pop_total$pop_total, col = "black")
 
 ### Separate plots ----
 outpath <- out$scenario_vacc
@@ -1683,7 +1688,9 @@ View(out$scenario_vacc$incident_infections %>%
        mutate(total_infections = horizontal_infections + infected_births,
               prop_mtct = infected_births/total_infections))
 
-### MODEL CHECKS: DEMOGRAPHY PLOTS ----
+### MODEL CHECK: DEMOGRAPHY PLOTS ----
+
+any(unlist(outpath$full_output) < 0)
 
 ## Total population, births, deaths
 
