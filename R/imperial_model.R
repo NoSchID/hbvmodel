@@ -1,7 +1,7 @@
 ###################################
-### Imperial HBV model 01/04/19 ###
+### Imperial HBV model 04/04/19 ###
 ###################################
-# Model described in Shevanthi's thesis with some adaptations
+# Model described in Shevanthi's thesis and adapted by Margaret
 # Currently only infant vaccination in second age group, no birth dose or treatment
 # Solving using ODE45
 
@@ -77,8 +77,8 @@ sagloss_rates <- c(rep(shimakawa_sagloss$sagloss_rate,each = 10/da),
                        40/da))
 
 ## Calculate age-specific cancer rate progression function (Shevanthi)
-cancer_prog_female <- 1e-07 * ((ages * 100* 0.2) + 2 * exp(0.0953 * ages))
-cancer_prog_male <- 5 * cancer_prog_female
+#cancer_prog_female <- 1e-07 * ((ages * 100* 0.2) + 2 * exp(0.0953 * ages))
+#cancer_prog_male <- 5 * cancer_prog_female
 
 ### Load demographic datasets ----
 # Manual data preparation in Excel for 1950-2015 data:
@@ -718,7 +718,7 @@ imperial_model <- function(timestep, pop, parameters) {
 
     # Demography: define time-varying parameters (calls the row corresponding to current timestep)
 
-    # This approach only works for Euler (solving at fixed timestep):
+    # Ignore: this approach only works for Euler (solving at fixed timestep):
     #fertility_rate <- fert_rates[which(times == timestep),-1]
     #migration_rate <- matrix(c(migration_rates_female[which(times == timestep),-1],
     #                           migration_rates_male[which(times == timestep),-1]),
@@ -773,7 +773,6 @@ imperial_model <- function(timestep, pop, parameters) {
     dcum_hbv_deaths <- matrix(rep(0, 2* n_agecat),
                               ncol = 2, nrow = n_agecat)      # female and male incident HBV-related deaths
 
-
     # TRANSMISSION
 
     # Mother-to-child transmission and births
@@ -793,17 +792,24 @@ imperial_model <- function(timestep, pop, parameters) {
 
     # Horizontal transmission: Age-specific force of infection (same for men and women)
 
+    # Define indices for contact groups
+    i_1to4 <- which(ages == 1):which(ages == (5-da))
+    i_1to14 <- which(ages == 1):which(ages == (15-da))
+    i_5plus <- which(ages == 5):which(ages == (100-da))
+
     # Imperial model FOI
 
-    #  foi <- rep(0,100)
-    #  foi[index$ages_1to5] <- b1 * sum(apply(pop[index$ages_1to5,HBeAg_neg,1:2],1,sum))/sum(pop[index$ages_1to5,index$infcat_all,1:2]) +
-    #                          min(1,b1 * alpha) * sum(apply(pop[index$ages_1to5,HBeAg_pos,1:2],1,sum))/sum(pop[index$ages_1to5,index$infcat_all,1:2])
-
-    # foi[2:16] <- foi[2:16] + b2 * sum(apply(pop[2:16,HBeAg_neg,1:2],1,sum))/sum(pop[2:16,index$infcat_all,1:2]) +
-    #                          (b2 * alpha) * sum(apply(pop[2:16,HBeAg_pos,1:2],1,sum))/sum(pop[2:16,index$infcat_all,1:2])
-
-    #  foi[7:100] <- foi[7:100] + b3 * sum(apply(pop[7:100,HBeAg_neg,1:2],1,sum))/sum(pop[7:100,index$infcat_all,1:2]) +
-    #                            (b3 * alpha) * sum(apply(pop[7:100,HBeAg_pos,1:2],1,sum))/sum(pop[7:100,index$infcat_all,1:2])
+    # Set up vector to store the age-specific FOI
+    #foi <- rep(0,n_agecat)
+    # FOI experienced by 1-4 year olds
+    #foi[i_1to4] <- b1 * sum(apply(pop[i_1to4,HBeAg_neg,1:2],1,sum))/sum(pop[i_1to4,index$infcat_all,1:2]) +
+    #                        min(1,b1 * alpha) * sum(apply(pop[i_1to4,HBeAg_pos,1:2],1,sum))/sum(pop[i_1to4,index$infcat_all,1:2])
+    # FOI experienced by 1-14 year olds
+    #foi[i_1to14] <- foi[i_1to14] + b2 * sum(apply(pop[i_1to14,HBeAg_neg,1:2],1,sum))/sum(pop[i_1to14,index$infcat_all,1:2]) +
+    #                          (b2 * alpha) * sum(apply(pop[i_1to14,HBeAg_pos,1:2],1,sum))/sum(pop[i_1to14,index$infcat_all,1:2])
+    # FOI experienced by 5+ year olds
+    #foi[i_5plus] <- foi[i_5plus] + b3 * sum(apply(pop[i_5plus,HBeAg_neg,1:2],1,sum))/sum(pop[i_5plus,index$infcat_all,1:2]) +
+    #                            (b3 * alpha) * sum(apply(pop[i_5plus,HBeAg_pos,1:2],1,sum))/sum(pop[i_5plus,index$infcat_all,1:2])
 
     # Alternative force of infection definition with WAIFW matrix
 
@@ -825,40 +831,55 @@ imperial_model <- function(timestep, pop, parameters) {
     # HBeAg-positive individuals (IT, IR) are more infectious than HBeAg-negatives (multiply by alpha)
     # Sum prevalence in HBeAg-negatives and HBeAg-positives multiplied by alpha
     # Returns 1 number per transmission age group (4 total)
-    # infectious_vector <- c(sum(pop[index$ages_0to1,HBeAg_neg,1:2])/sum(pop[index$ages_0to1,index$infcat_all,1:2]) +
-    #                           (alpha * sum(pop[index$ages_0to1,HBeAg_pos,1:2])/sum(pop[index$ages_0to1,index$infcat_all,1:2])), # 0 year olds
-    #                         sum(pop[index$ages_1to5,HBeAg_neg,1:2])/sum(pop[index$ages_1to5,index$infcat_all,1:2]) +
-    #                           (alpha * sum(pop[index$ages_1to5,HBeAg_pos,1:2])/sum(pop[index$ages_1to5,index$infcat_all,1:2])), # 1-5 year olds
-    #                         sum(pop[index$ages_6to15,HBeAg_neg,1:2])/sum(pop[index$ages_6to15,index$infcat_all,1:2]) +
-    #                           (alpha * sum(pop[index$ages_6to15,HBeAg_pos,1:2])/sum(pop[index$ages_6to15,index$infcat_all,1:2])), # 6-15 year olds
-    #                         sum(pop[index$ages_16to100,HBeAg_neg,1:2])/sum(pop[index$ages_16to100,index$infcat_all,1:2]) +
-    #                           (alpha * sum(pop[index$ages_16to100,HBeAg_pos,1:2])/sum(pop[index$ages_16to100,index$infcat_all,1:2]))) # 16-100 year olds
+    i_5to14 <- which(ages == 5):which(ages == (15-da))
+    i_15to100 <- which(ages == 15):which(ages == (100-da))
 
-    infectious_vector <- c(sum(pop[1,HBeAg_neg,1:2])/sum(pop[1,index$infcat_all,1:2]) +
-                             (alpha * sum(pop[1,HBeAg_pos,1:2])/sum(pop[1,index$infcat_all,1:2])), # 0 year olds
-                           sum(pop[c(2,index$ages_1to5),HBeAg_neg,1:2])/sum(pop[c(2,index$ages_1to5),index$infcat_all,1:2]) +
-                             (alpha * sum(pop[c(2,index$ages_1to5),HBeAg_pos,1:2])/sum(pop[c(2,index$ages_1to5),index$infcat_all,1:2])), # 1-5 year olds
-                           sum(pop[index$ages_6to15,HBeAg_neg,1:2])/sum(pop[index$ages_6to15,index$infcat_all,1:2]) +
-                             (alpha * sum(pop[index$ages_6to15,HBeAg_pos,1:2])/sum(pop[index$ages_6to15,index$infcat_all,1:2])), # 6-15 year olds
-                           sum(pop[index$ages_16to100,HBeAg_neg,1:2])/sum(pop[index$ages_16to100,index$infcat_all,1:2]) +
-                             (alpha * sum(pop[index$ages_16to100,HBeAg_pos,1:2])/sum(pop[index$ages_16to100,index$infcat_all,1:2]))) # 16-100 year olds
+    infectious_vector <- c(sum(pop[index$ages_0to1,HBeAg_neg,1:2])/sum(pop[index$ages_0to1,index$infcat_all,1:2]) +
+                               (alpha * sum(pop[index$ages_0to1,HBeAg_pos,1:2])/sum(pop[index$ages_0to1,index$infcat_all,1:2])), # 0 year olds
+                             sum(pop[i_1to4,HBeAg_neg,1:2])/sum(pop[i_1to4,index$infcat_all,1:2]) +
+                               (alpha * sum(pop[i_1to4,HBeAg_pos,1:2])/sum(pop[i_1to4,index$infcat_all,1:2])), # 1-4 year olds
+                             sum(pop[i_5to14,HBeAg_neg,1:2])/sum(pop[i_5to14,index$infcat_all,1:2]) +
+                               (alpha * sum(pop[i_5to14,HBeAg_pos,1:2])/sum(pop[i_5to14,index$infcat_all,1:2])), # 5-14 year olds
+                             sum(pop[i_15to100,HBeAg_neg,1:2])/sum(pop[i_15to100,index$infcat_all,1:2]) +
+                               (alpha * sum(pop[i_15to100,HBeAg_pos,1:2])/sum(pop[i_15to100,index$infcat_all,1:2]))) # 15-100 year olds
+
+    # 0.5 year olds can get infected:
+    #infectious_vector <- c(sum(pop[1,HBeAg_neg,1:2])/sum(pop[1,index$infcat_all,1:2]) +
+    #                         (alpha * sum(pop[1,HBeAg_pos,1:2])/sum(pop[1,index$infcat_all,1:2])), # 0 year olds
+    #                       sum(pop[c(2,index$ages_1to5),HBeAg_neg,1:2])/sum(pop[c(2,index$ages_1to5),index$infcat_all,1:2]) +
+    #                         (alpha * sum(pop[c(2,index$ages_1to5),HBeAg_pos,1:2])/sum(pop[c(2,index$ages_1to5),index$infcat_all,1:2])), # 1-5 year olds
+    #                       sum(pop[index$ages_6to15,HBeAg_neg,1:2])/sum(pop[index$ages_6to15,index$infcat_all,1:2]) +
+    #                         (alpha * sum(pop[index$ages_6to15,HBeAg_pos,1:2])/sum(pop[index$ages_6to15,index$infcat_all,1:2])), # 6-15 year olds
+    #                       sum(pop[index$ages_16to100,HBeAg_neg,1:2])/sum(pop[index$ages_16to100,index$infcat_all,1:2]) +
+    #                         (alpha * sum(pop[index$ages_16to100,HBeAg_pos,1:2])/sum(pop[index$ages_16to100,index$infcat_all,1:2]))) # 16-100 year olds
 
 
     # Multiply WAIFW matrix by the age-specific proportion of infectious individuals
     # Returns a vector with force of infection for every age - 4 different values:
     # 0 in 0-year olds, different values for 1-5, 6-15 and 16-100 year olds
     foi_unique <- beta %*% infectious_vector
-    # Repeat these values for every 1 year age group
-    foi <- c(rep(foi_unique[1], times = 1),
-             rep(foi_unique[2], times = length(c(2,index$ages_1to5))),
-             rep(foi_unique[3], times = length(index$ages_6to15)),
-             rep(foi_unique[4], times = length(index$ages_16to100)))
+    # Repeat these values for every 1 year age group (assuming 0.5 year olds can't get horizontally infected)
+    foi <- c(rep(foi_unique[1], times = 2),
+             rep(foi_unique[2], times = length(i_1to4)),
+             rep(foi_unique[3], times = length(i_5to14)),
+             rep(foi_unique[4], times = length(i_15to100)))
 
 
     # NATURAL HISTORY: PREPARE AGE-SPECIFIC PROGESSION RATES
 
     # Age-specific function of progression from IT and IR to IC and ENCHB (represents eAg loss)
-    eag_loss_function <- infection_progression_parameter * exp(-eag_loss * ages)
+    eag_loss_function <- eag_loss_accelerator * exp(-eag_loss * ages)
+
+    # Age-specific progression to HCC from all carrier compartments other than DCC (Shevanthi)
+    cancer_prog_function <- (cancer_prog_coefficient * (ages - cancer_age_treshold))^2
+    cancer_prog_function <- cancer_prog_function *
+      c(rep(0, times = which(ages == cancer_age_treshold-da)),
+        rep(1, times = n_agecat - which(ages == cancer_age_treshold-da)))
+    cancer_prog_female <- sapply(cancer_prog_function, function(x) min(x,1)) # maximum annual rate is 1
+    cancer_prog_male <- sapply(cancer_prog_male_cofactor*cancer_prog_female, function(x) min(x,1))
+    cancer_prog_rates <- matrix(data = c(cancer_prog_female, cancer_prog_male),
+                                nrow = n_agecat, ncol = 2)  # store in a matrix to apply to compartment
+
 
     # SIMULATE PROGRESSION: DIFFERENTIAL EQUATIONS (solving for each sex separately)
 
@@ -897,7 +918,7 @@ imperial_model <- function(timestep, pop, parameters) {
       dpop[index$ages_all,IT,i] <- -(diff(c(0,pop[index$ages_all,IT,i]))/da) +
         dcum_chronic_infections[index$ages_all,i] -
         pr_it_ir*eag_loss_function * pop[index$ages_all,IT,i] -
-        hccr_it[index$ages_all,i] * pop[index$ages_all,IT,i] -
+        hccr_it*cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,IT,i] -
         deaths[index$ages_all,IT,i] + migrants[index$ages_all,IT,i]
 
       # Immune reactive
@@ -905,7 +926,7 @@ imperial_model <- function(timestep, pop, parameters) {
         pr_it_ir*eag_loss_function * pop[index$ages_all,IT,i] -
         pr_ir_ic*eag_loss_function * pop[index$ages_all,IR,i] -
         pr_ir_enchb * pop[index$ages_all,IR,i] -
-        hccr_ir[index$ages_all,i] * pop[index$ages_all,IR,i] -
+        hccr_ir*cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,IR,i] -
         deaths[index$ages_all,IR,i] + migrants[index$ages_all,IR,i]
 
       # Inactive carrier
@@ -913,7 +934,7 @@ imperial_model <- function(timestep, pop, parameters) {
         pr_ir_ic*eag_loss_function * pop[index$ages_all,IR,i] -
         pr_ic_enchb * pop[index$ages_all,IC,i] -
         sag_loss * pop[index$ages_all,IC,i] -
-        hccr_ic[index$ages_all,i] * pop[index$ages_all,IC,i] -
+        hccr_ic*cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,IC,i] -
         deaths[index$ages_all,IC,i] + migrants[index$ages_all,IC,i]
 
       # HBeAg-negative CHB
@@ -921,14 +942,14 @@ imperial_model <- function(timestep, pop, parameters) {
         pr_ir_enchb * pop[index$ages_all,IR,i] +
         pr_ic_enchb * pop[index$ages_all,IC,i] -
         ccrate * pop[index$ages_all,ENCHB,i] -
-        hccr_enchb[index$ages_all,i] * pop[index$ages_all,ENCHB,i] -
+        hccr_enchb*cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,ENCHB,i] -
         deaths[index$ages_all,ENCHB,i] + migrants[index$ages_all,ENCHB,i]
 
       # Compensated cirrhosis
       dpop[index$ages_all,CC,i] <- -(diff(c(0,pop[index$ages_all,CC,i]))/da) +
         ccrate * pop[index$ages_all,ENCHB,i] -
         dccrate * pop[index$ages_all,CC,i] -
-        hccr_cc[index$ages_all,i] * pop[index$ages_all,CC,i] -
+        hccr_cc*cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,CC,i] -
         mu_cc * pop[index$ages_all,CC,i] -
         deaths[index$ages_all,CC,i] + migrants[index$ages_all,CC,i]
 
@@ -941,11 +962,11 @@ imperial_model <- function(timestep, pop, parameters) {
 
       # HCC
       dpop[index$ages_all,HCC,i] <- -(diff(c(0,pop[index$ages_all,HCC,i]))/da) +
-        hccr_it[index$ages_all,i] * pop[index$ages_all,IT,i] +
-        hccr_ir[index$ages_all,i] * pop[index$ages_all,IR,i] +
-        hccr_ic[index$ages_all,i] * pop[index$ages_all,IC,i] +
-        hccr_enchb[index$ages_all,i] * pop[index$ages_all,ENCHB,i] +
-        hccr_cc[index$ages_all,i] * pop[index$ages_all,CC,i] +
+        hccr_it*cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,IT,i] +
+        hccr_ir*cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,IR,i] +
+        hccr_ic*cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,IC,i] +
+        hccr_enchb*cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,ENCHB,i] +
+        hccr_cc*cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,CC,i] +
         hccr_dcc * pop[index$ages_all,DCC,i] -
         mu_hcc * pop[index$ages_all,HCC,i] -
         deaths[index$ages_all,HCC,i] + migrants[index$ages_all,HCC,i]
@@ -1155,6 +1176,7 @@ run_model <- function(..., default_parameter_list, parms_to_change = list(...),
   #cum_infections <- data.frame(time = out$time, select(out, contains("incidence")))
   #cum_births <- data.frame(time = out$time, select(out, contains("cum_births")))
   #cum_infected_births <- data.frame(time = out$time, select(out, contains("infected_births")))
+
 
   toreturn <- list(time = out$time, out = pop, cum_deaths = cum_deaths, cum_births = cum_births,
                    cum_infections = cum_infections,
@@ -1441,7 +1463,7 @@ code_model_output <- function(output) {
 }
 
 
-### Model input ----
+### MODEL INPUT ----
 
 # DEMOGRAPHY: SEE ABOVE
 
@@ -1480,22 +1502,21 @@ length(init_pop) == n_infectioncat*n_agecat*2+4*n_agecat+2
 N0 <- sum(init_pop[1:(n_infectioncat * n_agecat * 2)])
 
 ## TRANSMISSION, NATURAL HISTORY AND INTERVENTION PARAMETERS
-# p_chronic: Edmunds approach adapted by using 0.89 for whole first year instead of just 0.5 years
 
 parameter_list <- list(
   # TRANSMISSION PARAMETERS
-  b1 = 0.04,
-  b2 = 0.001,
-  b3 = 0.001,
+  b1 = 0.2027,  # Margaret value in Ethiopia, for my definition of FOI use 0.07
+  b2 = 0.001,   # Margaret value in Ethiopia
+  b3 = 0.001,   # Margaret value in Ethiopia
   alpha = 15,         # Shevanthi value, relative infectiousness of eAg-positives
-  mtct_prob_e = 0.4,  # Shevanthi value, probability of perinatal transmission from HBeAg-positive mother
-  mtct_prob_s = 0.05, # Shevanthi model value, probability of perinatal transmission from HBeAg-negative infected mother
+  mtct_prob_e = 0.9,  # Shevanthi value, probability of perinatal transmission from HBeAg-positive mother
+  mtct_prob_s = 0.3681, # Margaret value in Ethiopia, probability of perinatal transmission from HBeAg-negative infected mother
   # NATURAL HISTORY PROGRESSION RATES
   p_chronic = c(0.89, exp(-0.65*ages[-1]^0.46)),     # Age-dependent probability of chronic carriage. Adapted Edmunds
   pr_it_ir = 0.1,
   pr_ir_ic = 0.05,
-  infection_progression_parameter = 19.8873, # 9.5 in Margaret's Ethiopia fit
-  eag_loss = 0.977, # 0.1281 in Margaret's Ethiopia fit
+  eag_loss_accelerator = 9.5, # 9.5 in Margaret's Ethiopia fit, 19.8873 in Shevanthi's
+  eag_loss = 0.1281, # 0.1281 in Margaret's Ethiopia fit, 0.977 in Shevanthi's
   pr_ir_enchb = 0.005,
   pr_ic_enchb = 0.01,
   sag_loss = 0.01,  # Shevanthi value, inactive carrier to recovered transition
@@ -1503,11 +1524,14 @@ parameter_list <- list(
   ccrate = 0.04,  # Progression to CC (from ENCHB)
   dccrate = 0.04,  # Progression to DCC (from CC)
   # PROGRESSION RATES TO HEPATOCELLULAR CARCINOMA
-  hccr_it = matrix(data = c(cancer_prog_female, cancer_prog_male), nrow = n_agecat, ncol = 2),
-  hccr_ir = matrix(data = c(2*cancer_prog_female, 2*cancer_prog_male), nrow = n_agecat, ncol = 2),
-  hccr_ic = matrix(data = c(0.5*cancer_prog_female, 0.5*cancer_prog_male), nrow = n_agecat, ncol = 2),
-  hccr_enchb = matrix(data = c(2*cancer_prog_female, 2*cancer_prog_male), nrow = n_agecat, ncol = 2),
-  hccr_cc = matrix(data = c(13*cancer_prog_female, 13*cancer_prog_male), nrow = n_agecat, ncol = 2),
+  cancer_prog_coefficient = 4.0452e-05,  # value from Margaret
+  cancer_age_treshold = 10,  # value from Margaret
+  cancer_prog_male_cofactor = 5.2075,  # value from Margaret
+  hccr_it = 1,
+  hccr_ir = 2,
+  hccr_ic = 0.5,
+  hccr_enchb = 2,
+  hccr_cc = 13,
   hccr_dcc = 0.04,
   # HBV-RELATED MORTALITY RATES (MORTALITY FROM LIVER DISEASE)
   mu_cc = 0.039,
@@ -1532,7 +1556,7 @@ parameter_names <- names(parameter_list)
 #parameter_list <- lapply(parameter_list, FUN= function(x) x*0)
 tic()
 sim <- run_model(default_parameter_list = parameter_list,
-                 parms_to_change = list(b1 = 0.05, b2 = 0.001, b3 = 0.0001),
+                 parms_to_change = list(b1 = 0.07),
                  scenario = "vacc")
 out <- code_model_output(sim)
 toc()
@@ -1540,7 +1564,7 @@ toc()
 ### Run the simulation: 2 SCENARIOS (vacc and no_vacc) ----
 tic()
 out <- run_scenarios(default_parameter_list = parameter_list,
-                      parms_to_change = list(b1 = 0.05, b2 = 0.001, b3 = 0.0001))
+                      parms_to_change = list(b1 = 0.07))
 toc()
 
 
