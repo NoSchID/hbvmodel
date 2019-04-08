@@ -1,5 +1,5 @@
 ###################################
-### Imperial HBV model 05/04/19 ###
+### Imperial HBV model 08/04/19 ###
 ###################################
 # Model described in Shevanthi's thesis and adapted by Margaret
 # Currently only infant vaccination in second age group, no birth dose or treatment
@@ -50,7 +50,11 @@ index <- list("infcat_all" = 1:n_infectioncat,            # index for all infect
 #source(here("R/clean.R"))
 
 # Load preformatted data for dt = da = 0.5
+if (da == 0.5) {
 load(here("data/demogdata_0point5.RData"))
+} else {
+  print("Error: can only preload data for 0.5 time/agestep")
+}
 
 ### Infection data preparation ----
 gambia_prevdata <- read.csv(here("testdata", "edmunds_gambia_prev.csv"), stringsAsFactors = FALSE)
@@ -552,73 +556,6 @@ run_model <- function(..., default_parameter_list, parms_to_change = list(...),
 
 }
 
-# Trial function to calculate sum of least squares for overall prevalence at given time point
-fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(...),
-                          scenario = "vacc") {
-
-  ## Define parameter values for model run:
-  # Using default input parameter list or with updated values specified in parms_to_change
-  parameters <- generate_parameters(default_parameter_list = default_parameter_list,
-                                    parms_to_change = parms_to_change)
-
-  # Update parameters for intervention scenario: vaccine (= default) or no vaccine (counterfactual)
-  if (scenario == "vacc") {
-    parameters$apply_vacc <- 1
-  } else if (scenario == "no_vacc") {
-    parameters$apply_vacc <- 0
-  } else {
-    print("Not a valid scenario. Options: vacc, no_vacc")
-  }
-
-  times <- round((0:(170/dt))*dt,2)
-  ## Run model simulation
-  out <- as.data.frame(ode.1D(y = init_pop, times = times, func = imperial_model,
-                              parms = parameters, nspec = 1, method = "ode45",
-                              events = list(func = reset_pop_1950, time = 100)))
-
-  out$time   <-  out$time + starttime
-
-  #list(func = positive_fun, time = times)
-  #events = list(func = reset_pop_1950, time = 100)
-
-  ## Store different types of outputs as a list
-  pop <- out[,2:(n_agecat*n_infectioncat*2+1)]
-  cum_deaths <- select(out, contains("deaths"))
-  cum_infections <- select(out, contains("cum_incidence"))
-  cum_chronic_infections <- select(out, contains("cum_chronic_incidence"))
-  cum_births <- select(out, contains("cum_births"))
-  cum_infected_births <- select(out, contains("infected_births"))
-  cum_chronic_births <- select(out, contains("chronic_births"))
-  cum_hbv_deaths <- select(out, contains("cum_hbv_deaths"))
-
-  toreturn <- list(time = out$time, out = pop, cum_deaths = cum_deaths, cum_births = cum_births,
-                   cum_infections = cum_infections,
-                   cum_chronic_infections = cum_chronic_infections,
-                   cum_infected_births = cum_infected_births,
-                   cum_chronic_births = cum_chronic_births,
-                   cum_hbv_deaths = cum_hbv_deaths)
-
-  return(toreturn)
-
-  # Define my datapoint: Overall HBsAg prevalence in 1980 and 2015
-  data <- data.frame(time = c(1980, 2015), prev = c(0.11, 0.058))
-
-  # Define my model prediction
-  sim <- code_model_output(toreturn)
-  model_prev1980 <- sim$infectioncat_total$carriers[which(sim$time == 1980)]/
-    sim$pop_total$pop_total[which(sim$time == 1980)]
-  model_prev2015 <- sim$infectioncat_total$carriers[which(sim$time == 2015)]/
-    sim$pop_total$pop_total[which(sim$time == 2015)]
-  prediction <- c(model_prev1980, model_prev2015)
-
-  # Calculate sum of least squares
-  sse <- sum((prediction-data$prev)^2)
-
-  res <- list(parameters = parameters, sse = sse)
-
-  #return(sse)
-}
-
 # Function to the model twice under different scenarios
 run_scenarios <- function(..., default_parameter_list, parms_to_change = list(...)) {
 
@@ -937,6 +874,32 @@ init_pop <- c("Sf" = popsize_1950$pop_female*(1-gambia_infected),
                "cum_chronic_infectionsf" = rep(0,n_agecat), "cum_chronic_infectionsm" = rep(0,n_agecat),
                "cum_births" = 0, "cum_infected_births" = 0, "cum_chronic_births" = 0,
                "cum_hbv_deathsf" = rep(0,n_agecat), "cum_hbv_deathsm" = rep(0,n_agecat))
+
+load(here("data/simulated_inits_1960.RData"))
+init_pop_sim <- c("Sf" = select(model_pop1960, starts_with("Sf")),
+              "ITf" = select(model_pop1960, starts_with("ITf")),
+              "IRf" = select(model_pop1960, starts_with("IRf")),
+              "ICf" = select(model_pop1960, starts_with("ICf")),
+              "ENCHBf" = select(model_pop1960, starts_with("ENCHBf")),
+              "CCf" = select(model_pop1960, starts_with("CCf")),
+              "DCCf" = select(model_pop1960, starts_with("DCCf")),
+              "HCCf" = select(model_pop1960, starts_with("HCCf")),
+              "Rf" = select(model_pop1960, starts_with("Rf")),
+              "Sm" = select(model_pop1960, starts_with("Sm")),
+              "ITm" = select(model_pop1960, starts_with("ITm")),
+              "IRm" = select(model_pop1960, starts_with("IRm")),
+              "ICm" = select(model_pop1960, starts_with("ICm")),
+              "ENCHBm" = select(model_pop1960, starts_with("ENCHBm")),
+              "CCm" = select(model_pop1960, starts_with("CCm")),
+              "DCCm" = select(model_pop1960, starts_with("DCCm")),
+              "HCCm" = select(model_pop1960, starts_with("HCCm")),
+              "Rm" = select(model_pop1960, starts_with("Rm")),
+              "cum_deathsf" = rep(0,n_agecat), "cum_deathsm" = rep(0,n_agecat),
+              "cum_infectionsf" = rep(0,n_agecat), "cum_infectionsm" = rep(0,n_agecat),
+              "cum_chronic_infectionsf" = rep(0,n_agecat), "cum_chronic_infectionsm" = rep(0,n_agecat),
+              "cum_births" = 0, "cum_infected_births" = 0, "cum_chronic_births" = 0,
+              "cum_hbv_deathsf" = rep(0,n_agecat), "cum_hbv_deathsm" = rep(0,n_agecat))
+init_pop_sim <- unlist(init_pop_sim)
 
 # Check initial population vector is the right size
 length(init_pop) == n_infectioncat*n_agecat*2+4*n_agecat+2
@@ -1375,3 +1338,124 @@ which(apply(out[4,], 2, function(col) any(col < 0)))
 ## Save model output
 model_pop1960 <- out$full_output[221,1:(2*n_infectioncat*n_agecat)+1]
 save(model_pop1960, file = here("data/simulated_inits_1960.RData"))
+
+### First attempts at fitting using least squares
+require(lhs)
+library("parallel")
+
+# Trial function to calculate sum of least squares for overall prevalence at given time point
+fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(...),
+                          scenario = "vacc", data_to_fit) {
+
+  ## Define parameter values for model run:
+  # Using default input parameter list or with updated values specified in parms_to_change
+  parameters <- generate_parameters(default_parameter_list = default_parameter_list,
+                                    parms_to_change = parms_to_change)
+
+  # Update parameters for intervention scenario: vaccine (= default) or no vaccine (counterfactual)
+  if (scenario == "vacc") {
+    parameters$apply_vacc <- 1
+  } else if (scenario == "no_vacc") {
+    parameters$apply_vacc <- 0
+  } else {
+    print("Not a valid scenario. Options: vacc, no_vacc")
+  }
+
+
+  ## Run model simulation
+  out <- as.data.frame(ode.1D(y = init_pop_sim, times = times, func = imperial_model,
+                              parms = parameters, nspec = 1, method = "ode45"))
+  # Rescale timesteps to years
+  out$time   <-  out$time + starttime
+
+  # Define my datapoint: Overall HBsAg prevalence in 1980 and 2015
+  data <- data_to_fit
+
+  # Define my model prediction matching the data to fit to
+  sim <- code_model_output(out)
+  model_prev1980 <- sim$infectioncat_total$carriers[which(sim$time == 1980)]/
+    sim$pop_total$pop_total[which(sim$time == 1980)]
+  model_prev2015 <- sim$infectioncat_total$carriers[which(sim$time == 2015)]/
+    sim$pop_total$pop_total[which(sim$time == 2015)]
+  prediction <- c(model_prev1980, model_prev2015)
+
+  # Calculate sum of least squares
+  sse <- sum((prediction-data$prev)^2)
+
+  # Return prevalence estimates from model in 1980 and 2015, and the SSE
+  res <- list(prev_est_1980 = model_prev1980, prev_est_2015 = model_prev2015, sse = sse)
+
+  return(res)
+}
+
+# Update simulation parameters for fitting procedure
+starttime <- 1960
+runtime <- 60-dt                      # number of years to run the model for
+times <- round((0:(runtime/dt))*dt,2) # vector of timesteps
+times_labels <- times+starttime       # year labels for timestep vector
+
+# Define my datapoints to fit to: Overall HBsAg prevalence in 1980 and 2015
+hbsag_dataset <- data.frame(time = c(1980, 2015), prev = c(0.11, 0.058),
+                   ci_lower = c(0.09, 0.047), ci_upper = c(0.134, 0.071))
+
+# Using LHS
+n_sims <- 100  # number of simulations
+n_parms_to_vary <- 3  # number of parameters to infer - this requires manual adaptations below
+lhs_samples <- randomLHS(n_sims, n_parms_to_vary) # draw 100 samples from uniform distribution U(0,1) using a Latin Hypercube design
+params_mat <- data.frame(b1 = lhs_samples[,1],
+                         b2 = lhs_samples[,2],
+                         mtct_prob_s = lhs_samples[,3])
+params_mat$b1 <- 0 + (0.2-0) * params_mat$b1 # rescale U(0,1) to be U(0,0.2)
+params_mat$b2 <- 0 + (0.01-0) * params_mat$b2 # rescale U(0,1) to be U(0,0.01)
+params_mat$mtct_prob_s <- 0 + (0.5-0) * params_mat$mtct_prob_s # rescale U(0,1) to be U(0,0.5)
+# get no fits if I do 100 simulations from U(0,1) for b1 and b2
+
+# Set up cluster
+cl <- makeCluster(4)
+clusterEvalQ(cl, {library(dplyr); library(tidyr); library(deSolve)})
+clusterExport(cl, ls())
+
+time1 <- proc.time()
+out_mat <- parApply(cl = cl, params_mat,1,
+                    function(x) fit_model_sse(default_parameter_list = parameter_list,
+                                              data_to_fit = hbsag_dataset,
+                                              parms_to_change = list(b1 = as.list(x)$b1,
+                                                                     b2 = as.list(x)$b2,
+                                                                     mtct_prob_s = as.list(x)$mtct_prob_s)))
+sim_duration = proc.time() - time1
+sim_duration["elapsed"]/60
+# Timing: 4.9 min for 20 sim unparallelised, 2.5 min when parallelised,
+# 12 min for 100 sims in parallel
+
+# Stop cluster!!
+stopCluster(cl)
+
+res_mat <- cbind(params_mat, do.call(rbind.data.frame, out_mat))
+
+res_mat[res_mat$sse == min(res_mat$sse),] # Parameters for minimum SSE
+
+# Target fitting approach
+res_mat$fit <- 0
+
+res_mat[(res_mat$prev_est_1980 >= hbsag_dataset$ci_lower[1]) &
+          (res_mat$prev_est_1980 <= hbsag_dataset$ci_upper[1]) &
+          (res_mat$prev_est_2015 >= hbsag_dataset$ci_lower[2]) &
+          (res_mat$prev_est_2015 <= hbsag_dataset$ci_upper[2]),]$fit <- 1
+table(res_mat$fit)
+
+# Box plot of parameter estimates
+boxplot(subset(res_mat,fit==1)$b1,subset(res_mat,fit==1)$b2,subset(res_mat,fit==1)$mtct_prob_s,
+        names = c("b1", "b2", "mtct_prob_s"),ylim=c(0,0.5))
+
+# Box plot of priors and posteriors
+par(mfrow=c(1,3))
+boxplot(res_mat$b1, subset(res_mat,fit==1)$b1, col=c(grey(0.6),2),ylim=c(0,0.6),
+        names=c("Prior","Posterior"), main="LHS for 'b1':\nprior/posteriors distributions")
+
+boxplot(res_mat$b2, subset(res_mat,fit==1)$b2, col=c(grey(0.6),2),ylim=c(0,0.6),
+        names=c("Prior","Posterior"), main="LHS for 'b2':\nprior/posteriors distributions")
+
+boxplot(res_mat$mtct_prob_s, subset(res_mat,fit==1)$mtct_prob_s, col=c(grey(0.6),2),
+        ylim=c(0,0.6), names=c("Prior","Posterior"),
+        main="LHS for 'mtct_prob_s':\nprior/posteriors distributions")
+
