@@ -1,5 +1,5 @@
 ###################################
-### Imperial HBV model 08/04/19 ###
+### Imperial HBV model 09/04/19 ###
 ###################################
 # Model described in Shevanthi's thesis and adapted by Margaret
 # Currently only infant vaccination in second age group, no birth dose or treatment
@@ -45,9 +45,9 @@ index <- list("infcat_all" = 1:n_infectioncat,            # index for all infect
 
 ### Load and clean data ----
 # Load inputs
-#source(here("R/load.R"))
+#source(here("R/imperial_model_load.R"))
 # Clean demographic data
-#source(here("R/clean.R"))
+#source(here("R/imperial_model_clean.R"))
 
 # Load preformatted data for dt = da = 0.5
 if (da == 0.5) {
@@ -962,10 +962,12 @@ parameter_names <- names(parameter_list)
 #parameter_list <- lapply(parameter_list, FUN= function(x) x*0)
 tic()
 sim <- run_model(default_parameter_list = parameter_list,
-                 parms_to_change = list(b1 = 0.07),
+                 parms_to_change = list(b1 = 0.1, b2 = 0.009, mtct_prob_s = 0.14),
                  scenario = "vacc")
 out <- code_model_output(sim)
 toc()
+
+#b1 = 0.07
 
 ### Run the simulation: 2 SCENARIOS (vacc and no_vacc) ----
 tic()
@@ -1339,9 +1341,9 @@ which(apply(out[4,], 2, function(col) any(col < 0)))
 model_pop1960 <- out$full_output[221,1:(2*n_infectioncat*n_agecat)+1]
 save(model_pop1960, file = here("data/simulated_inits_1960.RData"))
 
-### First attempts at fitting using least squares
+### First attempts at fitting using least squares ----
 require(lhs)
-library("parallel")
+require("parallel")
 
 # Trial function to calculate sum of least squares for overall prevalence at given time point
 fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(...),
@@ -1370,20 +1372,35 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
 
   # Define my datapoint: Overall HBsAg prevalence in 1980 and 2015
   data <- data_to_fit
+  data_hbsag_overall <- data_to_fit$hbsag_dataset
+  data_hbsag_by_age <- data_to_fit$hbsag_by_age_dataset_1980
 
   # Define my model prediction matching the data to fit to
   sim <- code_model_output(out)
+  # Overall prevalence in 1980
   model_prev1980 <- sim$infectioncat_total$carriers[which(sim$time == 1980)]/
     sim$pop_total$pop_total[which(sim$time == 1980)]
+  # Overall prevalence in 2015
   model_prev2015 <- sim$infectioncat_total$carriers[which(sim$time == 2015)]/
     sim$pop_total$pop_total[which(sim$time == 2015)]
+  # Age-specific prevalence in 1980
+  model_prev_by_age1980 <- sim$carriers[sim$carriers$time == 1980,which(ages %in% hbsag_by_age_dataset_1980$age)+1]/
+    sim$pop[sim$carriers$time == 1980,which(ages %in% hbsag_by_age_dataset_1980$age)+1]
+
+  # Combine age-specific predictions in 1980 and overall prediction in 2015
   prediction <- c(model_prev1980, model_prev2015)
+  prediction_with_age <- unlist(c(model_prev_by_age1980, model_prev2015))
+  data_with_age <- c(data_hbsag_by_age$prev, data_hbsag_overall$prev[2])
 
   # Calculate sum of least squares
-  sse <- sum((prediction-data$prev)^2)
+  sse <- sum((data_hbsag_overall$prev-prediction)^2)
+  #sse <- sum((data_with_age-prediction_with_age)^2)
 
   # Return prevalence estimates from model in 1980 and 2015, and the SSE
-  res <- list(prev_est_1980 = model_prev1980, prev_est_2015 = model_prev2015, sse = sse)
+  res <- list(prev_est_1980 = model_prev1980, prev_est_2015 = model_prev2015, sse = sse,
+              carrier_prev_total = sim$infectioncat_total$carriers/sim$pop_total$pop_total,
+              prev_by_age_1980 = sim$carriers[sim$carriers$time == 1980,-1]/
+                sim$pop[sim$carriers$time == 1980,-1])
 
   return(res)
 }
@@ -1395,8 +1412,15 @@ times <- round((0:(runtime/dt))*dt,2) # vector of timesteps
 times_labels <- times+starttime       # year labels for timestep vector
 
 # Define my datapoints to fit to: Overall HBsAg prevalence in 1980 and 2015
+# WHO estimate
 hbsag_dataset <- data.frame(time = c(1980, 2015), prev = c(0.11, 0.058),
                    ci_lower = c(0.09, 0.047), ci_upper = c(0.134, 0.071))
+# Mock data
+hbsag_by_age_dataset_1980 <- data.frame(age = c(1.5,3.5,4.5,7.5,12.5,30.5,34),
+                                   prev = c(0.16, 0.24, 0.245, 0.26, 0.25, 0.11, 0.14))
+
+hbsag_dataset_list <- list(hbsag_dataset = hbsag_dataset,
+                               hbsag_by_age_dataset_1980 = hbsag_by_age_dataset_1980)
 
 # Using LHS
 n_sims <- 100  # number of simulations
@@ -1410,6 +1434,19 @@ params_mat$b2 <- 0 + (0.01-0) * params_mat$b2 # rescale U(0,1) to be U(0,0.01)
 params_mat$mtct_prob_s <- 0 + (0.5-0) * params_mat$mtct_prob_s # rescale U(0,1) to be U(0,0.5)
 # get no fits if I do 100 simulations from U(0,1) for b1 and b2
 
+
+# Run without parallelising
+#time1 <- proc.time()
+#out_mat <- apply(params_mat,1,
+#                    function(x) fit_model_sse(default_parameter_list = parameter_list,
+#                                              data_to_fit = hbsag_dataset_list,
+#                                              parms_to_change = list(b1 = as.list(x)$b1,
+#                                                                     b2 = as.list(x)$b2,
+#                                                                     mtct_prob_s = as.list(x)$mtct_prob_s)))
+#sim_duration = proc.time() - time1
+#sim_duration["elapsed"]/60
+
+# Parallelised code
 # Set up cluster
 cl <- makeCluster(4)
 clusterEvalQ(cl, {library(dplyr); library(tidyr); library(deSolve)})
@@ -1418,7 +1455,7 @@ clusterExport(cl, ls())
 time1 <- proc.time()
 out_mat <- parApply(cl = cl, params_mat,1,
                     function(x) fit_model_sse(default_parameter_list = parameter_list,
-                                              data_to_fit = hbsag_dataset,
+                                              data_to_fit = hbsag_dataset_list,
                                               parms_to_change = list(b1 = as.list(x)$b1,
                                                                      b2 = as.list(x)$b2,
                                                                      mtct_prob_s = as.list(x)$mtct_prob_s)))
@@ -1427,12 +1464,31 @@ sim_duration["elapsed"]/60
 # Timing: 4.9 min for 20 sim unparallelised, 2.5 min when parallelised,
 # 12 min for 100 sims in parallel
 
-# Stop cluster!!
+# Important: stop cluster!!
 stopCluster(cl)
 
-res_mat <- cbind(params_mat, do.call(rbind.data.frame, out_mat))
+# Matrix of parameter values, model estimates for prevalence in 1980 and 2015, and SSE
+#res_mat <- cbind(params_mat, do.call(rbind.data.frame, out_mat_subset)) # this would work for a list
+out_mat_subset <- as.data.frame(t(sapply(out_mat, "[", c("prev_est_1980", "prev_est_2015", "sse"))))
+res_mat <- cbind(params_mat, unnest(out_mat_subset))
+res_mat[res_mat$sse == min(res_mat$sse),]
 
-res_mat[res_mat$sse == min(res_mat$sse),] # Parameters for minimum SSE
+# Fit to overall prevalence for minimum SSE
+plot(x = times_labels,
+     y = out_mat[[which(res_mat$sse == min(res_mat$sse))]]$carrier_prev_total,
+     type = "l", ylim = c(0,0.5))
+points(x = hbsag_dataset$time,
+       y = hbsag_dataset$prev,
+       col = "red")
+
+# Fit to age-specific prevalence for minimum SSE
+#plot(x = ages,
+#     y = out_mat[[which(res_mat$sse == min(res_mat$sse))]]$prev_by_age_1980,
+#     type = "l", ylim = c(0,0.5))
+#points(x = hbsag_by_age_dataset_1980$age,
+#       y = hbsag_by_age_dataset_1980$prev,
+#       col = "red")
+
 
 # Target fitting approach
 res_mat$fit <- 0
@@ -1458,4 +1514,5 @@ boxplot(res_mat$b2, subset(res_mat,fit==1)$b2, col=c(grey(0.6),2),ylim=c(0,0.6),
 boxplot(res_mat$mtct_prob_s, subset(res_mat,fit==1)$mtct_prob_s, col=c(grey(0.6),2),
         ylim=c(0,0.6), names=c("Prior","Posterior"),
         main="LHS for 'mtct_prob_s':\nprior/posteriors distributions")
+par(mfrow=c(1,1))
 
