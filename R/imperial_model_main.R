@@ -1,5 +1,5 @@
 ###################################
-### Imperial HBV model 09/04/19 ###
+### Imperial HBV model 12/04/19 ###
 ###################################
 # Model described in Shevanthi's thesis and adapted by Margaret
 # Currently only infant vaccination in second age group, no birth dose or treatment
@@ -95,7 +95,7 @@ sagloss_rates <- c(rep(shimakawa_sagloss$sagloss_rate,each = 10/da),
 
 
 ### THE MODEL ----
-imperial_model <- function(timestep, pop, parameters) {
+imperial_model <- function(timestep, pop, parameters, sim_starttime) {
 
   with(as.list(parameters), {
 
@@ -118,13 +118,28 @@ imperial_model <- function(timestep, pop, parameters) {
     #                         ncol = 2)    # 2 columns for sex-specific rates
 
     # This approach for varying timesteps calls the rate for the closest timestep:
-    fertility_rate <- fert_rates[min(which(abs(fert_rates[,1]-timestep)==min(abs(fert_rates[,1]-timestep)))),-1]
+    # Births, migration and mortality can be switched off through parameter list
+    if (births_on == 0) {
+      fertility_rate <- rep(0, times = ncol(fert_rates[,-1]))
+    } else {
+      fertility_rate <- fert_rates[min(which(abs(fert_rates[,1]-timestep)==min(abs(fert_rates[,1]-timestep)))),-1]
+    }
+
+    if (migration_on == 0) {
+      migration_rate <- matrix(rep(0, times = 2*n_agecat), ncol = 2)
+    } else {
     migration_rate <- matrix(c(migration_rates_female[min(which(abs(migration_rates_female[,1]-timestep)==min(abs(migration_rates_female[,1]-timestep)))),-1],
                                migration_rates_male[min(which(abs(migration_rates_male[,1]-timestep)==min(abs(migration_rates_male[,1]-timestep)))),-1]),
                              ncol = 2)    # 2 columns for sex-specific rates
+    }
+
+    if (mortality_on == 0) {
+      mortality_rate <- matrix(rep(0, times = 2*n_agecat), ncol = 2)
+    } else {
     mortality_rate <- matrix(c(mort_rates_female[min(which(abs(mort_rates_female[,1]-timestep)==min(abs(mort_rates_female[,1]-timestep)))),-1],
                                mort_rates_male[min(which(abs(mort_rates_male[,1]-timestep)==min(abs(mort_rates_male[,1]-timestep)))),-1]),
                              ncol = 2)    # 2 columns for sex-specific rates
+    }
 
     # Notation:
     # Indices for infection compartments
@@ -143,7 +158,7 @@ imperial_model <- function(timestep, pop, parameters) {
 
     # Infant vaccination: set date for introduction
     # Vaccination coverage is 0 until the specified starttime and only if vaccine switch is on
-    if (apply_vacc == 1 & timestep >= (vacc_introtime-starttime)) {
+    if (apply_vacc == 1 & timestep >= (vacc_introtime-sim_starttime)) {
       vacc_cov = vacc_cov
     } else {
       vacc_cov = 0
@@ -161,7 +176,10 @@ imperial_model <- function(timestep, pop, parameters) {
     dcum_chronic_infections <- matrix(rep(0, 2* n_agecat),
                                       ncol = 2, nrow = n_agecat)      # female and male incident chronic infections
     dcum_hbv_deaths <- matrix(rep(0, 2* n_agecat),
-                              ncol = 2, nrow = n_agecat)      # female and male incident HBV-related deaths
+                              ncol = 2, nrow = n_agecat)  # female and male incident HBV-related deaths
+    dcum_hcc <- matrix(rep(0, 2* n_agecat),
+                       ncol = 2, nrow = n_agecat)  # female and male incident HCC cases
+
 
     # TRANSMISSION
 
@@ -294,6 +312,14 @@ imperial_model <- function(timestep, pop, parameters) {
         mu_dcc * pop[index$ages_all,DCC,i] + mu_hcc * pop[index$ages_all,HCC,i]
       # Returns a matrix with incident HBV deaths for every age (rows) and every sex (columns)
 
+      # Total HCC incidence
+      dcum_hcc[index$ages_all,i] <- hccr_it*cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,IT,i] +
+        hccr_ir*cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,IR,i] +
+        hccr_ic*cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,IC,i] +
+        hccr_enchb*cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,ENCHB,i] +
+        hccr_cc*cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,CC,i] +
+        hccr_dcc * pop[index$ages_all,DCC,i]
+
       # Transitions between compartments:
 
       # Susceptibles
@@ -302,7 +328,6 @@ imperial_model <- function(timestep, pop, parameters) {
         dcum_chronic_infections[index$ages_all,i] -
         (1-p_chronic) * dcum_infections[index$ages_all,i] -
         deaths[index$ages_all,S,i] + migrants[index$ages_all,S,i]
-
 
       # Immune tolerant
       dpop[index$ages_all,IT,i] <- -(diff(c(0,pop[index$ages_all,IT,i]))/da) +
@@ -368,7 +393,6 @@ imperial_model <- function(timestep, pop, parameters) {
         sag_loss * pop[index$ages_all,IC,i] -
         deaths[index$ages_all,R,i] + migrants[index$ages_all,R,i]
 
-
       # Babies are born susceptible or infected (age group 1)
       dpop[1,S,i] <- dpop[1,S,i] + sex_ratio[i] * dcum_nonchronic_births
       dpop[1,IT,i] <- dpop[1,IT,i] + sex_ratio[i] * dcum_chronic_births
@@ -386,21 +410,15 @@ imperial_model <- function(timestep, pop, parameters) {
     # Sum age-specific number of incident deaths across infection compartments four output
     dcum_deaths <- apply(deaths,c(1,3),sum)
 
-    # Condition to set negative numbers to 0
-    #if(any(dpop < 0)) {
-    #  dpop[dpop < 0] <- 0
-    #}
-
     # Return results
     res <- c(dpop, dcum_deaths, dcum_infections, dcum_chronic_infections,
              dcum_births, dcum_infected_births, dcum_chronic_births,
-             dcum_hbv_deaths)
+             dcum_hbv_deaths, dcum_hcc)
     list(res)
 
   })
 
 }
-
 
 ### Model-related functions ----
 
@@ -525,7 +543,9 @@ positive_fun <- function(timestep, pop, parameters){
 }
 
 # Function to run the model once for a given scenario
-run_model <- function(..., default_parameter_list, parms_to_change = list(...),
+run_model <- function(..., sim_duration = runtime,
+                      init_pop_vector = init_pop,
+                      default_parameter_list, parms_to_change = list(...),
                       scenario = "vacc") {
 
   ## Define parameter values for model run:
@@ -543,11 +563,21 @@ run_model <- function(..., default_parameter_list, parms_to_change = list(...),
   }
 
   ## Run model simulation
-  out <- as.data.frame(ode.1D(y = init_pop, times = times, func = imperial_model,
-                              parms = parameters, nspec = 1, method = "ode45",
-                              events = list(func = reset_pop_1950, time = 100)))
+  timestep_vector <- round((0:((sim_duration-dt)/dt))*dt,2)
+  timestep_labels <- timestep_vector + parameters$sim_starttime
+
+  if (1950 %in% timestep_labels) {
+    timestep_1950 <- timestep_vector[which(timestep_labels == 1950)]
+    out <- as.data.frame(ode.1D(y = init_pop_vector, times = timestep_vector, func = imperial_model,
+                                parms = parameters, nspec = 1, method = "ode45",
+                                events = list(func = reset_pop_1950, time = timestep_1950)))
+  } else {
+  out <- as.data.frame(ode.1D(y = init_pop_vector, times = timestep_vector, func = imperial_model,
+                              parms = parameters, nspec = 1, method = "ode45"))
+  }
+
   # Add year label to timestep
-  out$time   <-  out$time + starttime
+  out$time   <-  out$time + parameters$sim_starttime
 
   return(out)
 
@@ -559,12 +589,14 @@ run_model <- function(..., default_parameter_list, parms_to_change = list(...),
 # Function to the model twice under different scenarios
 run_scenarios <- function(..., default_parameter_list, parms_to_change = list(...)) {
 
-  sim_vacc <- run_model(default_parameter_list = default_parameter_list,
+  sim_vacc <- run_model(sim_duration = runtime,
+                        default_parameter_list = default_parameter_list,
                         parms_to_change = parms_to_change,
                         scenario = "vacc")
   out_vacc <- code_model_output(sim_vacc)
 
-  sim_no_vacc <- run_model(default_parameter_list = default_parameter_list,
+  sim_no_vacc <- run_model(sim_duration = runtime,
+                           default_parameter_list = default_parameter_list,
                            parms_to_change = parms_to_change,
                            scenario = "no_vacc")
   out_no_vacc <- code_model_output(sim_no_vacc)
@@ -680,6 +712,10 @@ code_model_output <- function(output) {
   out_cum_hbv_deathsf <- select(output, starts_with("cum_hbv_deathsf"))
   out_cum_hbv_deathsm <- select(output, starts_with("cum_hbv_deathsm"))
 
+  # Cumulative number of HCC cases (from all possible compartments)
+  out_cum_hccf <- select(output, starts_with("cum_hccf"))
+  out_cum_hccm <- select(output, starts_with("cum_hccm"))
+
   ## Process infection outputs
   # Combine into data frames with outputs of interest for further analysis
 
@@ -768,6 +804,23 @@ code_model_output <- function(output) {
                            incident_number_male = apply(hbv_deaths_male[,-1], 1, sum))
   hbv_deaths$incident_number_total <- hbv_deaths$incident_number_female + hbv_deaths$incident_number_male
 
+  # Age-specific number of total HCC cases - for women and men
+  incident_hcc_female <- data.frame(time = output$time,
+                                  incident_number = calculate_incident_numbers(out_cum_hccf))
+  names(incident_hcc_female)[-1] <- sprintf("incident_number%g",ages)
+
+  incident_hcc_male <- data.frame(time = output$time,
+                                incident_number = calculate_incident_numbers(out_cum_hccm))
+  names(incident_hcc_male)[-1] <- sprintf("incident_number%g",ages)
+
+  # Total number of total HCC cases per time step
+  incident_hcc <- data.frame(time = output$time,
+                           incident_number_female = apply(incident_hcc_female[,-1], 1, sum),
+                           incident_number_male = apply(incident_hcc_male[,-1], 1, sum))
+  incident_hcc$incident_number_total <- incident_hcc$incident_number_female +
+    incident_hcc$incident_number_male
+
+
   ## Code demography outputs
 
   # Population:
@@ -775,6 +828,7 @@ code_model_output <- function(output) {
   # Age-specific and total (last column) population per time step
   pop_female <- sum_pop_by_age(time = output$time, pop_output_file = out_popf)
   pop_male <- sum_pop_by_age(time = output$time, pop_output_file = out_popm)
+
   pop <- cbind(time = output$time, pop_female[,-1] + pop_male[,-1])
 
   # Total female, male and both population per time step
@@ -837,6 +891,7 @@ code_model_output <- function(output) {
                    "incident_infections" = incident_infections,
                    "incident_chronic_infections" = incident_chronic_infections,
                    "hbv_deaths" = hbv_deaths,
+                   "incident_hcc" = incident_hcc,
                    "full_output" = output)
   return(toreturn)
 
@@ -873,33 +928,8 @@ init_pop <- c("Sf" = popsize_1950$pop_female*(1-gambia_infected),
                "cum_infectionsf" = rep(0,n_agecat), "cum_infectionsm" = rep(0,n_agecat),
                "cum_chronic_infectionsf" = rep(0,n_agecat), "cum_chronic_infectionsm" = rep(0,n_agecat),
                "cum_births" = 0, "cum_infected_births" = 0, "cum_chronic_births" = 0,
-               "cum_hbv_deathsf" = rep(0,n_agecat), "cum_hbv_deathsm" = rep(0,n_agecat))
-
-load(here("data/simulated_inits_1960.RData"))
-init_pop_sim <- c("Sf" = select(model_pop1960, starts_with("Sf")),
-              "ITf" = select(model_pop1960, starts_with("ITf")),
-              "IRf" = select(model_pop1960, starts_with("IRf")),
-              "ICf" = select(model_pop1960, starts_with("ICf")),
-              "ENCHBf" = select(model_pop1960, starts_with("ENCHBf")),
-              "CCf" = select(model_pop1960, starts_with("CCf")),
-              "DCCf" = select(model_pop1960, starts_with("DCCf")),
-              "HCCf" = select(model_pop1960, starts_with("HCCf")),
-              "Rf" = select(model_pop1960, starts_with("Rf")),
-              "Sm" = select(model_pop1960, starts_with("Sm")),
-              "ITm" = select(model_pop1960, starts_with("ITm")),
-              "IRm" = select(model_pop1960, starts_with("IRm")),
-              "ICm" = select(model_pop1960, starts_with("ICm")),
-              "ENCHBm" = select(model_pop1960, starts_with("ENCHBm")),
-              "CCm" = select(model_pop1960, starts_with("CCm")),
-              "DCCm" = select(model_pop1960, starts_with("DCCm")),
-              "HCCm" = select(model_pop1960, starts_with("HCCm")),
-              "Rm" = select(model_pop1960, starts_with("Rm")),
-              "cum_deathsf" = rep(0,n_agecat), "cum_deathsm" = rep(0,n_agecat),
-              "cum_infectionsf" = rep(0,n_agecat), "cum_infectionsm" = rep(0,n_agecat),
-              "cum_chronic_infectionsf" = rep(0,n_agecat), "cum_chronic_infectionsm" = rep(0,n_agecat),
-              "cum_births" = 0, "cum_infected_births" = 0, "cum_chronic_births" = 0,
-              "cum_hbv_deathsf" = rep(0,n_agecat), "cum_hbv_deathsm" = rep(0,n_agecat))
-init_pop_sim <- unlist(init_pop_sim)
+               "cum_hbv_deathsf" = rep(0,n_agecat), "cum_hbv_deathsm" = rep(0,n_agecat),
+               "cum_hccf" = rep(0,n_agecat), "cum_hccm" = rep(0,n_agecat))
 
 # Check initial population vector is the right size
 length(init_pop) == n_infectioncat*n_agecat*2+4*n_agecat+2
@@ -948,8 +978,14 @@ parameter_list <- list(
   vacc_cov = 0.92,
   vacc_eff = 0.95,                           # vaccine efficacy
   vacc_introtime = 1991,                     # year of vaccine introduction
+  # SIMULATION PARAMETERS
+  sim_starttime = starttime,
   # INTERVENTION ON/OFF SWITCH (1/0)
-  apply_vacc = 1)
+  apply_vacc = 1,
+  # DEMOGRAPHY ON/OFF SWITCH (1/0)
+  births_on = 1,
+  migration_on = 1,
+  mortality_on = 1)
 
 
 # Store names of all parameters
@@ -961,7 +997,7 @@ parameter_names <- names(parameter_list)
 # Set all infection parms to zero:
 #parameter_list <- lapply(parameter_list, FUN= function(x) x*0)
 tic()
-sim <- run_model(default_parameter_list = parameter_list,
+sim <- run_model(sim_duration = runtime, default_parameter_list = parameter_list,
                  parms_to_change = list(b1 = 0.1, b2 = 0.009, mtct_prob_s = 0.14),
                  scenario = "vacc")
 out <- code_model_output(sim)
@@ -972,7 +1008,7 @@ toc()
 ### Run the simulation: 2 SCENARIOS (vacc and no_vacc) ----
 tic()
 out <- run_scenarios(default_parameter_list = parameter_list,
-                      parms_to_change = list(b1 = 0.07))
+                      parms_to_change = list(b1 = 0.07, sim_starttime = starttime))
 toc()
 
 
@@ -1281,7 +1317,7 @@ points(x = seq(2,102,5),
        col = "red")
 
 # Plots 2080-2100
-par(mfrow=c(2,2))
+par(mfrow=c(1,2))
 # Female age structure in 2080
 plot(x = ages,
      y = outpath$pop_female[which(outpath$pop_female$time == 2080),index$ages_all+1]/da,
@@ -1296,21 +1332,7 @@ plot(x = ages,
 points(x = seq(2,102,5),
        y = input_popsize_male_clean$pop[input_popsize_male_clean$time == "2080"]/5,
        col = "red")
-# Female age structure in 2099.5 (last time point)
-plot(x = ages,
-     y = outpath$pop_female[which(outpath$pop_female$time == last(times_labels)),index$ages_all+1]/da,
-     type = "l", xlab = "Age", ylab = "Population", main = "2100 - women", ylim = c(0, 55000))
-points(x = seq(2,102,5),
-       y = input_popsize_female_clean$pop[input_popsize_female_clean$time == "2100"]/5,
-       col = "red")
-# Male age structure in 2099.5 (last time point)
-plot(x = ages,
-     y = outpath$pop_male[which(outpath$pop_male$time == last(times_labels)),index$ages_all+1]/da,
-     type = "l", xlab = "Age", ylab = "Population", main = "2100 - men", ylim = c(0, 55000))
-points(x = seq(2,102,5),
-       y = input_popsize_male_clean$pop[input_popsize_male_clean$time == "2100"]/5,
-       col = "red")
-par(mfrow=c(1,1))
+
 
 ### To do: model checks ----
 # devtools::test()
@@ -1349,26 +1371,33 @@ require("parallel")
 fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(...),
                           scenario = "vacc", data_to_fit) {
 
+  parameters_for_fit <- generate_parameters(default_parameter_list = default_parameter_list,
+                                            parms_to_change = c(parms_to_change,
+                                                                sim_starttime = 1960))
+
+  out <- run_model(sim_duration = 60, init_pop_vector = init_pop_sim,
+                   default_parameter_list = parameters_for_fit,
+                   parms_to_change = NULL,
+                   scenario = "vacc")
+
+  # This is what happens within the run_model function:
   ## Define parameter values for model run:
   # Using default input parameter list or with updated values specified in parms_to_change
-  parameters <- generate_parameters(default_parameter_list = default_parameter_list,
-                                    parms_to_change = parms_to_change)
-
+  #parameters <- generate_parameters(default_parameter_list = default_parameter_list,
+  #                                  parms_to_change = parms_to_change)
   # Update parameters for intervention scenario: vaccine (= default) or no vaccine (counterfactual)
-  if (scenario == "vacc") {
-    parameters$apply_vacc <- 1
-  } else if (scenario == "no_vacc") {
-    parameters$apply_vacc <- 0
-  } else {
-    print("Not a valid scenario. Options: vacc, no_vacc")
-  }
-
-
+  #if (scenario == "vacc") {
+  #  parameters$apply_vacc <- 1
+  #} else if (scenario == "no_vacc") {
+  #  parameters$apply_vacc <- 0
+  #} else {
+  #  print("Not a valid scenario. Options: vacc, no_vacc")
+  #}
   ## Run model simulation
-  out <- as.data.frame(ode.1D(y = init_pop_sim, times = times, func = imperial_model,
-                              parms = parameters, nspec = 1, method = "ode45"))
+  #out <- as.data.frame(ode.1D(y = init_pop_sim, times = fit_times, func = imperial_model,
+  #                            parms = parameters, nspec = 1, method = "ode45"))
   # Rescale timesteps to years
-  out$time   <-  out$time + starttime
+  #out$time   <-  out$time + starttime
 
   # Define my datapoint: Overall HBsAg prevalence in 1980 and 2015
   data <- data_to_fit
@@ -1377,6 +1406,11 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
 
   # Define my model prediction matching the data to fit to
   sim <- code_model_output(out)
+
+  # Save population distribution in 1984 for shadow model
+  model_pop1984 <- sim$full_output[which(sim$time==1984),1:(2*n_infectioncat*n_agecat)+1]
+
+  # Outputs for fitting:
   # Overall prevalence in 1980
   model_prev1980 <- sim$infectioncat_total$carriers[which(sim$time == 1980)]/
     sim$pop_total$pop_total[which(sim$time == 1980)]
@@ -1402,14 +1436,129 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
               prev_by_age_1980 = sim$carriers[sim$carriers$time == 1980,-1]/
                 sim$pop[sim$carriers$time == 1980,-1])
 
-  return(res)
+  #return(res)
+
+  ################
+  # Shadow model: get init pop from full model output for year 1984
+  init_pop_shadow <- c("Sf" = select(model_pop1984, starts_with("Sf")),
+                    "ITf" = select(model_pop1984, starts_with("ITf")),
+                    "IRf" = select(model_pop1984, starts_with("IRf")),
+                    "ICf" = select(model_pop1984, starts_with("ICf")),
+                    "ENCHBf" = select(model_pop1984, starts_with("ENCHBf")),
+                    "CCf" = select(model_pop1984, starts_with("CCf")),
+                    "DCCf" = select(model_pop1984, starts_with("DCCf")),
+                    "HCCf" = select(model_pop1984, starts_with("HCCf")),
+                    "Rf" = select(model_pop1984, starts_with("Rf")),
+                    "Sm" = select(model_pop1984, starts_with("Sm")),
+                    "ITm" = select(model_pop1984, starts_with("ITm")),
+                    "IRm" = select(model_pop1984, starts_with("IRm")),
+                    "ICm" = select(model_pop1984, starts_with("ICm")),
+                    "ENCHBm" = select(model_pop1984, starts_with("ENCHBm")),
+                    "CCm" = select(model_pop1984, starts_with("CCm")),
+                    "DCCm" = select(model_pop1984, starts_with("DCCm")),
+                    "HCCm" = select(model_pop1984, starts_with("HCCm")),
+                    "Rm" = select(model_pop1984, starts_with("Rm")),
+                    "cum_deathsf" = rep(0,n_agecat), "cum_deathsm" = rep(0,n_agecat),
+                    "cum_infectionsf" = rep(0,n_agecat), "cum_infectionsm" = rep(0,n_agecat),
+                    "cum_chronic_infectionsf" = rep(0,n_agecat), "cum_chronic_infectionsm" = rep(0,n_agecat),
+                    "cum_births" = 0, "cum_infected_births" = 0, "cum_chronic_births" = 0,
+                    "cum_hbv_deathsf" = rep(0,n_agecat), "cum_hbv_deathsm" = rep(0,n_agecat),
+                    "cum_hccf" = rep(0,n_agecat), "cum_hccm" = rep(0,n_agecat))
+  init_pop_shadow <- unlist(init_pop_shadow)
+  # Set all age groups other than 10 and 10.5 year olds to near 0
+  # (model does not seem to run if it is exactly 0)
+  init_pop_shadow[-c(21,22,21+n_agecat,22+n_agecat,21+2*n_agecat,22+2*n_agecat,
+                     21+3*n_agecat,22+3*n_agecat, 21+4*n_agecat,22+4*n_agecat,
+                     21+5*n_agecat,22+5*n_agecat, 21+6*n_agecat,22+6*n_agecat,
+                     21+7*n_agecat,22+7*n_agecat, 21+8*n_agecat,22+8*n_agecat,
+                     21+9*n_agecat,22+9*n_agecat, 21+10*n_agecat,22+10*n_agecat,
+                     21+11*n_agecat,22+11*n_agecat, 21+12*n_agecat,22+12*n_agecat,
+                     21+13*n_agecat,22+13*n_agecat, 21+14*n_agecat,22+14*n_agecat,
+                     21+15*n_agecat,22+15*n_agecat, 21+16*n_agecat,22+16*n_agecat,
+                     21+17*n_agecat,22+17*n_agecat,
+                     ((2*n_agecat*n_infectioncat+1):length(init_pop_sim)))] <- 0.000000001
+  # Times vector: starttime is 1984, duration is 27 years
+  times_shadow <- round((0:((28-dt)/dt))*dt,2) # for 27 years, starting 1984
+  # Now need to turn off parameters to only reflect progression within chronic carriers:
+  # switch off births, migation, betas and vaccination
+  parms_shadow <- generate_parameters(default_parameter_list = parameter_list,
+                                      parms_to_change = list(births_on = 0,
+                                                             migration_on = 0,
+                                                             apply_vacc = 0,
+                                                             b1 = 0,
+                                                             b2 = 0,
+                                                             b3 = 0))
+
+  shadow_out <- run_model(sim_duration = 28, init_pop_vector = init_pop_shadow,
+                   default_parameter_list = parameters_for_fit,
+                   parms_to_change = list(sim_starttime = 1984,
+                                       births_on = 0,
+                                       migration_on = 0,
+                                       apply_vacc = 0,
+                                       b1 = 0,
+                                       b2 = 0,
+                                       b3 = 0),
+                   scenario = "vacc")
+
+
+  ## Run shadow model simulation
+  #shadow_out <- as.data.frame(ode.1D(y = init_pop_shadow, times = times_shadow, func = imperial_model,
+  #                            parms = parms_shadow, nspec = 1, method = "ode45"))
+
+  # Rescale timesteps to years
+  #shadow_out$time   <-  shadow_out$time + 1984
+  sim_shadow <- code_model_output(shadow_out)
+  # Incorporate test: incident infections and births need to be 0!
+
+  # Calculate output to fit to: Total HCC incidence per 100 carrier-years:
+  # Carriers at risk are compartments that can progress to HCC
+  # (all carriers except for those with HCC)
+  carrier_years_at_risk <- (sum(sim_shadow$carriers[,-1]) -
+    sum(select(sim_shadow$full_output, starts_with("HCC"))))*dt
+  # Remove carriers who already have HCC and multpiply by dt to get person-YEARS
+  hcc_cases_per_100py <- sum(sim_shadow$incident_hcc$incident_number_total)*100/ # total number of HCC cases occurring over follow-up period
+    carrier_years_at_risk
+
+  ################
+
+  #return(res)
+  return(sim_shadow)
+
 }
 
 # Update simulation parameters for fitting procedure
 starttime <- 1960
 runtime <- 60-dt                      # number of years to run the model for
-times <- round((0:(runtime/dt))*dt,2) # vector of timesteps
-times_labels <- times+starttime       # year labels for timestep vector
+fit_times <- round((0:(runtime/dt))*dt,2) # vector of timesteps
+fit_times_labels <- fit_times+starttime       # year labels for timestep vector
+
+load(here("data/simulated_inits_1960.RData"))  # this is saved from previous model run
+init_pop_sim <- c("Sf" = select(model_pop1960, starts_with("Sf")),
+                  "ITf" = select(model_pop1960, starts_with("ITf")),
+                  "IRf" = select(model_pop1960, starts_with("IRf")),
+                  "ICf" = select(model_pop1960, starts_with("ICf")),
+                  "ENCHBf" = select(model_pop1960, starts_with("ENCHBf")),
+                  "CCf" = select(model_pop1960, starts_with("CCf")),
+                  "DCCf" = select(model_pop1960, starts_with("DCCf")),
+                  "HCCf" = select(model_pop1960, starts_with("HCCf")),
+                  "Rf" = select(model_pop1960, starts_with("Rf")),
+                  "Sm" = select(model_pop1960, starts_with("Sm")),
+                  "ITm" = select(model_pop1960, starts_with("ITm")),
+                  "IRm" = select(model_pop1960, starts_with("IRm")),
+                  "ICm" = select(model_pop1960, starts_with("ICm")),
+                  "ENCHBm" = select(model_pop1960, starts_with("ENCHBm")),
+                  "CCm" = select(model_pop1960, starts_with("CCm")),
+                  "DCCm" = select(model_pop1960, starts_with("DCCm")),
+                  "HCCm" = select(model_pop1960, starts_with("HCCm")),
+                  "Rm" = select(model_pop1960, starts_with("Rm")),
+                  "cum_deathsf" = rep(0,n_agecat), "cum_deathsm" = rep(0,n_agecat),
+                  "cum_infectionsf" = rep(0,n_agecat), "cum_infectionsm" = rep(0,n_agecat),
+                  "cum_chronic_infectionsf" = rep(0,n_agecat), "cum_chronic_infectionsm" = rep(0,n_agecat),
+                  "cum_births" = 0, "cum_infected_births" = 0, "cum_chronic_births" = 0,
+                  "cum_hbv_deathsf" = rep(0,n_agecat), "cum_hbv_deathsm" = rep(0,n_agecat),
+                  "cum_hccf" = rep(0,n_agecat), "cum_hccm" = rep(0,n_agecat))
+init_pop_sim <- unlist(init_pop_sim)
+
 
 # Define my datapoints to fit to: Overall HBsAg prevalence in 1980 and 2015
 # WHO estimate
@@ -1423,7 +1572,7 @@ hbsag_dataset_list <- list(hbsag_dataset = hbsag_dataset,
                                hbsag_by_age_dataset_1980 = hbsag_by_age_dataset_1980)
 
 # Using LHS
-n_sims <- 100  # number of simulations
+n_sims <- 1  # number of simulations
 n_parms_to_vary <- 3  # number of parameters to infer - this requires manual adaptations below
 lhs_samples <- randomLHS(n_sims, n_parms_to_vary) # draw 100 samples from uniform distribution U(0,1) using a Latin Hypercube design
 params_mat <- data.frame(b1 = lhs_samples[,1],
@@ -1434,17 +1583,16 @@ params_mat$b2 <- 0 + (0.01-0) * params_mat$b2 # rescale U(0,1) to be U(0,0.01)
 params_mat$mtct_prob_s <- 0 + (0.5-0) * params_mat$mtct_prob_s # rescale U(0,1) to be U(0,0.5)
 # get no fits if I do 100 simulations from U(0,1) for b1 and b2
 
-
 # Run without parallelising
-#time1 <- proc.time()
-#out_mat <- apply(params_mat,1,
-#                    function(x) fit_model_sse(default_parameter_list = parameter_list,
-#                                              data_to_fit = hbsag_dataset_list,
-#                                              parms_to_change = list(b1 = as.list(x)$b1,
-#                                                                     b2 = as.list(x)$b2,
-#                                                                     mtct_prob_s = as.list(x)$mtct_prob_s)))
-#sim_duration = proc.time() - time1
-#sim_duration["elapsed"]/60
+time1 <- proc.time()
+out_mat <- apply(params_mat,1,
+                    function(x) fit_model_sse(default_parameter_list = parameter_list,
+                                              data_to_fit = hbsag_dataset_list,
+                                              parms_to_change = list(b1 = as.list(x)$b1,
+                                                                     b2 = as.list(x)$b2,
+                                                                     mtct_prob_s = as.list(x)$mtct_prob_s)))
+sim_duration = proc.time() - time1
+sim_duration["elapsed"]/60
 
 # Parallelised code
 # Set up cluster
@@ -1474,7 +1622,7 @@ res_mat <- cbind(params_mat, unnest(out_mat_subset))
 res_mat[res_mat$sse == min(res_mat$sse),]
 
 # Fit to overall prevalence for minimum SSE
-plot(x = times_labels,
+plot(x = seq(1960,2019.5, by = 0.5),
      y = out_mat[[which(res_mat$sse == min(res_mat$sse))]]$carrier_prev_total,
      type = "l", ylim = c(0,0.5))
 points(x = hbsag_dataset$time,
@@ -1490,7 +1638,7 @@ points(x = hbsag_dataset$time,
 #       col = "red")
 
 
-# Target fitting approach
+# Target fitting approach / filtration
 res_mat$fit <- 0
 
 res_mat[(res_mat$prev_est_1980 >= hbsag_dataset$ci_lower[1]) &
