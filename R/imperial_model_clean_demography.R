@@ -1,7 +1,14 @@
 ########################################
 ### Imperial HBV model               ###
-### Clean input data                 ###
+### Clean input demographic data     ###
+### Source: UN WPP                   ###
 ########################################
+
+### Prepare datasets for all years between 1850 and 2100
+# UN WPP 2017 provides data from 1950 to 2015, and projections from 2015 to 2100
+# Copy 1950-2050 data for 1850-1950 period
+demog_times <- round((0:(250/dt))*dt,2)
+demog_times_labels <- demog_times + 1850
 
 ### Functions for demographic data cleaning and preparation ----
 
@@ -360,17 +367,17 @@ timevary_demog_rates <- function(dataset) {
   dataset_complete <- rbind(rates1950to2015, dataset)
   dataset_complete[,1] <- seq(1852-1850, 2097-1850, 5)   # convert time to number starting from 0 and midpoint of time period
   lastrow <- dataset_complete[nrow(dataset_complete),]
-  lastrow[1] <- times[length(times)]                     # repeat the last time point for the final timestep in model
+  lastrow[1] <- demog_times[length(demog_times)]                     # repeat the last time point for the final timestep in model
   dataset_complete <- rbind(dataset_complete, lastrow)
 
   # Interpolate rates for every timestep in model:
   # Linear interpolation over time, but extrapolation is constant to nearest data point (for first/last timesteps)
   rates_interp <- apply(dataset_complete, 2, FUN = approx, x = dataset_complete[,1],
-                        xout = times, method = "linear", rule = 2)
+                        xout = demog_times, method = "linear", rule = 2)
   rates_interp <- unlist(lapply(rates_interp, "[", "y"))
-  rates_interp <- matrix(rates_interp, nrow = length(times)) # store in matrix (columns = age, rows = timesteps)
-  rates_interp[,1] <- times  # relabel timesteps to start at 0
-  rownames(rates_interp) <- rates_interp[,1]+starttime  # label timesteps according to year
+  rates_interp <- matrix(rates_interp, nrow = length(demog_times)) # store in matrix (columns = age, rows = timesteps)
+  rates_interp[,1] <- demog_times  # relabel timesteps to start at 0
+  rownames(rates_interp) <- rates_interp[,1]+1850  # label timesteps according to year
 
   return(rates_interp)
 }

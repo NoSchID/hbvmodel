@@ -1,5 +1,5 @@
 ###################################
-### Imperial HBV model 12/04/19 ###
+### Imperial HBV model 15/04/19 ###
 ###################################
 # Model described in Shevanthi's thesis and adapted by Margaret
 # Currently only infant vaccination in second age group, no birth dose or treatment
@@ -18,14 +18,16 @@ library(profvis)  # for code profiling
 countryname <- "gambia"
 
 ## Times
-dt <- 0.5                             # timesteps (years)
+dt <- 0.5                              # timestep (years)
+# dt/da can only be 0.5 to match the WAIFW matrix at the moment
+# For demography, it can be up to 1, or multiple of 5 thereafter (because of women of childbearing age)
 starttime <- 1850
 runtime <- 250-dt                     # number of years to run the model for
-times <- round((0:(runtime/dt))*dt,2) # vector of timesteps
-times_labels <- times+starttime       # year labels for timestep vector
+#times <- round((0:(runtime/dt))*dt,2) # vector of timesteps
+#times_labels <- times+starttime       # year labels for timestep vector
 
 ## Age groups
-da <- 0.5                              # time spent in each age group (years)
+da <- dt                              # time spent in each age group (years)
 ages <- round((0:((100-da)/da))*da,2)  # vector of all age groups
 n_agecat <- length(ages)               # number of age groups
 
@@ -47,7 +49,7 @@ index <- list("infcat_all" = 1:n_infectioncat,            # index for all infect
 # Load inputs
 #source(here("R/imperial_model_load.R"))
 # Clean demographic data
-#source(here("R/imperial_model_clean.R"))
+#source(here("R/imperial_model_clean_demography.R"))
 
 # Load preformatted data for dt = da = 0.5
 if (da == 0.5) {
@@ -998,7 +1000,8 @@ parameter_names <- names(parameter_list)
 #parameter_list <- lapply(parameter_list, FUN= function(x) x*0)
 tic()
 sim <- run_model(sim_duration = runtime, default_parameter_list = parameter_list,
-                 parms_to_change = list(b1 = 0.1, b2 = 0.009, mtct_prob_s = 0.14),
+                 parms_to_change = list(b1 = 0.1, b2 = 0.009, mtct_prob_s = 0.14,
+                                        mu_cc = 0, mu_dcc = 0, mu_hcc = 0),
                  scenario = "vacc")
 out <- code_model_output(sim)
 toc()
@@ -1181,6 +1184,7 @@ all.equal(outpath$infectioncat_total$sus + outpath$infectioncat_total$carriers +
 plot(outpath$pop_total$time, outpath$pop_total$pop_total,
      xlab = "Year", ylab = "Population size", type = "l", ylim = c(0,7000000))
 points(popsize_total$time, popsize_total$pop, col = "red")
+
 
 # Plot total number of births over time periods
 plot(outpath$births_group5$timegroup, outpath$births_group5$incident_number,
@@ -1371,6 +1375,8 @@ require("parallel")
 fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(...),
                           scenario = "vacc", data_to_fit) {
 
+  # Simulation parameters for fitting procedure:
+  # Simulation starts in 1960, runs for 60 years
   parameters_for_fit <- generate_parameters(default_parameter_list = default_parameter_list,
                                             parms_to_change = c(parms_to_change,
                                                                 sim_starttime = 1960))
@@ -1410,36 +1416,33 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
   # Save population distribution in 1984 for shadow model
   model_pop1984 <- sim$full_output[which(sim$time==1984),1:(2*n_infectioncat*n_agecat)+1]
 
-  # Outputs for fitting:
-  # Overall prevalence in 1980
-  model_prev1980 <- sim$infectioncat_total$carriers[which(sim$time == 1980)]/
-    sim$pop_total$pop_total[which(sim$time == 1980)]
-  # Overall prevalence in 2015
-  model_prev2015 <- sim$infectioncat_total$carriers[which(sim$time == 2015)]/
-    sim$pop_total$pop_total[which(sim$time == 2015)]
-  # Age-specific prevalence in 1980
-  model_prev_by_age1980 <- sim$carriers[sim$carriers$time == 1980,which(ages %in% hbsag_by_age_dataset_1980$age)+1]/
-    sim$pop[sim$carriers$time == 1980,which(ages %in% hbsag_by_age_dataset_1980$age)+1]
+  # Fitting to age-specific prevalence data: map matching model output to year and age
 
-  # Combine age-specific predictions in 1980 and overall prediction in 2015
-  prediction <- c(model_prev1980, model_prev2015)
-  prediction_with_age <- unlist(c(model_prev_by_age1980, model_prev2015))
-  data_with_age <- c(data_hbsag_by_age$prev, data_hbsag_overall$prev[2])
+  # Age-specific sAg prevalence:
+  # Filter the output dataset by the year of interest and calculate prevalence for all ages
+  model_prev_subset <- data.frame(time = sim$carriers[sim$carriers$time %in%
+                                                        data_hbsag_by_age$time,1],
+                                  prev = sim$carriers[sim$carriers$time %in%
+                                                        data_hbsag_by_age$time,-1]/
+                                        sim$pop[sim$pop$time %in% data_hbsag_by_age$time,-1])
+  # Turn into long format
+  model_prev_subset <- gather(model_prev_subset, key = "age", value = "prev_model", -time)
+  model_prev_subset$age <- ages[as.numeric(gsub("\\D", "", model_prev_subset$age))]
+  # Merge with the dataset to fit to
+  mapped_output <- left_join(data_hbsag_by_age, model_prev_subset, by = c("time", "age"))
 
   # Calculate sum of least squares
-  sse <- sum((data_hbsag_overall$prev-prediction)^2)
-  #sse <- sum((data_with_age-prediction_with_age)^2)
+  sse <- sum((mapped_output$prev_data-mapped_output$prev_model)^2)
+  # This works but need to add sex as a category
 
-  # Return prevalence estimates from model in 1980 and 2015, and the SSE
-  res <- list(prev_est_1980 = model_prev1980, prev_est_2015 = model_prev2015, sse = sse,
-              carrier_prev_total = sim$infectioncat_total$carriers/sim$pop_total$pop_total,
-              prev_by_age_1980 = sim$carriers[sim$carriers$time == 1980,-1]/
-                sim$pop[sim$carriers$time == 1980,-1])
+  # Return relevant info (SSE and the matched datapoints and outputs)
+  res <- list(sse = sse, mapped_output = mapped_output,
+              carrier_prev_total = sim$infectioncat_total$carriers/sim$pop_total$pop_total)
 
-  #return(res)
+  return(res)
 
-  ################
-  # Shadow model: get init pop from full model output for year 1984
+  ## SHADOW MODEL
+  # Get init pop from full model output for year 1984
   init_pop_shadow <- c("Sf" = select(model_pop1984, starts_with("Sf")),
                     "ITf" = select(model_pop1984, starts_with("ITf")),
                     "IRf" = select(model_pop1984, starts_with("IRf")),
@@ -1465,18 +1468,12 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
                     "cum_hbv_deathsf" = rep(0,n_agecat), "cum_hbv_deathsm" = rep(0,n_agecat),
                     "cum_hccf" = rep(0,n_agecat), "cum_hccm" = rep(0,n_agecat))
   init_pop_shadow <- unlist(init_pop_shadow)
-  # Set all age groups other than 10 and 10.5 year olds to near 0
+  # Define index for age group of interest (10 and 10.5 year olds)
+  index_age10 <- c(seq(which(ages == 10), 2*n_agecat*n_infectioncat, n_agecat),
+                   seq(which(ages == 10.5), 2*n_agecat*n_infectioncat, n_agecat))
+  # Set all age groups other than those to near 0
   # (model does not seem to run if it is exactly 0)
-  init_pop_shadow[-c(21,22,21+n_agecat,22+n_agecat,21+2*n_agecat,22+2*n_agecat,
-                     21+3*n_agecat,22+3*n_agecat, 21+4*n_agecat,22+4*n_agecat,
-                     21+5*n_agecat,22+5*n_agecat, 21+6*n_agecat,22+6*n_agecat,
-                     21+7*n_agecat,22+7*n_agecat, 21+8*n_agecat,22+8*n_agecat,
-                     21+9*n_agecat,22+9*n_agecat, 21+10*n_agecat,22+10*n_agecat,
-                     21+11*n_agecat,22+11*n_agecat, 21+12*n_agecat,22+12*n_agecat,
-                     21+13*n_agecat,22+13*n_agecat, 21+14*n_agecat,22+14*n_agecat,
-                     21+15*n_agecat,22+15*n_agecat, 21+16*n_agecat,22+16*n_agecat,
-                     21+17*n_agecat,22+17*n_agecat,
-                     ((2*n_agecat*n_infectioncat+1):length(init_pop_sim)))] <- 0.000000001
+  init_pop_shadow[-c(index_age10,((2*n_agecat*n_infectioncat+1):length(init_pop_sim)))] <- 0.000000001
   # Times vector: starttime is 1984, duration is 27 years
   times_shadow <- round((0:((28-dt)/dt))*dt,2) # for 27 years, starting 1984
   # Now need to turn off parameters to only reflect progression within chronic carriers:
@@ -1518,19 +1515,7 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
   # Remove carriers who already have HCC and multpiply by dt to get person-YEARS
   hcc_cases_per_100py <- sum(sim_shadow$incident_hcc$incident_number_total)*100/ # total number of HCC cases occurring over follow-up period
     carrier_years_at_risk
-
-  ################
-
-  #return(res)
-  return(sim_shadow)
-
 }
-
-# Update simulation parameters for fitting procedure
-starttime <- 1960
-runtime <- 60-dt                      # number of years to run the model for
-fit_times <- round((0:(runtime/dt))*dt,2) # vector of timesteps
-fit_times_labels <- fit_times+starttime       # year labels for timestep vector
 
 load(here("data/simulated_inits_1960.RData"))  # this is saved from previous model run
 init_pop_sim <- c("Sf" = select(model_pop1960, starts_with("Sf")),
@@ -1564,15 +1549,18 @@ init_pop_sim <- unlist(init_pop_sim)
 # WHO estimate
 hbsag_dataset <- data.frame(time = c(1980, 2015), prev = c(0.11, 0.058),
                    ci_lower = c(0.09, 0.047), ci_upper = c(0.134, 0.071))
-# Mock data
-hbsag_by_age_dataset_1980 <- data.frame(age = c(1.5,3.5,4.5,7.5,12.5,30.5,34),
-                                   prev = c(0.16, 0.24, 0.245, 0.26, 0.25, 0.11, 0.14))
+# Mock data: input dataset needs to have columns time, age and prev_data at the moment
+# Make sure age and time match dt/da (0.5)
+hbsag_by_age_dataset_1980 <- data.frame(time = c(rep(1984,7), 2015),
+                                        age = c(1.5,3.5,4.5,7.5,12.5,30.5,34, 35),
+                                        prev_data = c(0.16, 0.24, 0.245, 0.26, 0.25, 0.11, 0.14, 0.058))
 
 hbsag_dataset_list <- list(hbsag_dataset = hbsag_dataset,
                                hbsag_by_age_dataset_1980 = hbsag_by_age_dataset_1980)
 
+
 # Using LHS
-n_sims <- 1  # number of simulations
+n_sims <- 2  # number of simulations
 n_parms_to_vary <- 3  # number of parameters to infer - this requires manual adaptations below
 lhs_samples <- randomLHS(n_sims, n_parms_to_vary) # draw 100 samples from uniform distribution U(0,1) using a Latin Hypercube design
 params_mat <- data.frame(b1 = lhs_samples[,1],
@@ -1617,8 +1605,10 @@ stopCluster(cl)
 
 # Matrix of parameter values, model estimates for prevalence in 1980 and 2015, and SSE
 #res_mat <- cbind(params_mat, do.call(rbind.data.frame, out_mat_subset)) # this would work for a list
-out_mat_subset <- as.data.frame(t(sapply(out_mat, "[", c("prev_est_1980", "prev_est_2015", "sse"))))
-res_mat <- cbind(params_mat, unnest(out_mat_subset))
+#out_mat_subset <- as.data.frame(t(sapply(out_mat, "[", c("prev_est_1980", "prev_est_2015", "sse"))))
+#res_mat <- cbind(params_mat, unnest(out_mat_subset))
+out_mat_subset <- sapply(out_mat, "[[", "sse")
+res_mat <- cbind(params_mat, sse = out_mat_subset)
 res_mat[res_mat$sse == min(res_mat$sse),]
 
 # Fit to overall prevalence for minimum SSE
