@@ -1,5 +1,5 @@
 ###################################
-### Imperial HBV model 15/04/19 ###
+### Imperial HBV model 25/04/19 ###
 ###################################
 # Model described in Shevanthi's thesis and adapted by Margaret
 # Currently only infant vaccination in second age group, no birth dose or treatment
@@ -179,6 +179,14 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
                                       ncol = 2, nrow = n_agecat)      # female and male incident chronic infections
     dcum_hbv_deaths <- matrix(rep(0, 2* n_agecat),
                               ncol = 2, nrow = n_agecat)  # female and male incident HBV-related deaths
+    dcum_hcc_deaths <- matrix(rep(0, 2* n_agecat),
+                              ncol = 2, nrow = n_agecat)  # female and male incident HCC-related deaths
+    dcum_eag_loss <- matrix(rep(0, 2* n_agecat),
+                            ncol = 2, nrow = n_agecat)  # female and male incident HBeAg loss
+    dcum_sag_loss <- matrix(rep(0, 2* n_agecat),
+                            ncol = 2, nrow = n_agecat)  # female and male incident HBsAg loss
+    dcum_dcc <- matrix(rep(0, 2* n_agecat),
+                       ncol = 2, nrow = n_agecat)  # female and male incident DCC cases
     dcum_hcc <- matrix(rep(0, 2* n_agecat),
                        ncol = 2, nrow = n_agecat)  # female and male incident HCC cases
 
@@ -275,7 +283,7 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
              rep(foi_unique[4], times = length(i_15to100)))
 
 
-    # NATURAL HISTORY: PREPARE AGE-SPECIFIC PROGESSION RATES
+    # NATURAL HISTORY: DEFINE FUNCTIONS FOR AGE-SPECIFIC PROGESSION
 
     # Age-specific function of progression from IT and IR to IC and ENCHB (represents eAg loss)
     eag_loss_function <- eag_loss_accelerator * exp(-eag_loss * ages)
@@ -295,6 +303,8 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
 
     for (i in 1:2) {        # i = sex [1 = female, 2 = male]
 
+      # Define some transitions:
+
       # Demography: Incident deaths and migrants
       deaths[index$ages_all,index$infcat_all,i] <- mortality_rate[index$ages_all,i] *
         pop[index$ages_all,index$infcat_all,i]
@@ -309,10 +319,25 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
       dcum_chronic_infections[index$ages_all,i] <-  p_chronic * dcum_infections[index$ages_all,i]
       # Returns a matrix with incident infections for every age (rows) and every sex (columns)
 
+      # Natural history transitions
       # Incident deaths due to HBV (from cirrhosis and HCC)
       dcum_hbv_deaths[index$ages_all,i] <- mu_cc * pop[index$ages_all,CC,i] +
         mu_dcc * pop[index$ages_all,DCC,i] + mu_hcc * pop[index$ages_all,HCC,i]
       # Returns a matrix with incident HBV deaths for every age (rows) and every sex (columns)
+
+      # Incident deaths due to HCC only
+      dcum_hcc_deaths[index$ages_all,i] <- mu_hcc * pop[index$ages_all,HCC,i]
+      # Returns a matrix with incident HBV deaths for every age (rows) and every sex (columns)
+
+      # Incidence of HBeAg loss: transition from IR to IC and IR to ENCHB
+      dcum_eag_loss[index$ages_all,i] <- pr_ir_ic*eag_loss_function * pop[index$ages_all,IR,i] +
+        pr_ir_enchb * pop[index$ages_all,IR,i]
+
+      # Transition from IC to R (sAg loss)
+      dcum_sag_loss[index$ages_all,i] <- sag_loss * pop[index$ages_all,IC,i]
+
+      # DCC incidence
+      dcum_dcc[index$ages_all,i] <- dccrate * pop[index$ages_all,CC,i]
 
       # Total HCC incidence
       dcum_hcc[index$ages_all,i] <- hccr_it*cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,IT,i] +
@@ -350,7 +375,7 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
       dpop[index$ages_all,IC,i] <- -(diff(c(0,pop[index$ages_all,IC,i]))/da) +
         pr_ir_ic*eag_loss_function * pop[index$ages_all,IR,i] -
         pr_ic_enchb * pop[index$ages_all,IC,i] -
-        sag_loss * pop[index$ages_all,IC,i] -
+        dcum_sag_loss[index$ages_all,i] -
         hccr_ic*cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,IC,i] -
         deaths[index$ages_all,IC,i] + migrants[index$ages_all,IC,i]
 
@@ -365,14 +390,14 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
       # Compensated cirrhosis
       dpop[index$ages_all,CC,i] <- -(diff(c(0,pop[index$ages_all,CC,i]))/da) +
         ccrate * pop[index$ages_all,ENCHB,i] -
-        dccrate * pop[index$ages_all,CC,i] -
+        dcum_dcc[index$ages_all,i] -
         hccr_cc*cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,CC,i] -
         mu_cc * pop[index$ages_all,CC,i] -
         deaths[index$ages_all,CC,i] + migrants[index$ages_all,CC,i]
 
       # Decompensated cirrhosis
       dpop[index$ages_all,DCC,i] <- -(diff(c(0,pop[index$ages_all,DCC,i]))/da) +
-        dccrate * pop[index$ages_all,CC,i] -
+        dcum_dcc[index$ages_all,i] -
         hccr_dcc * pop[index$ages_all,DCC,i] -
         mu_dcc * pop[index$ages_all,DCC,i] -
         deaths[index$ages_all,DCC,i] + migrants[index$ages_all,DCC,i]
@@ -385,7 +410,7 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
         hccr_enchb*cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,ENCHB,i] +
         hccr_cc*cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,CC,i] +
         hccr_dcc * pop[index$ages_all,DCC,i] -
-        mu_hcc * pop[index$ages_all,HCC,i] -
+        dcum_hcc_deaths[index$ages_all,i] -
         deaths[index$ages_all,HCC,i] + migrants[index$ages_all,HCC,i]
 
       # Immunes
@@ -415,7 +440,7 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
     # Return results
     res <- c(dpop, dcum_deaths, dcum_infections, dcum_chronic_infections,
              dcum_births, dcum_infected_births, dcum_chronic_births,
-             dcum_hbv_deaths, dcum_hcc)
+             dcum_hbv_deaths, dcum_hcc_deaths, dcum_eag_loss, dcum_sag_loss, dcum_dcc, dcum_hcc)
     list(res)
 
   })
@@ -931,6 +956,10 @@ init_pop <- c("Sf" = popsize_1950$pop_female*(1-gambia_infected),
                "cum_chronic_infectionsf" = rep(0,n_agecat), "cum_chronic_infectionsm" = rep(0,n_agecat),
                "cum_births" = 0, "cum_infected_births" = 0, "cum_chronic_births" = 0,
                "cum_hbv_deathsf" = rep(0,n_agecat), "cum_hbv_deathsm" = rep(0,n_agecat),
+               "cum_hcc_deathsf" = rep(0,n_agecat), "cum_hcc_deathsm" = rep(0,n_agecat),
+               "cum_eag_lossf" = rep(0,n_agecat), "cum_eag_lossm" = rep(0,n_agecat),
+               "cum_sag_lossf" = rep(0,n_agecat), "cum_sag_lossm" = rep(0,n_agecat),
+               "cum_dccf" = rep(0,n_agecat), "cum_dccm" = rep(0,n_agecat),
                "cum_hccf" = rep(0,n_agecat), "cum_hccm" = rep(0,n_agecat))
 
 # Check initial population vector is the right size
@@ -1000,8 +1029,7 @@ parameter_names <- names(parameter_list)
 #parameter_list <- lapply(parameter_list, FUN= function(x) x*0)
 tic()
 sim <- run_model(sim_duration = runtime, default_parameter_list = parameter_list,
-                 parms_to_change = list(b1 = 0.1, b2 = 0.009, mtct_prob_s = 0.14,
-                                        mu_cc = 0, mu_dcc = 0, mu_hcc = 0),
+                 parms_to_change = list(b1 = 0.1, b2 = 0.009, mtct_prob_s = 0.14),
                  scenario = "vacc")
 out <- code_model_output(sim)
 toc()
@@ -1153,7 +1181,7 @@ plot(ages, outpath$carriers[which(outpath$carriers$time == 1980),-1]/
 
 # HBeAg prevalence in chronic carriers by age in 1980
 plot(ages, outpath$eag_positive[which(outpath$eag_positive$time == 1980),-1]/
-       outpath$carriers[which(outpath$carriers$time == 1980),-1], type = "l")
+       outpath$carriers[which(outpath$carriers$time == 1980),-1], type = "l", ylim = c(0,1))
 
 # Carrier prevalence by age in 2015
 plot(ages, outpath$carriers[which(outpath$carriers$time == 2015),-1]/
@@ -1466,6 +1494,10 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
                     "cum_chronic_infectionsf" = rep(0,n_agecat), "cum_chronic_infectionsm" = rep(0,n_agecat),
                     "cum_births" = 0, "cum_infected_births" = 0, "cum_chronic_births" = 0,
                     "cum_hbv_deathsf" = rep(0,n_agecat), "cum_hbv_deathsm" = rep(0,n_agecat),
+                    "cum_hcc_deathsf" = rep(0,n_agecat), "cum_hcc_deathsm" = rep(0,n_agecat),
+                    "cum_eag_lossf" = rep(0,n_agecat), "cum_eag_lossm" = rep(0,n_agecat),
+                    "cum_sag_lossf" = rep(0,n_agecat), "cum_sag_lossm" = rep(0,n_agecat),
+                    "cum_dccf" = rep(0,n_agecat), "cum_dccm" = rep(0,n_agecat),
                     "cum_hccf" = rep(0,n_agecat), "cum_hccm" = rep(0,n_agecat))
   init_pop_shadow <- unlist(init_pop_shadow)
   # Define index for age group of interest (10 and 10.5 year olds)
@@ -1541,6 +1573,10 @@ init_pop_sim <- c("Sf" = select(model_pop1960, starts_with("Sf")),
                   "cum_chronic_infectionsf" = rep(0,n_agecat), "cum_chronic_infectionsm" = rep(0,n_agecat),
                   "cum_births" = 0, "cum_infected_births" = 0, "cum_chronic_births" = 0,
                   "cum_hbv_deathsf" = rep(0,n_agecat), "cum_hbv_deathsm" = rep(0,n_agecat),
+                  "cum_hcc_deathsf" = rep(0,n_agecat), "cum_hcc_deathsm" = rep(0,n_agecat),
+                  "cum_eag_lossf" = rep(0,n_agecat), "cum_eag_lossm" = rep(0,n_agecat),
+                  "cum_sag_lossf" = rep(0,n_agecat), "cum_sag_lossm" = rep(0,n_agecat),
+                  "cum_dccf" = rep(0,n_agecat), "cum_dccm" = rep(0,n_agecat),
                   "cum_hccf" = rep(0,n_agecat), "cum_hccm" = rep(0,n_agecat))
 init_pop_sim <- unlist(init_pop_sim)
 
@@ -1653,4 +1689,8 @@ boxplot(res_mat$mtct_prob_s, subset(res_mat,fit==1)$mtct_prob_s, col=c(grey(0.6)
         ylim=c(0,0.6), names=c("Prior","Posterior"),
         main="LHS for 'mtct_prob_s':\nprior/posteriors distributions")
 par(mfrow=c(1,1))
+
+
+
+
 
