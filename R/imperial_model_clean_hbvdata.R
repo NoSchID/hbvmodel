@@ -202,22 +202,24 @@ prog_rates_for_output$fu_assign_years <- round(as.numeric(prog_rates_for_output$
 prog_rates_for_output$start_period_assign_years <- substr(prog_rates_for_output$recruitment_period,1,4)
 
 # Subset for use in model
-prog_rates_for_shadow_models <- select(prog_rates_for_output,
-                                      id_paper,
-                                      id_group,
-                                      id_proc,
-                                      start_period_assign_years,
-                                      age_assign_years,
-                                      fu_assign_years,
-                                      sex,
-                                      pop_group_clinical,
-                                      model_prog_from,
-                                      model_prog_to,
-                                      rate_py,
-                                      rate_py_ci_lower,
-                                      rate_py_ci_upper,
-                                      modelling_notes)
-prog_rates_for_shadow_models$numerator <- c("cum. incident transitions to IC and ENCHB",
+prog_rates_for_fitting <- prog_rates_for_output %>%
+  select(id_paper,
+         id_group,
+         id_proc,
+         start_period_assign_years,
+         age_assign_years,
+         fu_assign_years,
+         starts_with("bl_age"),
+         sex,
+         pop_group_clinical,
+         model_prog_from,
+         model_prog_to,
+         rate_py,
+         rate_py_ci_lower,
+         rate_py_ci_upper,
+         modelling_notes)
+
+prog_rates_for_fitting$numerator <- c("cum. incident transitions to IC and ENCHB",
                                             "cum. incident HCC cases",
                                             "cum. incident HCC cases",
                                             "cum. incident HCC cases",
@@ -229,7 +231,7 @@ prog_rates_for_shadow_models$numerator <- c("cum. incident transitions to IC and
                                             "cum. incident transitions from S to IT and S to R",
                                             "cum. incident transitions from S to IT and S to R",
                                             "cum. incident transitions from S to IT")
-prog_rates_for_shadow_models$denominator <- c("personyears in IT and IR",
+prog_rates_for_fitting$denominator <- c("personyears in IT and IR",
                                              "personyears in chronic compartments except HCC",
                                              "personyears in chronic compartments except HCC",
                                              "personyears in chronic compartments except HCC",
