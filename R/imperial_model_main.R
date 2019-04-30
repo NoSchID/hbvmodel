@@ -438,14 +438,17 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
 
     # OUTPUT
 
-    # Sum age-specific number of incident deaths across infection compartments four output
+    # Sum age-specific number of incident background deaths across infection compartments for output
     dcum_deaths <- apply(deaths,c(1,3),sum)
+    # Age-specific number of incident background deaths among liver disease patients (CC, DCC and HCC)
+    dcum_background_deaths_ld <- apply(deaths[index$ages_all,CC:HCC,1:2],c(1,3),sum)
 
     # Return results
     res <- c(dpop, dcum_deaths, dcum_infections, dcum_chronic_infections,
              dcum_births, dcum_infected_births, dcum_chronic_births,
              dcum_hbv_deaths, dcum_hcc_deaths, dcum_eag_loss,
-             dcum_sag_loss, dcum_dcc, dcum_hcc, dflow_dcc_to_hcc)
+             dcum_sag_loss, dcum_dcc, dcum_hcc, dflow_dcc_to_hcc,
+             dcum_background_deaths_ld = dcum_background_deaths_ld)
     list(res)
 
   })
@@ -968,7 +971,9 @@ init_pop <- c("Sf" = popsize_1950$pop_female*(1-gambia_infected),
                "cum_sag_lossf" = rep(0,n_agecat), "cum_sag_lossm" = rep(0,n_agecat),
                "cum_dccf" = rep(0,n_agecat), "cum_dccm" = rep(0,n_agecat),
                "cum_hccf" = rep(0,n_agecat), "cum_hccm" = rep(0,n_agecat),
-               "cum_hcc_from_dccf" = rep(0,n_agecat), "cum_hcc_from_dccm" = rep(0,n_agecat))
+               "cum_hcc_from_dccf" = rep(0,n_agecat), "cum_hcc_from_dccm" = rep(0,n_agecat),
+               "cum_background_deaths_ldf" =  rep(0,n_agecat),
+               "cum_background_deaths_ldm" =  rep(0,n_agecat))
 
 # Check initial population vector is the right size
 length(init_pop) == n_infectioncat*n_agecat*2+4*n_agecat+2
@@ -1448,6 +1453,19 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
   # Merge with the dataset to fit to
   mapped_output <- left_join(data_hbsag_by_age, model_prev_subset, by = c("time", "age"))
 
+  # Fitting to rates:
+  # Mortality rate in CC, DCC and HCC from any cause (HBV-related or background mortality)
+  # Olubuyide (A6) cohort of CC, DCC and HCC patients followed from 1983 to 1989
+  # Numerator = sum of cumulative number of incident deaths between 1989 and 1983
+  # Denominator = person-time in compartments at risk (compensated cirrhosis, decompensated cirrhosis, HCC) * dt
+  mortality_rate_liver_disease <- ((sum(select(out, starts_with("cum_hbv_deaths"))[which(out$time == 1989),]) +
+                                      sum(select(out, starts_with("cum_background_deaths_ld"))[which(out$time == 1989),])) -
+                                     (sum(select(out, starts_with("cum_hbv_deaths"))[which(out$time == 1983),]) +
+                                        sum(select(out, starts_with("cum_background_deaths_ld"))[which(out$time == 1983),])))/
+    (sum(select(sim$full_output, starts_with("HCC"))[which(sim$time == 1983):which(sim$time == 1989),]) +
+       sum(select(sim$full_output, starts_with("DCC"))[which(sim$time == 1983):which(sim$time == 1989),]) +
+       sum(select(sim$full_output, starts_with("CC"))[which(sim$time == 1983):which(sim$time == 1989),])*dt)
+
   # Calculate sum of least squares
   sse <- sum((mapped_output$prev_data-mapped_output$prev_model)^2)
   # This works but need to add sex as a category
@@ -1477,11 +1495,6 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
                       t(mapply(seq, from= (which(ages %in% seq(20,29.5,0.5))+(9+1)*n_agecat),
                                to=2*n_agecat*(n_infectioncat-3/2), by =n_agecat)))  # for men
 
-  shadow1c_index <- c(t(mapply(seq, from= (which(ages %in% seq(0,29.5,0.5))+n_agecat),
-                               to=n_agecat*(n_infectioncat-3), by =n_agecat)),  # for women
-                      t(mapply(seq, from= (which(ages %in% seq(0,29.5,0.5))+(9+1)*n_agecat),
-                               to=2*n_agecat*(n_infectioncat-3/2), by =n_agecat)))  # for men
-
   # Get init pop from full model output for year 1974
   shadow1a_init_pop <- c(model_pop1974,
                     "cum_deathsf" = rep(0,n_agecat), "cum_deathsm" = rep(0,n_agecat),
@@ -1494,18 +1507,17 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
                     "cum_sag_lossf" = rep(0,n_agecat), "cum_sag_lossm" = rep(0,n_agecat),
                     "cum_dccf" = rep(0,n_agecat), "cum_dccm" = rep(0,n_agecat),
                     "cum_hccf" = rep(0,n_agecat), "cum_hccm" = rep(0,n_agecat),
-                    "cum_hcc_from_dccf" = rep(0,n_agecat), "cum_hcc_from_dccm" = rep(0,n_agecat))
+                    "cum_hcc_from_dccf" = rep(0,n_agecat), "cum_hcc_from_dccm" = rep(0,n_agecat),
+                    "cum_background_deaths_ldf" =  rep(0,n_agecat),
+                    "cum_background_deaths_ldm" =  rep(0,n_agecat))
   shadow1a_init_pop <- unlist(shadow1a_init_pop)
   shadow1b_init_pop <- shadow1a_init_pop
-  shadow1c_init_pop <- shadow1a_init_pop
 
   # Set all age groups and compartments other than those to follow to nearly 0
   # (model does not seem to run if it is exactly 0)
   shadow1a_init_pop[-c(shadow1a_index,((2*n_agecat*n_infectioncat+1):length(init_pop_sim)))] <-
     0.000000001
   shadow1b_init_pop[-c(shadow1b_index,((2*n_agecat*n_infectioncat+1):length(init_pop_sim)))] <-
-    0.000000001
-  shadow1c_init_pop[-c(shadow1c_index,((2*n_agecat*n_infectioncat+1):length(init_pop_sim)))] <-
     0.000000001
 
   # Define index for age group of interest (10 and 10.5 year olds)
@@ -1542,22 +1554,14 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
                                                    b3 = 0),
                             scenario = "no_vacc")
 
-  # Simulate cohort 1c
-  shadow1c_sim <- run_model(sim_duration = 28, init_pop_vector = shadow1c_init_pop,
-                            default_parameter_list = parameters_for_fit,
-                            parms_to_change = list(sim_starttime = 1974,
-                                                   births_on = 0,
-                                                   migration_on = 0,
-                                                   b1 = 0,
-                                                   b2 = 0,
-                                                   b3 = 0),
-                            scenario = "no_vacc")
 
   # Calculate outputs to fit to:
-  # Total HCC incidence rate per person-year in model 1a over follow-up
   shadow1a_out <- code_model_output(shadow1a_sim)
+  shadow1b_out <- code_model_output(shadow1b_sim)
+  # Total HCC incidence rate per person-year over follow-up
   # Numerator = cumulative number of incident HCC cases over follow-up
   # Denominator = person-timestep at risk * dt (carrier compartments other than HCC)
+  # MODEL 1a
   # In women:
   shadow1a_hcc_ratef <- sum(shadow1a_out$incident_hcc$incident_number_female)/
     ((sum(shadow1a_out$carriers_female[,-1]) - sum(select(shadow1a_out$full_output,
@@ -1567,8 +1571,7 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
     ((sum(shadow1a_out$carriers_male[,-1]) - sum(select(shadow1a_out$full_output,
                                                          starts_with("HCCm"))))*dt)
 
-  # Total HCC incidence rate per person-year in model 1b
-  shadow1b_out <- code_model_output(shadow1b_sim)
+  # MODEL 1b
   # In women:
   shadow1b_hcc_ratef <- sum(shadow1b_out$incident_hcc$incident_number_female)/
     ((sum(shadow1b_out$carriers_female[,-1]) - sum(select(shadow1b_out$full_output,
@@ -1578,60 +1581,48 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
     ((sum(shadow1b_out$carriers_male[,-1]) - sum(select(shadow1b_out$full_output,
                                                   starts_with("HCCm"))))*dt)
 
-  # Total HCC incidence rate per person-year in model 1c
-  shadow1c_out <- code_model_output(shadow1c_sim)
-  shadow1c_hcc_rate <- sum(shadow1c_out$incident_hcc$incident_number_total)/
-    ((sum(shadow1c_out$carriers[,-1]) - sum(select(shadow1c_out$full_output,
-                                                         starts_with("HCC"))))*dt)
-
   # Total incidence of non-malignant ESLD (DCC) per person-year (both sexes)
   # Numerator = cumulative number of incident DCC cases over follow-up (at last timestep)
   # - cumulative number of transitions from DCC to HCC
   # Denominator = person-timestep at risk * dt (carrier compartments other than DCC and HCC)
-  shadow1c_dcc_rate <- (sum(select(shadow1c_sim, starts_with("cum_dcc"))[nrow(shadow1c_sim),])-
-                        sum(select(shadow1c_sim, starts_with("cum_hcc_from_dcc"))[nrow(shadow1c_sim),]))/
-    (sum(shadow1c_out$carriers[,-1]) -
-       (sum(select(shadow1c_out$full_output, starts_with("HCC")))) -
-       (sum(select(shadow1c_out$full_output,starts_with("DCC"))))*dt)
-
-  # Incidence rate of eAg loss per person-year (both sexes)
-  # Numerator = cumulative number of cases of eAg loss at last timestep
-  # corresponds to transitions IR to IC and IR to ENCHB
-  # Denominator = person-time spent in IR??? Or should it be IR and IT?
-  shadow1c_eag_loss_rate <- (sum(select(shadow1c_sim, starts_with("cum_eag_loss"))[nrow(shadow1c_sim),]))/
-    (sum(select(shadow1c_out$full_output,starts_with("IR")))*dt)
-
-  # Mortality rate from any cause (HBV-related deaths + background mortality)
-  # This was measured in the whole cohort (no matter where they progressed to)
-  # In women:
-  shadow1c_mortality_ratef <- (sum(select(shadow1c_sim, starts_with("cum_hbv_deathsf"))[nrow(shadow1c_sim),]) +
-                              sum(select(shadow1c_sim, starts_with("cum_deathsf"))[nrow(shadow1c_sim),]))/
-    (sum(shadow1c_out$pop_female[,-1])*dt)
-  # In men:
-  shadow1c_mortality_ratem <- (sum(select(shadow1c_sim, starts_with("cum_hbv_deathsm"))[nrow(shadow1c_sim),]) +
-                                 sum(select(shadow1c_sim, starts_with("cum_deathsm"))[nrow(shadow1c_sim),]))/
-    (sum(shadow1c_out$pop_male[,-1])*dt)
-
-  ####1a
-  # Total incidence of non-malignant ESLD (DCC) per person-year (both sexes)
-  # Numerator = cumulative number of incident DCC cases over follow-up (at last timestep)
-  # - cumulative number of transitions from DCC to HCC
-  # Denominator = person-timestep at risk * dt (carrier compartments other than DCC and HCC)
+  # MODEL 1a:
   shadow1a_dcc_rate <- (sum(select(shadow1a_sim, starts_with("cum_dcc"))[nrow(shadow1a_sim),])-
                           sum(select(shadow1a_sim, starts_with("cum_hcc_from_dcc"))[nrow(shadow1a_sim),]))/
     (sum(shadow1a_out$carriers[,-1]) -
        (sum(select(shadow1a_out$full_output, starts_with("HCC")))) -
        (sum(select(shadow1a_out$full_output,starts_with("DCC"))))*dt)
+  # MODEL 1b:
+  shadow1b_dcc_rate <- (sum(select(shadow1b_sim, starts_with("cum_dcc"))[nrow(shadow1b_sim),])-
+                          sum(select(shadow1b_sim, starts_with("cum_hcc_from_dcc"))[nrow(shadow1b_sim),]))/
+    (sum(shadow1b_out$carriers[,-1]) -
+       (sum(select(shadow1b_out$full_output, starts_with("HCC")))) -
+       (sum(select(shadow1b_out$full_output,starts_with("DCC"))))*dt)
+  # AVERAGE ACROSS AGE GROUPS:
+  shadow1_dcc_rate <- weighted.mean(x = c(shadow1a_dcc_rate, shadow1b_dcc_rate),
+                                    w = c(sum(shadow1a_init_pop), sum(shadow1b_init_pop)))
 
-  # Incidence rate of eAg loss per person-year (both sexes)
+  # Incidence rate of eAg loss per person-year
   # Numerator = cumulative number of cases of eAg loss at last timestep
   # corresponds to transitions IR to IC and IR to ENCHB
   # Denominator = person-time spent in IR??? Or should it be IR and IT?
-  shadow1a_eag_loss_rate <- (sum(select(shadow1a_sim, starts_with("cum_eag_loss"))[nrow(shadow1a_sim),]))/
-    (sum(select(shadow1a_out$full_output,starts_with("IR")))*dt)
+  # MODEL 1a
+  # In women:
+  shadow1a_eag_loss_ratef <- (sum(select(shadow1a_sim, starts_with("cum_eag_lossf"))[nrow(shadow1a_sim),]))/
+    (sum(select(shadow1a_out$full_output,starts_with("IRf")))*dt)
+  # In men:
+  shadow1a_eag_loss_ratem <- (sum(select(shadow1a_sim, starts_with("cum_eag_lossm"))[nrow(shadow1a_sim),]))/
+    (sum(select(shadow1a_out$full_output,starts_with("IRm")))*dt)
+  # MODEL 1b
+  # In women:
+  shadow1b_eag_loss_ratef <- (sum(select(shadow1b_sim, starts_with("cum_eag_lossf"))[nrow(shadow1b_sim),]))/
+    (sum(select(shadow1b_out$full_output,starts_with("IRf")))*dt)
+  # In men:
+  shadow1b_eag_loss_ratem <- (sum(select(shadow1b_sim, starts_with("cum_eag_lossm"))[nrow(shadow1b_sim),]))/
+    (sum(select(shadow1b_out$full_output,starts_with("IRm")))*dt)
 
   # Mortality rate from any cause (HBV-related deaths + background mortality)
   # This was measured in the whole cohort (no matter where they progressed to)
+  # MODEL 1a
   # In women:
   shadow1a_mortality_ratef <- (sum(select(shadow1a_sim, starts_with("cum_hbv_deathsf"))[nrow(shadow1a_sim),]) +
                                  sum(select(shadow1a_sim, starts_with("cum_deathsf"))[nrow(shadow1a_sim),]))/
@@ -1640,26 +1631,7 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
   shadow1a_mortality_ratem <- (sum(select(shadow1a_sim, starts_with("cum_hbv_deathsm"))[nrow(shadow1a_sim),]) +
                                  sum(select(shadow1a_sim, starts_with("cum_deathsm"))[nrow(shadow1a_sim),]))/
     (sum(shadow1a_out$pop_male[,-1])*dt)
-  #### 1b
-  # Total incidence of non-malignant ESLD (DCC) per person-year (both sexes)
-  # Numerator = cumulative number of incident DCC cases over follow-up (at last timestep)
-  # - cumulative number of transitions from DCC to HCC
-  # Denominator = person-timestep at risk * dt (carrier compartments other than DCC and HCC)
-  shadow1b_dcc_rate <- (sum(select(shadow1b_sim, starts_with("cum_dcc"))[nrow(shadow1b_sim),])-
-                          sum(select(shadow1b_sim, starts_with("cum_hcc_from_dcc"))[nrow(shadow1b_sim),]))/
-    (sum(shadow1b_out$carriers[,-1]) -
-       (sum(select(shadow1b_out$full_output, starts_with("HCC")))) -
-       (sum(select(shadow1b_out$full_output,starts_with("DCC"))))*dt)
-
-  # Incidence rate of eAg loss per person-year (both sexes)
-  # Numerator = cumulative number of cases of eAg loss at last timestep
-  # corresponds to transitions IR to IC and IR to ENCHB
-  # Denominator = person-time spent in IR??? Or should it be IR and IT?
-  shadow1b_eag_loss_rate <- (sum(select(shadow1b_sim, starts_with("cum_eag_loss"))[nrow(shadow1b_sim),]))/
-    (sum(select(shadow1b_out$full_output,starts_with("IR")))*dt)
-
-  # Mortality rate from any cause (HBV-related deaths + background mortality)
-  # This was measured in the whole cohort (no matter where they progressed to)
+  # MODEL 1b
   # In women:
   shadow1b_mortality_ratef <- (sum(select(shadow1b_sim, starts_with("cum_hbv_deathsf"))[nrow(shadow1b_sim),]) +
                                  sum(select(shadow1b_sim, starts_with("cum_deathsf"))[nrow(shadow1b_sim),]))/
@@ -1668,32 +1640,30 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
   shadow1b_mortality_ratem <- (sum(select(shadow1b_sim, starts_with("cum_hbv_deathsm"))[nrow(shadow1b_sim),]) +
                                  sum(select(shadow1b_sim, starts_with("cum_deathsm"))[nrow(shadow1b_sim),]))/
     (sum(shadow1b_out$pop_male[,-1])*dt)
-  ####
+  # AVERAGE ACROSS AGE GROUPS
+  shadow1_mortality_ratef <- weighted.mean(x = c(shadow1a_mortality_ratef, shadow1b_mortality_ratef),
+                                           w = c(sum(shadow1a_init_pop), sum(shadow1b_init_pop)))
+  shadow1_mortality_ratem <- weighted.mean(x = c(shadow1a_mortality_ratem, shadow1b_mortality_ratem),
+                                           w = c(sum(shadow1a_init_pop), sum(shadow1b_init_pop)))
 
-  return(c(shadow1c_dcc_rate = shadow1c_dcc_rate,
-           shadow1c_eag_loss_rate = shadow1c_eag_loss_rate,
-           shadow1c_mortality_ratef = shadow1c_mortality_ratef,
-           shadow1c_mortality_ratem = shadow1c_mortality_ratem,
-           shadow1a_dcc_rate = shadow1a_dcc_rate,
-           shadow1a_eag_loss_rate = shadow1a_eag_loss_rate,
-           shadow1a_mortality_ratef = shadow1a_mortality_ratef,
-           shadow1a_mortality_ratem = shadow1a_mortality_ratem,
-           shadow1b_dcc_rate = shadow1b_dcc_rate,
-           shadow1b_eag_loss_rate = shadow1b_eag_loss_rate,
-           shadow1b_mortality_ratef = shadow1b_mortality_ratef,
-           shadow1b_mortality_ratem = shadow1b_mortality_ratem,
-           shadow1a_pop = sum(shadow1a_init_pop),
-           shadow1b_pop = sum(shadow1b_init_pop)))
+  # List of outputs to fit to
+  shadow1_outputs <- list(shadow1a_eag_loss_ratef = shadow1a_eag_loss_ratef,
+                          shadow1a_eag_loss_ratem = shadow1a_eag_loss_ratem,
+                          shadow1b_eag_loss_ratef = shadow1b_eag_loss_ratef,
+                          shadow1b_eag_loss_ratem  = shadow1b_eag_loss_ratem,
+                          shadow1a_hcc_ratef = shadow1a_hcc_ratef,
+                          shadow1a_hcc_ratem = shadow1a_hcc_ratem,
+                          shadow1b_hcc_ratef = shadow1b_hcc_ratef,
+                          shadow1b_hcc_ratem = shadow1b_hcc_ratem,
+                          shadow1_dcc_rate = shadow1_dcc_rate,
+                          shadow1_mortality_ratef = shadow1_mortality_ratef,
+                          shadow1_mortality_ratem = shadow1_mortality_ratem)
 
+  return(shadow1_outputs)
 
   # Might have to exclude the last timestep from carrier-years?
 
   # Incorporate test: incident infections and births need to be 0!
-
-  # Calculate output to fit to: Total HCC incidence per 100 carrier-years:
-  # Carriers at risk are compartments that can progress to HCC
-  # (all carriers except for those with HCC)
-  # Remove carriers who already have HCC and multpiply by dt to get person-YEARS
 
 }
 
@@ -1727,7 +1697,9 @@ init_pop_sim <- c("Sf" = select(model_pop1960, starts_with("Sf")),
                   "cum_sag_lossf" = rep(0,n_agecat), "cum_sag_lossm" = rep(0,n_agecat),
                   "cum_dccf" = rep(0,n_agecat), "cum_dccm" = rep(0,n_agecat),
                   "cum_hccf" = rep(0,n_agecat), "cum_hccm" = rep(0,n_agecat),
-                  "cum_hcc_from_dccf" = rep(0,n_agecat), "cum_hcc_from_dccm" = rep(0,n_agecat))
+                  "cum_hcc_from_dccf" = rep(0,n_agecat), "cum_hcc_from_dccm" = rep(0,n_agecat),
+                  "cum_background_deaths_ldf" =  rep(0,n_agecat),
+                  "cum_background_deaths_ldm" =  rep(0,n_agecat))
 init_pop_sim <- unlist(init_pop_sim)
 
 
