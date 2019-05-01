@@ -1,5 +1,5 @@
 ###################################
-### Imperial HBV model 25/04/19 ###
+### Imperial HBV model 01/05/19 ###
 ###################################
 # Model described in Shevanthi's thesis and adapted by Margaret
 # Currently only infant vaccination in second age group, no birth dose or treatment
@@ -748,8 +748,8 @@ code_model_output <- function(output) {
   out_cum_hbv_deathsm <- select(output, starts_with("cum_hbv_deathsm"))
 
   # Cumulative number of HCC cases (from all possible compartments)
-  out_cum_hccf <- select(output, starts_with("cum_hccf"))
-  out_cum_hccm <- select(output, starts_with("cum_hccm"))
+  out_cum_hccf <- select(output, starts_with("cum_incident_hccf"))
+  out_cum_hccm <- select(output, starts_with("cum_incident_hccm"))
 
   ## Process infection outputs
   # Combine into data frames with outputs of interest for further analysis
@@ -943,6 +943,19 @@ code_model_output <- function(output) {
 # Set up initial population: age- and sex-specific population size in 1950
 # Note: names in initial population vector is reproduced in output
 # guessed proportion in each compartment
+output_storage <- c("cum_deathsf" = rep(0,n_agecat), "cum_deathsm" = rep(0,n_agecat),
+                    "cum_infectionsf" = rep(0,n_agecat), "cum_infectionsm" = rep(0,n_agecat),
+                    "cum_chronic_infectionsf" = rep(0,n_agecat), "cum_chronic_infectionsm" = rep(0,n_agecat),
+                    "cum_births" = 0, "cum_infected_births" = 0, "cum_chronic_births" = 0,
+                    "cum_hbv_deathsf" = rep(0,n_agecat), "cum_hbv_deathsm" = rep(0,n_agecat),
+                    "cum_hcc_deathsf" = rep(0,n_agecat), "cum_hcc_deathsm" = rep(0,n_agecat),
+                    "cum_eag_lossf" = rep(0,n_agecat), "cum_eag_lossm" = rep(0,n_agecat),
+                    "cum_sag_lossf" = rep(0,n_agecat), "cum_sag_lossm" = rep(0,n_agecat),
+                    "cum_incident_dccf" = rep(0,n_agecat), "cum_incident_dccm" = rep(0,n_agecat),
+                    "cum_incident_hccf" = rep(0,n_agecat), "cum_incident_hccm" = rep(0,n_agecat),
+                    "cum_hcc_from_dccf" = rep(0,n_agecat), "cum_hcc_from_dccm" = rep(0,n_agecat),
+                    "cum_background_deaths_ldf" =  rep(0,n_agecat),
+                    "cum_background_deaths_ldm" =  rep(0,n_agecat))
 init_pop <- c("Sf" = popsize_1950$pop_female*(1-gambia_infected),
                "ITf" = popsize_1950$pop_female*gambia_infected*gambia_eag*0.5,
                "IRf" = popsize_1950$pop_female*gambia_infected*gambia_eag*0.5,
@@ -961,19 +974,8 @@ init_pop <- c("Sf" = popsize_1950$pop_female*(1-gambia_infected),
                "DCCm" = popsize_1950$pop_male*gambia_infected*(1-gambia_eag)*0.2,
                "HCCm" = popsize_1950$pop_male*gambia_infected*(1-gambia_eag)*0.2,
                "Rm" = rep(0,n_agecat),
-               "cum_deathsf" = rep(0,n_agecat), "cum_deathsm" = rep(0,n_agecat),
-               "cum_infectionsf" = rep(0,n_agecat), "cum_infectionsm" = rep(0,n_agecat),
-               "cum_chronic_infectionsf" = rep(0,n_agecat), "cum_chronic_infectionsm" = rep(0,n_agecat),
-               "cum_births" = 0, "cum_infected_births" = 0, "cum_chronic_births" = 0,
-               "cum_hbv_deathsf" = rep(0,n_agecat), "cum_hbv_deathsm" = rep(0,n_agecat),
-               "cum_hcc_deathsf" = rep(0,n_agecat), "cum_hcc_deathsm" = rep(0,n_agecat),
-               "cum_eag_lossf" = rep(0,n_agecat), "cum_eag_lossm" = rep(0,n_agecat),
-               "cum_sag_lossf" = rep(0,n_agecat), "cum_sag_lossm" = rep(0,n_agecat),
-               "cum_dccf" = rep(0,n_agecat), "cum_dccm" = rep(0,n_agecat),
-               "cum_hccf" = rep(0,n_agecat), "cum_hccm" = rep(0,n_agecat),
-               "cum_hcc_from_dccf" = rep(0,n_agecat), "cum_hcc_from_dccm" = rep(0,n_agecat),
-               "cum_background_deaths_ldf" =  rep(0,n_agecat),
-               "cum_background_deaths_ldm" =  rep(0,n_agecat))
+               output_storage)
+
 
 # Check initial population vector is the right size
 length(init_pop) == n_infectioncat*n_agecat*2+4*n_agecat+2
@@ -1412,6 +1414,78 @@ save(model_pop1960, file = here("data/simulated_inits_1960.RData"))
 require(lhs)
 require("parallel")
 
+# Function to simulate shadow models within fitting function
+run_shadow_model <- function(init_age_from, init_age_to, init_sex,
+                             init_compartment_from, init_compartment_to,
+                             shadow_init, shadowsim_duration,
+                             shadow_default_parameter_list,
+                             shadow_parms_to_change) {
+
+  # Input arguments explanation
+  # The shadow model allows to follow a cohort of individuals in:
+  # given compartments: init_compartment_from to init_compartment_to
+  # > Compartment numbers are: 1 = Susceptible, 2 = IT, 3 = IR, 4 = IC, 5 = ENCHB,
+  # > 6 = CC, 7 = DCC, 8 = HCC, 9 = Recovered
+  # given age groups: init_age_from to init_age_to
+  # of a given sex: init_sex takes "both", "female" or "male" as input
+  # To mimic an empirical study, the cohort has a given starting year (defined in shadow_parms_to_change)
+  # Define shadow_init is the population distribution simulated by the overall fitting algorithm in the starting year
+  # shadowsim_duration is the length of follow-up defined in the study + 1
+  # shadow_default_parameter_list should be the parameters used by overall fitting algorithm
+  # shadow_parms_to_change needs to be adapted to turn off any influx into the cohort to observe
+  # That involves turning off at least births and migration
+  # Vaccination is automatically switched off
+
+  # Set up cohort to follow:
+  # Define index for groups of interest (infection compartments and age groups)
+  if (init_sex == "both") {
+    shadow_index <- c(t(mapply(seq, from = (which(ages %in% seq(init_age_from,init_age_to,da))+(init_compartment_from-1)*n_agecat),
+                               to = n_agecat*(init_compartment_to), by =n_agecat)),  # for women
+                      t(mapply(seq, from = (which(ages %in% seq(init_age_from,init_age_to,da))+(9+init_compartment_from-1)*n_agecat),
+                               to= 2*n_agecat*(n_infectioncat-(n_infectioncat-init_compartment_to)/2), by =n_agecat)))  # for men
+  } else if (init_sex == "female") {
+    shadow_index <- c(t(mapply(seq, from = (which(ages %in% seq(init_age_from,init_age_to,da))+(init_compartment_from-1)*n_agecat),
+                               to = n_agecat*(init_compartment_to), by =n_agecat)))
+  } else if (init_sex == "male") {
+    shadow_index <- c(t(mapply(seq, from = (which(ages %in% seq(init_age_from,init_age_to,da))+(9+init_compartment_from-1)*n_agecat),
+                               to= 2*n_agecat*(n_infectioncat-(n_infectioncat-init_compartment_to)/2), by =n_agecat)))
+  } else  {
+    return(print("init_sex can be both, female or male"))
+  }
+
+  # Get init pop from full model output in a given year (defined in function call)
+  shadow_init_pop <- c(shadow_init, output_storage)
+  shadow_init_pop <- unlist(shadow_init_pop)
+
+  # Set all age groups and compartments other than those to follow to nearly 0
+  # (model does not seem to run if it is exactly 0)
+  shadow_init_pop[-c(shadow_index,((2*n_agecat*n_infectioncat+1):length(shadow_init_pop)))] <-
+    0.000000001
+
+  # Special case: representing a cohort of CC and DCC
+  # In studies, decompensated patients are overrepresented
+  # To simulate these cohorts, increase DCC patients so the cohort is
+  # 50% CC and 50% DCC patients
+  if (init_compartment_from == 6 & init_compartment_to == 7) {
+    cc_index <- grep("^CC", names(shadow_init_pop))  # index for CC compartments
+    dcc_index <- grep("^DCC", names(shadow_init_pop))  # index for DCC compartments
+    cc_to_dcc_ratio <- sum(shadow_init_pop[cc_index])/sum(shadow_init_pop[dcc_index])  # current ratio of CC to DCC patients
+    shadow_init_pop[dcc_index] <- shadow_init_pop[dcc_index] * cc_to_dcc_ratio  # Increase DCC to obtain 50-50 ratio
+  }
+
+  # Set possible transitions within cohort to follow (no new additions) in function call
+
+  # Simulate the cohort
+  shadow_sim <- run_model(sim_duration = shadowsim_duration, init_pop_vector = shadow_init_pop,
+                          default_parameter_list = shadow_default_parameter_list,
+                          parms_to_change = shadow_parms_to_change,
+                          scenario = "no_vacc")
+
+  return(shadow_sim)
+
+}
+
+
 # Trial function to calculate sum of least squares for overall prevalence at given time point
 fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(...),
                           scenario = "vacc", data_to_fit) {
@@ -1435,8 +1509,11 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
   # Define my model prediction matching the data to fit to
   sim <- code_model_output(out)
 
-  # Save population distribution in 1984 for shadow model
+  # Save population distributions for shadow models
   model_pop1974 <- sim$full_output[which(sim$time==1974),1:(2*n_infectioncat*n_agecat)+1]
+  model_pop1978 <- sim$full_output[which(sim$time==1978),1:(2*n_infectioncat*n_agecat)+1]
+  model_pop2005 <- sim$full_output[which(sim$time==2005),1:(2*n_infectioncat*n_agecat)+1]
+  model_pop2012 <- sim$full_output[which(sim$time==2012),1:(2*n_infectioncat*n_agecat)+1]
 
   # Fitting to age-specific prevalence data: map matching model output to year and age
 
@@ -1453,19 +1530,6 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
   # Merge with the dataset to fit to
   mapped_output <- left_join(data_hbsag_by_age, model_prev_subset, by = c("time", "age"))
 
-  # Fitting to rates:
-  # Mortality rate in CC, DCC and HCC from any cause (HBV-related or background mortality)
-  # Olubuyide (A6) cohort of CC, DCC and HCC patients followed from 1983 to 1989
-  # Numerator = sum of cumulative number of incident deaths between 1989 and 1983
-  # Denominator = person-time in compartments at risk (compensated cirrhosis, decompensated cirrhosis, HCC) * dt
-  mortality_rate_liver_disease <- ((sum(select(out, starts_with("cum_hbv_deaths"))[which(out$time == 1989),]) +
-                                      sum(select(out, starts_with("cum_background_deaths_ld"))[which(out$time == 1989),])) -
-                                     (sum(select(out, starts_with("cum_hbv_deaths"))[which(out$time == 1983),]) +
-                                        sum(select(out, starts_with("cum_background_deaths_ld"))[which(out$time == 1983),])))/
-    (sum(select(sim$full_output, starts_with("HCC"))[which(sim$time == 1983):which(sim$time == 1989),]) +
-       sum(select(sim$full_output, starts_with("DCC"))[which(sim$time == 1983):which(sim$time == 1989),]) +
-       sum(select(sim$full_output, starts_with("CC"))[which(sim$time == 1983):which(sim$time == 1989),])*dt)
-
   # Calculate sum of least squares
   sse <- sum((mapped_output$prev_data-mapped_output$prev_model)^2)
   # This works but need to add sex as a category
@@ -1477,87 +1541,42 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
   #return(res)
 
   ## SHADOW MODELS 1 a and b: SHIMAKAWA NATURAL HISTORY COHORT
-  # 1c is the overall cohort (combination of a and b)
-  # Follow 2 cohorts of chronic carriers - 1 of 0-19 year olds and
-  # one of 20-29 year olds for 28 years, starting in 1974
+  # Follow 2 cohorts of chronic carriers - 1 of 0-19 year olds (1a) and
+  # one of 20-29 year olds (1b) for 28 years, starting in 1974
   # no one had HCC at baseline and we assume no one had DCC at baseline
-  # compartments: IT, IR, IC, ENCHB, CC
+  # Compartments: IT, IR, IC, ENCHB, CC
+  # Switch off births, migation, betas and vaccination to prevent influx of new carriers
 
-  # Define index for groups of interest (chronic carriers, ages 0-19 and 20-29 years)
-  # Index calls: ages 0 to 19.5 in chronic carrier compartments (not S or R or DCC or HCC)
-  shadow1a_index <- c(t(mapply(seq, from= (which(ages %in% seq(0,19.5,0.5))+n_agecat),
-                               to=n_agecat*(n_infectioncat-3), by =n_agecat)),  # for women
-                      t(mapply(seq, from= (which(ages %in% seq(0,19.5,0.5))+(9+1)*n_agecat),
-                               to=2*n_agecat*(n_infectioncat-3/2), by =n_agecat)))  # for men
+  shadow1a_sim <- run_shadow_model(init_age_from = 0, init_age_to = 19.5, init_sex = "both",
+                                   init_compartment_from = 2, init_compartment_to = 6,
+                                   shadow_default_parameter_list = parameters_for_fit,
+                                   shadow_init = model_pop1974, shadowsim_duration = 29,
+                                   shadow_parms_to_change = list(sim_starttime = 1974,
+                                                                 births_on = 0,
+                                                                 migration_on = 0,
+                                                                 b1 = 0,
+                                                                 b2 = 0,
+                                                                 b3 = 0))
+  # Total initial population size in shadow model 1a
+  shadow1a_init_pop <- sum(shadow1a_sim[1,1:(2*n_infectioncat*n_agecat)])
 
-  shadow1b_index <- c(t(mapply(seq, from= (which(ages %in% seq(20,29.5,0.5))+n_agecat),
-                               to=n_agecat*(n_infectioncat-3), by =n_agecat)),  # for women
-                      t(mapply(seq, from= (which(ages %in% seq(20,29.5,0.5))+(9+1)*n_agecat),
-                               to=2*n_agecat*(n_infectioncat-3/2), by =n_agecat)))  # for men
-
-  # Get init pop from full model output for year 1974
-  shadow1a_init_pop <- c(model_pop1974,
-                    "cum_deathsf" = rep(0,n_agecat), "cum_deathsm" = rep(0,n_agecat),
-                    "cum_infectionsf" = rep(0,n_agecat), "cum_infectionsm" = rep(0,n_agecat),
-                    "cum_chronic_infectionsf" = rep(0,n_agecat), "cum_chronic_infectionsm" = rep(0,n_agecat),
-                    "cum_births" = 0, "cum_infected_births" = 0, "cum_chronic_births" = 0,
-                    "cum_hbv_deathsf" = rep(0,n_agecat), "cum_hbv_deathsm" = rep(0,n_agecat),
-                    "cum_hcc_deathsf" = rep(0,n_agecat), "cum_hcc_deathsm" = rep(0,n_agecat),
-                    "cum_eag_lossf" = rep(0,n_agecat), "cum_eag_lossm" = rep(0,n_agecat),
-                    "cum_sag_lossf" = rep(0,n_agecat), "cum_sag_lossm" = rep(0,n_agecat),
-                    "cum_dccf" = rep(0,n_agecat), "cum_dccm" = rep(0,n_agecat),
-                    "cum_hccf" = rep(0,n_agecat), "cum_hccm" = rep(0,n_agecat),
-                    "cum_hcc_from_dccf" = rep(0,n_agecat), "cum_hcc_from_dccm" = rep(0,n_agecat),
-                    "cum_background_deaths_ldf" =  rep(0,n_agecat),
-                    "cum_background_deaths_ldm" =  rep(0,n_agecat))
-  shadow1a_init_pop <- unlist(shadow1a_init_pop)
-  shadow1b_init_pop <- shadow1a_init_pop
-
-  # Set all age groups and compartments other than those to follow to nearly 0
-  # (model does not seem to run if it is exactly 0)
-  shadow1a_init_pop[-c(shadow1a_index,((2*n_agecat*n_infectioncat+1):length(init_pop_sim)))] <-
-    0.000000001
-  shadow1b_init_pop[-c(shadow1b_index,((2*n_agecat*n_infectioncat+1):length(init_pop_sim)))] <-
-    0.000000001
-
-  # Define index for age group of interest (10 and 10.5 year olds)
-  #index_age10 <- c(seq(which(ages == 10), 2*n_agecat*n_infectioncat, n_agecat),
-  #                 seq(which(ages == 10.5), 2*n_agecat*n_infectioncat, n_agecat))
-  # Set all age groups other than those to near 0
-  # (model does not seem to run if it is exactly 0)
-  #init_pop_shadow[-c(index_age10,((2*n_agecat*n_infectioncat+1):length(init_pop_sim)))] <- 0.000000001
-  # Now need to turn off parameters to only reflect progression within chronic carriers:
-  # switch off births, migation, betas and vaccination
-
-  # Set possible transition for shadow model 1: only represent progression within chronic carriers
-  # Need to switch off births, migation, betas and vaccination
-
-  # Simulate cohort 1a
-  shadow1a_sim <- run_model(sim_duration = 28, init_pop_vector = shadow1a_init_pop,
-                   default_parameter_list = parameters_for_fit,
-                   parms_to_change = list(sim_starttime = 1974,
-                                       births_on = 0,
-                                       migration_on = 0,
-                                       b1 = 0,
-                                       b2 = 0,
-                                       b3 = 0),
-                   scenario = "no_vacc")
-
-  # Simulate cohort 1b
-  shadow1b_sim <- run_model(sim_duration = 28, init_pop_vector = shadow1b_init_pop,
-                            default_parameter_list = parameters_for_fit,
-                            parms_to_change = list(sim_starttime = 1974,
-                                                   births_on = 0,
-                                                   migration_on = 0,
-                                                   b1 = 0,
-                                                   b2 = 0,
-                                                   b3 = 0),
-                            scenario = "no_vacc")
-
+  shadow1b_sim <- run_shadow_model(init_age_from = 20, init_age_to = 29.5, init_sex = "both",
+                                   init_compartment_from = 2, init_compartment_to = 6,
+                                   shadow_default_parameter_list = parameters_for_fit,
+                                   shadow_init = model_pop1974, shadowsim_duration = 29,
+                                   shadow_parms_to_change = list(sim_starttime = 1974,
+                                                                 births_on = 0,
+                                                                 migration_on = 0,
+                                                                 b1 = 0,
+                                                                 b2 = 0,
+                                                                 b3 = 0))
+  # Total initial population size in shadow model 1b
+  shadow1b_init_pop <- sum(shadow1b_sim[1,1:(2*n_infectioncat*n_agecat)])
 
   # Calculate outputs to fit to:
   shadow1a_out <- code_model_output(shadow1a_sim)
   shadow1b_out <- code_model_output(shadow1b_sim)
+
   # Total HCC incidence rate per person-year over follow-up
   # Numerator = cumulative number of incident HCC cases over follow-up
   # Denominator = person-timestep at risk * dt (carrier compartments other than HCC)
@@ -1586,13 +1605,13 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
   # - cumulative number of transitions from DCC to HCC
   # Denominator = person-timestep at risk * dt (carrier compartments other than DCC and HCC)
   # MODEL 1a:
-  shadow1a_dcc_rate <- (sum(select(shadow1a_sim, starts_with("cum_dcc"))[nrow(shadow1a_sim),])-
+  shadow1a_dcc_rate <- (sum(select(shadow1a_sim, starts_with("cum_incident_dcc"))[nrow(shadow1a_sim),])-
                           sum(select(shadow1a_sim, starts_with("cum_hcc_from_dcc"))[nrow(shadow1a_sim),]))/
     (sum(shadow1a_out$carriers[,-1]) -
        (sum(select(shadow1a_out$full_output, starts_with("HCC")))) -
        (sum(select(shadow1a_out$full_output,starts_with("DCC"))))*dt)
   # MODEL 1b:
-  shadow1b_dcc_rate <- (sum(select(shadow1b_sim, starts_with("cum_dcc"))[nrow(shadow1b_sim),])-
+  shadow1b_dcc_rate <- (sum(select(shadow1b_sim, starts_with("cum_incident_dcc"))[nrow(shadow1b_sim),])-
                           sum(select(shadow1b_sim, starts_with("cum_hcc_from_dcc"))[nrow(shadow1b_sim),]))/
     (sum(shadow1b_out$carriers[,-1]) -
        (sum(select(shadow1b_out$full_output, starts_with("HCC")))) -
@@ -1612,6 +1631,7 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
   # In men:
   shadow1a_eag_loss_ratem <- (sum(select(shadow1a_sim, starts_with("cum_eag_lossm"))[nrow(shadow1a_sim),]))/
     (sum(select(shadow1a_out$full_output,starts_with("IRm")))*dt)
+
   # MODEL 1b
   # In women:
   shadow1b_eag_loss_ratef <- (sum(select(shadow1b_sim, starts_with("cum_eag_lossf"))[nrow(shadow1b_sim),]))/
@@ -1646,6 +1666,7 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
   shadow1_mortality_ratem <- weighted.mean(x = c(shadow1a_mortality_ratem, shadow1b_mortality_ratem),
                                            w = c(sum(shadow1a_init_pop), sum(shadow1b_init_pop)))
 
+
   # List of outputs to fit to
   shadow1_outputs <- list(shadow1a_eag_loss_ratef = shadow1a_eag_loss_ratef,
                           shadow1a_eag_loss_ratem = shadow1a_eag_loss_ratem,
@@ -1659,13 +1680,150 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
                           shadow1_mortality_ratef = shadow1_mortality_ratef,
                           shadow1_mortality_ratem = shadow1_mortality_ratem)
 
-  return(shadow1_outputs)
+
+  ## SHADOW MODEL 2: COURSAGET CHRONIC CARRIER COHORT
+  # Follow a cohort of chronic carriers aged 0-2 years
+  # starting in 1978, for 7 years
+  # Assume no one had HCC or DCC at baseline based on their age
+  # compartments: IT, IR, IC, ENCHB, CC
+  # Only represent progression within chronic carriers, so switch off births,
+  # migation, betas and vaccination
+  shadow2_sim <- run_shadow_model(init_age_from = 0, init_age_to = 2.5, init_sex = "both",
+                           init_compartment_from = 2, init_compartment_to = 6,
+                           shadow_default_parameter_list = parameters_for_fit,
+                           shadow_init = model_pop1978, shadowsim_duration = 8,
+                           shadow_parms_to_change = list(sim_starttime = 1978,
+                                                         births_on = 0,
+                                                         migration_on = 0,
+                                                         b1 = 0,
+                                                         b2 = 0,
+                                                         b3 = 0))
+
+  # Calculate output for fitting:
+  # Overall rate of sAg loss
+  # Numerator = cumulative number of incident transitions from IC to immune
+  # Denominator = person-time in IC compartment at risk
+  shadow2_sag_loss_rate <- (sum(select(shadow2_sim, starts_with("cum_sag_loss"))[nrow(shadow2_sim),]))/
+    (sum(select(shadow2_sim,starts_with("IC")))*dt)
+
+  # SHADOW MODEL 3: SHIMAKAWA COMPENSATED CIRRHOSIS COHORT
+  # To fit survival curve at time interval 0.5 years
+  # Follow a cohort of compensated cirrhosis patients
+  # starting in 2012, for 0.5 years
+  # Switch off births, migration, betas and vaccination
+  # Since there is no one in other chronic carrier compartments, no need to switch of transitions
+  shadow3_sim <- run_shadow_model(init_age_from = 0, init_age_to = 99.5, init_sex = "both",
+                                  init_compartment_from = 6, init_compartment_to = 6,
+                                  shadow_default_parameter_list = parameters_for_fit,
+                                  shadow_init = model_pop2012, shadowsim_duration = 1,
+                                  shadow_parms_to_change = list(sim_starttime = 2012,
+                                                                births_on = 0,
+                                                                migration_on = 0,
+                                                                b1 = 0,
+                                                                b2 = 0,
+                                                                b3 = 0))
+
+  # Calculate output for fitting:
+  # Cumulative mortality probability (from HBV-related cause or background) after 0.5 years
+  # Numerator = sum of incident deaths at next timestep
+  # Can use background deaths from all LD patients because DCC and HCC compartments are empty
+  # Denominator = number in compensated cirrhosis compartment at first timestep
+  shadow3_cum_mortality <- (sum(select(shadow3_sim, starts_with("cum_hbv_deaths"))[which(shadow3_sim$time == 2012.5),]) +
+      sum(select(shadow3_sim, starts_with("cum_background_deaths_ld"))[which(shadow3_sim$time == 2012.5),]))/
+    (sum(select(shadow3_sim, starts_with("CC"))[which(shadow3_sim$time == 2012),]))
+
+  # SHADOW MODEL 4: YANG HCC COHORT
+  # To fit survival curve at time intervals 0.5, 1 and 1.5 years
+  # Follow a cohort of HCC patients, starting in 2012, for 1.5 years
+  # Switch off births, migration, betas and vaccination
+  # Since there is no one in other chronic carrier compartments, no need to switch of transitions
+  shadow4_sim <- run_shadow_model(init_age_from = 0, init_age_to = 99.5, init_sex = "both",
+                           init_compartment_from = 8, init_compartment_to = 8,
+                           shadow_default_parameter_list = parameters_for_fit,
+                           shadow_init = model_pop2012, shadowsim_duration = 2,
+                           shadow_parms_to_change = list(sim_starttime = 2012,
+                                                         births_on = 0,
+                                                         migration_on = 0,
+                                                         b1 = 0,
+                                                         b2 = 0,
+                                                         b3 = 0))
+
+  # Calculate output for fitting:
+  # Cumulative mortality probability (from HCC or background) after 0.5, 1 and 1.5 years
+  # Numerator = sum of incident deaths at given timestep
+  # Can use background deaths from all LD patients because DCC and HCC compartments are empty
+  # Denominator = number in compensated cirrhosis compartment at t0
+
+  shadow4_cum_mortality <- c(0,0,0)  # define vector for 3 timesteps
+  for (i in 1:3) {  # i = timestep
+  shadow4_cum_mortality[i] <- ((sum(select(shadow4_sim, starts_with("cum_hcc_deaths"))[(i+1),])) +
+    (sum(select(shadow4_sim, starts_with("cum_background_deaths_ld"))[(i+1),])))/
+    sum(select(shadow4_sim, starts_with("HCC"))[which(shadow4_sim$time == 2012),])
+  }
+
+  # SHADOW MODEL 5: DIARRA CIRRHOSIS COHORT
+  # To fit survival curve at time intervals 0.5 and 1
+  # Follow a cohort of CC and DCC patients, starting in 2005, for 1 year
+  # Switch off births, migration, betas and vaccination
+  # Since there is no one in other chronic carrier compartments, no need to switch of transitions
+  shadow5_sim <- run_shadow_model(init_age_from = 0, init_age_to = 99.5, init_sex = "both",
+                                  init_compartment_from = 6, init_compartment_to = 7,
+                                  shadow_default_parameter_list = parameters_for_fit,
+                                  shadow_init = model_pop2005, shadowsim_duration = 1.5,
+                                  shadow_parms_to_change = list(sim_starttime = 2005,
+                                                                births_on = 0,
+                                                                migration_on = 0,
+                                                                b1 = 0,
+                                                                b2 = 0,
+                                                                b3 = 0))
+
+  # Calculate output for fitting:
+  # Cumulative mortality probability (from cirrhosis, HCC or background) after 0.5 and 1 years
+  # Numerator = sum of incident deaths at given timestep
+  # Can use background deaths from all LD patients because HCC compartment is empty at baseline
+  # Denominator = number in CC and DCC compartments at t0
+  shadow5_cum_mortality <- c(0,0)  # define vector for 2 timesteps
+  for (i in 1:2) {  # i = timestep
+    shadow5_cum_mortality[i] <- ((sum(select(shadow5_sim, starts_with("cum_hbv_deaths"))[(i+1),])) +
+                                   (sum(select(shadow5_sim, starts_with("cum_background_deaths_ld"))[(i+1),])))/
+      (sum(select(shadow5_sim, starts_with("CC"))[which(shadow5_sim$time == 2005),]) +
+         sum(select(shadow5_sim, starts_with("DCC"))[which(shadow5_sim$time == 2005),]))
+  }
+
+  # Cumulative HCC incidence after 0.5 and 1 years
+  # Numerator = sum of icnident HCC cases at given timestep
+  # Can use HCC cases coming from any compartment because there are no people in the other
+  # compartments to transition
+  # Denominator = number in CC and DCC compartments at t0
+  shadow5_cum_hcc <- c(0,0)  # define vector for 2 timesteps
+  for (i in 1:2) {  # i = timestep
+    shadow5_cum_hcc[i] <- (sum(select(shadow5_sim, starts_with("cum_incident_hcc"))[(i+1),]))/
+      (sum(select(shadow5_sim, starts_with("CC"))[which(shadow5_sim$time == 2005),]) +
+         sum(select(shadow5_sim, starts_with("DCC"))[which(shadow5_sim$time == 2005),]))
+  }
+
+  # THIS NEEDS TO BE ADAPTED INTO SHADOW MODEL: 60% were HCC, the remaining were half CC half DCC
+  # Fitting to rates and survival curves:
+  # Mortality rate in CC, DCC and HCC from any cause (HBV-related or background mortality)
+  # Olubuyide (A6) cohort of CC, DCC and HCC patients followed from 1983 to 1989
+  # Numerator = sum of cumulative number of incident deaths between 1989 and 1983
+  # Denominator = person-time in compartments at risk (compensated cirrhosis, decompensated cirrhosis, HCC) * dt
+  mortality_rate_liver_disease <- ((sum(select(out, starts_with("cum_hbv_deaths"))[which(out$time == 1989),]) +
+                                      sum(select(out, starts_with("cum_background_deaths_ld"))[which(out$time == 1989),])) -
+                                     (sum(select(out, starts_with("cum_hbv_deaths"))[which(out$time == 1983),]) +
+                                        sum(select(out, starts_with("cum_background_deaths_ld"))[which(out$time == 1983),])))/
+    (sum(select(sim$full_output, starts_with("HCC"))[which(sim$time == 1983):which(sim$time == 1989),]) +
+       sum(select(sim$full_output, starts_with("DCC"))[which(sim$time == 1983):which(sim$time == 1989),]) +
+       sum(select(sim$full_output, starts_with("CC"))[which(sim$time == 1983):which(sim$time == 1989),])*dt)
+
+
 
   # Might have to exclude the last timestep from carrier-years?
 
   # Incorporate test: incident infections and births need to be 0!
 
 }
+
 
 
 load(here("data/simulated_inits_1960.RData"))  # this is saved from previous model run
@@ -1687,19 +1845,7 @@ init_pop_sim <- c("Sf" = select(model_pop1960, starts_with("Sf")),
                   "DCCm" = select(model_pop1960, starts_with("DCCm")),
                   "HCCm" = select(model_pop1960, starts_with("HCCm")),
                   "Rm" = select(model_pop1960, starts_with("Rm")),
-                  "cum_deathsf" = rep(0,n_agecat), "cum_deathsm" = rep(0,n_agecat),
-                  "cum_infectionsf" = rep(0,n_agecat), "cum_infectionsm" = rep(0,n_agecat),
-                  "cum_chronic_infectionsf" = rep(0,n_agecat), "cum_chronic_infectionsm" = rep(0,n_agecat),
-                  "cum_births" = 0, "cum_infected_births" = 0, "cum_chronic_births" = 0,
-                  "cum_hbv_deathsf" = rep(0,n_agecat), "cum_hbv_deathsm" = rep(0,n_agecat),
-                  "cum_hcc_deathsf" = rep(0,n_agecat), "cum_hcc_deathsm" = rep(0,n_agecat),
-                  "cum_eag_lossf" = rep(0,n_agecat), "cum_eag_lossm" = rep(0,n_agecat),
-                  "cum_sag_lossf" = rep(0,n_agecat), "cum_sag_lossm" = rep(0,n_agecat),
-                  "cum_dccf" = rep(0,n_agecat), "cum_dccm" = rep(0,n_agecat),
-                  "cum_hccf" = rep(0,n_agecat), "cum_hccm" = rep(0,n_agecat),
-                  "cum_hcc_from_dccf" = rep(0,n_agecat), "cum_hcc_from_dccm" = rep(0,n_agecat),
-                  "cum_background_deaths_ldf" =  rep(0,n_agecat),
-                  "cum_background_deaths_ldm" =  rep(0,n_agecat))
+                  output_storage)
 init_pop_sim <- unlist(init_pop_sim)
 
 
