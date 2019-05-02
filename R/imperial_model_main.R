@@ -374,7 +374,7 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
         pr_it_ir*eag_loss_function * pop[index$ages_all,IT,i] -
         pr_ir_ic*eag_loss_function * pop[index$ages_all,IR,i] -
         pr_ir_enchb * pop[index$ages_all,IR,i] -
-        #pr_ir_cc * pop[index$ages_all,IR,i] -
+        pr_ir_cc * pop[index$ages_all,IR,i] -
         hccr_ir*cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,IR,i] -
         deaths[index$ages_all,IR,i] + migrants[index$ages_all,IR,i]
 
@@ -396,8 +396,8 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
 
       # Compensated cirrhosis
       dpop[index$ages_all,CC,i] <- -(diff(c(0,pop[index$ages_all,CC,i]))/da) +
-        ccrate * pop[index$ages_all,ENCHB,i] - #+
-        #pr_ir_cc * pop[index$ages_all,IR,i] -
+        ccrate * pop[index$ages_all,ENCHB,i] +
+        pr_ir_cc * pop[index$ages_all,IR,i] -
         dccrate * pop[index$ages_all,CC,i] -
         hccr_cc*cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,CC,i] -
         mu_cc * pop[index$ages_all,CC,i] -
