@@ -1,5 +1,5 @@
 ###################################
-### Imperial HBV model 02/05/19 ###
+### Imperial HBV model 03/05/19 ###
 ###################################
 # Model described in Shevanthi's thesis and adapted by Margaret
 # Currently only infant vaccination in second age group, no birth dose or treatment
@@ -22,7 +22,7 @@ dt <- 0.5                              # timestep (years)
 # dt/da can only be 0.5 to match the WAIFW matrix at the moment
 # For demography, it can be up to 1, or multiple of 5 thereafter (because of women of childbearing age)
 starttime <- 1850
-runtime <- 250-dt                     # number of years to run the model for
+runtime <- 250                     # number of years to run the model for
 #times <- round((0:(runtime/dt))*dt,2) # vector of timesteps
 #times_labels <- times+starttime       # year labels for timestep vector
 
@@ -284,25 +284,8 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
              rep(foi_unique[3], times = length(i_5to14)),
              rep(foi_unique[4], times = length(i_15to100)))
 
-
-    # NATURAL HISTORY: DEFINE FUNCTIONS FOR AGE-SPECIFIC PROGESSION
-    # These are now calculated every timestep - can make more efficient!!!
-
-    # Age-specific function of progression from IT and IR to IC and ENCHB (represents eAg loss)
-    eag_loss_function <- eag_loss_accelerator * exp(-eag_loss * ages)
-
-    # Age-specific progression to HCC from all carrier compartments other than DCC (Shevanthi)
-    cancer_prog_function <- (cancer_prog_coefficient * (ages - cancer_age_treshold))^2
-    cancer_prog_function <- cancer_prog_function *
-      c(rep(0, times = which(ages == cancer_age_treshold-da)),
-        rep(1, times = n_agecat - which(ages == cancer_age_treshold-da)))
-    cancer_prog_female <- sapply(cancer_prog_function, function(x) min(x,1)) # maximum annual rate is 1
-    cancer_prog_male <- sapply(cancer_prog_male_cofactor*cancer_prog_female, function(x) min(x,1))
-    cancer_prog_rates <- matrix(data = c(cancer_prog_female, cancer_prog_male),
-                                nrow = n_agecat, ncol = 2)  # store in a matrix to apply to compartment
-
-
     # SIMULATE PROGRESSION: DIFFERENTIAL EQUATIONS (solving for each sex separately)
+    # Note: age-specific progression functions are defined within run_model function
 
     for (i in 1:2) {        # i = sex [1 = female, 2 = male]
 
@@ -373,8 +356,8 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
       dpop[index$ages_all,IR,i] <- -(diff(c(0,pop[index$ages_all,IR,i]))/da) +
         pr_it_ir*eag_loss_function * pop[index$ages_all,IT,i] -
         pr_ir_ic*eag_loss_function * pop[index$ages_all,IR,i] -
-        pr_ir_enchb * pop[index$ages_all,IR,i] -
-        pr_ir_cc * pop[index$ages_all,IR,i] -
+        pr_ir_enchb_function * pop[index$ages_all,IR,i] -
+        pr_ir_cc_function * pop[index$ages_all,IR,i] -
         hccr_ir*cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,IR,i] -
         deaths[index$ages_all,IR,i] + migrants[index$ages_all,IR,i]
 
@@ -388,25 +371,25 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
 
       # HBeAg-negative CHB
       dpop[index$ages_all,ENCHB,i] <- -(diff(c(0,pop[index$ages_all,ENCHB,i]))/da) +
-        pr_ir_enchb * pop[index$ages_all,IR,i] +
+        pr_ir_enchb_function * pop[index$ages_all,IR,i] +
         pr_ic_enchb * pop[index$ages_all,IC,i] -
-        ccrate * pop[index$ages_all,ENCHB,i] -
+        cirrhosis_prog_rates[index$ages_all,i] * pop[index$ages_all,ENCHB,i] -
         hccr_enchb*cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,ENCHB,i] -
         deaths[index$ages_all,ENCHB,i] + migrants[index$ages_all,ENCHB,i]
 
       # Compensated cirrhosis
       dpop[index$ages_all,CC,i] <- -(diff(c(0,pop[index$ages_all,CC,i]))/da) +
-        ccrate * pop[index$ages_all,ENCHB,i] +
-        pr_ir_cc * pop[index$ages_all,IR,i] -
-        dccrate * pop[index$ages_all,CC,i] -
+        cirrhosis_prog_rates[index$ages_all,i] * pop[index$ages_all,ENCHB,i] +
+        pr_ir_cc_function * pop[index$ages_all,IR,i] -
+        dcum_dcc[index$ages_all,i] -
         hccr_cc*cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,CC,i] -
         mu_cc * pop[index$ages_all,CC,i] -
         deaths[index$ages_all,CC,i] + migrants[index$ages_all,CC,i]
 
       # Decompensated cirrhosis
       dpop[index$ages_all,DCC,i] <- -(diff(c(0,pop[index$ages_all,DCC,i]))/da) +
-        dccrate * pop[index$ages_all,CC,i] -
-        hccr_dcc * pop[index$ages_all,DCC,i] -
+        dcum_dcc[index$ages_all,i] -
+        dflow_dcc_to_hcc[index$ages_all,i] -
         mu_dcc * pop[index$ages_all,DCC,i] -
         deaths[index$ages_all,DCC,i] + migrants[index$ages_all,DCC,i]
 
@@ -417,7 +400,7 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
         hccr_ic*cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,IC,i] +
         hccr_enchb*cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,ENCHB,i] +
         hccr_cc*cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,CC,i] +
-        hccr_dcc * pop[index$ages_all,DCC,i] -
+        dflow_dcc_to_hcc[index$ages_all,i] -
         dcum_hcc_deaths[index$ages_all,i] -
         deaths[index$ages_all,HCC,i] + migrants[index$ages_all,HCC,i]
 
@@ -497,6 +480,7 @@ generate_parameters <- function(..., default_parameter_list, parms_to_change = l
 
   # Default situation: using input parameters
   defaults <- default_parameter_list
+
   if (length(parms_to_change) == 0L) {
     print("Using default parameter values")
     return(defaults)
@@ -521,6 +505,7 @@ generate_parameters <- function(..., default_parameter_list, parms_to_change = l
 
   # Final parameter set to use in model run: updated default parameter list
   final_parms <- modifyList(defaults, parms_to_change)
+
   return(final_parms)
 
 }
@@ -591,6 +576,53 @@ run_model <- function(..., sim_duration = runtime,
   # Using default input parameter list or with updated values specified in parms_to_change
   parameters <- generate_parameters(default_parameter_list = default_parameter_list,
                                     parms_to_change = parms_to_change)
+
+  ## DEFINE FUNCTIONS FOR AGE-SPECIFIC NATURAL HISTORY PROGESSION
+  # Using given parameters, and save in parameter list for input
+
+  # Age-specific function of progression through IT and IR (IT=>IR and IR=>IC)
+  # Represented by an exponential function that decreases with age
+  parameters$eag_loss_function <- parameters$eag_loss_accelerator * exp(-parameters$eag_loss * ages)
+
+  # Age-specific progression to HCC from all carrier compartments other than DCC
+  # Represented by a shifted quadratic function that increases with age and
+  # prevents people younger than 10 years to progress to HCC
+  cancer_prog_function <- (parameters$cancer_prog_coefficient * (ages - parameters$cancer_age_treshold))^2  # Rate in females
+  cancer_prog_function <- cancer_prog_function *
+    c(rep(0, times = which(ages == parameters$cancer_age_treshold-da)),
+      rep(1, times = n_agecat - which(ages == parameters$cancer_age_treshold-da)))  # Set transition to 0 in <10 year olds
+  cancer_prog_female <- sapply(cancer_prog_function, function(x) min(x,1)) # Set maximum annual rate is 1
+  cancer_prog_male <- sapply(parameters$cancer_prog_male_cofactor*cancer_prog_female, function(x) min(x,1))  # Rate in males, cannot exceed 1
+  cancer_prog_rates <- matrix(data = c(cancer_prog_female, cancer_prog_male),
+                              nrow = n_agecat, ncol = 2)  # store in a matrix to apply to compartment
+  parameters$cancer_prog_rates <- cancer_prog_rates
+
+  # Age-specific progression from IR to ENCHB and IR to CC
+  # Is set to 0 in under 20 year olds and a constant in over 20 year olds
+  pr_ir_enchb_function <- c(rep(0, times = which(ages == 20-da)),
+                            rep(parameters$pr_ir_enchb, times = n_agecat - which(ages == 20-da)))
+  pr_ir_enchb_function <- sapply(pr_ir_enchb_function, function(x) min(x,5))  # annual rate cannot exceed 5
+  parameters$pr_ir_enchb_function <- pr_ir_enchb_function
+
+  pr_ir_cc_function <- c(rep(0, times = which(ages == 20-da)),
+                         rep(parameters$pr_ir_cc, times = n_agecat - which(ages == 20-da)))
+  pr_ir_cc_function <- sapply(pr_ir_cc_function, function(x) min(x,5))  # annual rate cannot exceed 5
+  parameters$pr_ir_cc_function <- pr_ir_cc_function
+
+  # Age-specific progression from ENCHB to CC
+  # Represented by a shifted quadratic function that increases with age and
+  # prevents people younger than 25 years to progress to HCC
+  cirrhosis_prog_function <- parameters$pr_enchb_cc * (parameters$cirrhosis_prog_coefficient * (ages - 25))^2  # Rate in females
+  cirrhosis_prog_function <- cirrhosis_prog_function *
+    c(rep(0, times = which(ages == 25-da)),
+      rep(1, times = n_agecat - which(ages == 25-da)))  # Set rate to 0 in <25 year olds
+  cirrhosis_prog_function_female <- sapply(cirrhosis_prog_function, function(x) min(x,5)) # Set maximum annual rate to 5
+  cirrhosis_prog_function_male <- sapply(parameters$cirrhosis_prog_male_cofactor *
+                                           cirrhosis_prog_function_female, function(x) min(x,5))  # Rate in males, cannot exceed 1
+  cirrhosis_prog_rates <- matrix(data = c(cirrhosis_prog_function_female,
+                                          cirrhosis_prog_function_male),
+                                 nrow = n_agecat, ncol = 2)  # store in a matrix to apply to compartment
+  parameters$cirrhosis_prog_rates <- cirrhosis_prog_rates
 
   # Update parameters for intervention scenario: vaccine (= default) or no vaccine (counterfactual)
   if (scenario == "vacc") {
@@ -1008,7 +1040,9 @@ parameter_list <- list(
   pr_ic_enchb = 0.01,
   sag_loss = 0.01,  # Shevanthi value, inactive carrier to recovered transition
   #sag_loss = sagloss_rates,
-  ccrate = 0.04,  # Progression to CC (from ENCHB)
+  pr_enchb_cc = 0.04,  # Progression to CC (from ENCHB)
+  cirrhosis_prog_coefficient = 0.0341,
+  cirrhosis_prog_male_cofactor = 12.32,
   dccrate = 0.04,  # Progression to DCC (from CC)
   # PROGRESSION RATES TO HEPATOCELLULAR CARCINOMA
   cancer_prog_coefficient = 4.0452e-05,  # value from Margaret
@@ -1864,6 +1898,7 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
   }
 
   # Incorporate test: incident infections and births need to be 0!
+  return(shadow1_outputs)
 
 }
 
