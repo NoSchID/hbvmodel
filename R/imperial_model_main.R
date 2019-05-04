@@ -1556,8 +1556,8 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
 
   # Define my datapoint: Overall HBsAg prevalence in 1980 and 2015
   data <- data_to_fit
-  data_hbsag_overall <- data_to_fit$hbsag_dataset
-  data_hbsag_by_age <- data_to_fit$hbsag_by_age_dataset_1980
+  #data_hbsag_overall <- data_to_fit$hbsag_dataset
+  data_hbsag_by_age <- data_to_fit$hbsag_prevalence
 
   # Define my model prediction matching the data to fit to
   out <- code_model_output(sim)
@@ -1571,26 +1571,57 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
 
   # Fitting to age-specific prevalence data: map matching model output to year and age
 
-  # Age-specific sAg prevalence:
+  # Age- and sex-specific sAg prevalence:
   # Filter the output dataset by the year of interest and calculate prevalence for all ages
-  model_prev_subset <- data.frame(time = out$carriers[out$carriers$time %in%
-                                                        data_hbsag_by_age$time,1],
-                                  prev = out$carriers[out$carriers$time %in%
-                                                        data_hbsag_by_age$time,-1]/
-                                    out$pop[out$pop$time %in% data_hbsag_by_age$time,-1])
-  # Turn into long format
-  model_prev_subset <- gather(model_prev_subset, key = "age", value = "prev_model", -time)
-  model_prev_subset$age <- ages[as.numeric(gsub("\\D", "", model_prev_subset$age))]
+  # For data from both sexes:
+  model_prev_subset_both <- data.frame(time = out$carriers[out$carriers$time %in%
+                                               data_hbsag_by_age$time[data_hbsag_by_age$sex == "Mixed"],1],
+                                       sex = "Mixed",
+                                       prev = out$carriers[out$carriers$time %in%
+                                               data_hbsag_by_age$time[data_hbsag_by_age$sex == "Mixed"],-1]/
+                                                out$pop[out$pop$time %in% data_hbsag_by_age$time[data_hbsag_by_age$sex == "Mixed"],-1])
+
+
+  # For women:
+  model_prev_subset_female <- data.frame(time = out$carriers_female[out$carriers_female$time %in%
+                                                             data_hbsag_by_age$time[data_hbsag_by_age$sex == "Female"],1],
+                                         sex = "Female",
+                                         prev = out$carriers_female[out$carriers_female$time %in%
+                                                             data_hbsag_by_age$time[data_hbsag_by_age$sex == "Female"],-1]/
+                                         out$pop_female[out$pop_female$time %in% data_hbsag_by_age$time[data_hbsag_by_age$sex == "Female"],-1])
+
+
+  # For men:
+  model_prev_subset_male <- data.frame(time = out$carriers_male[out$carriers_male$time %in%
+                                                                      data_hbsag_by_age$time[data_hbsag_by_age$sex == "Male"],1],
+                                         sex = "Male",
+                                         prev = out$carriers_male[out$carriers_male$time %in%
+                                                                      data_hbsag_by_age$time[data_hbsag_by_age$sex == "Male"],-1]/
+                                           out$pop_male[out$pop_male$time %in% data_hbsag_by_age$time[data_hbsag_by_age$sex == "Male"],-1])
+
+  # Assign all columns the same names to combine into 1 dataframe
+  names(model_prev_subset_both) <- c("time", "sex", paste0("prev", index$ages_all))
+  names(model_prev_subset_female) <- c("time", "sex", paste0("prev", index$ages_all))
+  names(model_prev_subset_male) <- c("time", "sex", paste0("prev", index$ages_all))
+
+  # Combine sex-specific dataframes and turn into long format
+  model_prev_subset <- rbind(model_prev_subset_female, model_prev_subset_male, model_prev_subset_both)
+
+  model_prev_subset <- gather(model_prev_subset, key = "age", value = "prev_model", -time, -sex)
+  model_prev_subset$age <- ages[as.numeric(gsub("\\D", "", model_prev_subset$age))]  # Assign ages as column
+
   # Merge with the dataset to fit to
-  mapped_output <- left_join(data_hbsag_by_age, model_prev_subset, by = c("time", "age"))
+  mapped_output <- left_join(data_hbsag_by_age, model_prev_subset, by = c("sex", "time", "age"))
 
   # Calculate sum of least squares
-  sse <- sum((mapped_output$prev_data-mapped_output$prev_model)^2)
+  sse <- sum((mapped_output$value - mapped_output$prev_model)^2)
   # This works but need to add sex as a category
 
   # Return relevant info (SSE and the matched datapoints and outputs)
   res <- list(sse = sse, mapped_output = mapped_output,
               carrier_prev_total = sim$infectioncat_total$carriers/sim$pop_total$pop_total)
+
+  return(list(sse = sse, mapped_output = mapped_output))
 
   # Fitting to infection incidence rate:
 
@@ -1927,18 +1958,21 @@ init_pop_sim <- c("Sf" = select(model_pop1960, starts_with("Sf")),
 init_pop_sim <- unlist(init_pop_sim)
 
 
-# Define my datapoints to fit to: Overall HBsAg prevalence in 1980 and 2015
+# Define my datapoints to fit to: HBsAg prevalence dataset
+input_hbsag_dataset <- read.csv(here("data",
+                                     "hbsag_prevalence.csv"),
+                             header = TRUE, check.names = FALSE,
+                             stringsAsFactors = FALSE)
+
 # WHO estimate
-hbsag_dataset <- data.frame(time = c(1980, 2015), prev = c(0.11, 0.058),
-                   ci_lower = c(0.09, 0.047), ci_upper = c(0.134, 0.071))
+#hbsag_dataset <- data.frame(time = c(1980, 2015), prev = c(0.11, 0.058),
+#                   ci_lower = c(0.09, 0.047), ci_upper = c(0.134, 0.071))
 # Mock data: input dataset needs to have columns time, age and prev_data at the moment
 # Make sure age and time match dt/da (0.5)
-hbsag_by_age_dataset_1980 <- data.frame(time = c(rep(1984,7), 2015),
-                                        age = c(1.5,3.5,4.5,7.5,12.5,30.5,34, 35),
-                                        prev_data = c(0.16, 0.24, 0.245, 0.26, 0.25, 0.11, 0.14, 0.058))
-
-hbsag_dataset_list <- list(hbsag_dataset = hbsag_dataset,
-                               hbsag_by_age_dataset_1980 = hbsag_by_age_dataset_1980)
+#hbsag_by_age_dataset_1980 <- data.frame(time = c(rep(1984,7), 2015),
+#                                        age = c(1.5,3.5,4.5,7.5,12.5,30.5,34, 35),
+#                                        prev_data = c(0.16, 0.24, 0.245, 0.26, 0.25, 0.11, 0.14, 0.058))
+hbsag_dataset_list <- list(hbsag_prevalence = input_hbsag_dataset)
 
 
 # Using LHS
