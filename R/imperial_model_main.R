@@ -1,5 +1,5 @@
 ###################################
-### Imperial HBV model 03/05/19 ###
+### Imperial HBV model 07/05/19 ###
 ###################################
 # Model described in Shevanthi's thesis and adapted by Margaret
 # Currently only infant vaccination in second age group, no birth dose or treatment
@@ -814,17 +814,23 @@ code_model_output <- function(output) {
                                        out_enchbm+
                                        out_ccm+out_dccm+out_hccm))
   immune <- data.frame(time = output$time, pop = out_rf + out_rm)
-  ever_inf <- data.frame(time = output$time, pop = carriers[,-1] + immune[,-1])
+  ever_infected <- data.frame(time = output$time, pop = carriers[,-1] + immune[,-1])
+  ever_infected_female <- data.frame(time = output$time, pop = carriers_female[,-1] + out_rf)
+  ever_infected_male <- data.frame(time = output$time, pop = carriers_male[,-1] + out_rm)
   eag_positive <- data.frame(time = output$time,
                              pop = (out_itf + out_itm +
                                       out_irf + out_irm))
+  eag_positive_female <- data.frame(time = output$time,
+                                    pop = (out_itf + out_irf))
+  eag_positive_male <- data.frame(time = output$time,
+                                    pop = (out_itm + out_irm))
 
   # Total number in each infection compartment per time step
   infectioncat_total <- data.frame(time = output$time,
                                    sus = apply(sus[,-1], 1, sum),
                                    carriers = apply(carriers[,-1], 1, sum),
                                    immune = apply(immune[,-1], 1, sum),
-                                   ever_infected = apply(ever_inf[,-1],1,sum))
+                                   ever_infected = apply(ever_infected[,-1],1,sum))
 
 
   # Calculate number of new cases per timestep from cumulative number output
@@ -951,9 +957,13 @@ code_model_output <- function(output) {
                    "carriers_female" = carriers_female,
                    "carriers_male" = carriers_male,
                    "carriers" = carriers,
+                   "eag_positive_female" = eag_positive_female,
+                   "eag_positive_male" = eag_positive_male,
                    "eag_positive" = eag_positive,
                    "immune" = immune,
-                   "ever_inf" = ever_inf,
+                   "ever_infected" = ever_infected,
+                   "ever_infected_female" = ever_infected_female,
+                   "ever_infected_male" = ever_infected_male,
                    "infectioncat_total" = infectioncat_total,
                    "pop_female" = pop_female,
                    "pop_male" = pop_male,
@@ -1088,6 +1098,7 @@ sim <- run_model(sim_duration = runtime, default_parameter_list = parameter_list
                  scenario = "vacc")
 out <- code_model_output(sim)
 toc()
+
 
 #b1 = 0.07
 
@@ -1234,6 +1245,10 @@ plot(ages, outpath$carriers[which(outpath$carriers$time == 1980),-1]/
        outpath$pop[which(outpath$pop$time == 1980),-1], type = "l", ylim = c(0,0.3))
 #points(gambia_prevdata$age, gambia_prevdata$edmunds_prev, col = "red")
 
+# anti-HBc prevalence by age in 1980
+plot(ages, outpath$ever_infected[which(outpath$ever_infected$time == 1980),-1]/
+       outpath$pop[which(outpath$pop$time == 1980),-1], type = "l", ylim = c(0,1))
+
 # HBeAg prevalence in chronic carriers by age in 1980
 plot(ages, outpath$eag_positive[which(outpath$eag_positive$time == 1980),-1]/
        outpath$carriers[which(outpath$carriers$time == 1980),-1], type = "l", ylim = c(0,1))
@@ -1241,6 +1256,14 @@ plot(ages, outpath$eag_positive[which(outpath$eag_positive$time == 1980),-1]/
 # Carrier prevalence by age in 2015
 plot(ages, outpath$carriers[which(outpath$carriers$time == 2015),-1]/
        outpath$pop[which(outpath$pop$time == 2015),-1], type = "l", ylim = c(0,0.3))
+
+# anti-HBc prevalence by age in 1980
+plot(ages, outpath$ever_infected[which(outpath$ever_infected$time == 2015),-1]/
+       outpath$pop[which(outpath$pop$time == 2015),-1], type = "l", ylim = c(0,1))
+
+# HBeAg prevalence in chronic carriers by age in 2015
+plot(ages, outpath$eag_positive[which(outpath$eag_positive$time == 2015),-1]/
+       outpath$carriers[which(outpath$carriers$time == 2015),-1], type = "l", ylim = c(0,1))
 
 ### MODEL CHECK: DEMOGRAPHY PLOTS ----
 outpath <- out
@@ -1538,6 +1561,67 @@ run_shadow_model <- function(init_age_from, init_age_to, init_sex,
 
 }
 
+# Function to fit to age- and sex-specific seroprevalence data by mapping
+# matching model output to year and age
+# Use to fit to HBsAg, HBeAg and anti-HBc seroprevalence data
+map_seromarker_prev <- function(seromarker_num, seromarker_denom, prev_dataset, model_output) {
+
+  # For HBsAg, seromarker_num = carriers and seromarker_denom = pop
+
+  seromarker_num_female <- paste0(seromarker_num, "_female")
+  seromarker_num_male <- paste0(seromarker_num, "_male")
+  seromarker_denom_female <- paste0(seromarker_denom, "_female")
+  seromarker_denom_male <- paste0(seromarker_denom, "_male")
+
+  # Filter the output dataset by the year of interest and calculate prevalence for all ages
+
+
+
+  # For data from both sexes:
+  model_prev_subset_both <- data.frame(time = model_output[[seromarker_num]][model_output[[seromarker_num]]$time %in%
+                                                                      prev_dataset$time[prev_dataset$sex == "Mixed"],1],
+                                       sex = "Mixed",
+                                       prev = model_output[[seromarker_num]][model_output[[seromarker_num]]$time %in%
+                                                             prev_dataset$time[prev_dataset$sex == "Mixed"],-1]/
+                                         model_output[[seromarker_denom]][model_output[[seromarker_denom]]$time %in% prev_dataset$time[prev_dataset$sex == "Mixed"],-1])
+
+
+  # For women:
+  model_prev_subset_female <- data.frame(time = model_output[[seromarker_num_female]][model_output[[seromarker_num_female]]$time %in%
+                                                                               prev_dataset$time[prev_dataset$sex == "Female"],1],
+                                       sex = "Female",
+                                       prev = model_output[[seromarker_num_female]][model_output[[seromarker_num_female]]$time %in%
+                                                                               prev_dataset$time[prev_dataset$sex == "Female"],-1]/
+                                         model_output[[seromarker_denom_female]][model_output[[seromarker_denom_female]]$time %in% prev_dataset$time[prev_dataset$sex == "Female"],-1])
+
+
+  # For men:
+  model_prev_subset_male <- data.frame(time = model_output[[seromarker_num_male]][model_output[[seromarker_num_male]]$time %in%
+                                                                                        prev_dataset$time[prev_dataset$sex == "Male"],1],
+                                         sex = "Male",
+                                         prev = model_output[[seromarker_num_male]][model_output[[seromarker_num_male]]$time %in%
+                                                                                        prev_dataset$time[prev_dataset$sex == "Male"],-1]/
+                                           model_output[[seromarker_denom_male]][model_output[[seromarker_denom_male]]$time %in% prev_dataset$time[prev_dataset$sex == "Male"],-1])
+
+
+  # Assign all columns the same names to combine into 1 dataframe
+  names(model_prev_subset_both) <- c("time", "sex", paste0("prev", index$ages_all))
+  names(model_prev_subset_female) <- c("time", "sex", paste0("prev", index$ages_all))
+  names(model_prev_subset_male) <- c("time", "sex", paste0("prev", index$ages_all))
+
+  # Combine sex-specific dataframes and turn into long format
+  model_prev_subset <- rbind(model_prev_subset_female, model_prev_subset_male, model_prev_subset_both)
+
+  model_prev_subset <- gather(model_prev_subset, key = "age", value = "model_prev", -time, -sex)
+  model_prev_subset$age <- ages[as.numeric(gsub("\\D", "", model_prev_subset$age))]  # Assign ages as column
+
+  # Merge with the dataset to fit to
+  mapped_output_seromarker <- left_join(prev_dataset, model_prev_subset, by = c("sex", "time", "age"))
+
+  return(mapped_output_seromarker)
+
+}
+
 
 # Trial function to calculate sum of least squares for overall prevalence at given time point
 fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(...),
@@ -1553,75 +1637,172 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
                    default_parameter_list = parameters_for_fit,
                    parms_to_change = NULL,
                    scenario = "vacc")
-
-  # Define my datapoint: Overall HBsAg prevalence in 1980 and 2015
-  data <- data_to_fit
-  #data_hbsag_overall <- data_to_fit$hbsag_dataset
-  data_hbsag_by_age <- data_to_fit$hbsag_prevalence
-
-  # Define my model prediction matching the data to fit to
   out <- code_model_output(sim)
 
   # Save population distributions for shadow models
   model_pop1974 <- out$full_output[which(out$time==1974),1:(2*n_infectioncat*n_agecat)+1]
   model_pop1978 <- out$full_output[which(out$time==1978),1:(2*n_infectioncat*n_agecat)+1]
   model_pop1983 <- out$full_output[which(out$time==1983),1:(2*n_infectioncat*n_agecat)+1]
+  model_pop1993 <- out$full_output[which(out$time==1993),1:(2*n_infectioncat*n_agecat)+1]
   model_pop2005 <- out$full_output[which(out$time==2005),1:(2*n_infectioncat*n_agecat)+1]
   model_pop2012 <- out$full_output[which(out$time==2012),1:(2*n_infectioncat*n_agecat)+1]
 
+  # Define my prevalence datapoints:
+  data <- data_to_fit
+  data_antihbc_prev <- data_to_fit$antihbc_prevalence
+  data_nat_hist_prev <- data_to_fit$natural_history_prevalence
+
+  # Define my model prediction matching the data to fit to:
+
   # Fitting to age-specific prevalence data: map matching model output to year and age
 
-  # Age- and sex-specific sAg prevalence:
-  # Filter the output dataset by the year of interest and calculate prevalence for all ages
-  # For data from both sexes:
-  model_prev_subset_both <- data.frame(time = out$carriers[out$carriers$time %in%
-                                               data_hbsag_by_age$time[data_hbsag_by_age$sex == "Mixed"],1],
-                                       sex = "Mixed",
-                                       prev = out$carriers[out$carriers$time %in%
-                                               data_hbsag_by_age$time[data_hbsag_by_age$sex == "Mixed"],-1]/
-                                                out$pop[out$pop$time %in% data_hbsag_by_age$time[data_hbsag_by_age$sex == "Mixed"],-1])
+  ## Age- and sex-specific HBsAg prevalence:
+  mapped_output_hbsag <- map_seromarker_prev(seromarker_num = "carriers",
+                                             seromarker_denom = "pop",
+                                             prev_dataset = data_to_fit$hbsag_prevalence,
+                                             model_output = out)
 
+  ## Age- and sex-specific HBeAg prevalence:
+  mapped_output_hbeag <- map_seromarker_prev(seromarker_num = "eag_positive",
+                                              seromarker_denom = "carriers",
+                                              prev_dataset = data_to_fit$hbeag_prevalence,
+                                              model_output = out)
 
-  # For women:
-  model_prev_subset_female <- data.frame(time = out$carriers_female[out$carriers_female$time %in%
-                                                             data_hbsag_by_age$time[data_hbsag_by_age$sex == "Female"],1],
-                                         sex = "Female",
-                                         prev = out$carriers_female[out$carriers_female$time %in%
-                                                             data_hbsag_by_age$time[data_hbsag_by_age$sex == "Female"],-1]/
-                                         out$pop_female[out$pop_female$time %in% data_hbsag_by_age$time[data_hbsag_by_age$sex == "Female"],-1])
+  ## Age- and sex-specific anti-HBc prevalence:
+  # THIS IS NOT WORKING PROPERLY: is it because it doesn't stabilise??
+  mapped_output_antihbc <- map_seromarker_prev(seromarker_num = "ever_infected",
+                                             seromarker_denom = "pop",
+                                             prev_dataset = data_to_fit$antihbc_prevalence,
+                                             model_output = out)
 
+  return(list(mapped_output_antihbc = mapped_output_antihbc, out = out))
 
-  # For men:
-  model_prev_subset_male <- data.frame(time = out$carriers_male[out$carriers_male$time %in%
-                                                                      data_hbsag_by_age$time[data_hbsag_by_age$sex == "Male"],1],
-                                         sex = "Male",
-                                         prev = out$carriers_male[out$carriers_male$time %in%
-                                                                      data_hbsag_by_age$time[data_hbsag_by_age$sex == "Male"],-1]/
-                                           out$pop_male[out$pop_male$time %in% data_hbsag_by_age$time[data_hbsag_by_age$sex == "Male"],-1])
+  ## Various natural history prevalence estimates
 
-  # Assign all columns the same names to combine into 1 dataframe
-  names(model_prev_subset_both) <- c("time", "sex", paste0("prev", index$ages_all))
-  names(model_prev_subset_female) <- c("time", "sex", paste0("prev", index$ages_all))
-  names(model_prev_subset_male) <- c("time", "sex", paste0("prev", index$ages_all))
+  # Prepare output vectors
+  id_gmb1_2 <- c(ic = 0, ic_it = 0, ir_enchb = 0, cc_dcc = 0, hcc = 0)
+  id_1_1_1986 <- c(it = 0, ir = 0, enchb = 0, ic = 0, hcc = 0)
+  id_gmb1_1 <- c(ic = 0, ic_it = 0, ir_enchb = 0, cc_dcc = 0, hcc = 0)
+  id_1_1_2013 <- c(it = 0, ir = 0, enchb = 0, ic = 0, cc_dcc = 0,
+                   ir_enchb_cc_dcc_age1 = 0, ir_enchb_cc_dcc_age2 = 0,
+                   ir_enchb_cc_dcc_age3 = 0, ir_enchb_cc_dcc_age4 = 0)
 
-  # Combine sex-specific dataframes and turn into long format
-  model_prev_subset <- rbind(model_prev_subset_female, model_prev_subset_male, model_prev_subset_both)
+  # GMB1-2
+  # Row 1 IC
+  id_gmb1_2["ic"] <- (sum(select(sim, starts_with("ICm"))[which(sim$time == 2013),which(ages ==27):which(ages ==35.5)]))/
+    (sum(out$carriers_male[which(out$time == 2013),(which(ages ==27):which(ages ==35.5))+1]))
+  # Row 2 IC and IT
+  id_gmb1_2["ic_it"] <- (sum(select(sim, starts_with("ICm"))[which(sim$time == 2013),which(ages ==27):which(ages ==35.5)])+
+      sum(select(sim, starts_with("ITm"))[which(sim$time == 2013),which(ages ==27):which(ages ==35.5)]))/
+    (sum(out$carriers_male[which(out$time == 2013),(which(ages ==27):which(ages ==35.5))+1]))
+  # Row 3 IR and ENCHB
+  id_gmb1_2["ir_enchb"] <- (sum(select(sim, starts_with("IRm"))[which(sim$time == 2013),which(ages ==27):which(ages ==35.5)])+
+      sum(select(sim, starts_with("ENCHBm"))[which(sim$time == 2013),which(ages ==27):which(ages ==35.5)]))/
+    (sum(out$carriers_male[which(out$time == 2013),(which(ages ==27):which(ages ==35.5))+1]))
+  # Row 4 CC and DCC
+  id_gmb1_2["cc_dcc"] <-(sum(select(sim, starts_with("CCm"))[which(sim$time == 2013),which(ages ==27):which(ages ==35.5)])+
+      sum(select(sim, starts_with("DCCm"))[which(sim$time == 2013),which(ages ==27):which(ages ==35.5)]))/
+    (sum(out$carriers_male[which(out$time == 2013),(which(ages ==27):which(ages ==35.5))+1]))
+  # Row 5 HCC
+  id_gmb1_2["hcc"] <-(sum(select(sim, starts_with("HCCm"))[which(sim$time == 2013),which(ages ==27):which(ages ==35.5)]))/
+    (sum(out$carriers_male[which(out$time == 2013),(which(ages ==27):which(ages ==35.5))+1]))
 
-  model_prev_subset <- gather(model_prev_subset, key = "age", value = "prev_model", -time, -sex)
-  model_prev_subset$age <- ages[as.numeric(gsub("\\D", "", model_prev_subset$age))]  # Assign ages as column
+  # Study 1-1 in 1986
+  denom_1_1_1986 <- sum(select(sim, starts_with("IT"))[which(sim$time == 1986),which(ages ==4.5):which(ages ==21.5)] +
+    select(sim, starts_with("IR"))[which(sim$time == 1986),which(ages ==4.5):which(ages ==21.5)] +
+    select(sim, starts_with("IC"))[which(sim$time == 1986),which(ages ==4.5):which(ages ==21.5)] +
+    select(sim, starts_with("ENCHB"))[which(sim$time == 1986),which(ages ==4.5):which(ages ==21.5)])
 
-  # Merge with the dataset to fit to
-  mapped_output <- left_join(data_hbsag_by_age, model_prev_subset, by = c("sex", "time", "age"))
+  # Row 6
+  id_1_1_1986["it"] <- sum(select(sim, starts_with("IT"))[which(sim$time == 1986),which(ages ==4.5):which(ages ==21.5)])/
+    denom_1_1_1986
+
+  # Row 7
+  id_1_1_1986["ir"] <- sum(select(sim, starts_with("IR"))[which(sim$time == 1986),which(ages ==4.5):which(ages ==21.5)])/
+    denom_1_1_1986
+
+  # Row 8
+  id_1_1_1986["enchb"] <- sum(select(sim, starts_with("ENCHB"))[which(sim$time == 1986),which(ages ==4.5):which(ages ==21.5)])/
+    denom_1_1_1986
+
+  id_1_1_1986["ic"] <- sum(select(sim, starts_with("IC"))[which(sim$time == 1986),which(ages ==4.5):which(ages ==21.5)])/
+    denom_1_1_1986
+
+  # Row 9 HCC prevalence in chronic carriers
+  id_1_1_1986["hcc"] <-(sum(select(sim, starts_with("HCC"))[which(sim$time == 1986),which(ages ==4.5):which(ages ==21.5)]))/
+    (sum(out$carriers[which(out$time == 1986),(which(ages ==4.5):which(ages ==21.5))+1]))
+
+  # GMB1-1
+  # Row 10 IC
+  id_gmb1_1["ic"] <- (sum(select(sim, starts_with("IC"))[which(sim$time == 2012.5),which(ages ==33):which(ages ==47)]))/
+    (sum(out$carriers[which(out$time == 2012.5),(which(ages ==33):which(ages ==47))+1]))
+  # Row 11 IC and IT
+  id_gmb1_1["ic_it"] <- (sum(select(sim, starts_with("IC"))[which(sim$time == 2012.5),which(ages == 33):which(ages == 47)])+
+                           sum(select(sim, starts_with("IT"))[which(sim$time == 2012.5),which(ages == 33):which(ages == 47)]))/
+    (sum(out$carriers[which(out$time == 2012.5),(which(ages == 33):which(ages ==47))+1]))
+  # Row 12 IR and ENCHB
+  id_gmb1_1["ir_enchb"] <- (sum(select(sim, starts_with("IR"))[which(sim$time == 2012.5),which(ages ==33):which(ages ==47)])+
+                              sum(select(sim, starts_with("ENCHB"))[which(sim$time == 2012.5),which(ages ==33):which(ages ==47)]))/
+    (sum(out$carriers[which(out$time == 2012.5),(which(ages ==33):which(ages ==47))+1]))
+  # Row 13 CC and DCC
+  id_gmb1_1["cc_dcc"] <-(sum(select(sim, starts_with("CC"))[which(sim$time == 2012.5),which(ages ==33):which(ages ==47)])+
+                           sum(select(sim, starts_with("DCC"))[which(sim$time == 2012.5),which(ages ==33):which(ages ==47)]))/
+    (sum(out$carriers[which(out$time == 2012.5),(which(ages ==33):which(ages ==47))+1]))
+  # Row 14 HCC
+  id_gmb1_1["hcc"] <-(sum(select(sim, starts_with("HCC"))[which(sim$time == 2012.5),which(ages ==33):which(ages ==47)]))/
+    (sum(out$carriers[which(out$time == 2012.5),(which(ages ==33):which(ages ==47))+1]))
+
+  # Study 1-1 in 2013
+  denom_1_1_2013 <- sum(select(sim, starts_with("IT"))[which(sim$time == 2013),which(ages ==8):which(ages ==95.5)] +
+                          select(sim, starts_with("IR"))[which(sim$time == 2013),which(ages ==8):which(ages ==95.5)] +
+                          select(sim, starts_with("IC"))[which(sim$time == 2013),which(ages ==8):which(ages ==95.5)] +
+                          select(sim, starts_with("ENCHB"))[which(sim$time == 2013),which(ages ==8):which(ages ==95.5)])
+
+  # Row 16
+  id_1_1_2013["it"] <- sum(select(sim, starts_with("IT"))[which(sim$time == 2013),which(ages ==8):which(ages ==95.5)])/
+    denom_1_1_2013
+
+  # Row 17
+  id_1_1_2013["ir"] <- sum(select(sim, starts_with("IR"))[which(sim$time == 2013),which(ages ==8):which(ages ==95.5)])/
+    denom_1_1_2013
+
+  # Row 18
+  id_1_1_2013["enchb"] <- sum(select(sim, starts_with("ENCHB"))[which(sim$time == 2013),which(ages ==8):which(ages ==95.5)])/
+    denom_1_1_2013
+
+  # Row 19
+  id_1_1_2013["ic"] <- sum(select(sim, starts_with("IC"))[which(sim$time == 2013),which(ages ==8):which(ages ==95.5)])/
+    denom_1_1_2013
+
+  # Row 20 CC and DCC prevalence in chronic carriers
+  id_1_1_2013["cc_dcc"] <-(sum(select(sim, starts_with("CC"))[which(sim$time == 2013),which(ages ==8):which(ages ==95.5)])+
+                             sum(select(sim, starts_with("DCC"))[which(sim$time == 2013),which(ages ==8):which(ages ==95.5)]))/
+    (sum(out$carriers[which(out$time == 2013),(which(ages ==8):which(ages ==95.5))+1]))
+
+  # Row 21 IR+ENCHB+CC+DCC
+  num_1_1_2013 <- select(sim, starts_with("IR"))[which(sim$time == 2013),]+select(sim, starts_with("ENCHB"))[which(sim$time == 2013),]+
+    select(sim, starts_with("CC"))[which(sim$time == 2013),]+select(sim, starts_with("DCC"))[which(sim$time == 2013),]
+  id_1_1_2013["ir_enchb_cc_dcc_age1"] <- sum(num_1_1_2013[,which(ages ==8):which(ages == 29.5)])/
+    (sum(out$carriers[which(out$time == 2013),(which(ages ==8):which(ages ==29.5))+1]))
+  # Row 22
+  id_1_1_2013["ir_enchb_cc_dcc_age2"] <- sum(num_1_1_2013[,which(ages ==30):which(ages == 39.5)])/
+    (sum(out$carriers[which(out$time == 2013),(which(ages ==30):which(ages ==39.5))+1]))
+  # Row 23
+  id_1_1_2013["ir_enchb_cc_dcc_age3"] <- sum(num_1_1_2013[,which(ages ==40):which(ages == 49.5)])/
+    (sum(out$carriers[which(out$time == 2013),(which(ages ==40):which(ages ==49.5))+1]))
+  # Row 24
+  id_1_1_2013["ir_enchb_cc_dcc_age4"] <- sum(num_1_1_2013[,which(ages ==50):which(ages == 95.5)])/
+    (sum(out$carriers[which(out$time == 2013),(which(ages ==50):which(ages ==95.5))+1]))
+
+  # Combine all data points with model predictions:
+  mapped_output_complete <- rbind(mapped_output_hbsag, mapped_output_hbeag)
 
   # Calculate sum of least squares
-  sse <- sum((mapped_output$value - mapped_output$prev_model)^2)
-  # This works but need to add sex as a category
+  sse <- sum((mapped_output_complete$value - mapped_output_complete$prev_model)^2)
 
   # Return relevant info (SSE and the matched datapoints and outputs)
-  res <- list(sse = sse, mapped_output = mapped_output,
-              carrier_prev_total = sim$infectioncat_total$carriers/sim$pop_total$pop_total)
-
-  return(list(sse = sse, mapped_output = mapped_output))
+  #res <- list(sse = sse, mapped_output = mapped_output,
+  #            carrier_prev_total = sim$infectioncat_total$carriers/sim$pop_total$pop_total)
 
   # Fitting to infection incidence rate:
 
@@ -1922,14 +2103,51 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
   # compartments to transition
   # Denominator = number in CC and DCC compartments at t0
   shadow6_cum_hcc <- c(0,0)  # define vector for 2 timesteps
-  for (i in 1:2) {  # i = timestep
+  for (i in 1:2) {  # i = timestep index, so 1 = t0
     shadow6_cum_hcc[i] <- (sum(select(shadow6_sim, starts_with("cum_incident_hcc"))[(i+1),]))/
       (sum(select(shadow6_sim, starts_with("CC"))[which(shadow6_sim$time == 2005),]) +
          sum(select(shadow6_sim, starts_with("DCC"))[which(shadow6_sim$time == 2005),]))
   }
 
+  # SHADOW MODEL 7: GLOBOCAN SURVIVAL CURVE
+  # To fit survival curve at time intervals 1, 3 and 5
+  # Follow a cohort of HCC patients, starting in 1993, until 1997.5
+  # Switch off births, migration, betas and vaccination
+  # Since there is no one in other chronic carrier compartments, no need to switch of transitions
+  shadow7_sim <- run_shadow_model(init_age_from = 0, init_age_to = 99.5, init_sex = "both",
+                                  init_compartment_from = 8, init_compartment_to = 8,
+                                  shadow_default_parameter_list = parameters_for_fit,
+                                  shadow_init = model_pop1993, shadowsim_duration = 5.5,
+                                  shadow_parms_to_change = list(sim_starttime = 1993,
+                                                                births_on = 0,
+                                                                migration_on = 0,
+                                                                b1 = 0,
+                                                                b2 = 0,
+                                                                b3 = 0))
+
+
+  # Calculate output for fitting:
+  # Cumulative mortality probability (from HCC or background) after 1, 3 and 5 years
+  # Numerator = sum of incident deaths at given timestep
+  # Can use background deaths from all LD patients because CC and DCC compartments are empty at baseline
+  # Denominator = number in HCC compartment at t0
+    shadow7_cum_mortality1 <- ((sum(select(shadow7_sim, starts_with("cum_hcc_deaths"))[which(shadow7_sim$time == 1994),])) +
+                                   (sum(select(shadow7_sim, starts_with("cum_background_deaths_ld"))[which(shadow7_sim$time == 1994),])))/
+      (sum(select(shadow7_sim, starts_with("HCC"))[which(shadow7_sim$time == 1993),]))
+
+    shadow7_cum_mortality3 <- ((sum(select(shadow7_sim, starts_with("cum_hcc_deaths"))[which(shadow7_sim$time == 1996),])) +
+        (sum(select(shadow7_sim, starts_with("cum_background_deaths_ld"))[which(shadow7_sim$time == 1996),])))/
+      (sum(select(shadow7_sim, starts_with("HCC"))[which(shadow7_sim$time == 1993),]))
+
+    shadow7_cum_mortality5 <- ((sum(select(shadow7_sim, starts_with("cum_hcc_deaths"))[which(shadow7_sim$time == 1998),])) +
+                                 (sum(select(shadow7_sim, starts_with("cum_background_deaths_ld"))[which(shadow7_sim$time == 1998),])))/
+      (sum(select(shadow7_sim, starts_with("HCC"))[which(shadow7_sim$time == 1993),]))
+
+    shadow7_cum_mortality <- c(shadow7_cum_mortality1, shadow7_cum_mortality3, shadow7_cum_mortality5)
+
+
   # Incorporate test: incident infections and births need to be 0!
-  return(shadow1_outputs)
+  return(shadow7_cum_mortality)
 
 }
 
@@ -1963,16 +2181,24 @@ input_hbsag_dataset <- read.csv(here("data",
                                      "hbsag_prevalence.csv"),
                              header = TRUE, check.names = FALSE,
                              stringsAsFactors = FALSE)
+input_antihbc_dataset <- read.csv(here("data",
+                                     "antihbc_prevalence.csv"),
+                                header = TRUE, check.names = FALSE,
+                                stringsAsFactors = FALSE)
+input_hbeag_dataset <- read.csv(here("data",
+                                     "hbeag_prevalence.csv"),
+                                header = TRUE, check.names = FALSE,
+                                stringsAsFactors = FALSE)
+input_natural_history_prev_dataset <- read.csv(here("data",
+                                     "natural_history_prevalence.csv"),
+                                header = TRUE, check.names = FALSE,
+                                stringsAsFactors = FALSE)
 
-# WHO estimate
-#hbsag_dataset <- data.frame(time = c(1980, 2015), prev = c(0.11, 0.058),
-#                   ci_lower = c(0.09, 0.047), ci_upper = c(0.134, 0.071))
-# Mock data: input dataset needs to have columns time, age and prev_data at the moment
-# Make sure age and time match dt/da (0.5)
-#hbsag_by_age_dataset_1980 <- data.frame(time = c(rep(1984,7), 2015),
-#                                        age = c(1.5,3.5,4.5,7.5,12.5,30.5,34, 35),
-#                                        prev_data = c(0.16, 0.24, 0.245, 0.26, 0.25, 0.11, 0.14, 0.058))
-hbsag_dataset_list <- list(hbsag_prevalence = input_hbsag_dataset)
+
+prevalence_datasets_list <- list(hbsag_prevalence = input_hbsag_dataset,
+                                 antihbc_prevalence = input_antihbc_dataset,
+                                 hbeag_prevalence = input_hbeag_dataset,
+                                 natural_history_prevalence = input_natural_history_prev_dataset)
 
 
 # Using LHS
@@ -1991,14 +2217,14 @@ params_mat$mtct_prob_s <- 0 + (0.5-0) * params_mat$mtct_prob_s # rescale U(0,1) 
 time1 <- proc.time()
 out_mat <- apply(params_mat,1,
                     function(x) fit_model_sse(default_parameter_list = parameter_list,
-                                              data_to_fit = hbsag_dataset_list,
+                                              data_to_fit = prevalence_datasets_list,
                                               parms_to_change = list(b1 = as.list(x)$b1,
                                                                      b2 = as.list(x)$b2,
                                                                      mtct_prob_s = as.list(x)$mtct_prob_s)))
 sim_duration = proc.time() - time1
 sim_duration["elapsed"]/60
 
-# Parallelised code
+# Parallelised code ----
 # Set up cluster
 cl <- makeCluster(4)
 clusterEvalQ(cl, {library(dplyr); library(tidyr); library(deSolve)})
