@@ -1,0 +1,50 @@
+parameter_list <- list(
+  # TRANSMISSION PARAMETERS
+  b1 = 0.1  # my value
+  b2 = 0.009,   # my value
+  b3 = 0.001,   # Margaret value in Ethiopia
+  alpha = 15,         # Shevanthi/Margaret value, relative infectiousness of eAg-positives
+  mtct_prob_e = 0.9,  # Shevanthi/Margaret value, probability of perinatal transmission from HBeAg-positive mother
+  mtct_prob_s = 0.14, # my value, probability of perinatal transmission from HBeAg-negative infected mother
+  # NATURAL HISTORY PROGRESSION RATES
+  p_chronic = c(0.89, exp(-0.65*ages[-1]^0.46)),     # Age-dependent probability of chronic carriage. Adapted Edmunds
+  pr_it_ir = 0.1,
+  pr_ir_ic = 0.05,
+  eag_loss_accelerator = 9.5, # 9.5 in Margaret's Ethiopia fit, 19.8873 in Shevanthi's
+  eag_loss = 0.1281, # 0.1281 in Margaret's Ethiopia fit, 0.977 in Shevanthi's
+  pr_ir_enchb = 0.005,
+  pr_ir_cc = 0.028,
+  pr_ic_enchb = 0.01,
+  sag_loss = 0.01,  # Shevanthi value, inactive carrier to recovered transition
+  #sag_loss = sagloss_rates,
+  pr_enchb_cc = 0.04,  # Progression to CC (from ENCHB)
+  cirrhosis_prog_coefficient = 0.0341,
+  cirrhosis_prog_male_cofactor = 12.32,
+  dccrate = 0.04,  # Progression to DCC (from CC)
+  # PROGRESSION RATES TO HEPATOCELLULAR CARCINOMA
+  cancer_prog_coefficient = 4.0452e-05,  # value from Margaret
+  cancer_age_treshold = 10,  # value from Margaret
+  cancer_prog_male_cofactor = 5.2075,  # value from Margaret
+  hccr_it = 1,
+  hccr_ir = 2,
+  hccr_ic = 0.5,
+  hccr_enchb = 2,
+  hccr_cc = 13,
+  hccr_dcc = 0.04,
+  # HBV-RELATED MORTALITY RATES (MORTALITY FROM LIVER DISEASE)
+  mu_cc = 0.039,
+  mu_dcc = 0.314,
+  mu_hcc = 0.5,
+  # INFANT VACCINATION PARAMETERS
+  #vacc_cov = c(0, 0.92, rep(0,n_agecat-2)),  # vaccine is only applied in 1-year olds, need to get time-varying data
+  vacc_cov = 0.92,
+  vacc_eff = 0.95,                           # vaccine efficacy
+  vacc_introtime = 1991,                     # year of vaccine introduction
+  # SIMULATION PARAMETERS
+  sim_starttime = starttime,
+  # INTERVENTION ON/OFF SWITCH (1/0)
+  apply_vacc = 1,
+  # DEMOGRAPHY ON/OFF SWITCH (1/0)
+  births_on = 1,
+  migration_on = 1,
+  mortality_on = 1)
