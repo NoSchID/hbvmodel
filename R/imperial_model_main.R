@@ -1,5 +1,5 @@
 ###################################
-### Imperial HBV model 08/05/19 ###
+### Imperial HBV model 09/05/19 ###
 ###################################
 # Model described in Shevanthi's thesis and adapted by Margaret
 # Currently only infant vaccination in second age group, no birth dose or treatment
@@ -425,6 +425,7 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
 
     # OUTPUT
 
+
     # Sum age-specific number of incident background deaths across infection compartments for output
     dcum_deaths <- apply(deaths,c(1,3),sum)
     # Age-specific number of incident background deaths among liver disease patients (CC, DCC and HCC)
@@ -435,7 +436,7 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
              dcum_births, dcum_infected_births, dcum_chronic_births,
              dcum_hbv_deaths, dcum_hcc_deaths, dcum_eag_loss,
              dcum_sag_loss, dcum_dcc, dcum_hcc, dflow_dcc_to_hcc,
-             dcum_background_deaths_ld = dcum_background_deaths_ld)
+             dcum_background_deaths_ld)
     list(res)
 
   })
@@ -1065,7 +1066,6 @@ parameter_names <- names(parameter_list)
 
 # Set all infection parms to zero:
 #parameter_list <- lapply(parameter_list, FUN= function(x) x*0)
-
 tic()
 sim <- run_model(sim_duration = runtime, default_parameter_list = parameter_list,
                  parms_to_change = list(b1 = 0.1, b2 = 0.009, mtct_prob_s = 0.14),
@@ -1073,8 +1073,6 @@ sim <- run_model(sim_duration = runtime, default_parameter_list = parameter_list
 out <- code_model_output(sim)
 toc()
 
-
-#b1 = 0.1, mtct_prob_s = 0.14,, b2 = 0.009
 
 ### Run the simulation: 2 SCENARIOS (vacc and no_vacc) ----
 tic()
@@ -1439,7 +1437,7 @@ which(apply(out[4,], 2, function(col) any(col < 0)))
 model_pop1960 <- out$full_output[221,1:(2*n_infectioncat*n_agecat)+1]
 save(model_pop1960, file = here("data/simulated_inits_1960.RData"))
 
-### First attempts at fitting using least squares ----
+### Model calibration ----
 require(lhs)
 require("parallel")
 
@@ -1603,7 +1601,6 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
                    parms_to_change = NULL,
                    scenario = "vacc")
   out <- code_model_output(sim)
-
 
   # Save population distributions for shadow models
   model_pop1974 <- out$full_output[which(out$time==1974),1:(2*n_infectioncat*n_agecat)+1]
@@ -1918,6 +1915,14 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
     ((sum(select(sim, starts_with("Sf"))[(which(sim$time == 1981):which(sim$time == 1981.5)),(which(ages == 0.5):which(ages == 7.5))]+
             select(sim, starts_with("Sm"))[(which(sim$time == 1981):which(sim$time == 1981.5)),(which(ages == 0.5):which(ages == 7.5))]))*dt)
 
+  # Risk of overall mother-to-child transmission in 1985
+   mtct_risk <- data.frame(time = out$time[out$time %in% data_to_fit$mtct_risk$time],
+                           model_value = apply(out$eag_positive_female[out$time %in% data_to_fit$mtct_risk$time,index$ages_wocba] * parameters_for_fit$mtct_prob_e +
+                     (out$carriers_female[out$time %in% data_to_fit$mtct_risk$time,index$ages_wocba]-
+                        out$eag_positive_female[out$time %in% data_to_fit$mtct_risk$time,index$ages_wocba]) * parameters_for_fit$mtct_prob_s,1,sum)/
+                      apply(out$carriers_female[out$time %in% data_to_fit$mtct_risk$time,index$ages_wocba],1,sum))
+
+   mapped_output_mtct_risk <- left_join(data_to_fit$mtct_risk, mtct_risk, by = "time")
 
   ## SHADOW MODELS 1 a and b: SHIMAKAWA NATURAL HISTORY COHORT
   # Follow 2 cohorts of chronic carriers - 1 of 0-19 year olds (1a) and
@@ -2293,11 +2298,18 @@ input_natural_history_prev_dataset <- read.csv(here("data",
                                 header = TRUE, check.names = FALSE,
                                 stringsAsFactors = FALSE)
 
+input_mtct_risk_dataset <- read.csv(here("data",
+                                         "mtct_risk.csv"),
+                                         header = TRUE, check.names = FALSE,
+                                         stringsAsFactors = FALSE)
 
+
+# Need to change name of this list
 prevalence_datasets_list <- list(hbsag_prevalence = input_hbsag_dataset,
                                  antihbc_prevalence = input_antihbc_dataset,
                                  hbeag_prevalence = input_hbeag_dataset,
-                                 natural_history_prevalence = input_natural_history_prev_dataset)
+                                 natural_history_prevalence = input_natural_history_prev_dataset,
+                                 mtct_risk = input_mtct_risk_dataset)
 
 
 # Using LHS
@@ -2311,7 +2323,7 @@ params_mat$b1 <- 0 + (0.2-0) * params_mat$b1 # rescale U(0,1) to be U(0,0.2)
 params_mat$b2 <- 0 + (0.01-0) * params_mat$b2 # rescale U(0,1) to be U(0,0.01)
 params_mat$mtct_prob_s <- 0 + (0.5-0) * params_mat$mtct_prob_s # rescale U(0,1) to be U(0,0.5)
 
-#params_mat <- data.frame(b1 = 0.1, b2 = 0.009, mtct_prob_s = 0.14)
+params_mat <- data.frame(b1 = 0.1, b2 = 0.009, mtct_prob_s = 0.14)
 
 # Run without parallelising
 time1 <- proc.time()
