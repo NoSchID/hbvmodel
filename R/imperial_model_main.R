@@ -1,5 +1,5 @@
 ###################################
-### Imperial HBV model 09/05/19 ###
+### Imperial HBV model 14/05/19 ###
 ###################################
 # Model described in Shevanthi's thesis and adapted by Margaret
 # Currently only infant vaccination in second age group, no birth dose or treatment
@@ -1611,7 +1611,7 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
   model_pop1978 <- out$full_output[which(out$time==1978),1:(2*n_infectioncat*n_agecat)+1]
   model_pop1983 <- out$full_output[which(out$time==1983),1:(2*n_infectioncat*n_agecat)+1]
   model_pop1985 <- out$full_output[which(out$time==1985),1:(2*n_infectioncat*n_agecat)+1]
-  model_pop1993 <- out$full_output[which(out$time==1993),1:(2*n_infectioncat*n_agecat)+1]
+  model_pop1995 <- out$full_output[which(out$time==1995),1:(2*n_infectioncat*n_agecat)+1]
   model_pop2005 <- out$full_output[which(out$time==2005),1:(2*n_infectioncat*n_agecat)+1]
   model_pop2012 <- out$full_output[which(out$time==2012),1:(2*n_infectioncat*n_agecat)+1]
 
@@ -1620,14 +1620,89 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
 
   # Define my model prediction matching the data to fit to:
 
-  # GLOBOCAN HCC incidence in 2018
-  hcc_ratem <- (sum(select(sim, starts_with("cum_incident_hccm"))[sim$time == 2019,])-
-    sum(select(sim, starts_with("cum_incident_hccm"))[sim$time == 2018,]))/
-    sum(out$pop_male[out$time == 2018.5,])
+  # GLOBOCAN age-specific HCC incidence in The Gambia in 2018
 
-  hcc_ratef <- (sum(select(sim, starts_with("cum_incident_hccf"))[sim$time == 2019,])-
-                  sum(select(sim, starts_with("cum_incident_hccf"))[sim$time == 2018,]))/
-    sum(out$pop_female[out$time == 2018.5,])
+  # For women:
+  globocan_hcc_incidencef <- data.frame(outcome = "hcc_incidence",
+                                        time = 2018,
+                                        sex = "Female",
+                                        age_min = unique(data_to_fit$globocan_incidence_data$age_min[data_to_fit$globocan_incidence_data$sex == "Female"]),
+                                        age_max = unique(data_to_fit$globocan_incidence_data$age_max[data_to_fit$globocan_incidence_data$sex == "Female"]),
+                                        model_value = 0)
+
+  for (i in 1:nrow(globocan_hcc_incidencef)){
+    globocan_hcc_incidencef$model_value[i] <-
+      (sum(select(sim, starts_with("cum_incident_hccf"))[sim$time == 2019,which(ages == globocan_hcc_incidencef$age_min[i]):which(ages == globocan_hcc_incidencef$age_max[i])])-
+        sum(select(sim, starts_with("cum_incident_hccf"))[sim$time == 2018,which(ages == globocan_hcc_incidencef$age_min[i]):which(ages == globocan_hcc_incidencef$age_max[i])]))/
+         sum(out$pop_female[out$time == 2018.5,which(ages == globocan_hcc_incidencef$age_min[i]):which(ages == globocan_hcc_incidencef$age_max[i])])
+  }
+
+
+  # For men:
+  globocan_hcc_incidencem <- data.frame(outcome = "hcc_incidence",
+                                        time = 2018,
+                                        sex = "Male",
+                                        age_min = unique(data_to_fit$globocan_incidence_data$age_min[data_to_fit$globocan_incidence_data$sex == "Male"]),
+                                        age_max = unique(data_to_fit$globocan_incidence_data$age_max[data_to_fit$globocan_incidence_data$sex == "Male"]),
+                                        model_value = 0)
+
+  for (i in 1 : nrow(globocan_hcc_incidencem)){
+    globocan_hcc_incidencem$model_value[i] <-
+      (sum(select(sim, starts_with("cum_incident_hccm"))[sim$time == 2019,which(ages == globocan_hcc_incidencem$age_min[i]):which(ages == globocan_hcc_incidencem$age_max[i])])-
+        sum(select(sim, starts_with("cum_incident_hccm"))[sim$time == 2018,which(ages == globocan_hcc_incidencem$age_min[i]):which(ages == globocan_hcc_incidencem$age_max[i])]))/
+          sum(out$pop_male[out$time == 2018.5,which(ages == globocan_hcc_incidencem$age_min[i]):which(ages == globocan_hcc_incidencem$age_max[i])])
+  }
+
+  # GLOBOCAN age-specific HCC mortality rate in The Gambia in 2018:
+
+  # For women:
+  globocan_hcc_mortalityf <- data.frame(outcome = "hcc_mortality",
+                                        time = 2018,
+                                        sex = "Female",
+                                        age_min = unique(data_to_fit$globocan_incidence_data$age_min[data_to_fit$globocan_incidence_data$sex == "Female"]),
+                                        age_max = unique(data_to_fit$globocan_incidence_data$age_max[data_to_fit$globocan_incidence_data$sex == "Female"]),
+                                        model_value = 0)
+
+  for (i in 1:nrow(globocan_hcc_mortalityf)){
+    globocan_hcc_mortalityf$model_value[i] <-
+      (sum(select(sim, starts_with("cum_hcc_deathsf"))[sim$time == 2019,which(ages == globocan_hcc_mortalityf$age_min[i]):which(ages == globocan_hcc_mortalityf$age_max[i])])-
+        sum(select(sim, starts_with("cum_hcc_deathsf"))[sim$time == 2018,which(ages == globocan_hcc_mortalityf$age_min[i]):which(ages == globocan_hcc_mortalityf$age_max[i])]))/
+          sum(out$pop_female[out$time == 2018.5,which(ages == globocan_hcc_mortalityf$age_min[i]):which(ages == globocan_hcc_mortalityf$age_max[i])])
+  }
+
+  # For men:
+  globocan_hcc_mortalitym <- data.frame(outcome = "hcc_mortality",
+                                        time = 2018,
+                                        sex = "Male",
+                                        age_min = unique(data_to_fit$globocan_incidence_data$age_min[data_to_fit$globocan_incidence_data$sex == "Male"]),
+                                        age_max = unique(data_to_fit$globocan_incidence_data$age_max[data_to_fit$globocan_incidence_data$sex == "Male"]),
+                                        model_value = 0)
+
+  for (i in 1:nrow(globocan_hcc_mortalitym)){
+    globocan_hcc_mortalitym$model_value[i] <-
+      (sum(select(sim, starts_with("cum_hcc_deathsm"))[sim$time == 2019,which(ages == globocan_hcc_mortalitym$age_min[i]):which(ages == globocan_hcc_mortalitym$age_max[i])])-
+         sum(select(sim, starts_with("cum_hcc_deathsm"))[sim$time == 2018,which(ages == globocan_hcc_mortalitym$age_min[i]):which(ages == globocan_hcc_mortalitym$age_max[i])]))/
+      sum(out$pop_male[out$time == 2018.5,which(ages == globocan_hcc_mortalitym$age_min[i]):which(ages == globocan_hcc_mortalitym$age_max[i])])
+  }
+
+  # Combine HCC incidence and mortality sets and map to GLOBOCAN input data
+  globocan_incidence_output <- rbind(globocan_hcc_incidencef, globocan_hcc_incidencem,
+                                     globocan_hcc_mortalityf, globocan_hcc_mortalitym)
+
+  # STILL NEED TO MULTIPLY BY PAF
+  paf_under50 <- 0.83
+  paf_over50 <- 0.32
+  globocan_incidence_output$model_value[globocan_incidence_output$age_max < 55] <-
+    globocan_incidence_output$model_value[globocan_incidence_output$age_max < 55]/paf_under50
+  globocan_incidence_output$model_value[globocan_incidence_output$age_min >= 55] <-
+    globocan_incidence_output$model_value[globocan_incidence_output$age_min >= 55]/paf_over50
+
+
+  mapped_globocan_incidence <- left_join(data_to_fit$globocan_incidence_data,
+                                         globocan_incidence_output,
+                                         by = c("outcome", "time", "sex", "age_min", "age_max"))
+
+  return(list(mapped_globocan_incidence = mapped_globocan_incidence))
 
   # Fitting to age-specific prevalence data: map matching model output to year and age
 
@@ -2262,8 +2337,8 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
   shadow7_sim <- run_shadow_model(init_age_from = 0, init_age_to = 99.5, init_sex = "both",
                                   init_compartment_from = 8, init_compartment_to = 8,
                                   shadow_default_parameter_list = parameters_for_fit,
-                                  shadow_init = model_pop1993, shadowsim_duration = 5.5,
-                                  shadow_parms_to_change = list(sim_starttime = 1993,
+                                  shadow_init = model_pop1995, shadowsim_duration = 5.5,
+                                  shadow_parms_to_change = list(sim_starttime = 1995,
                                                                 births_on = 0,
                                                                 migration_on = 0,
                                                                 b1 = 0,
@@ -2275,25 +2350,26 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
   # Cumulative mortality probability (from HCC or background) after 1, 3 and 5 years
   # Numerator = sum of incident deaths at given timestep
   # Can use background deaths from all LD patients because CC and DCC compartments are empty at baseline
-  # Denominator = number in HCC compartment at t0
-    shadow7_cum_mortality1 <- ((sum(select(shadow7_sim, starts_with("cum_hcc_deaths"))[which(shadow7_sim$time == 1994),])) +
-                                   (sum(select(shadow7_sim, starts_with("cum_background_deaths_ld"))[which(shadow7_sim$time == 1994),])))/
-      (sum(select(shadow7_sim, starts_with("HCC"))[which(shadow7_sim$time == 1993),]))
+  # Denominator = number in HCC compartment at t01
+  mapped_globocan_mortality_curve <- data_to_fit$globocan_mortality_curve
+  mapped_globocan_mortality_curve$model_value[1] <- ((sum(select(shadow7_sim, starts_with("cum_hcc_deaths"))[which(shadow7_sim$time == 1996),])) +
+                                   (sum(select(shadow7_sim, starts_with("cum_background_deaths_ld"))[which(shadow7_sim$time == 1996),])))/
+      (sum(select(shadow7_sim, starts_with("HCC"))[which(shadow7_sim$time == 1995),]))
 
-    shadow7_cum_mortality3 <- ((sum(select(shadow7_sim, starts_with("cum_hcc_deaths"))[which(shadow7_sim$time == 1996),])) +
-        (sum(select(shadow7_sim, starts_with("cum_background_deaths_ld"))[which(shadow7_sim$time == 1996),])))/
-      (sum(select(shadow7_sim, starts_with("HCC"))[which(shadow7_sim$time == 1993),]))
+  mapped_globocan_mortality_curve$model_value[2] <- ((sum(select(shadow7_sim, starts_with("cum_hcc_deaths"))[which(shadow7_sim$time == 1998),])) +
+        (sum(select(shadow7_sim, starts_with("cum_background_deaths_ld"))[which(shadow7_sim$time == 1998),])))/
+      (sum(select(shadow7_sim, starts_with("HCC"))[which(shadow7_sim$time == 1995),]))
 
-    shadow7_cum_mortality5 <- ((sum(select(shadow7_sim, starts_with("cum_hcc_deaths"))[which(shadow7_sim$time == 1998),])) +
-                                 (sum(select(shadow7_sim, starts_with("cum_background_deaths_ld"))[which(shadow7_sim$time == 1998),])))/
-      (sum(select(shadow7_sim, starts_with("HCC"))[which(shadow7_sim$time == 1993),]))
+  mapped_globocan_mortality_curve$model_value[3] <- ((sum(select(shadow7_sim, starts_with("cum_hcc_deaths"))[which(shadow7_sim$time == 2000),])) +
+                                 (sum(select(shadow7_sim, starts_with("cum_background_deaths_ld"))[which(shadow7_sim$time == 2000),])))/
+      (sum(select(shadow7_sim, starts_with("HCC"))[which(shadow7_sim$time == 1995),]))
 
-    shadow7_cum_mortality <- c(shadow7_cum_mortality1, shadow7_cum_mortality3, shadow7_cum_mortality5)
 
-  # Combine model predictions with input datasets
+  ### Combine model predictions with input datasets
   mapped_progression_rates <- left_join(data_to_fit$progression_rates, progression_rates, by = "outcome")
   mapped_mortality_curves <- cbind(data_to_fit$mortality_curves, model_value = model_mort_curves$model_value)
-
+  mapped_mortality_curves <- bind_rows(mapped_mortality_curves,
+                                       mapped_globocan_mortality_curve) # add GLOBOCAN shadow model
 
   # Save all mapped outputs in a list
   mapped_seromarker_prevalence <- rbind(mapped_output_hbsag, mapped_output_hbeag, mapped_output_antihbc)
@@ -2336,47 +2412,61 @@ init_pop_sim <- unlist(init_pop_sim)
 
 
 # Define my datapoints to fit to: HBsAg prevalence dataset
-input_hbsag_dataset <- read.csv(here("data",
+calibration_data_path <- "data/calibration_data"
+input_hbsag_dataset <- read.csv(here(calibration_data_path,
                                      "hbsag_prevalence.csv"),
                              header = TRUE, check.names = FALSE,
                              stringsAsFactors = FALSE)
-input_antihbc_dataset <- read.csv(here("data",
+input_antihbc_dataset <- read.csv(here(calibration_data_path,
                                      "antihbc_prevalence.csv"),
                                 header = TRUE, check.names = FALSE,
                                 stringsAsFactors = FALSE)
-input_hbeag_dataset <- read.csv(here("data",
+input_hbeag_dataset <- read.csv(here(calibration_data_path,
                                      "hbeag_prevalence.csv"),
                                 header = TRUE, check.names = FALSE,
                                 stringsAsFactors = FALSE)
-input_natural_history_prev_dataset <- read.csv(here("data",
+input_natural_history_prev_dataset <- read.csv(here(calibration_data_path,
                                      "natural_history_prevalence.csv"),
                                 header = TRUE, check.names = FALSE,
                                 stringsAsFactors = FALSE)
 
-input_mtct_risk_dataset <- read.csv(here("data",
+input_mtct_risk_dataset <- read.csv(here(calibration_data_path,
                                          "mtct_risk.csv"),
                                          header = TRUE, check.names = FALSE,
                                          stringsAsFactors = FALSE)
 
-input_progression_rates <- read.csv(here("data",
+input_progression_rates <- read.csv(here(calibration_data_path,
                                          "progression_rates.csv"),
                                     header = TRUE, check.names = FALSE,
                                     stringsAsFactors = FALSE)
 
-input_mortality_curves <- read.csv(here("data",
+input_mortality_curves <- read.csv(here(calibration_data_path,
                                          "mortality_curves.csv"),
                                     header = TRUE, check.names = FALSE,
                                     stringsAsFactors = FALSE)
 
+input_globocan_incidence_data <- read.csv(here(calibration_data_path,
+                                               "globocan_incidence_data.csv"),
+                                          header = TRUE, check.names = FALSE,
+                                          stringsAsFactors = FALSE)
+
+input_globocan_mortality_curve <- read.csv(here(calibration_data_path,
+                                               "globocan_mortality_curve.csv"),
+                                          header = TRUE, check.names = FALSE,
+                                          stringsAsFactors = FALSE,
+                                          fileEncoding="UTF-8-BOM")
+
 
 # Need to change name of this list
-prevalence_datasets_list <- list(hbsag_prevalence = input_hbsag_dataset,
+calibration_datasets_list <- list(hbsag_prevalence = input_hbsag_dataset,
                                  antihbc_prevalence = input_antihbc_dataset,
                                  hbeag_prevalence = input_hbeag_dataset,
                                  natural_history_prevalence = input_natural_history_prev_dataset,
                                  mtct_risk = input_mtct_risk_dataset,
                                  progression_rates = input_progression_rates,
-                                 mortality_curves = input_mortality_curves)
+                                 mortality_curves = input_mortality_curves,
+                                 globocan_incidence_data = input_globocan_incidence_data,
+                                 globocan_mortality_curve = input_globocan_mortality_curve)
 
 
 # Using LHS
@@ -2396,7 +2486,7 @@ params_mat <- data.frame(b1 = 0.1, b2 = 0.009, mtct_prob_s = 0.14)
 time1 <- proc.time()
 out_mat <- apply(params_mat,1,
                     function(x) fit_model_sse(default_parameter_list = parameter_list,
-                                              data_to_fit = prevalence_datasets_list,
+                                              data_to_fit = calibration_datasets_list,
                                               parms_to_change = list(b1 = as.list(x)$b1,
                                                                      b2 = as.list(x)$b2,
                                                                      mtct_prob_s = as.list(x)$mtct_prob_s)))

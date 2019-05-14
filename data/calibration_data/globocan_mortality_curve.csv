@@ -1,0 +1,4 @@
+﻿outcome,start_period_assign_years,sex,time_interval_years,data_value,ci_lower,ci_upper,sample_size
+shadow7_cum_mortality,1995,Mixed,1,0.918,NA,NA,123
+shadow7_cum_mortality,1995,Mixed,3,0.967,NA,NA,123
+shadow7_cum_mortality,1995,Mixed,5,0.967,NA,NA,123
