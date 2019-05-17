@@ -1,5 +1,5 @@
 ###################################
-### Imperial HBV model 16/05/19 ###
+### Imperial HBV model 17/05/19 ###
 ###################################
 # Model described in Shevanthi's thesis and adapted by Margaret
 # Currently only infant vaccination in second age group, no birth dose or treatment
@@ -57,6 +57,44 @@ load(here("data/demogdata_0point5.RData"))
 } else {
   print("Error: can only preload data for 0.5 time/agestep")
 }
+
+
+### Load and clean vaccine coverage data ----
+# Data downloaded from WHO reported vaccine coverage timeseries (HepB3)
+input_who_vaccine_coverage <- read.csv(here("data-raw", "infant_vaccine_coverage.csv"),
+                             stringsAsFactors = FALSE)
+
+# Linearly interpolate coverage for missing years
+input_who_vaccine_coverage$coverage_interp <- approx(input_who_vaccine_coverage$year, input_who_vaccine_coverage$coverage_proportion,
+       xout = input_who_vaccine_coverage$year, method = "linear")$y
+
+# Fill in a dataframe with 0.01 timesteps with constant yearly coverage values until 2100
+# Assuming last coverage from 2017 stays the same
+vaccine_coverage <- data.frame(year = seq(min(input_who_vaccine_coverage$year), 2100, 0.01),
+                               coverage = approx(input_who_vaccine_coverage$year, input_who_vaccine_coverage$coverage_interp,
+                               xout = seq(min(input_who_vaccine_coverage$year), 2100, 0.01),
+                               method = "constant", rule = 2)$y)
+
+### Infection data preparation ----
+gambia_prevdata <- read.csv(here("testdata", "edmunds_gambia_prev.csv"), stringsAsFactors = FALSE)
+
+# Interpolate prevalence and prop. ever infected
+gambia_prev <- approx(x = gambia_prevdata$age, y = gambia_prevdata$edmunds_prev,
+                      xout = ages, method = "linear", rule = 2)
+gambia_prev <- data.frame(age = gambia_prev$x, prev = gambia_prev$y)
+gambia_ever_inf <- approx(x = gambia_prevdata$age, y = gambia_prevdata$edmunds_prop_ever_infected,
+                          xout = ages, method = "linear", rule = 2)
+gambia_ever_inf <- data.frame(age = gambia_ever_inf$x, ever_inf = gambia_ever_inf$y)
+
+# Calculate the number of susceptibles, acutely infected, chronic infected and recovered
+gambia_immune <- gambia_ever_inf$ever_inf - gambia_prev$prev
+gambia_infected <- gambia_prev$prev
+gambia_sus <- 1-gambia_ever_inf$ever_inf
+
+# Fill HBeAg prevalence (in HBsAg-positives) in with data from Shimakawa paper
+gambia_eag <- rep(c(0.95, 0.95, 0.9, 0.9, 0.65, 0.65, 0.6, 0.6, 0.6, 0.6,
+                    0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.2, 0.2,
+                    0.1, 0.1, rep(0.1, 20), rep (0.05, 60)), each = 1/da) # made up last value
 
 ### THE MODEL ----
 imperial_model <- function(timestep, pop, parameters, sim_starttime) {
@@ -122,8 +160,18 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
 
     # Infant vaccination: set date for introduction
     # Vaccination coverage is 0 until the specified starttime and only if vaccine switch is on
+    #if (apply_vacc == 1 & timestep >= (vacc_introtime-sim_starttime)) {
+    #  vacc_cov = vacc_cov
+    #} else {
+    #  vacc_cov = 0
+    #}
+
+    ## CURRENTLY WORKING ON THIS
+    # Infant vaccination: set date for introduction
+    # Vaccination coverage is 0 until the specified starttime and only if vaccine switch is on
     if (apply_vacc == 1 & timestep >= (vacc_introtime-sim_starttime)) {
-      vacc_cov = vacc_cov
+      vacc_cov = vaccine_coverage$coverage[vaccine_coverage$year == floor(timestep+sim_starttime)]
+      print(vacc_cov)
     } else {
       vacc_cov = 0
     }
@@ -1099,6 +1147,12 @@ out <- code_model_output(sim)
 toc()
 
 
+# Working on vaccine coverage
+sim <- run_model(sim_duration = 146, default_parameter_list = parameter_list,
+                 parms_to_change = list(b1 = 0.1, b2 = 0.009, mtct_prob_s = 0.14),
+                 scenario = "vacc")
+
+
 ### Run the simulation: 2 SCENARIOS (vacc and no_vacc) ----
 tic()
 out <- run_scenarios(default_parameter_list = parameter_list,
@@ -1549,6 +1603,7 @@ run_shadow_model <- function(init_age_from, init_age_to, init_sex,
 
 }
 
+
 # Function to fit to age- and sex-specific seroprevalence data by mapping
 # matching model output to year and age
 # Use to fit to HBsAg, HBeAg and anti-HBc seroprevalence data
@@ -1600,7 +1655,7 @@ map_seromarker_prev <- function(seromarker_num, seromarker_denom, prev_dataset, 
   # Combine sex-specific dataframes and turn into long format
   model_prev_subset <- rbind(model_prev_subset_female, model_prev_subset_male, model_prev_subset_both)
 
-  model_prev_subset <- gather(model_prev_subset, key = "age", value = "model_prev", -time, -sex)
+  model_prev_subset <- gather(model_prev_subset, key = "age", value = "model_value", -time, -sex)
   model_prev_subset$age <- ages[as.numeric(gsub("\\D", "", model_prev_subset$age))]  # Assign ages as column
 
   # Merge with the dataset to fit to
@@ -1637,7 +1692,7 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
   model_pop2005 <- out$full_output[which(out$time==2005),1:(2*n_infectioncat*n_agecat)+1]
   model_pop2012 <- out$full_output[which(out$time==2012),1:(2*n_infectioncat*n_agecat)+1]
 
-  ## Matching datasets to model ouput ----
+  # Matching datasets to model ouput ----
 
   # Define my datapoints to fit to:
   data <- data_to_fit
@@ -2049,7 +2104,7 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
   # CC prevalence in HCC
   # Approximate as proportion of incident HCC cases in 1999 originating from CC
   model_output_nat_hist[25,] <-
-    c("id_gmb2_1_1999_cc",
+    c("id_gmb2_1_1999_incident_hcc_cases_from_cc",
       age_min = 15,
       age_max = 67,
       (sum(select(sim, starts_with("cum_cc_to_hcc"))[which(sim$time == 1999),])-
@@ -2060,7 +2115,7 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
   # DCC prevalence in HCC, 1999
   # Approximate as proportion of incident HCC cases in 1999 originating from DCC
   model_output_nat_hist[26,] <-
-    c("id_gmb2_1_1999_dcc",
+    c("id_gmb2_1_1999_incident_hcc_cases_from_dcc",
       age_min = 15,
       age_max = 67,
       (sum(select(sim, starts_with("cum_dcc_to_hcc"))[which(sim$time == 1999),])-
@@ -2162,6 +2217,15 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
       sum(num_gmb12_gmb15_1990[which(ages == 65):which(ages == 87.5)])/
         sum(denom_gmb12_gmb15_1990[which(ages == 65):which(ages == 87.5)]))
 
+  # Proportion of chronic carriers attributable to mother-to-child transmission
+  model_output_nat_hist[38,] <-
+    c("id_1_1_1986_incident_chronic_births",
+      age_min = 0,
+      age_max = 99.5,
+      sum(select(sim, starts_with("cum_chronic_births"))[which(sim$time == 1985),])/
+        (sum(select(sim, starts_with("cum_chronic_births"))[which(sim$time == 1985),])+
+           sum(select(sim, starts_with("cum_chronic_infections"))[which(sim$time == 1985),])))
+
   # Turn age into numeric format:
   model_output_nat_hist$age_min <- as.numeric(model_output_nat_hist$age_min)
   model_output_nat_hist$age_max <- as.numeric(model_output_nat_hist$age_max)
@@ -2171,8 +2235,7 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
                                       model_output_nat_hist,
                                       by = c("id_unique", "age_min", "age_max"))
 
-
-  # 5) MOTHER-TO-CHILD TRANSMISSION RISK ----
+  ## 5) MOTHER-TO-CHILD TRANSMISSION RISK ----
   # Overall mother-to-child transmission risk in given year (irrespective of maternal HBeAg)
   mtct_risk <- data.frame(time = out$time[out$time %in% data_to_fit$mtct_risk$time],
                           model_value = apply(out$eag_positive_female[out$time %in% data_to_fit$mtct_risk$time,index$ages_wocba] * parameters_for_fit$mtct_prob_e +
@@ -2238,7 +2301,7 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
   ## 6b) SHADOW MODELS 1 a and b: SHIMAKAWA NATURAL HISTORY COHORT
 
   # Follow 2 cohorts of chronic carriers - 1 of 0-19 year olds (1a) and
-  # one of 20-29 year olds (1b) for 28 years, starting in 1974
+  # one of 20-29 year olds (1b) for 28 years, starting in 1985
   # no one had HCC at baseline and we assume no one had DCC at baseline
   # Compartments: IT, IR, IC, ENCHB, CC
   # Switch off births, migation, betas and vaccination to prevent influx of new carriers
@@ -2459,10 +2522,13 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
     (sum(select(shadow4_sim, starts_with("CC"))[which(shadow4_sim$time == 2012),]))
 
   # Proportion of deaths due to DCC and HCC
-  prop_deaths_from_dcc_hcc <- (sum(select(shadow4_sim, starts_with("cum_hcc_deaths"))[which(shadow4_sim$time == 2012.5),]) +
-    sum(select(shadow4_sim, starts_with("cum_dcc_deaths"))[which(shadow4_sim$time == 2012.5),]))/
-    (sum(select(shadow4_sim, starts_with("cum_hbv_deaths"))[which(shadow4_sim$time == 2012.5),]) +
-       sum(select(shadow4_sim, starts_with("cum_background_deaths_ld"))[which(shadow4_sim$time == 2012.5),]))
+
+  mapped_nat_hist_prevalence$model_value[
+    mapped_nat_hist_prevalence$id_unique == "id_a4_1_2014_shadow_incident_deaths"] <-
+    (sum(select(shadow4_sim, starts_with("cum_hcc_deaths"))[which(shadow4_sim$time == 2012.5),]) +
+      sum(select(shadow4_sim, starts_with("cum_dcc_deaths"))[which(shadow4_sim$time == 2012.5),]))/
+      (sum(select(shadow4_sim, starts_with("cum_hbv_deaths"))[which(shadow4_sim$time == 2012.5),]) +
+        sum(select(shadow4_sim, starts_with("cum_background_deaths_ld"))[which(shadow4_sim$time == 2012.5),]))
 
   ## 6f) SHADOW MODEL 5: YANG HCC COHORT
 
@@ -2581,14 +2647,137 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
   mapped_mortality_curves <- bind_rows(mapped_mortality_curves,
                                        mapped_globocan_mortality_curve) # add GLOBOCAN shadow model
 
-  ### Combine all mapped outputs ----
+
+  ## 7) ASSOCIATION DATA ----
+
+  # Prepare dataframe
+  association_output <- data.frame(outcome = c("odds_ratio_current_hbeag_positivity_and_hcc",
+                                               "odds_ratio_current_hbeag_positivity_and_cirrhosis",
+                                               "odds_ratio_male_sex_and_significant_liver_fibrosis_or_cirrhosis"))
+
+  # GMB15 GLCS: Association of current HBeAg status and HCC
+  # Outcome = HCC, exposure = concurrent HBeAg status
+  # Cases = HCC compartment, controls = all other carrier compartments minus CC and DCC
+  # because their HBeAg status is not known
+  # Cases and controls were recruited in 1999 (midpoint) and were aged 15-83.5 years
+  # 83% of participants were male so assume this represents the OR in males
+  # Age range was derived from mean age +/- 2*SD
+  # Use the proportion of incident non-cirrhotic HCC cases originating from IT and IR
+  # as a proxy for the proportion HBeAg-positive among cases and multiply with the total cases
+
+  assoc_hbeag_hcc <- data.frame(
+    total_cases = sum(select(sim, starts_with("HCCm"))[which(sim$time == 1999), which(ages == 15):which(ages == 83.5)]),
+    # Exposed controls = IT and IR compartment, which are HCC-free by definition
+    exposed_controls = sum(select(sim, starts_with("ITm"))[which(sim$time == 1999),which(ages == 15):which(ages == 83.5)]+
+                             select(sim, starts_with("IRm"))[which(sim$time == 1999),which(ages == 15):which(ages == 83.5)]),
+    # Unexposed controls = IC and ENCHB compartment
+    unexposed_controls = sum(select(sim, starts_with("ICm"))[which(sim$time == 1999),which(ages == 15):which(ages == 83.5)]+
+                               select(sim, starts_with("ENCHBm"))[which(sim$time == 1999),which(ages == 15):which(ages == 83.5)]),
+    prop_exposed_cases = (sum(select(sim, starts_with("cum_it_to_hccm"))[which(sim$time == 1999),which(ages == 15):which(ages == 83.5)])+
+                            sum(select(sim, starts_with("cum_ir_to_hccm"))[which(sim$time == 1999),which(ages == 15):which(ages == 83.5)]))/
+      (sum(select(sim, starts_with("cum_it_to_hccm"))[which(sim$time == 1999),which(ages == 15):which(ages == 83.5)])+
+         sum(select(sim, starts_with("cum_ir_to_hccm"))[which(sim$time == 1999),which(ages == 15):which(ages == 83.5)])+
+         sum(select(sim, starts_with("cum_ic_to_hccm"))[which(sim$time == 1999),which(ages == 15):which(ages == 83.5)])+
+         sum(select(sim, starts_with("cum_enchb_to_hccm"))[which(sim$time == 1999),which(ages == 15):which(ages == 83.5)]))
+  )
+
+  # Exposed cases = HBeAg-positive HCC patients (approximated)
+  assoc_hbeag_hcc$exposed_cases <- assoc_hbeag_hcc$total_cases *
+    assoc_hbeag_hcc$prop_exposed_cases
+  # Unexposed cases = HBeAg-negative HCC patients
+  assoc_hbeag_hcc$unexposed_cases <- assoc_hbeag_hcc$total_cases -
+    assoc_hbeag_hcc$exposed_cases
+
+  hbeag_hcc_odds_ratio <- (
+    assoc_hbeag_hcc$exposed_cases * assoc_hbeag_hcc$unexposed_controls)/
+    (assoc_hbeag_hcc$unexposed_cases * assoc_hbeag_hcc$exposed_controls)
+
+  # GMB15 GLCS: Association of current HBeAg status and cirrhosis
+  # Outcome = CC or DCC, exposure = concurrent HBeAg status
+  # Cases = CC+DCC compartment, controls = all other carrier compartments minus HCC
+  # because their HBeAg status is not known
+  # Cases and controls were recruited in 1999 (midpoint) and were aged 15-83.5 years
+  # 80% of participants were male so assume this represents the OR in males
+  # Age range was derived from mean age +/- 2*SD
+  # Use the proportion of incident CC cases originating from IR as a proxy for
+  # the proportion HBeAg-positive among cases and multiply this with the total cases
+
+  assoc_hbeag_cirrhosis <- data.frame(
+    total_cases = sum(select(sim, starts_with("CCm"))[which(sim$time == 1999), which(ages == 15):which(ages == 83.5)]+
+                        select(sim, starts_with("DCCm"))[which(sim$time == 1999), which(ages == 15):which(ages == 83.5)]),
+    total_pop = sum(out$carriers_male[which(out$time == 1999),which(ages == 15):which(ages == 83.5)])-
+      sum(select(sim, starts_with("HCCm"))[which(sim$time == 1999),which(ages == 15):which(ages == 83.5)]),
+    # Exposed controls = IT and IR compartment, which are cirrhosis-free by definition
+    exposed_controls = sum(select(sim, starts_with("ITm"))[which(sim$time == 1999),which(ages == 15):which(ages == 83.5)]+
+                             select(sim, starts_with("IRm"))[which(sim$time == 1999),which(ages == 15):which(ages == 83.5)]),
+    prop_exposed_cases = sum(select(sim, starts_with("cum_ir_to_ccm"))[which(sim$time == 1999),which(ages == 15):which(ages == 83.5)])/
+      sum(select(sim, starts_with("cum_ir_to_ccm"))[which(sim$time == 1999),which(ages == 15):which(ages == 83.5)]+
+            select(sim, starts_with("cum_enchb_to_ccm"))[which(sim$time == 1999),which(ages == 15):which(ages == 83.5)])
+  )
+
+  # Exposed cases = HBeAg-positive CC or DCC patients (approximated)
+  assoc_hbeag_cirrhosis$exposed_cases <- assoc_hbeag_cirrhosis$total_cases *
+    assoc_hbeag_cirrhosis$prop_exposed_cases
+  # Unexposed cases = HBeAg-negative CC or DCC patients
+  assoc_hbeag_cirrhosis$unexposed_cases <- assoc_hbeag_cirrhosis$total_cases -
+    assoc_hbeag_cirrhosis$exposed_cases
+  assoc_hbeag_cirrhosis$total_controls <- assoc_hbeag_cirrhosis$total_pop -
+    assoc_hbeag_cirrhosis$total_cases
+  # Unexposed controls = HBeAg-negative non-cirrhotic carriers
+  assoc_hbeag_cirrhosis$unexposed_controls <- assoc_hbeag_cirrhosis$total_controls -
+    assoc_hbeag_cirrhosis$exposed_controls
+
+  hbeag_cirrhosis_odds_ratio <- (
+    assoc_hbeag_cirrhosis$exposed_cases * assoc_hbeag_cirrhosis$unexposed_controls)/
+    (assoc_hbeag_cirrhosis$unexposed_cases * assoc_hbeag_cirrhosis$exposed_controls)
+
+  # 1-1 Shimakawa: Association of sex and significant liver fibrosis or cirrhosis
+  # Use outcome as a proxy for CC/DCC, exposure = male sex
+  # Cases = CC+DCC compartment, controls = all other carrier compartments minus HCC
+  # Cases and controls were recruited in 2013 and were aged 8-95.5 years
+  assoc_sex_cirrhosis <- data.frame(
+    # Exposed cases = males with CC or DCC
+    exposed_cases = sum(select(sim, starts_with("CCm"))[which(sim$time == 2013),which(ages == 8):which(ages == 95.5)]+
+                          select(sim, starts_with("DCCm"))[which(sim$time == 2013),which(ages == 8):which(ages == 95.5)]),
+    # Unexposed cases = females with CC or DCC
+    unexposed_cases = sum(select(sim, starts_with("CCf"))[which(sim$time == 2013),which(ages == 8):which(ages == 95.5)]+
+                            select(sim, starts_with("DCCf"))[which(sim$time == 2013),which(ages == 8):which(ages == 95.5)]),
+    total_exposed = sum(out$carriers_male[which(out$time == 2013),which(ages == 8):which(ages == 95.5)])-
+      sum(select(sim, starts_with("HCCm"))[which(sim$time == 2013),which(ages == 8):which(ages == 95.5)]),
+    total_unexposed = sum(out$carriers_female[which(out$time == 2013),which(ages == 8):which(ages == 95.5)])-
+      sum(select(sim, starts_with("HCCf"))[which(sim$time == 2013),which(ages == 8):which(ages == 95.5)])
+  )
+
+  # Exposed controls = males in IT, IR, IC or ENCHB compartment
+  assoc_sex_cirrhosis$exposed_controls <- assoc_sex_cirrhosis$total_exposed -
+    assoc_sex_cirrhosis$exposed_cases
+  # Unexposed controls = females in IT, IR, IC or ENCHB compartment
+  assoc_sex_cirrhosis$unexposed_controls <- assoc_sex_cirrhosis$total_unexposed -
+    assoc_sex_cirrhosis$unexposed_cases
+
+  sex_cirrhosis_odds_ratio <-
+    (assoc_sex_cirrhosis$exposed_cases * assoc_sex_cirrhosis$unexposed_controls)/
+    (assoc_sex_cirrhosis$unexposed_cases * assoc_sex_cirrhosis$exposed_controls)
+
+
+  # Combine odds ratios in dataframe
+  association_output$model_value <- c(hbeag_hcc_odds_ratio,
+                                      hbeag_cirrhosis_odds_ratio,
+                                      sex_cirrhosis_odds_ratio)
+
+  # Merge with data to fit to
+  mapped_odds_ratios <- left_join(data_to_fit$odds_ratios,
+                                  association_output, by = "outcome")
+
+  # Combine all mapped outputs ----
   mapped_output_complete <- list(globocan_hcc_incidence = mapped_globocan_incidence,
                                  risk_of_chronic_carriage = mapped_p_chronic,
                                  seromarker_prevalence = mapped_seromarker_prevalence,
                                  nat_hist_prevalence = mapped_nat_hist_prevalence,
                                  mtct_risk = mapped_mtct_risk,
                                  progression_rates = mapped_progression_rates,
-                                 mortality_curves = mapped_mortality_curves)
+                                 mortality_curves = mapped_mortality_curves,
+                                 odds_ratios = mapped_odds_ratios)
 
   # Calculate sum of least squares
  # sse <- sum((mapped_output_complete$value - mapped_output_complete$prev_model)^2)
@@ -2677,6 +2866,11 @@ input_globocan_mortality_curve <- read.csv(here(calibration_data_path,
                                           stringsAsFactors = FALSE,
                                           fileEncoding="UTF-8-BOM")
 
+input_odds_ratios <- read.csv(here(calibration_data_path,
+                                   "odds_ratios.csv"),
+                              header = TRUE, check.names = FALSE,
+                              stringsAsFactors = FALSE)
+
 
 # Need to change name of this list
 calibration_datasets_list <- list(hbsag_prevalence = input_hbsag_dataset,
@@ -2688,11 +2882,12 @@ calibration_datasets_list <- list(hbsag_prevalence = input_hbsag_dataset,
                                  mortality_curves = input_mortality_curves,
                                  globocan_incidence_data = input_globocan_incidence_data,
                                  globocan_mortality_curve = input_globocan_mortality_curve,
-                                 p_chronic = input_risk_of_chronic_carriage)
+                                 p_chronic = input_risk_of_chronic_carriage,
+                                 odds_ratios = input_odds_ratios)
 
 
 # Using LHS
-n_sims <- 1  # number of simulations
+n_sims <- 4  # number of simulations
 n_parms_to_vary <- 3  # number of parameters to infer - this requires manual adaptations below
 lhs_samples <- randomLHS(n_sims, n_parms_to_vary) # draw 100 samples from uniform distribution U(0,1) using a Latin Hypercube design
 params_mat <- data.frame(b1 = lhs_samples[,1],
@@ -2715,6 +2910,7 @@ out_mat <- apply(params_mat,1,
 sim_duration = proc.time() - time1
 sim_duration["elapsed"]/60
 # 4.3 min
+# 9 for 2
 
 #example_outputs <- out_mat[[1]]
 #colnames(example_outputs$progression_rates)[colnames(example_outputs$progression_rates)=="rate_py"] <- "value"
@@ -2732,7 +2928,6 @@ sim_duration["elapsed"]/60
 #write.csv(example_outputs$progression_rates, file = "mapped_progression_rates.csv", row.names = FALSE)
 #write.csv(example_outputs$mortality_curves, file = "mapped_mortality_curves.csv", row.names = FALSE)
 
-
 # Parallelised code ----
 # Set up cluster
 cl <- makeCluster(4)
@@ -2742,7 +2937,7 @@ clusterExport(cl, ls())
 time1 <- proc.time()
 out_mat <- parApply(cl = cl, params_mat,1,
                     function(x) fit_model_sse(default_parameter_list = parameter_list,
-                                              data_to_fit = hbsag_dataset_list,
+                                              data_to_fit = calibration_datasets_list,
                                               parms_to_change = list(b1 = as.list(x)$b1,
                                                                      b2 = as.list(x)$b2,
                                                                      mtct_prob_s = as.list(x)$mtct_prob_s)))
