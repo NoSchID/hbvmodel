@@ -2768,15 +2768,17 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
                                  mortality_curves = mapped_mortality_curves,
                                  odds_ratios = mapped_odds_ratios)
 
+
   # Calculate sum of least squares
- # sse <- sum((mapped_output_complete$value - mapped_output_complete$prev_model)^2)
+  data_model_diff <- as.numeric(unlist(lapply(mapped_output_complete, function(x) x$data_value)))-
+    as.numeric(unlist(lapply(mapped_output_complete, function(x) x$model_value)))
+
+  sse <- sum(data_model_diff^2)
 
   # Return relevant info (SSE and the matched datapoints and outputs)
-  #res <- list(sse = sse, mapped_output = mapped_output,
-  #            carrier_prev_total = sim$infectioncat_total$carriers/sim$pop_total$pop_total)
+  res <- list(sse = sse, mapped_output = mapped_output_complete)
 
-
-  return(mapped_output_complete)
+  return(res)
 
 }
 
@@ -2875,8 +2877,22 @@ calibration_datasets_list <- list(hbsag_prevalence = input_hbsag_dataset,
                                  odds_ratios = input_odds_ratios)
 
 
+# Input datasets
+prior_vaccine_efficacy <- read.csv(here("data-raw", "input_infant_vaccine_efficacy.csv"),
+                                   header = TRUE, check.names = FALSE,
+                                   stringsAsFactors = FALSE)
+prior_mtct_risk <- read.csv(here("data-raw", "input_mtct_risk.csv"),
+                            header = TRUE, check.names = FALSE,
+                            stringsAsFactors = FALSE)
+prior_paf_liver_disease <- read.csv(here("data-raw", "input_paf_liver_disease.csv"),
+                                    header = TRUE, check.names = FALSE,
+                                    stringsAsFactors = FALSE)
+prior_progression_rates <- read.csv(here("data-raw", "input_progression_rates.csv"),
+                                    header = TRUE, check.names = FALSE,
+                                    stringsAsFactors = FALSE)
+
 # Using LHS
-n_sims <- 1  # number of simulations
+n_sims <- 2  # number of simulations
 n_parms_to_vary <- 3  # number of parameters to infer - this requires manual adaptations below
 lhs_samples <- randomLHS(n_sims, n_parms_to_vary) # draw 100 samples from uniform distribution U(0,1) using a Latin Hypercube design
 params_mat <- data.frame(b1 = lhs_samples[,1],
@@ -2898,26 +2914,12 @@ out_mat <- apply(params_mat,1,
                                                                      mtct_prob_s = as.list(x)$mtct_prob_s)))
 sim_duration = proc.time() - time1
 sim_duration["elapsed"]/60
-# 3.6 min
-# 9 for 2
 
-lapply(out_mat[[1]], function(x) x$model_value)
+# Matrix of parameter values, model estimates for prevalence in 1980 and 2015, and SSE
+out_mat_subset <- sapply(out_mat, "[[", "sse")
+res_mat <- cbind(params_mat, sse = out_mat_subset)
+res_mat[res_mat$sse == min(res_mat$sse),]
 
-#example_outputs <- out_mat[[1]]
-#colnames(example_outputs$progression_rates)[colnames(example_outputs$progression_rates)=="rate_py"] <- "value"
-#colnames(example_outputs$progression_rates)[colnames(example_outputs$progression_rates)=="rate_py_ci_lower"] <- "ci_lower"
-#colnames(example_outputs$progression_rates)[colnames(example_outputs$progression_rates)=="rate_py_ci_upper"] <- "ci_upper"
-#colnames(example_outputs$mortality_curves)[colnames(example_outputs$mortality_curves)=="cum_risk"] <- "value"
-#colnames(example_outputs$mortality_curves)[colnames(example_outputs$mortality_curves)=="cum_risk_ci_lower"] <- "ci_lower"
-#colnames(example_outputs$mortality_curves)[colnames(example_outputs$mortality_curves)=="cum_risk_ci_upper"] <- "ci_upper"
-#colnames(example_outputs$seromarker_prevalence)[colnames(example_outputs$seromarker_prevalence)=="model_prev"] <- "model_value"
-#colnames(example_outputs$nat_hist_prevalence)[colnames(example_outputs$nat_hist_prevalence)=="model_prev"] <- "model_value"
-
-#write.csv(example_outputs$seromarker_prevalence, file = "mapped_seromarker_prev.csv", row.names = FALSE)
-#write.csv(example_outputs$nat_hist_prevalence, file = "mapped_nat_hist_prev.csv", row.names = FALSE)
-#write.csv(example_outputs$mtct_risk, file = "mapped_mtct_risk.csv", row.names = FALSE)
-#write.csv(example_outputs$progression_rates, file = "mapped_progression_rates.csv", row.names = FALSE)
-#write.csv(example_outputs$mortality_curves, file = "mapped_mortality_curves.csv", row.names = FALSE)
 
 # Parallelised code ----
 # Set up cluster
@@ -2940,13 +2942,9 @@ sim_duration["elapsed"]/60
 # Important: stop cluster!!
 stopCluster(cl)
 
-# Matrix of parameter values, model estimates for prevalence in 1980 and 2015, and SSE
 #res_mat <- cbind(params_mat, do.call(rbind.data.frame, out_mat_subset)) # this would work for a list
 #out_mat_subset <- as.data.frame(t(sapply(out_mat, "[", c("prev_est_1980", "prev_est_2015", "sse"))))
 #res_mat <- cbind(params_mat, unnest(out_mat_subset))
-out_mat_subset <- sapply(out_mat, "[[", "sse")
-res_mat <- cbind(params_mat, sse = out_mat_subset)
-res_mat[res_mat$sse == min(res_mat$sse),]
 
 # Fit to overall prevalence for minimum SSE
 plot(x = seq(1960,2019.5, by = 0.5),
