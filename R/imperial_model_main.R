@@ -1,5 +1,5 @@
 ###################################
-### Imperial HBV model 17/05/19 ###
+### Imperial HBV model 20/05/19 ###
 ###################################
 # Model described in Shevanthi's thesis and adapted by Margaret
 # Currently only infant vaccination in second age group, no birth dose or treatment
@@ -58,6 +58,12 @@ load(here("data/demogdata_0point5.RData"))
   print("Error: can only preload data for 0.5 time/agestep")
 }
 
+# Need to do this in prepared datasets!!
+fert_rates[,1] <- seq(1850, (2100-0.5), 0.5)
+mort_rates_female[,1] <- seq(1850, (2100-0.5), 0.5)
+mort_rates_male[,1] <- seq(1850, (2100-0.5), 0.5)
+migration_rates_female[,1] <- seq(1850, (2100-0.5), 0.5)
+mogration_rates_male[,1] <- seq(1850, (2100-0.5), 0.5)
 
 ### Load and clean vaccine coverage data ----
 # Data downloaded from WHO reported vaccine coverage timeseries (HepB3)
@@ -70,10 +76,13 @@ input_who_vaccine_coverage$coverage_interp <- approx(input_who_vaccine_coverage$
 
 # Fill in a dataframe with 0.01 timesteps with constant yearly coverage values until 2100
 # Assuming last coverage from 2017 stays the same
-vaccine_coverage <- data.frame(year = seq(min(input_who_vaccine_coverage$year), 2100, 0.01),
+vaccine_coverage <- data.frame(year = seq(min(input_who_vaccine_coverage$year), 2100, 0.1),
                                coverage = approx(input_who_vaccine_coverage$year, input_who_vaccine_coverage$coverage_interp,
-                               xout = seq(min(input_who_vaccine_coverage$year), 2100, 0.01),
+                               xout = seq(min(input_who_vaccine_coverage$year), 2100, 0.1),
                                method = "constant", rule = 2)$y)
+vaccine_coverage_list <- as.data.frame(list(times = vaccine_coverage$year,
+                                       coverage = vaccine_coverage$coverage))
+timevary_vaccine_coverage <- approxfun(vaccine_coverage_list, method = "linear", rule = 2)
 
 ### Infection data preparation ----
 gambia_prevdata <- read.csv(here("testdata", "edmunds_gambia_prev.csv"), stringsAsFactors = FALSE)
@@ -110,36 +119,32 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
 
     # Demography: define time-varying parameters (calls the row corresponding to current timestep)
 
-    # Ignore: this approach only works for Euler (solving at fixed timestep):
-    #fertility_rate <- fert_rates[which(times == timestep),-1]
-    #migration_rate <- matrix(c(migration_rates_female[which(times == timestep),-1],
-    #                           migration_rates_male[which(times == timestep),-1]),
-    #                         ncol = 2)    # 2 columns for sex-specific rates
-    #mortality_rate <- matrix(c(mort_rates_female[which(times == timestep),-1],
-    #                             mort_rates_male[which(times == timestep),-1]),
-    #                         ncol = 2)    # 2 columns for sex-specific rates
-
     # This approach for varying timesteps calls the rate for the closest timestep:
     # Births, migration and mortality can be switched off through parameter list
     if (births_on == 0) {
       fertility_rate <- rep(0, times = ncol(fert_rates[,-1]))
     } else {
-      fertility_rate <- fert_rates[min(which(abs(fert_rates[,1]-timestep)==min(abs(fert_rates[,1]-timestep)))),-1]
+      fertility_rate <- fert_rates[min(which(abs(fert_rates[,1]-(timestep+sim_starttime))==
+                                               min(abs(fert_rates[,1]-(timestep+sim_starttime))))),-1]
     }
 
     if (migration_on == 0) {
       migration_rate <- matrix(rep(0, times = 2*n_agecat), ncol = 2)
     } else {
-    migration_rate <- matrix(c(migration_rates_female[min(which(abs(migration_rates_female[,1]-timestep)==min(abs(migration_rates_female[,1]-timestep)))),-1],
-                               migration_rates_male[min(which(abs(migration_rates_male[,1]-timestep)==min(abs(migration_rates_male[,1]-timestep)))),-1]),
+    migration_rate <- matrix(c(migration_rates_female[min(which(abs(migration_rates_female[,1]-(timestep+sim_starttime))==
+                                                                  min(abs(migration_rates_female[,1]-(timestep+sim_starttime))))),-1],
+                               migration_rates_male[min(which(abs(migration_rates_male[,1]-(timestep+sim_starttime))==
+                                                                min(abs(migration_rates_male[,1]-(timestep+sim_starttime))))),-1]),
                              ncol = 2)    # 2 columns for sex-specific rates
     }
 
     if (mortality_on == 0) {
       mortality_rate <- matrix(rep(0, times = 2*n_agecat), ncol = 2)
     } else {
-    mortality_rate <- matrix(c(mort_rates_female[min(which(abs(mort_rates_female[,1]-timestep)==min(abs(mort_rates_female[,1]-timestep)))),-1],
-                               mort_rates_male[min(which(abs(mort_rates_male[,1]-timestep)==min(abs(mort_rates_male[,1]-timestep)))),-1]),
+    mortality_rate <- matrix(c(mort_rates_female[min(which(abs(mort_rates_female[,1]-(timestep+sim_starttime))==
+                                                             min(abs(mort_rates_female[,1]-(timestep+sim_starttime))))),-1],
+                               mort_rates_male[min(which(abs(mort_rates_male[,1]-(timestep+sim_starttime))==
+                                                           min(abs(mort_rates_male[,1]-(timestep+sim_starttime))))),-1]),
                              ncol = 2)    # 2 columns for sex-specific rates
     }
 
@@ -160,18 +165,9 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
 
     # Infant vaccination: set date for introduction
     # Vaccination coverage is 0 until the specified starttime and only if vaccine switch is on
-    #if (apply_vacc == 1 & timestep >= (vacc_introtime-sim_starttime)) {
-    #  vacc_cov = vacc_cov
-    #} else {
-    #  vacc_cov = 0
-    #}
-
-    ## CURRENTLY WORKING ON THIS
-    # Infant vaccination: set date for introduction
-    # Vaccination coverage is 0 until the specified starttime and only if vaccine switch is on
+    # Vaccine coverage varies over time
     if (apply_vacc == 1 & timestep >= (vacc_introtime-sim_starttime)) {
-      vacc_cov = vaccine_coverage$coverage[vaccine_coverage$year == floor(timestep+sim_starttime)]
-      print(vacc_cov)
+      vacc_cov = timevary_vaccine_coverage(timestep + sim_starttime)
     } else {
       vacc_cov = 0
     }
@@ -508,9 +504,9 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
 ## Function to interpolate demographic parameters over time - specific to these datasets
 timevary_parameters_old <- function(timestep, dataset) {
   # Input datasets are matrices of age-specific mortality rates, birth rate and migration rate for every 5-year period
-  res <- rep(0,100)
-  for (i in 2:101) {
-    res[i] <- spline(x = dataset[,1], y = dataset[,i], xout= timestep)[[2]]
+  res <- rep(0,ncol(dataset))
+  for (i in 2:ncol(dataset)) {
+    res[i] <- spline(x = dataset[,1], y = dataset[,i], xout = timestep)[[2]]
   }
   return(res[-1])
 } # for loop instead of apply: 69.36s minimally quicker
@@ -1117,10 +1113,9 @@ parameter_list <- list(
   mu_dcc = 0.314,
   mu_hcc = 0.5,
   # INFANT VACCINATION PARAMETERS
-  #vacc_cov = c(0, 0.92, rep(0,n_agecat-2)),  # vaccine is only applied in 1-year olds, need to get time-varying data
-  vacc_cov = 0.92,
+  # Vaccine coverage is read in through a function
   vacc_eff = 0.95,                           # vaccine efficacy
-  vacc_introtime = 1991,                     # year of vaccine introduction
+  vacc_introtime = 1990,                     # year of vaccine introduction
   # SIMULATION PARAMETERS
   sim_starttime = starttime,
   # INTERVENTION ON/OFF SWITCH (1/0)
@@ -1145,12 +1140,6 @@ sim <- run_model(sim_duration = runtime, default_parameter_list = parameter_list
                  scenario = "vacc")
 out <- code_model_output(sim)
 toc()
-
-
-# Working on vaccine coverage
-sim <- run_model(sim_duration = 146, default_parameter_list = parameter_list,
-                 parms_to_change = list(b1 = 0.1, b2 = 0.009, mtct_prob_s = 0.14),
-                 scenario = "vacc")
 
 
 ### Run the simulation: 2 SCENARIOS (vacc and no_vacc) ----
@@ -2887,7 +2876,7 @@ calibration_datasets_list <- list(hbsag_prevalence = input_hbsag_dataset,
 
 
 # Using LHS
-n_sims <- 4  # number of simulations
+n_sims <- 1  # number of simulations
 n_parms_to_vary <- 3  # number of parameters to infer - this requires manual adaptations below
 lhs_samples <- randomLHS(n_sims, n_parms_to_vary) # draw 100 samples from uniform distribution U(0,1) using a Latin Hypercube design
 params_mat <- data.frame(b1 = lhs_samples[,1],
@@ -2909,8 +2898,10 @@ out_mat <- apply(params_mat,1,
                                                                      mtct_prob_s = as.list(x)$mtct_prob_s)))
 sim_duration = proc.time() - time1
 sim_duration["elapsed"]/60
-# 4.3 min
+# 3.6 min
 # 9 for 2
+
+lapply(out_mat[[1]], function(x) x$model_value)
 
 #example_outputs <- out_mat[[1]]
 #colnames(example_outputs$progression_rates)[colnames(example_outputs$progression_rates)=="rate_py"] <- "value"
