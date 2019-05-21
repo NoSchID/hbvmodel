@@ -1,5 +1,5 @@
 ###################################
-### Imperial HBV model 20/05/19 ###
+### Imperial HBV model 21/05/19 ###
 ###################################
 # Model described in Shevanthi's thesis and adapted by Margaret
 # Currently only infant vaccination in second age group, no birth dose or treatment
@@ -226,8 +226,8 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
 
     # Mother-to-child transmission and births
     dcum_infected_births <- sum(fertility_rate *
-                                  (apply(mtct_prob_e * pop[index$ages_wocba,c(IT,IR),1],1,sum) +
-                                     apply(mtct_prob_s * pop[index$ages_wocba,IC:HCC,1],1,sum)))
+                                  (rowSums(mtct_prob_e * pop[index$ages_wocba,c(IT,IR),1]) +
+                                     rowSums(mtct_prob_s * pop[index$ages_wocba,IC:HCC,1])))
     # infected births come from acute and chronic women of childbearing age
     dcum_chronic_births <- p_chronic_function[1] * dcum_infected_births # infected babies becoming chronic carriers
     dcum_uninfected_births <- sum(fertility_rate * pop[index$ages_wocba,index$infcat_all,1]) -
@@ -318,7 +318,7 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
 
     for (i in 1:2) {        # i = sex [1 = female, 2 = male]
 
-      # Define some transitions:
+      # Define transitions:
 
       # Demography: Incident deaths and migrants
       deaths[index$ages_all,index$infcat_all,i] <- mortality_rate[index$ages_all,i] *
@@ -331,13 +331,16 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
 
       # Infection: Incident infections (all) and incident chronic infections
       dcum_infections[index$ages_all,i] <- foi * pop[index$ages_all,S,i]
-      dcum_chronic_infections[index$ages_all,i] <-  p_chronic_function * dcum_infections[index$ages_all,i]
+      dcum_chronic_infections[index$ages_all,i] <-
+        p_chronic_function * dcum_infections[index$ages_all,i]
       # Returns a matrix with incident infections for every age (rows) and every sex (columns)
 
       # Natural history transitions
       # Incident deaths due to HBV (from cirrhosis and HCC)
-      dcum_hbv_deaths[index$ages_all,i] <- mu_cc * pop[index$ages_all,CC,i] +
-        mu_dcc * pop[index$ages_all,DCC,i] + mu_hcc * pop[index$ages_all,HCC,i]
+      dcum_hbv_deaths[index$ages_all,i] <-
+        mu_cc * pop[index$ages_all,CC,i] +
+        mu_dcc * pop[index$ages_all,DCC,i] +
+        mu_hcc * pop[index$ages_all,HCC,i]
       # Returns a matrix with incident HBV deaths for every age (rows) and every sex (columns)
 
       # Incident deaths due to HCC only
@@ -349,7 +352,8 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
       # Returns a matrix with incident DCC deaths for every age (rows) and every sex (columns)
 
       # Incidence of HBeAg loss: transition from IR to IC and IR to ENCHB
-      dcum_eag_loss[index$ages_all,i] <- pr_ir_ic * eag_prog_function * pop[index$ages_all,IR,i] +
+      dcum_eag_loss[index$ages_all,i] <-
+        pr_ir_ic * eag_prog_function * pop[index$ages_all,IR,i] +
         pr_ir_enchb * pop[index$ages_all,IR,i]
 
       # Transition from IC to R (sAg loss)
@@ -376,7 +380,8 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
         hccr_cc * cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,CC,i]
 
       # DCC to HCC transitions = HCC incidence in decompensated cirrhotics
-      dcc_to_hcc_transitions[index$ages_all,i] <- hccr_dcc * pop[index$ages_all,DCC,i]
+      dcc_to_hcc_transitions[index$ages_all,i] <-
+        hccr_dcc * pop[index$ages_all,DCC,i]
 
       # Total HCC incidence
       dcum_hcc[index$ages_all,i] <-
@@ -388,26 +393,27 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
         dcc_to_hcc_transitions[index$ages_all,i]
 
       # IR to CC transitions = cirrhosis incidence in HBeAg-positives
-      ir_to_cc_transitions[index$ages_all,i] <- pr_ir_cc_function * pop[index$ages_all,IR,i]
+      ir_to_cc_transitions[index$ages_all,i] <-
+        pr_ir_cc_function * pop[index$ages_all,IR,i]
 
       # ENCHB to CC transitions = cirrhosis incidence in HBeAg-negatives
-      enchb_to_cc_transitions[index$ages_all,i] <- cirrhosis_prog_rates[index$ages_all,i] * pop[index$ages_all,ENCHB,i]
-
+      enchb_to_cc_transitions[index$ages_all,i] <-
+        cirrhosis_prog_rates[index$ages_all,i] * pop[index$ages_all,ENCHB,i]
 
       # Transitions between compartments:
 
       # Susceptibles
       dpop[index$ages_all,S,i] <- -(diff(c(0,pop[index$ages_all,S,i]))/da) -
-        # (vacc_cov * vacc_eff * pop[index$ages_all,S,i]) -
         dcum_chronic_infections[index$ages_all,i] -
         (1-p_chronic_function) * dcum_infections[index$ages_all,i] -
-        deaths[index$ages_all,S,i] + migrants[index$ages_all,S,i]
+        deaths[index$ages_all,S,i] +
+        migrants[index$ages_all,S,i]
 
       # Immune tolerant
       dpop[index$ages_all,IT,i] <- -(diff(c(0,pop[index$ages_all,IT,i]))/da) +
         dcum_chronic_infections[index$ages_all,i] -
         pr_it_ir * eag_prog_function * pop[index$ages_all,IT,i] -
-        hccr_it*cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,IT,i] -
+        it_to_hcc_transitions[index$ages_all,i] -
         deaths[index$ages_all,IT,i] + migrants[index$ages_all,IT,i]
 
       # Immune reactive
@@ -416,7 +422,7 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
         pr_ir_ic * eag_prog_function * pop[index$ages_all,IR,i] -
         pr_ir_enchb_function * pop[index$ages_all,IR,i] -
         ir_to_cc_transitions[index$ages_all,i] -
-        hccr_ir*cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,IR,i] -
+        ir_to_hcc_transitions[index$ages_all,i] -
         deaths[index$ages_all,IR,i] + migrants[index$ages_all,IR,i]
 
       # Inactive carrier
@@ -424,7 +430,7 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
         pr_ir_ic * eag_prog_function * pop[index$ages_all,IR,i] -
         pr_ic_enchb * pop[index$ages_all,IC,i] -
         dcum_sag_loss[index$ages_all,i] -
-        hccr_ic*cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,IC,i] -
+        ic_to_hcc_transitions[index$ages_all,i] -
         deaths[index$ages_all,IC,i] + migrants[index$ages_all,IC,i]
 
       # HBeAg-negative CHB
@@ -432,7 +438,7 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
         pr_ir_enchb_function * pop[index$ages_all,IR,i] +
         pr_ic_enchb * pop[index$ages_all,IC,i] -
         enchb_to_cc_transitions[index$ages_all,i] -
-        hccr_enchb*cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,ENCHB,i] -
+        enchb_to_hcc_transitions[index$ages_all,i] -
         deaths[index$ages_all,ENCHB,i] + migrants[index$ages_all,ENCHB,i]
 
       # Compensated cirrhosis
@@ -448,7 +454,7 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
       dpop[index$ages_all,DCC,i] <- -(diff(c(0,pop[index$ages_all,DCC,i]))/da) +
         dcum_dcc[index$ages_all,i] -
         dcc_to_hcc_transitions[index$ages_all,i] -
-        mu_dcc * pop[index$ages_all,DCC,i] -
+        dcum_dcc_deaths[index$ages_all,i] -
         deaths[index$ages_all,DCC,i] + migrants[index$ages_all,DCC,i]
 
       # HCC
@@ -461,7 +467,7 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
       dpop[index$ages_all,R,i] <- -(diff(c(0,pop[index$ages_all,R,i]))/da) +
         # vacc_cov * vacc_eff * pop[index$ages_all,S,i] +
         (1-p_chronic_function) * dcum_infections[index$ages_all,i] +
-        sag_loss * pop[index$ages_all,IC,i] -
+        dcum_sag_loss[index$ages_all,i] -
         deaths[index$ages_all,R,i] + migrants[index$ages_all,R,i]
 
       # Babies are born susceptible or infected (age group 1)
@@ -480,9 +486,10 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
 
 
     # Sum age-specific number of incident background deaths across infection compartments for output
-    dcum_deaths <- apply(deaths,c(1,3),sum)
+    dcum_deaths <- cbind(rowSums(deaths[,,1]), rowSums(deaths[,,2]))
     # Age-specific number of incident background deaths among liver disease patients (CC, DCC and HCC)
-    dcum_background_deaths_ld <- apply(deaths[index$ages_all,CC:HCC,1:2],c(1,3),sum)
+    dcum_background_deaths_ld <- cbind(rowSums(deaths[index$ages_all,CC:HCC,1]),
+                                       rowSums(deaths[index$ages_all,CC:HCC,2]))
 
     # Return results
     res <- c(dpop, dcum_deaths, dcum_infections, dcum_chronic_infections,
@@ -517,8 +524,8 @@ reset_pop_1950 <- function(timestep, pop, parameters){
     pop_to_reset <- array(unlist(pop[1:(2 * n_infectioncat * n_agecat)]),dim=c(n_agecat,n_infectioncat,2))
     initialpop <- array(unlist(init_pop[1:(2 * n_infectioncat * n_agecat)]),dim=c(n_agecat,n_infectioncat,2))
 
-    current_pop <- apply(pop_to_reset,c(1,3),sum)
-    pop_increase <- apply(initialpop, c(1,3), sum)/current_pop
+    current_pop <- cbind(rowSums(pop_to_reset[,,1]), rowSums(pop_to_reset[,,2]))
+    pop_increase <- cbind(rowSums(initialpop[,,1]), rowSums(initialpop[,,2]))/current_pop
     scaler <- array(c(rep(pop_increase[,1], n_infectioncat),
                       rep(pop_increase[,2], n_infectioncat)), dim = c(n_agecat,n_infectioncat,2))
     pop_to_reset <- scaler * pop_to_reset
@@ -875,10 +882,10 @@ code_model_output <- function(output) {
 
   # Total number in each infection compartment per time step
   infectioncat_total <- data.frame(time = output$time,
-                                   sus = apply(sus, 1, sum),
-                                   carriers = apply(carriers, 1, sum),
-                                   immune = apply(immune, 1, sum),
-                                   ever_infected = apply(ever_infected,1,sum))
+                                   sus = rowSums(sus),
+                                   carriers = rowSums(carriers),
+                                   immune = rowSums(immune),
+                                   ever_infected = rowSums(ever_infected))
 
 
   # Calculate number of new cases per timestep from cumulative number output
@@ -892,8 +899,8 @@ code_model_output <- function(output) {
 
   # Total number of incident infections from horizontal transmission and MTCT per time step
   incident_infections <- data.frame(time = output$time,
-                                    horizontal_infections = apply(horizontal_infections_female, 1, sum) +
-                                      apply(horizontal_infections_male, 1, sum),
+                                    horizontal_infections = rowSums(horizontal_infections_female) +
+                                      rowSums(horizontal_infections_male),
                                     infected_births = calculate_incident_numbers(out_cum_infected_births))
 
   # Age-specific chronic infection incidence from horizontal transmission - for women, men and both (total)
@@ -906,8 +913,8 @@ code_model_output <- function(output) {
 
   # Total number of incident chronic infections from horizontal transmission and MTCT per time step
   incident_chronic_infections <- data.frame(time = output$time,
-                                            horizontal_chronic_infections = apply(horizontal_chronic_infections_female, 1, sum) +
-                                              apply(horizontal_chronic_infections_male, 1, sum),
+                                            horizontal_chronic_infections = rowSums(horizontal_chronic_infections_female) +
+                                              rowSums(horizontal_chronic_infections_male),
                                             chronic_births = calculate_incident_numbers(out_cum_chronic_births))
 
   # Age-specific number of HBV-related deaths - for women and men
@@ -919,8 +926,8 @@ code_model_output <- function(output) {
 
   # Total number of HBV deaths per time step
   hbv_deaths <- data.frame(time = output$time,
-                           incident_number_female = apply(hbv_deaths_female, 1, sum),
-                           incident_number_male = apply(hbv_deaths_male, 1, sum))
+                           incident_number_female = rowSums(hbv_deaths_female),
+                           incident_number_male = rowSums(hbv_deaths_male))
   hbv_deaths$incident_number_total <- hbv_deaths$incident_number_female + hbv_deaths$incident_number_male
 
   # Age-specific number of total HCC cases - for women and men
@@ -932,8 +939,8 @@ code_model_output <- function(output) {
 
   # Total number of total HCC cases per time step
   incident_hcc <- data.frame(time = output$time,
-                           incident_number_female = apply(incident_hcc_female, 1, sum),
-                           incident_number_male = apply(incident_hcc_male, 1, sum))
+                           incident_number_female = rowSums(incident_hcc_female),
+                           incident_number_male = rowSums(incident_hcc_male))
   incident_hcc$incident_number_total <- incident_hcc$incident_number_female +
     incident_hcc$incident_number_male
 
@@ -950,8 +957,8 @@ code_model_output <- function(output) {
 
   # Total female, male and both population per time step
   pop_total <- data.frame(time = output$time,
-                          pop_female = apply(pop_female, 1, sum),
-                          pop_male = apply(pop_male, 1, sum)) %>%
+                          pop_female = rowSums(pop_female),
+                          pop_male = rowSums(pop_male)) %>%
     mutate(pop_total = pop_female + pop_male)
 
   # Births:
@@ -973,11 +980,11 @@ code_model_output <- function(output) {
   # Age-specific and total deaths per time step - for women, men and both (total)
   deaths_female <- data.frame(incident_number = calculate_incident_numbers(out_cum_deathsf))
   names(deaths_female) <- sprintf("incident_number%g",ages)
-  deaths_female$incident_number_total <- apply(deaths_female, 1, sum)
+  deaths_female$incident_number_total <- rowSums(deaths_female)
 
   deaths_male <- data.frame(incident_number = calculate_incident_numbers(out_cum_deathsm))
   names(deaths_male) <- sprintf("incident_number%g",ages)
-  deaths_male$incident_number_total <- apply(deaths_male, 1, sum)
+  deaths_male$incident_number_total <- rowSums(deaths_male)
 
   deaths_total <- data.frame(time = output$time,
                              deaths = deaths_female + deaths_male)
@@ -1607,8 +1614,6 @@ map_seromarker_prev <- function(seromarker_num, seromarker_denom, prev_dataset, 
 
   # Filter the output dataset by the year of interest and calculate prevalence for all ages
 
-
-
   # For data from both sexes:
   model_prev_subset_both <- data.frame(time = model_output$time[model_output$time %in%
                                                                       prev_dataset$time[prev_dataset$sex == "Mixed"]],
@@ -1644,16 +1649,19 @@ map_seromarker_prev <- function(seromarker_num, seromarker_denom, prev_dataset, 
   # Combine sex-specific dataframes and turn into long format
   model_prev_subset <- rbind(model_prev_subset_female, model_prev_subset_male, model_prev_subset_both)
 
-  model_prev_subset <- gather(model_prev_subset, key = "age", value = "model_value", -time, -sex)
+  model_prev_subset <- gather(model_prev_subset,
+                              key = "age", value = "model_value", -time, -sex)
   model_prev_subset$age <- ages[as.numeric(gsub("\\D", "", model_prev_subset$age))]  # Assign ages as column
 
-  # Merge with the dataset to fit to
-  mapped_output_seromarker <- left_join(prev_dataset, model_prev_subset, by = c("sex", "time", "age"))
+  # Merge with the dataset to fit to (transform factor to character vector)
+  model_prev_subset$sex <- as.character(model_prev_subset$sex)
+  mapped_output_seromarker <- left_join(prev_dataset,
+                                        model_prev_subset,
+                                        by = c("sex", "time", "age"))
 
   return(mapped_output_seromarker)
 
 }
-
 
 # Trial function to calculate sum of least squares for overall prevalence at given time point
 fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(...),
@@ -1755,6 +1763,10 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
   globocan_incidence_output <- rbind(globocan_hcc_incidencef, globocan_hcc_incidencem,
                                      globocan_hcc_mortalityf, globocan_hcc_mortalitym)
 
+  # For merging, transform factors to character objects
+  globocan_incidence_output$outcome <- as.character(globocan_incidence_output$outcome)
+  globocan_incidence_output$sex <- as.character(globocan_incidence_output$sex)
+
   #  MULTIPLY BY PAF
   paf_under50 <- 0.83
   paf_over50 <- 0.32
@@ -1769,7 +1781,6 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
                                          by = c("outcome", "time", "sex", "age_min", "age_max"))
 
   ## 2) RISK OF CHRONIC CARRIAGE BY AGE AT INFECTION ----
-
   model_p_chronic <- data.frame(age = ages,
                                 model_value = unlist(head(select(sim, starts_with("p_chronic_function")),1)))
 
@@ -2227,10 +2238,10 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
   ## 5) MOTHER-TO-CHILD TRANSMISSION RISK ----
   # Overall mother-to-child transmission risk in given year (irrespective of maternal HBeAg)
   mtct_risk <- data.frame(time = out$time[out$time %in% data_to_fit$mtct_risk$time],
-                          model_value = apply(out$eag_positive_female[out$time %in% data_to_fit$mtct_risk$time,index$ages_wocba] * parameters_for_fit$mtct_prob_e +
+                          model_value = rowSums(out$eag_positive_female[out$time %in% data_to_fit$mtct_risk$time,index$ages_wocba] * parameters_for_fit$mtct_prob_e +
                                                 (out$carriers_female[out$time %in% data_to_fit$mtct_risk$time,index$ages_wocba]-
-                                                   out$eag_positive_female[out$time %in% data_to_fit$mtct_risk$time,index$ages_wocba]) * parameters_for_fit$mtct_prob_s,1,sum)/
-                            apply(out$carriers_female[out$time %in% data_to_fit$mtct_risk$time,index$ages_wocba],1,sum))
+                                                   out$eag_positive_female[out$time %in% data_to_fit$mtct_risk$time,index$ages_wocba]) * parameters_for_fit$mtct_prob_s)/
+                            rowSums(out$carriers_female[out$time %in% data_to_fit$mtct_risk$time,index$ages_wocba]))
 
   mapped_mtct_risk <- left_join(data_to_fit$mtct_risk, mtct_risk, by = "time")
 
@@ -2754,9 +2765,11 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
                                       hbeag_cirrhosis_odds_ratio,
                                       sex_cirrhosis_odds_ratio)
 
-  # Merge with data to fit to
+  # Merge with data to fit to (first transform factor to character vector)
+  association_output$outcome <- as.character(association_output$outcome)
   mapped_odds_ratios <- left_join(data_to_fit$odds_ratios,
-                                  association_output, by = "outcome")
+                                  association_output,
+                                  by = "outcome")
 
   # Combine all mapped outputs ----
   mapped_output_complete <- list(globocan_hcc_incidence = mapped_globocan_incidence,
@@ -2776,7 +2789,7 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
   sse <- sum(data_model_diff^2)
 
   # Return relevant info (SSE and the matched datapoints and outputs)
-  res <- list(sse = sse, mapped_output = mapped_output_complete)
+  res <- list(sse = sse, mapped_output = mapped_output_complete, full_output = out)
 
   return(res)
 
@@ -2892,7 +2905,7 @@ prior_progression_rates <- read.csv(here("data-raw", "input_progression_rates.cs
                                     stringsAsFactors = FALSE)
 
 # Using LHS
-n_sims <- 2  # number of simulations
+n_sims <- 1  # number of simulations
 n_parms_to_vary <- 3  # number of parameters to infer - this requires manual adaptations below
 lhs_samples <- randomLHS(n_sims, n_parms_to_vary) # draw 100 samples from uniform distribution U(0,1) using a Latin Hypercube design
 params_mat <- data.frame(b1 = lhs_samples[,1],
@@ -2907,11 +2920,13 @@ params_mat$mtct_prob_s <- 0 + (0.5-0) * params_mat$mtct_prob_s # rescale U(0,1) 
 # Run without parallelising
 time1 <- proc.time()
 out_mat <- apply(params_mat,1,
-                    function(x) fit_model_sse(default_parameter_list = parameter_list,
-                                              data_to_fit = calibration_datasets_list,
-                                              parms_to_change = list(b1 = as.list(x)$b1,
-                                                                     b2 = as.list(x)$b2,
-                                                                     mtct_prob_s = as.list(x)$mtct_prob_s)))
+                    function(x)
+                      fit_model_sse(default_parameter_list = parameter_list,
+                                    data_to_fit = calibration_datasets_list,
+                                    parms_to_change =
+                                      list(b1 = as.list(x)$b1,
+                                           b2 = as.list(x)$b2,
+                                           mtct_prob_s = as.list(x)$mtct_prob_s)))
 sim_duration = proc.time() - time1
 sim_duration["elapsed"]/60
 
@@ -2920,6 +2935,59 @@ out_mat_subset <- sapply(out_mat, "[[", "sse")
 res_mat <- cbind(params_mat, sse = out_mat_subset)
 res_mat[res_mat$sse == min(res_mat$sse),]
 
+# Output plots
+# HBsAg prevalence by time and age
+ggplot(data = out_mat[[1]]$mapped_output$seromarker_prevalence[
+  out_mat[[1]]$mapped_output$seromarker_prevalence$outcome == "HBsAg_prevalence",]) +
+  geom_point(aes(x = age, y = data_value), col = "red") +
+  geom_errorbar(aes(x = age, ymax = ci_upper, ymin = ci_lower), col = "red") +
+  geom_point(aes(x = age, y = model_value)) +
+  facet_wrap(~ time, ncol = 3)
+
+# Anti-HBc prevalence by time and age
+ggplot(data = out_mat[[1]]$mapped_output$seromarker_prevalence[
+  out_mat[[1]]$mapped_output$seromarker_prevalence$outcome == "Anti_HBc_prevalence",]) +
+  geom_point(aes(x = age, y = data_value), col = "red") +
+  geom_errorbar(aes(x = age, ymax = ci_upper, ymin = ci_lower)) +
+  geom_point(aes(x = age, y = model_value)) +
+  facet_wrap(~ time, ncol = 3)
+
+# HBeAg prevalence by time and age
+ggplot(data = out_mat[[1]]$mapped_output$seromarker_prevalence[
+  out_mat[[1]]$mapped_output$seromarker_prevalence$outcome == "HBeAg_prevalence",]) +
+  geom_point(aes(x = age, y = data_value), col = "red") +
+  geom_errorbar(aes(x = age, ymax = ci_upper, ymin = ci_lower)) +
+  geom_point(aes(x = age, y = model_value)) +
+  facet_wrap(~ time, ncol = 3)
+
+# GLOBOCAN cancer incidence
+ggplot(data = out_mat[[1]]$mapped_output$globocan_hcc_incidence[
+  out_mat[[1]]$mapped_output$globocan_hcc_incidence$outcome == "hcc_incidence",]) +
+  geom_point(aes(x = age_min, y = data_value), col = "red") +
+ # geom_errorbar(aes(x = age_min, ymax = ci_upper, ymin = ci_lower)) +
+  geom_point(aes(x = age_min, y = model_value)) +
+  facet_grid(. ~ sex)
+
+# GLOBOCAN cancer mortality
+ggplot(data = out_mat[[1]]$mapped_output$globocan_hcc_incidence[
+  out_mat[[1]]$mapped_output$globocan_hcc_incidence$outcome == "hcc_mortality",]) +
+  geom_point(aes(x = age_min, y = data_value), col = "red") +
+  # geom_errorbar(aes(x = age_min, ymax = ci_upper, ymin = ci_lower)) +
+  geom_point(aes(x = age_min, y = model_value)) +
+  facet_grid(. ~ sex)
+
+# HBsAg over time
+plot(x = out_mat[[1]]$full_output$time,
+  y = apply(out_mat[[1]]$full_output$carriers,1,sum)/apply(out_mat[[1]]$full_output$pop,1,sum),
+  ylim = c(0,0.5))
+
+plot(x = ages,
+     y = out_mat[[1]]$full_output$carriers[out_mat[[1]]$full_output$time== 1995,]/
+        out_mat[[1]]$full_output$pop[out_mat[[1]]$full_output$time== 1995,])
+
+plot(x = ages,
+     y = out_mat[[1]]$full_output$carriers[out_mat[[1]]$full_output$time== 1990,]/
+       out_mat[[1]]$full_output$pop[out_mat[[1]]$full_output$time== 1990,])
 
 # Parallelised code ----
 # Set up cluster
