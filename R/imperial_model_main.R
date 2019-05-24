@@ -1669,6 +1669,119 @@ map_seromarker_prev <- function(seromarker_num, seromarker_denom, prev_dataset, 
 
 }
 
+# Function to fit to age-, sex- and time-specific incidence rates from GLOBOCAN/GBD
+# by mapping model output to year, age and sex
+map_incidence_rates <- function(rate_outcome, rate_num, rate_denom, rate_timepoint, rate_dataset,
+                                model_sim, model_out) {
+
+  # For women:
+  denom_f_label <- paste0(rate_denom, "_female")
+
+  rate_f <- subset(rate_dataset, outcome == rate_outcome & sex == "Female"
+                   & time == rate_timepoint)[,c("outcome", "time", "sex", "age_min", "age_max")]
+  rate_f$model_value <- 0
+
+  # Extract numerator and denominator  datasets
+  num_f <- select(model_sim, starts_with(paste0(rate_num,"f")))
+  denom_f <- model_out[[denom_f_label]]
+
+  for (i in 1:nrow(rate_f)){
+    rate_f$model_value[i] <-
+      (sum(num_f[which(model_sim$time == (rate_f$time[i]+1)), which(ages == rate_f$age_min[i]):which(ages == rate_f$age_max[i])])-
+            sum(num_f[which(model_sim$time == rate_f$time[i]),which(ages == rate_f$age_min[i]):which(ages == rate_f$age_max[i])]))/
+          sum(denom_f[which(model_sim$time == (rate_f$time[i]+0.5)),which(ages == rate_f$age_min[i]):which(ages == rate_f$age_max[i])])
+  }
+
+  # For men:
+  denom_m_label <- paste0(rate_denom, "_male")
+  rate_m <- subset(rate_dataset, outcome == rate_outcome & sex == "Male"
+                   & time == rate_timepoint)[,c("outcome", "time", "sex", "age_min", "age_max")]
+  rate_m$model_value <- 0
+
+  # Extract numerator and denominator  datasets
+  num_m <- select(model_sim, starts_with(paste0(rate_num,"m")))
+  denom_m <- model_out[[denom_m_label]]
+
+  for (i in 1:nrow(rate_m)){
+    rate_m$model_value[i] <-
+      (sum(num_m[which(model_sim$time == (rate_m$time[i]+1)),
+                 which(ages == rate_m$age_min[i]):which(ages == rate_m$age_max[i])])-
+         sum(num_m[which(model_sim$time == rate_m$time[i]),
+                   which(ages == rate_m$age_min[i]):which(ages == rate_m$age_max[i])]))/
+      sum(denom_m[which(model_sim$time == (rate_m$time[i]+0.5)),which(ages == rate_m$age_min[i]):which(ages == rate_f$age_max[i])])
+  }
+
+
+  # Combine HCC incidence and mortality sets and map to GLOBOCAN input data
+  incidence_output <- rbind(rate_f, rate_m)
+
+  return(incidence_output)
+
+}
+
+map_incidence_rates <- function(rate_outcome, rate_num, rate_denom, rate_timepoint, rate_dataset,
+                                model_sim, model_out) {
+
+  # Extract numerator dataset
+
+  if (rate_outcome == "cirrhosis_mortality") {
+    # Cirrhosis deaths are all HBV-related deaths minus HCC-related deaths
+    # For women:
+    num_f <- select(model_sim, starts_with("cum_hbv_deathsf")) -
+      select(model_sim, starts_with("cum_hcc_deathsf"))
+    # For men:
+    num_m <- select(model_sim, starts_with("cum_hbv_deathsm")) -
+      select(model_sim, starts_with("cum_hcc_deathsm"))
+  } else {
+    # For women:
+    num_f <- select(model_sim, starts_with(paste0(rate_num,"f")))
+    # For men:
+    num_m <- select(model_sim, starts_with(paste0(rate_num,"m")))
+  }
+
+  # For women:
+  rate_f <- subset(rate_dataset, outcome == rate_outcome & sex == "Female"
+                   & time == rate_timepoint)[,c("outcome", "time", "sex", "age_min", "age_max")]
+  rate_f$model_value <- 0
+
+  # Extract denominator  dataset
+  denom_f_label <- paste0(rate_denom, "_female")
+  denom_f <- model_out[[denom_f_label]]
+
+  for (i in 1:nrow(rate_f)){
+    rate_f$model_value[i] <-
+      (sum(num_f[which(model_sim$time == (rate_f$time[i]+1)), which(ages == rate_f$age_min[i]):which(ages == rate_f$age_max[i])])-
+         sum(num_f[which(model_sim$time == rate_f$time[i]),which(ages == rate_f$age_min[i]):which(ages == rate_f$age_max[i])]))/
+      sum(denom_f[which(model_sim$time == (rate_f$time[i]+0.5)),which(ages == rate_f$age_min[i]):which(ages == rate_f$age_max[i])])
+  }
+
+  # For men:
+  denom_m_label <- paste0(rate_denom, "_male")
+  rate_m <- subset(rate_dataset, outcome == rate_outcome & sex == "Male"
+                   & time == rate_timepoint)[,c("outcome", "time", "sex", "age_min", "age_max")]
+  rate_m$model_value <- 0
+
+  # Extract denominator  dataset
+  denom_m_label <- paste0(rate_denom, "_male")
+  denom_m <- model_out[[denom_m_label]]
+
+  for (i in 1:nrow(rate_m)){
+    rate_m$model_value[i] <-
+      (sum(num_m[which(model_sim$time == (rate_m$time[i]+1)),
+                 which(ages == rate_m$age_min[i]):which(ages == rate_m$age_max[i])])-
+         sum(num_m[which(model_sim$time == rate_m$time[i]),
+                   which(ages == rate_m$age_min[i]):which(ages == rate_m$age_max[i])]))/
+      sum(denom_m[which(model_sim$time == (rate_m$time[i]+0.5)),which(ages == rate_m$age_min[i]):which(ages == rate_f$age_max[i])])
+  }
+
+
+  # Combine HCC incidence and mortality sets and map to GLOBOCAN input data
+  incidence_output <- rbind(rate_f, rate_m)
+
+  return(incidence_output)
+
+}
+
 # Trial function to calculate sum of least squares for overall prevalence at given time point
 fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(...),
                           scenario = "vacc", data_to_fit) {
@@ -1702,74 +1815,43 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
   # Define my datapoints to fit to:
   data <- data_to_fit
 
-  ## 1) GLOBOCAN age-specific HCC incidence in The Gambia in 2018 ----
+  ## 1) GLOBOCAN age- and sex specific HBV-related HCC incidence in The Gambia  ----
+  # In 2018
+  globocan_hcc_incidence_2018 <- map_incidence_rates(rate_outcome = "hcc_incidence",
+                                                rate_num = "cum_incident_hcc",
+                                                rate_denom = "pop",
+                                                rate_timepoint = 2018,
+                                                rate_dataset = data_to_fit$globocan_incidence_data,
+                                                model_sim = sim, model_out = out)
+  # In 1998
+  globocan_hcc_incidence_1998 <- map_incidence_rates(rate_outcome = "hcc_incidence",
+                                                     rate_num = "cum_incident_hcc",
+                                                     rate_denom = "pop",
+                                                     rate_timepoint = 1998,
+                                                     rate_dataset = data_to_fit$globocan_incidence_data,
+                                                     model_sim = sim, model_out = out)
 
-  # For women:
-  globocan_hcc_incidencef <- data.frame(outcome = "hcc_incidence",
-                                        time = 2018,
-                                        sex = "Female",
-                                        age_min = unique(data_to_fit$globocan_incidence_data$age_min[data_to_fit$globocan_incidence_data$sex == "Female"]),
-                                        age_max = unique(data_to_fit$globocan_incidence_data$age_max[data_to_fit$globocan_incidence_data$sex == "Female"]),
-                                        model_value = 0)
+  # In 1988
+  globocan_hcc_incidence_1988 <- map_incidence_rates(rate_outcome = "hcc_incidence",
+                                                     rate_num = "cum_incident_hcc",
+                                                     rate_denom = "pop",
+                                                     rate_timepoint = 1988,
+                                                     rate_dataset = data_to_fit$globocan_incidence_data,
+                                                     model_sim = sim, model_out = out)
 
-  for (i in 1:nrow(globocan_hcc_incidencef)){
-    globocan_hcc_incidencef$model_value[i] <-
-      (sum(select(sim, starts_with("cum_incident_hccf"))[sim$time == 2019,which(ages == globocan_hcc_incidencef$age_min[i]):which(ages == globocan_hcc_incidencef$age_max[i])])-
-        sum(select(sim, starts_with("cum_incident_hccf"))[sim$time == 2018,which(ages == globocan_hcc_incidencef$age_min[i]):which(ages == globocan_hcc_incidencef$age_max[i])]))/
-         sum(out$pop_female[out$time == 2018.5,which(ages == globocan_hcc_incidencef$age_min[i]):which(ages == globocan_hcc_incidencef$age_max[i])])
-  }
-
-
-  # For men:
-  globocan_hcc_incidencem <- data.frame(outcome = "hcc_incidence",
-                                        time = 2018,
-                                        sex = "Male",
-                                        age_min = unique(data_to_fit$globocan_incidence_data$age_min[data_to_fit$globocan_incidence_data$sex == "Male"]),
-                                        age_max = unique(data_to_fit$globocan_incidence_data$age_max[data_to_fit$globocan_incidence_data$sex == "Male"]),
-                                        model_value = 0)
-
-  for (i in 1 : nrow(globocan_hcc_incidencem)){
-    globocan_hcc_incidencem$model_value[i] <-
-      (sum(select(sim, starts_with("cum_incident_hccm"))[sim$time == 2019,which(ages == globocan_hcc_incidencem$age_min[i]):which(ages == globocan_hcc_incidencem$age_max[i])])-
-        sum(select(sim, starts_with("cum_incident_hccm"))[sim$time == 2018,which(ages == globocan_hcc_incidencem$age_min[i]):which(ages == globocan_hcc_incidencem$age_max[i])]))/
-          sum(out$pop_male[out$time == 2018.5,which(ages == globocan_hcc_incidencem$age_min[i]):which(ages == globocan_hcc_incidencem$age_max[i])])
-  }
-
-  # GLOBOCAN age-specific HCC mortality rate in The Gambia in 2018:
-
-  # For women:
-  globocan_hcc_mortalityf <- data.frame(outcome = "hcc_mortality",
-                                        time = 2018,
-                                        sex = "Female",
-                                        age_min = unique(data_to_fit$globocan_incidence_data$age_min[data_to_fit$globocan_incidence_data$sex == "Female"]),
-                                        age_max = unique(data_to_fit$globocan_incidence_data$age_max[data_to_fit$globocan_incidence_data$sex == "Female"]),
-                                        model_value = 0)
-
-  for (i in 1:nrow(globocan_hcc_mortalityf)){
-    globocan_hcc_mortalityf$model_value[i] <-
-      (sum(select(sim, starts_with("cum_hcc_deathsf"))[sim$time == 2019,which(ages == globocan_hcc_mortalityf$age_min[i]):which(ages == globocan_hcc_mortalityf$age_max[i])])-
-        sum(select(sim, starts_with("cum_hcc_deathsf"))[sim$time == 2018,which(ages == globocan_hcc_mortalityf$age_min[i]):which(ages == globocan_hcc_mortalityf$age_max[i])]))/
-          sum(out$pop_female[out$time == 2018.5,which(ages == globocan_hcc_mortalityf$age_min[i]):which(ages == globocan_hcc_mortalityf$age_max[i])])
-  }
-
-  # For men:
-  globocan_hcc_mortalitym <- data.frame(outcome = "hcc_mortality",
-                                        time = 2018,
-                                        sex = "Male",
-                                        age_min = unique(data_to_fit$globocan_incidence_data$age_min[data_to_fit$globocan_incidence_data$sex == "Male"]),
-                                        age_max = unique(data_to_fit$globocan_incidence_data$age_max[data_to_fit$globocan_incidence_data$sex == "Male"]),
-                                        model_value = 0)
-
-  for (i in 1:nrow(globocan_hcc_mortalitym)){
-    globocan_hcc_mortalitym$model_value[i] <-
-      (sum(select(sim, starts_with("cum_hcc_deathsm"))[sim$time == 2019,which(ages == globocan_hcc_mortalitym$age_min[i]):which(ages == globocan_hcc_mortalitym$age_max[i])])-
-         sum(select(sim, starts_with("cum_hcc_deathsm"))[sim$time == 2018,which(ages == globocan_hcc_mortalitym$age_min[i]):which(ages == globocan_hcc_mortalitym$age_max[i])]))/
-      sum(out$pop_male[out$time == 2018.5,which(ages == globocan_hcc_mortalitym$age_min[i]):which(ages == globocan_hcc_mortalitym$age_max[i])])
-  }
+  # GLOBOCAN age- and sex-specific HCC mortality rate in The Gambia in 2018:
+  globocan_hcc_mortality_2018 <- map_incidence_rates(rate_outcome = "hcc_mortality",
+                                                rate_num = "cum_hcc_deaths",
+                                                rate_denom = "pop",
+                                                rate_timepoint = 2018,
+                                                rate_dataset = data_to_fit$globocan_incidence_data,
+                                                model_sim = sim, model_out = out)
 
   # Combine HCC incidence and mortality sets and map to GLOBOCAN input data
-  globocan_incidence_output <- rbind(globocan_hcc_incidencef, globocan_hcc_incidencem,
-                                     globocan_hcc_mortalityf, globocan_hcc_mortalitym)
+  globocan_incidence_output <- rbind(globocan_hcc_incidence_2018,
+                                     globocan_hcc_incidence_1998,
+                                     globocan_hcc_incidence_1988,
+                                     globocan_hcc_mortality_2018)
 
   # For merging, transform factors to character objects
   globocan_incidence_output$outcome <- as.character(globocan_incidence_output$outcome)
@@ -1779,15 +1861,35 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
                                          globocan_incidence_output,
                                          by = c("outcome", "time", "sex", "age_min", "age_max"))
 
-  # MULTIPLY DATA VALUE BY PAF to get HBV-related HCC only
-  paf_under50 <- 0.83
-  paf_over50 <- 0.32
-  mapped_globocan_incidence$data_value[mapped_globocan_incidence$age_max < 55] <-
-    mapped_globocan_incidence$data_value[mapped_globocan_incidence$age_max < 55]*paf_under50
-  mapped_globocan_incidence$data_value[mapped_globocan_incidence$age_min >= 55] <-
-    mapped_globocan_incidence$data_value[mapped_globocan_incidence$age_min >= 55]*paf_over50
+  ## 2) GBD age- and sex-specific HBV-related cirrhosis death rates in The Gambia ----
+  # In 2017:
+  gbd_cirrhosis_mortality_2017 <- map_incidence_rates(rate_outcome = "cirrhosis_mortality",
+                                                     rate_num = "incident_cirrhosis_deaths",
+                                                     rate_denom = "pop",
+                                                     rate_timepoint = 2017,
+                                                     rate_dataset = data_to_fit$gbd_cirrhosis_mortality,
+                                                     model_sim = sim, model_out = out)
 
-  ## 2) RISK OF CHRONIC CARRIAGE BY AGE AT INFECTION ----
+  gbd_cirrhosis_mortality_1990 <- map_incidence_rates(rate_outcome = "cirrhosis_mortality",
+                                                      rate_num = "incident_cirrhosis_deaths",
+                                                      rate_denom = "pop",
+                                                      rate_timepoint = 1990,
+                                                      rate_dataset = data_to_fit$gbd_cirrhosis_mortality,
+                                                      model_sim = sim, model_out = out)
+
+  # Combine cirrhosises mortality datasets and map to GBD input data
+  gbd_cirrhosis_mortality_output <- rbind(gbd_cirrhosis_mortality_2017,
+                                     gbd_cirrhosis_mortality_1990)
+
+  # For merging, transform factors to character objects
+  gbd_cirrhosis_mortality_output$outcome <- as.character(gbd_cirrhosis_mortality_output$outcome)
+  gbd_cirrhosis_mortality_output$sex <- as.character(gbd_cirrhosis_mortality_output$sex)
+
+  mapped_gbd_cirrhosis_mortality <- left_join(data_to_fit$gbd_cirrhosis_mortality,
+                                              gbd_cirrhosis_mortality_output,
+                                              by = c("outcome", "time", "sex", "age_min", "age_max"))
+
+  ## 3) RISK OF CHRONIC CARRIAGE BY AGE AT INFECTION ----
   model_p_chronic <- data.frame(outcome = "p_chronic",
                                 age = ages,
                                 model_value = unlist(head(select(sim, starts_with("p_chronic_function")),1)))
@@ -1796,7 +1898,7 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
   mapped_p_chronic <- full_join(data_to_fit$p_chronic,
                                 model_p_chronic, by = c("outcome", "age"))
 
-  ## 3) AGE- AND SEX- SPECIFIC SEROMARKER PREVALENCE ----
+  ## 4) AGE- AND SEX- SPECIFIC SEROMARKER PREVALENCE ----
   # Mapping matching model output to specific year and age
 
   # HBsAg prevalence in the population:
@@ -1823,7 +1925,7 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
   # Combine into a single dataframe
   mapped_seromarker_prevalence <- rbind(mapped_output_hbsag, mapped_output_hbeag, mapped_output_antihbc)
 
-  ## 4) NATURAL HISTORY-RELATED PREVALENCE ----
+  ## 5) NATURAL HISTORY-RELATED PREVALENCE ----
   # Various estimates in chronic carriers/liver disease subgroups
   # Outputs calculated manually and matched to specific agegroup and year
 
@@ -2247,7 +2349,7 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
                                       model_output_nat_hist,
                                       by = c("id_unique", "age_min", "age_max"))
 
-  ## 5) MOTHER-TO-CHILD TRANSMISSION RISK ----
+  ## 6) MOTHER-TO-CHILD TRANSMISSION RISK ----
   # Overall mother-to-child transmission risk in given year (irrespective of maternal HBeAg)
   mtct_risk <- data.frame(time = out$time[out$time %in% data_to_fit$mtct_risk$time],
                           model_value = rowSums(out$eag_positive_female[out$time %in% data_to_fit$mtct_risk$time,index$ages_wocba] * parameters_for_fit$mtct_prob_e +
@@ -2257,7 +2359,7 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
 
   mapped_mtct_risk <- left_join(data_to_fit$mtct_risk, mtct_risk, by = "time")
 
-  ## 6) NATURAL HISTORY PROGRESSION RATES AND MORTALITY CURVES ----
+  ## 7) NATURAL HISTORY PROGRESSION RATES AND MORTALITY CURVES ----
   # Some are calculated from full model output and others require a shadow model
 
   # Prepare output storage for progression rates and mortality curves:
@@ -2660,7 +2762,7 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
                                        mapped_globocan_mortality_curve) # add GLOBOCAN shadow model
 
 
-  ## 7) ASSOCIATION DATA ----
+  ## 8) ASSOCIATION DATA ----
 
   # Prepare dataframe
   association_output <- data.frame(outcome = c("odds_ratio_current_hbeag_positivity_and_hcc",
@@ -2785,6 +2887,7 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
 
   # Combine all mapped outputs ----
   mapped_output_complete <- list(globocan_hcc_incidence = mapped_globocan_incidence,
+                                 gbd_cirrhosis_mortality = mapped_gbd_cirrhosis_mortality,
                                  risk_of_chronic_carriage = mapped_p_chronic,
                                  seromarker_prevalence = mapped_seromarker_prevalence,
                                  nat_hist_prevalence = mapped_nat_hist_prevalence,
@@ -2876,6 +2979,24 @@ input_globocan_incidence_data <- read.csv(here(calibration_data_path,
                                           header = TRUE, check.names = FALSE,
                                           stringsAsFactors = FALSE)
 
+# Input GLOBOCAN incidence data is population-wide
+# Need to multiply by age-specific PAF to get HBV-related HCC only
+paf_under50 <- 0.83
+paf_over50 <- 0.32
+paf_average <- 0.56
+input_globocan_incidence_data$data_value[input_globocan_incidence_data$age_min < 50 &
+                                           input_globocan_incidence_data$age_max < 50] <-
+  input_globocan_incidence_data$data_value[input_globocan_incidence_data$age_min < 50 &
+                                             input_globocan_incidence_data$age_max < 50]*paf_under50
+input_globocan_incidence_data$data_value[input_globocan_incidence_data$age_min < 50 &
+                                           input_globocan_incidence_data$age_max > 50] <-
+  input_globocan_incidence_data$data_value[input_globocan_incidence_data$age_min < 50 &
+                                             input_globocan_incidence_data$age_max > 50]*paf_average
+input_globocan_incidence_data$data_value[input_globocan_incidence_data$age_min >= 50 &
+                                           input_globocan_incidence_data$age_max >= 50] <-
+  input_globocan_incidence_data$data_value[input_globocan_incidence_data$age_min >= 50 &
+                                             input_globocan_incidence_data$age_max >= 50]*paf_over50
+
 input_globocan_mortality_curve <- read.csv(here(calibration_data_path,
                                                "globocan_mortality_curve.csv"),
                                           header = TRUE, check.names = FALSE,
@@ -2886,6 +3007,11 @@ input_odds_ratios <- read.csv(here(calibration_data_path,
                                    "odds_ratios.csv"),
                               header = TRUE, check.names = FALSE,
                               stringsAsFactors = FALSE)
+
+input_gbd_cirrhosis_mortality <- read.csv(here(calibration_data_path,
+                                   "gbd_cirrhosis_mortality.csv"),
+                                    header = TRUE, check.names = FALSE,
+                                    stringsAsFactors = FALSE)
 
 
 # Need to change name of this list
@@ -2898,6 +3024,7 @@ calibration_datasets_list <- list(hbsag_prevalence = input_hbsag_dataset,
                                  mortality_curves = input_mortality_curves,
                                  globocan_incidence_data = input_globocan_incidence_data,
                                  globocan_mortality_curve = input_globocan_mortality_curve,
+                                 gbd_cirrhosis_mortality = input_gbd_cirrhosis_mortality,
                                  p_chronic = input_risk_of_chronic_carriage,
                                  odds_ratios = input_odds_ratios)
 
@@ -2989,17 +3116,44 @@ ggplot(data = out_mat[[1]]$mapped_output$seromarker_prevalence[
   theme(plot.title = element_text(hjust = 0.5)) +
   ylim(0,1)
 
-## GLOBOCAN PAF-adjusted cancer incidence and mortality
-ggplot(data = out_mat[[1]]$mapped_output$globocan_hcc_incidence) +
+## GLOBOCAN PAF-adjusted cancer incidence and mortality in 2018
+ggplot(data = subset(out_mat[[1]]$mapped_output$globocan_hcc_incidence,
+                     time == 2018)) +
   geom_col(aes(x = paste(age_min,"-",age_max), y = model_value*100000)) +
 #  geom_errorbar(aes(x = paste(age_min,"-",age_max), ymax = ci_upper, ymin = ci_lower)) +
   geom_point(aes(x = paste(age_min,"-",age_max), y = data_value*100000), col = "red",
              shape = 4, stroke = 1.5) +
   facet_grid(outcome ~ sex) +
   labs(title = "GLOBOCAN HBV-related HCC incidence and mortality rates 2018",
-       y = "Cases/deaths per 100000", x = "Age (years)") +
+       y = "Cases/deaths per 100000 PY", x = "Age (years)") +
   theme(plot.title = element_text(hjust = 0.5)) +
   ylim(0,100)
+
+## GLOBOCAN PAF-adjusted cancer incidence in 1988 and 1998
+ggplot(data = subset(out_mat[[1]]$mapped_output$globocan_hcc_incidence,
+                     time != 2018)) +
+  geom_col(aes(x = paste(age_min,"-",age_max), y = model_value*100000)) +
+  #  geom_errorbar(aes(x = paste(age_min,"-",age_max), ymax = ci_upper, ymin = ci_lower)) +
+  geom_point(aes(x = paste(age_min,"-",age_max), y = data_value*100000), col = "red",
+             shape = 4, stroke = 1.5) +
+  facet_grid(time ~ sex) +
+  labs(title = "GLOBOCAN HBV-related HCC incidence rates 1988 and 1998",
+       y = "Cases/deaths per 100000 PY", x = "Age (years)") +
+  theme(plot.title = element_text(hjust = 0.5), axis.text.x = element_text(angle = 90)) +
+  ylim(0,100)
+
+## GBD HBV-related cirrhosis mortality rate
+ggplot(data = out_mat[[1]]$mapped_output$gbd_cirrhosis_mortality) +
+  geom_line(aes(x = (age_min+age_max)/2, y = model_value*100000)) +
+  geom_point(aes(x = (age_min+age_max)/2, y = data_value*100000), col = "red",
+             shape = 4, stroke = 1.5) +
+  geom_errorbar(aes(x = (age_min+age_max)/2, ymax = ci_upper*100000, ymin = ci_lower*100000),
+                col = "red", width = 0.5) +
+  facet_grid(time ~ sex) +
+  labs(title = "GBD HBV-related cirrhosis mortality rates",
+       y = "Deaths per 100000 PY", x = "Age (years)") +
+  theme(plot.title = element_text(hjust = 0.5), axis.text.x = element_text(angle = 90)) +
+  ylim(0,500)
 
 ## Risk of chronic carriage
 ggplot(data = out_mat[[1]]$mapped_output$risk_of_chronic_carriage) +
