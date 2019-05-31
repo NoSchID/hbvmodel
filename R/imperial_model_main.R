@@ -344,9 +344,9 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
     # Horizontal transmission: Age-specific force of infection (same for men and women)
 
     # Define indices for contact groups
-    i_1to4 <- which(ages == 1):which(ages == (5-da))
-    i_1to14 <- which(ages == 1):which(ages == (15-da))
-    i_5plus <- which(ages == 5):which(ages == (100-da))
+    #i_1to4 <- which(ages == 1):which(ages == (5-da))
+    #i_1to14 <- which(ages == 1):which(ages == (15-da))
+    #i_5plus <- which(ages == 5):which(ages == (100-da))
 
     # Imperial model FOI
 
@@ -382,6 +382,7 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
     # HBeAg-positive individuals (IT, IR) are more infectious than HBeAg-negatives (multiply by alpha)
     # Sum prevalence in HBeAg-negatives and HBeAg-positives multiplied by alpha
     # Returns 1 number per transmission age group (4 total)
+    i_1to4 <- which(ages == 1):which(ages == (5-da))
     i_5to14 <- which(ages == 5):which(ages == (15-da))
     i_15to100 <- which(ages == 15):which(ages == (100-da))
 
@@ -395,14 +396,18 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
                              (alpha * sum(pop[i_15to100,HBeAg_pos,1:2])/sum(pop[i_15to100,index$infcat_all,1:2]))) # 15-100 year olds
 
     # 0.5 year olds can get infected:
+    #i_1to4 <- which(ages == 0.5):which(ages == (5-da))
+    #i_5to14 <- which(ages == 5):which(ages == (15-da))
+    #i_15to100 <- which(ages == 15):which(ages == (100-da))
+
     #infectious_vector <- c(sum(pop[1,HBeAg_neg,1:2])/sum(pop[1,index$infcat_all,1:2]) +
     #                         (alpha * sum(pop[1,HBeAg_pos,1:2])/sum(pop[1,index$infcat_all,1:2])), # 0 year olds
-    #                       sum(pop[c(2,index$ages_1to5),HBeAg_neg,1:2])/sum(pop[c(2,index$ages_1to5),index$infcat_all,1:2]) +
-    #                         (alpha * sum(pop[c(2,index$ages_1to5),HBeAg_pos,1:2])/sum(pop[c(2,index$ages_1to5),index$infcat_all,1:2])), # 1-5 year olds
-    #                       sum(pop[index$ages_6to15,HBeAg_neg,1:2])/sum(pop[index$ages_6to15,index$infcat_all,1:2]) +
-    #                         (alpha * sum(pop[index$ages_6to15,HBeAg_pos,1:2])/sum(pop[index$ages_6to15,index$infcat_all,1:2])), # 6-15 year olds
-    #                       sum(pop[index$ages_16to100,HBeAg_neg,1:2])/sum(pop[index$ages_16to100,index$infcat_all,1:2]) +
-    #                         (alpha * sum(pop[index$ages_16to100,HBeAg_pos,1:2])/sum(pop[index$ages_16to100,index$infcat_all,1:2]))) # 16-100 year olds
+    #                       sum(pop[i_1to4,HBeAg_neg,1:2])/sum(pop[i_1to4,index$infcat_all,1:2]) +
+    #                         (alpha * sum(pop[i_1to4,HBeAg_pos,1:2])/sum(pop[i_1to4,index$infcat_all,1:2])), # 1-5 year olds
+    #                       sum(pop[i_5to14,HBeAg_neg,1:2])/sum(pop[i_5to14,index$infcat_all,1:2]) +
+    #                         (alpha * sum(pop[i_5to14,HBeAg_pos,1:2])/sum(pop[i_5to14,index$infcat_all,1:2])), # 6-15 year olds
+    #                       sum(pop[i_15to100,HBeAg_neg,1:2])/sum(pop[i_15to100,index$infcat_all,1:2]) +
+    #                         (alpha * sum(pop[i_15to100,HBeAg_pos,1:2])/sum(pop[i_15to100,index$infcat_all,1:2]))) # 16-100 year olds
 
 
     # Multiply WAIFW matrix by the age-specific proportion of infectious individuals
@@ -723,15 +728,6 @@ run_model_old <- function(b1 = b1, b2 = b2, b3 = b3, alpha = alpha,
   return(toreturn)
 }
 
-# Try to prevent negative numbers using event (not working so far)
-positive_fun <- function(timestep, pop, parameters){
-  with(as.list(pop), {
-    pop <- array(unlist(pop[1:(2 * n_infectioncat * n_agecat)]),dim=c(n_agecat,n_infectioncat,2))
-    pop[pop<1e-6] <- 0   # also tried with < 0
-    return(c(pop, rep(0,n_agecat), rep(0,n_agecat), rep(0,n_agecat), rep(0,n_agecat)))
-  })
-}
-
 # Function to run the model once for a given scenario
 run_model <- function(..., sim_duration = runtime,
                       init_pop_vector = init_pop,
@@ -805,6 +801,16 @@ run_model <- function(..., sim_duration = runtime,
                                           cirrhosis_prog_function_male),
                                  nrow = n_agecat, ncol = 2)  # store in a matrix to apply to compartment
   parameters$cirrhosis_prog_rates <- cirrhosis_prog_rates
+
+  # Age-specific HBsAg loss: added by me
+  # Assuming rate in 50-70 year olds extends to 70+ year olds
+  sag_loss <- rep(0.01, n_agecat)
+  sag_loss[which(ages == 0):which(ages == 10-da)] <- parameters$sag_loss_0to9
+  sag_loss[which(ages == 10):which(ages == 20-da)] <- parameters$sag_loss_10to19
+  sag_loss[which(ages == 20):which(ages == 30-da)] <- parameters$sag_loss_20to29
+  sag_loss[which(ages == 30):which(ages == 40-da)] <- parameters$sag_loss_30to39
+  sag_loss[which(ages == 40):which(ages == 50-da)] <- parameters$sag_loss_40to49
+  sag_loss[which(ages == 50):n_agecat] <- parameters$sag_loss_50to70
 
   # Update parameters for intervention scenario: vaccine (= default) or no vaccine (counterfactual)
   if (scenario == "vacc") {
@@ -1301,7 +1307,12 @@ parameter_list <- list(
   pr_ir_enchb = 0.005,
   pr_ir_cc = 0.028,
   pr_ic_enchb = 0.01,
-  sag_loss = 0.01,  # Shevanthi value, inactive carrier to recovered transition
+  sag_loss_0to9 = 0.001,  # Shimakawa values, inactive carrier to recovered transition
+  sag_loss_10to19 = 0.0046,
+  sag_loss_20to29 = 0.0101,
+  sag_loss_30to39 = 0.0105,
+  sag_loss_40to49 = 0.0232,
+  sag_loss_50to70 = 0.0239,
   #sag_loss = sagloss_rates,
   pr_enchb_cc = 0.04,  # Progression to CC (from ENCHB)
   cirrhosis_prog_coefficient = 0.0341,
@@ -1345,10 +1356,8 @@ parameter_names <- names(parameter_list)
 #parameter_list <- lapply(parameter_list, FUN= function(x) x*0)
 tic()
 sim <- run_model(sim_duration = runtime, default_parameter_list = parameter_list,
-                 parms_to_change = list(b1 = 0.1, b2 = 0.001, mtct_prob_s = 0.14,
-                                        eag_prog_function_intercept = 1,
-                                        eag_prog_function_rate = -0.02,
-                                        pr_it_ir = 0.1, pr_ir_ic = 1, pr_ic_enchb = 0.05),
+                 parms_to_change = list(b1 = 0.5, b2 = 0.01, b3 = 0.01, alpha = 15,
+                                        mtct_prob_s = 0.05, mtct_prob_e = 0.6),
                  scenario = "vacc")
 out <- code_model_output(sim)
 toc()
@@ -2519,10 +2528,8 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
   # Some are calculated from full model output and others require a shadow model
 
   # Prepare output storage for progression rates and mortality curves:
-  progression_rates <- data.frame(outcome = c("shadow1a_eag_loss_m",
-                                              "shadow1b_eag_loss_m",
-                                              "shadow1a_eag_loss_f",
-                                              "shadow1b_eag_loss_f",
+  progression_rates <- data.frame(outcome = c("shadow1_eag_loss_m",
+                                              "shadow1_eag_loss_f",
                                               "shadow1a_hcc_incidence_m",
                                               "shadow1b_hcc_incidence_m",
                                               "shadow1a_hcc_incidence_f",
@@ -2662,27 +2669,37 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
   # Denominator = person-time spent in IT and IR compartments
   # MODEL 1a
   # In women:
-  progression_rates[progression_rates$outcome=="shadow1a_eag_loss_f","model_value"] <-
+  shadow1a_eag_loss_f <-
     (sum(select(tail(shadow1a_sim,1), starts_with("cum_eag_lossf"))))/
     ((sum(select(head(shadow1a_sim,-1),starts_with("ITf")))+
         sum(select(head(shadow1a_sim,-1),starts_with("IRf"))))*dt)
   # In men:
-  progression_rates[progression_rates$outcome=="shadow1a_eag_loss_m","model_value"] <-
+  shadow1a_eag_loss_m <-
     (sum(select(tail(shadow1a_sim,1), starts_with("cum_eag_lossm"))))/
     ((sum(select(head(shadow1a_sim,-1),starts_with("ITm")))+
         sum(select(head(shadow1a_sim,-1),starts_with("IRm"))))*dt)
 
   # MODEL 1b
   # In women:
-  progression_rates[progression_rates$outcome=="shadow1b_eag_loss_f","model_value"] <-
+  shadow1b_eag_loss_f <-
     (sum(select(tail(shadow1b_sim,1), starts_with("cum_eag_lossf"))))/
     ((sum(select(head(shadow1b_sim,-1),starts_with("ITf")))+
         sum(select(head(shadow1b_sim,-1),starts_with("IRf"))))*dt)
   # In men:
-  progression_rates[progression_rates$outcome=="shadow1b_eag_loss_m","model_value"] <-
+  shadow1b_eag_loss_m <-
     (sum(select(tail(shadow1b_sim,1), starts_with("cum_eag_lossm"))))/
     ((sum(select(head(shadow1b_sim,-1),starts_with("ITm")))+
         sum(select(head(shadow1b_sim,-1),starts_with("IRm"))))*dt)
+
+  # USE AVERAGE ACROSS GROUPS
+  progression_rates[progression_rates$outcome=="shadow1_eag_loss_f","model_value"] <-
+    weighted.mean(x = c(shadow1a_eag_loss_f, shadow1b_eag_loss_f),
+                  w = c(sum(shadow1a_init_pop), sum(shadow1b_init_pop)))
+
+  progression_rates[progression_rates$outcome=="shadow1_eag_loss_m","model_value"] <-
+    weighted.mean(x = c(shadow1a_eag_loss_m, shadow1b_eag_loss_m),
+                  w = c(sum(shadow1a_init_pop), sum(shadow1b_init_pop)))
+
   # Mortality rate from any cause (HBV-related deaths + background mortality)
   # This was measured in the whole cohort (no matter where they progressed to)
   # MODEL 1a
@@ -3162,7 +3179,7 @@ params_mat$b1 <- 0 + (0.2-0) * params_mat$b1 # rescale U(0,1) to be U(0,0.2)
 params_mat$b2 <- 0 + (0.01-0) * params_mat$b2 # rescale U(0,1) to be U(0,0.01)
 params_mat$mtct_prob_s <- 0 + (0.5-0) * params_mat$mtct_prob_s # rescale U(0,1) to be U(0,0.5)
 
-params_mat <- data.frame(b1 = 0.1, b2 = 0.001, mtct_prob_s = 0.14)
+params_mat <- data.frame(b1 = 0.1, b2 = 0.001, mtct_prob_s = 0.05)
 
 # Run without parallelising
 time1 <- proc.time()
@@ -3174,17 +3191,19 @@ out_mat <- apply(params_mat,1,
                                       list(b1 = as.list(x)$b1,
                                            b2 = as.list(x)$b2,
                                            mtct_prob_s = as.list(x)$mtct_prob_s,
+                                           alpha = 15, #7
                                            eag_prog_function_intercept = 1,
                                            eag_prog_function_rate = 0,
                                            pr_it_ir = 0.1, pr_ir_ic = 0.7,
                                            pr_ir_cc = 0.7, pr_enchb_cc = 0.005,
                                            hccr_ir = 4,
                                            cirrhosis_prog_male_cofactor = 20,
-                                           cancer_prog_male_cofactor = 5,
                                            cancer_prog_coefficient = 0.0002,
                                            mu_hcc = 1.5,
                                            mu_dcc = 1,
-                                           hccr_dcc = 0.1)))
+                                           hccr_dcc = 0.2,
+                                           mu_cc = 0.005,
+                                           mtct_prob_e = 0.6)))
 sim_duration = proc.time() - time1
 sim_duration["elapsed"]/60
 
@@ -3198,7 +3217,7 @@ res_mat[res_mat$sse == min(res_mat$sse),]
 library(gridExtra)
 
 # For loop to create plot set for every parameter combination
-pdf(file = here("output/manual_fit_plots", "change_mu_dcc.pdf"), paper="a4r")
+pdf(file = here("output/manual_fit_plots", "change_in_waifw_matrix.pdf"), paper="a4r")
 plot_list = list()
 for (i in 1:length(out_mat)) {
 
@@ -3562,14 +3581,13 @@ for (i in 1:length(out_mat)) {
   # Study 1: HBeAg loss
   plot_1_eag_loss <- ggplot(data = subset(out_mat[[i]]$mapped_output$progression_rates,
                                           id_paper == "1" & type == "eag_loss")) +
-    geom_col(aes(x = paste(bl_age_min_years,"-",bl_age_max_years), y = model_value*100))+
-    geom_point(aes(x = paste(bl_age_min_years,"-",bl_age_max_years), y = data_value*100),
+    geom_col(aes(x = sex, y = model_value*100))+
+    geom_point(aes(x = sex, y = data_value*100),
                shape = 4, size = 3, stroke = 2, col = "red") +
-    geom_errorbar(aes(x = paste(bl_age_min_years,"-",bl_age_max_years), ymax = ci_upper*100, ymin = ci_lower*100),
+    geom_errorbar(aes(x = sex, ymax = ci_upper*100, ymin = ci_lower*100),
                   col = "red", width = 0.1)  +
-    facet_grid(~sex, scales = "free") +
     labs(title = "HBeAg loss in chronic carrier cohort",
-         y = "Cases per 100 PY", x = "Baseline age group (years)") +
+         y = "Cases per 100 PY", x = "Sex") +
     theme(plot.title = element_text(hjust = 0.5)) +
     ylim(0,12)
 
