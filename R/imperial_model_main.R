@@ -12,7 +12,8 @@ require(deSolve)  # ODE solver
 library(tictoc)  # for timing code
 require(here)  # for setting working directory
 library(profvis)  # for code profiling
-require(ggplot2)
+require(ggplot2)  # for calibration plots
+require(gridExtra)  # for calibration plots
 
 ### Simulation parameters ----
 ## Country
@@ -151,6 +152,81 @@ input_liver_disease_demography <- read.csv(here(calibration_data_path,
                                           header = TRUE, check.names = FALSE,
                                           stringsAsFactors = FALSE)
 
+
+# Calculate 95% CIs for proportions using standard formulas based on normal approximation
+# For data points that don't have 95% CIs and (for proportions) where
+# prop*sample size and sample size-prop*sample size > 10
+# For rate datasets, exclude datasets where rate = 0
+# Function:
+calculate_95_ci <- function(input_dataset, data_type) {
+
+  if(data_type == "proportion") {
+
+  input_dataset[is.na(input_dataset$ci_lower) &
+                        (input_dataset$data_value*input_dataset$sample_size) >= 10 &
+                        (input_dataset$sample_size-
+                           input_dataset$data_value*input_dataset$sample_size) >= 10,] <-
+    filter(input_dataset,
+           is.na(ci_lower) &
+             data_value*sample_size >= 10 &
+             sample_size-data_value*sample_size >= 10) %>%
+    mutate(ci_lower = replace(ci_lower,
+                              values = data_value -
+                                1.96*sqrt(data_value*(1-data_value)/sample_size))) %>%
+    mutate(ci_upper = replace(ci_upper,
+                              values = data_value +
+                                1.96*sqrt(data_value*(1-data_value)/sample_size)))
+
+  return(input_dataset)
+
+  } else if(data_type == "rate") {
+
+    if(is.null(input_dataset$events_number)) {
+
+    input_dataset[is.na(input_dataset$ci_lower) & input_dataset$data_value != 0,] <-
+      filter(input_dataset, is.na(ci_lower) & data_value != 0) %>%
+      mutate(ci_lower = replace(ci_lower,
+                                values = data_value/(exp(1.96/sqrt(data_value*py_at_risk))))) %>%
+      mutate(ci_upper = replace(ci_upper,
+                                values = data_value*(exp(1.96/sqrt(data_value*py_at_risk)))))
+    return(input_dataset)
+
+    } else if(is.null(input_dataset$events_number) == FALSE) {
+
+      input_dataset[is.na(input_dataset$ci_lower) & input_dataset$data_value != 0
+                    & is.na(input_dataset$data_value) == FALSE,] <-
+        filter(input_dataset, is.na(ci_lower) & data_value != 0 & is.na(data_value) == FALSE) %>%
+        mutate(ci_lower = replace(ci_lower,
+                                  values = data_value/(exp(1.96/sqrt(events_number))))) %>%
+        mutate(ci_upper = replace(ci_upper,
+                                  values = data_value*(exp(1.96/sqrt(events_number)))))
+      return(input_dataset)
+
+    }
+
+  } else {
+    print("data_type can be rate or proportion")
+  }
+
+}
+
+# Apply to all proportion datasets
+input_hbsag_dataset <- calculate_95_ci(input_hbsag_dataset, "proportion")
+input_antihbc_dataset <- calculate_95_ci(input_antihbc_dataset, "proportion")
+input_hbeag_dataset <- calculate_95_ci(input_hbeag_dataset, "proportion")
+input_natural_history_prev_dataset <- calculate_95_ci(input_natural_history_prev_dataset,
+                                                      "proportion")
+input_mtct_risk_dataset <- calculate_95_ci(input_mtct_risk_dataset, "proportion")
+input_risk_of_chronic_carriage <- calculate_95_ci(input_risk_of_chronic_carriage, "proportion")
+input_liver_disease_demography[input_liver_disease_demography$outcome == "hcc_prop_male" |
+                                input_liver_disease_demography$outcome == "cirrhosis_prop_male",] <-
+  calculate_95_ci(input_liver_disease_demography[input_liver_disease_demography$outcome == "hcc_prop_male" |
+                                                   input_liver_disease_demography$outcome == "cirrhosis_prop_male",],
+                  "proportion")
+
+# Apply to rates datasets
+input_progression_rates <- calculate_95_ci(input_progression_rates, "rate")  # this doesn't add any CIs
+input_globocan_incidence_data <- calculate_95_ci(input_globocan_incidence_data, "rate")
 
 # Need to change name of this list
 calibration_datasets_list <- list(hbsag_prevalence = input_hbsag_dataset,
@@ -756,10 +832,10 @@ run_model <- function(..., sim_duration = runtime,
   # Age-specific progression to HCC from all carrier compartments other than DCC
   # Represented by a shifted quadratic function that increases with age and
   # prevents people younger than 10 years to progress to HCC
-  cancer_prog_function <- (parameters$cancer_prog_coefficient * (ages - parameters$cancer_age_treshold))^2  # Rate in females
+  cancer_prog_function <- (parameters$cancer_prog_coefficient * (ages - parameters$cancer_age_threshold))^2  # Rate in females
   cancer_prog_function <- cancer_prog_function *
-    c(rep(0, times = which(ages == parameters$cancer_age_treshold-da)),
-      rep(1, times = n_agecat - which(ages == parameters$cancer_age_treshold-da)))  # Set transition to 0 in <10 year olds
+    c(rep(0, times = which(ages == parameters$cancer_age_threshold-da)),
+      rep(1, times = n_agecat - which(ages == parameters$cancer_age_threshold-da)))  # Set transition to 0 in <10 year olds
   cancer_prog_female <- sapply(cancer_prog_function, function(x) min(x,1)) # Set maximum annual rate is 1
   cancer_prog_male <- sapply(parameters$cancer_prog_male_cofactor*cancer_prog_female, function(x) min(x,1))  # Rate in males, cannot exceed 1
   cancer_prog_rates <- matrix(data = c(cancer_prog_female, cancer_prog_male),
@@ -768,15 +844,15 @@ run_model <- function(..., sim_duration = runtime,
 
   # Age-specific progression from IR to ENCHB
   # Is set to 0 in under 20 year olds and a constant in over 20 year olds
-  pr_ir_enchb_function <- c(rep(0, times = which(ages == 20-da)),
-                            rep(parameters$pr_ir_enchb, times = n_agecat - which(ages == 20-da)))
+  pr_ir_enchb_function <- c(rep(0, times = which(ages == parameters$pr_ir_enchb_age_threshold-da)),
+                            rep(parameters$pr_ir_enchb, times = n_agecat - which(ages == parameters$pr_ir_enchb_age_threshold-da)))
   pr_ir_enchb_function <- sapply(pr_ir_enchb_function, function(x) min(x,5))  # annual rate cannot exceed 5
   parameters$pr_ir_enchb_function <- pr_ir_enchb_function
 
   # Age-specific progression from IR to CC (HBeAg-positive cirrhosis)
   # I added a male cofactor (same as for ENCHB to CC)
-  pr_ir_cc_function <- c(rep(0, times = which(ages == 30-da)),
-                         rep(parameters$pr_ir_cc, times = n_agecat - which(ages == 30-da)))
+  pr_ir_cc_function <- c(rep(0, times = which(ages == parameters$pr_ir_cc_age_threshold-da)),
+                         rep(parameters$pr_ir_cc, times = n_agecat - which(ages == parameters$pr_ir_cc_age_threshold-da)))
   #pr_ir_cc_function_female <- sapply(pr_ir_cc_function, function(x) min(x,5))  # annual rate cannot exceed 5
   #pr_ir_cc_function_male <- sapply(pr_ir_cc_function_female*parameters$cirrhosis_prog_male_cofactor,
   #                                 function(x) min(x,5))
@@ -792,8 +868,8 @@ run_model <- function(..., sim_duration = runtime,
   cirrhosis_prog_function <- parameters$pr_enchb_cc
   #cirrhosis_prog_function <- parameters$pr_enchb_cc * (parameters$cirrhosis_prog_coefficient * (ages - 25))^2  # Rate in females
   cirrhosis_prog_function <- cirrhosis_prog_function *
-    c(rep(0, times = which(ages == 25-da)),
-      rep(1, times = n_agecat - which(ages == 25-da)))  # Set rate to 0 in <25 year olds
+    c(rep(0, times = which(ages == parameters$cirrhosis_age_threshold-da)),
+      rep(1, times = n_agecat - which(ages == parameters$cirrhosis_age_threshold-da)))  # Set rate to 0 in <25 year olds
   cirrhosis_prog_function_female <- sapply(cirrhosis_prog_function, function(x) min(x,5)) # Set maximum annual rate to 5
   cirrhosis_prog_function_male <- sapply(parameters$cirrhosis_prog_male_cofactor *
                                            cirrhosis_prog_function_female, function(x) min(x,5))  # Rate in males, cannot exceed 5
@@ -811,6 +887,7 @@ run_model <- function(..., sim_duration = runtime,
   sag_loss[which(ages == 30):which(ages == 40-da)] <- parameters$sag_loss_30to39
   sag_loss[which(ages == 40):which(ages == 50-da)] <- parameters$sag_loss_40to49
   sag_loss[which(ages == 50):n_agecat] <- parameters$sag_loss_50to70
+  parameters$sag_loss <- sag_loss
 
   # Update parameters for intervention scenario: vaccine (= default) or no vaccine (counterfactual)
   if (scenario == "vacc") {
@@ -1305,7 +1382,9 @@ parameter_list <- list(
   eag_prog_function_intercept = 9.5,  # Margaret's Ethiopia fit, 19.8873 in Shevanthi's
   eag_prog_function_rate = 0.1281,  # Margaret's Ethiopia fit, 0.977 in Shevanthi's
   pr_ir_enchb = 0.005,
+  pr_ir_enchb_age_threshold = 20,
   pr_ir_cc = 0.028,
+  pr_ir_cc_age_threshold = 30,
   pr_ic_enchb = 0.01,
   sag_loss_0to9 = 0.001,  # Shimakawa values, inactive carrier to recovered transition
   sag_loss_10to19 = 0.0046,
@@ -1313,14 +1392,14 @@ parameter_list <- list(
   sag_loss_30to39 = 0.0105,
   sag_loss_40to49 = 0.0232,
   sag_loss_50to70 = 0.0239,
-  #sag_loss = sagloss_rates,
   pr_enchb_cc = 0.04,  # Progression to CC (from ENCHB)
   cirrhosis_prog_coefficient = 0.0341,
+  cirrhosis_age_threshold = 25,
   cirrhosis_prog_male_cofactor = 12.32,
   dccrate = 0.04,  # Progression from CC to DCC
   # PROGRESSION RATES TO HEPATOCELLULAR CARCINOMA
   cancer_prog_coefficient = 4.0452e-05,  # value from Margaret
-  cancer_age_treshold = 10,  # value from Margaret
+  cancer_age_threshold = 10,  # value from Margaret
   cancer_prog_male_cofactor = 5.2075,  # value from Margaret
   hccr_it = 1,
   hccr_ir = 2,
@@ -1356,8 +1435,20 @@ parameter_names <- names(parameter_list)
 #parameter_list <- lapply(parameter_list, FUN= function(x) x*0)
 tic()
 sim <- run_model(sim_duration = runtime, default_parameter_list = parameter_list,
-                 parms_to_change = list(b1 = 0.5, b2 = 0.01, b3 = 0.01, alpha = 15,
-                                        mtct_prob_s = 0.05, mtct_prob_e = 0.6),
+                 parms_to_change = list(b1 = 0.1, b2 = 0.05, b3 = 0.001, alpha = 6.5,
+                                        mtct_prob_s = 0.05, mtct_prob_e = 0.6,
+                                        eag_prog_function_intercept = 1,
+                                        eag_prog_function_rate = 0,
+                                        pr_it_ir = 0.1, pr_ir_ic = 0.7,
+                                        pr_ir_cc = 0.7, pr_enchb_cc = 0.005,
+                                        hccr_ir = 4,
+                                        cirrhosis_prog_male_cofactor = 20,
+                                        cancer_prog_coefficient = 0.0002,
+                                        mu_hcc = 1.5,
+                                        mu_dcc = 1,
+                                        hccr_dcc = 0.2,
+                                        mu_cc = 0.005,
+                                        p_chronic_function_r = 0.715, p_chronic_function_s = 0.506),
                  scenario = "vacc")
 out <- code_model_output(sim)
 toc()
@@ -1488,6 +1579,13 @@ outpath$infectioncat_total$carriers[which(outpath$infectioncat_total$time == 199
 # Carrier prevalence in 2015
 outpath$infectioncat_total$carriers[which(outpath$infectioncat_total$time == 2015)]/
   outpath$pop_total$pop_total[which(outpath$pop_total$time == 2015)]
+# Carrier prevalence in 2020
+outpath$infectioncat_total$carriers[which(outpath$infectioncat_total$time == 2020)]/
+  outpath$pop_total$pop_total[which(outpath$pop_total$time == 2020)]
+# Reduction:
+(outpath$infectioncat_total$carriers[which(outpath$infectioncat_total$time == 2015)]/
+  outpath$pop_total$pop_total[which(outpath$pop_total$time == 2015)])/(outpath$infectioncat_total$carriers[which(outpath$infectioncat_total$time == 1990)]/
+  outpath$pop_total$pop_total[which(outpath$pop_total$time == 1990)])
 
 # Carrier prevalence over time in different age groups
 plot(x = outpath$time, y = as.numeric(unlist(outpath$carriers[,2]/outpath$pop[,2]))) # age 0.5
@@ -1518,6 +1616,8 @@ points(input_hbeag_dataset$age, input_hbeag_dataset$data_value)
 # Carrier prevalence by age in 2015
 plot(ages, outpath$carriers[which(outpath$time == 2015),]/
        outpath$pop[which(outpath$time == 2015),], type = "l", ylim = c(0,0.3))
+plot(ages, outpath$carriers[which(outpath$time == 2020),]/
+       outpath$pop[which(outpath$time == 2020),], type = "l", ylim = c(0,0.3))
 
 # HBeAg prevalence in chronic carriers by age in 2015
 plot(ages, outpath$eag_positive[which(outpath$time == 2015),]/
@@ -3179,7 +3279,7 @@ params_mat$b1 <- 0 + (0.2-0) * params_mat$b1 # rescale U(0,1) to be U(0,0.2)
 params_mat$b2 <- 0 + (0.01-0) * params_mat$b2 # rescale U(0,1) to be U(0,0.01)
 params_mat$mtct_prob_s <- 0 + (0.5-0) * params_mat$mtct_prob_s # rescale U(0,1) to be U(0,0.5)
 
-params_mat <- data.frame(b1 = 0.1, b2 = 0.001, mtct_prob_s = 0.05)
+params_mat <- data.frame(b1 = 0.11, b2 = 0.05, mtct_prob_s = 0.05)
 
 # Run without parallelising
 time1 <- proc.time()
@@ -3191,7 +3291,7 @@ out_mat <- apply(params_mat,1,
                                       list(b1 = as.list(x)$b1,
                                            b2 = as.list(x)$b2,
                                            mtct_prob_s = as.list(x)$mtct_prob_s,
-                                           alpha = 15, #7
+                                           alpha = 7,
                                            eag_prog_function_intercept = 1,
                                            eag_prog_function_rate = 0,
                                            pr_it_ir = 0.1, pr_ir_ic = 0.7,
@@ -3203,7 +3303,8 @@ out_mat <- apply(params_mat,1,
                                            mu_dcc = 1,
                                            hccr_dcc = 0.2,
                                            mu_cc = 0.005,
-                                           mtct_prob_e = 0.6)))
+                                           mtct_prob_e = 0.6,
+                                           b3 = 0.01)))
 sim_duration = proc.time() - time1
 sim_duration["elapsed"]/60
 
@@ -3214,10 +3315,9 @@ res_mat[res_mat$sse == min(res_mat$sse),]
 
 
 # Output plots
-library(gridExtra)
 
 # For loop to create plot set for every parameter combination
-pdf(file = here("output/manual_fit_plots", "change_in_waifw_matrix.pdf"), paper="a4r")
+pdf(file = here("output/manual_fit_plots", "change_betas.pdf"), paper="a4r")
 plot_list = list()
 for (i in 1:length(out_mat)) {
 
@@ -3282,9 +3382,10 @@ for (i in 1:length(out_mat)) {
   p_globocan1 <- print(ggplot(data = subset(out_mat[[i]]$mapped_output$globocan_hcc_incidence,
                        time == 2018)) +
     geom_col(aes(x = paste(age_min,"-",age_max), y = model_value*100000)) +
-    #  geom_errorbar(aes(x = paste(age_min,"-",age_max), ymax = ci_upper, ymin = ci_lower)) +
     geom_point(aes(x = paste(age_min,"-",age_max), y = data_value*100000), col = "red",
                shape = 4, stroke = 1.5) +
+    geom_errorbar(aes(x = paste(age_min,"-",age_max), ymax = ci_upper*100000, ymin = ci_lower*100000),
+                  col = "red", width = 0.2) +
     facet_grid(outcome ~ sex) +
     labs(title = "GLOBOCAN HBV-related HCC incidence and mortality rates 2018",
          y = "Cases/deaths per 100000 PY", x = "Age (years)") +
@@ -3325,6 +3426,8 @@ for (i in 1:length(out_mat)) {
     geom_col(aes(x = gsub("_.*$","",outcome), y = model_value)) +
     geom_point(aes(x = gsub("_.*$","",outcome), y = data_value),
                col = "red", size = 5, shape = 4, stroke = 1.5) +
+    geom_errorbar(aes(x = gsub("_.*$","",outcome), ymax = ci_upper, ymin = ci_lower),
+                  col = "red", width = 0.2) +
     labs(y = "Proportion male", x = "") +
     theme(plot.title = element_text(hjust = 0.5)) +
     ylim(0,1)
@@ -3395,6 +3498,8 @@ for (i in 1:length(out_mat)) {
                                        model_num != "cc_dcc" & model_num != "hcc")) +
     geom_col(aes(x = model_num, y = model_value))+
     geom_point(aes(x = model_num, y = data_value), shape = 4, size = 3, stroke = 2, col = "red") +
+    geom_errorbar(aes(x = model_num,
+                      ymax = ci_upper, ymin = ci_lower), col= "red", width = 0.2) +
     facet_grid(~sex, scales = "free") +
     labs(title = "GMB1 Infection phase in \nchronic carriers",
          y = "Prevalence (proportion)", x = "") +
@@ -3407,6 +3512,8 @@ for (i in 1:length(out_mat)) {
                                       (model_num == "cc_dcc" | model_num == "hcc"))) +
     geom_col(aes(x = model_num, y = model_value))+
     geom_point(aes(x = model_num, y = data_value), shape = 4, size = 3, stroke = 2, col = "red") +
+    geom_errorbar(aes(x = model_num,
+                      ymax = ci_upper, ymin = ci_lower), col= "red", width = 0.2) +
     facet_grid(~sex, scales = "free") +
     labs(title = "GMB1 Liver disease in chronic carriers",
          y = "Prevalence (proportion)", x = "") +
@@ -3418,6 +3525,8 @@ for (i in 1:length(out_mat)) {
                                   grepl(".*it,_ir,_ic_and_enchb$", out_mat[[i]]$mapped_output$nat_hist_prevalence$outcome))) +
     geom_col(aes(x = model_num, y = model_value))+
     geom_point(aes(x = model_num, y = data_value), shape = 4, size = 3, stroke = 2, col = "red") +
+    geom_errorbar(aes(x = model_num,
+                      ymax = ci_upper, ymin = ci_lower), col= "red", width = 0.2) +
     facet_grid(~time, scales = "free") +
     labs(title = "1 Infection phase in \nchronic carriers without liver disease",
          y = "Prevalence (proportion)", x = "") +
@@ -3431,6 +3540,8 @@ for (i in 1:length(out_mat)) {
                                       outcome == "cc_and_dcc_prevalence_in_chronic_carriers"))) +
     geom_col(aes(x = model_num, y = model_value))+
     geom_point(aes(x = model_num, y = data_value), shape = 4, size = 3, stroke = 2, col = "red") +
+    geom_errorbar(aes(x = model_num,
+                      ymax = ci_upper, ymin = ci_lower), col= "red", width = 0.2) +
     facet_grid(~time, scales = "free_x") +
     labs(title = "1 Liver disease in chronic carriers",
          y = "Prevalence (proportion)", x = "") +
@@ -3443,6 +3554,8 @@ for (i in 1:length(out_mat)) {
     geom_col(aes(x = reorder(paste(age_min,"-",age_max), age_min), y = model_value))+
     geom_point(aes(x = reorder(paste(age_min,"-",age_max), age_min), y = data_value),
                shape = 4, size = 3, stroke = 2, col = "red") +
+    geom_errorbar(aes(x = reorder(paste(age_min,"-",age_max), age_min),
+                      ymax = ci_upper, ymin = ci_lower), col= "red", width = 0.2) +
     labs(title = "1 Significant liver fibrosis or cirrhosis\n in chronic carriers",
          y = "Prevalence (proportion)", x = "Age") +
     theme(plot.title = element_text(hjust = 0.5)) +
@@ -3468,6 +3581,8 @@ for (i in 1:length(out_mat)) {
     geom_col(aes(x = model_num, y = model_value))+
     geom_point(aes(x = model_num, y = data_value),
                shape = 4, size = 3, stroke = 2, col = "red") +
+    geom_errorbar(aes(x = model_num,
+                      ymax = ci_upper, ymin = ci_lower), col= "red", width = 0.2) +
     labs(title = "Cirrhosis in HBsAg-positive HCC patients",
          y = "Proportion", x = "") +
     theme(plot.title = element_text(hjust = 0.5),
@@ -3481,6 +3596,8 @@ for (i in 1:length(out_mat)) {
     geom_col(aes(x = reorder(paste(age_min,"-",age_max), age_min), y = model_value))+
     geom_point(aes(x = reorder(paste(age_min,"-",age_max), age_min), y = data_value),
                shape = 4, size = 3, stroke = 2, col = "red") +
+    geom_errorbar(aes(x = reorder(paste(age_min,"-",age_max),age_min),
+                      ymax = ci_upper, ymin = ci_lower), col= "red", width = 0.2) +
     facet_grid(~id_unique, scales = "free_x") +
     labs(title = "HBeAg prevalence in HBsAg-positive HCC/cirrhosis patients",
          y = "Prevalence (proportion)", x = "Age") +
@@ -3499,7 +3616,8 @@ for (i in 1:length(out_mat)) {
     geom_col(aes(x = model_num, y = model_value))+
     geom_point(aes(x = model_num, y = data_value),
                shape = 4, size = 3, stroke = 2, col = "red") +
-    geom_errorbar(aes(x = model_num, ymax = ci_upper, ymin = ci_lower), col = "red", width = 0.1) +
+    geom_errorbar(aes(x = model_num, ymax = ci_upper, ymin = ci_lower),
+                  col = "red", width = 0.1) +
     labs(title = "Chronic infections due\nto vertical transmission",
          y = "Proportion", x = "") +
     theme(plot.title = element_text(hjust = 0.5)) +
@@ -3510,6 +3628,8 @@ for (i in 1:length(out_mat)) {
     geom_col(aes(x = id_paper, y = model_value))+
     geom_point(aes(x = id_paper, y = data_value),
                shape = 4, size = 3, stroke = 2, col = "red") +
+    geom_errorbar(aes(x = id_paper, ymax = ci_upper, ymin = ci_lower),
+                  col = "red", width = 0.1) +
     facet_grid(~time, scales = "free_x") +
     labs(title = "Mother-to-child transmission risk",
          y = "Risk (proportion)", x = "Study ID") +
