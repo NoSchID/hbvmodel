@@ -14,6 +14,7 @@ require(here)  # for setting working directory
 library(profvis)  # for code profiling
 require(ggplot2)  # for calibration plots
 require(gridExtra)  # for calibration plots
+require(grid)
 
 ### Simulation parameters ----
 ## Country
@@ -3279,7 +3280,7 @@ params_mat$b1 <- 0 + (0.2-0) * params_mat$b1 # rescale U(0,1) to be U(0,0.2)
 params_mat$b2 <- 0 + (0.01-0) * params_mat$b2 # rescale U(0,1) to be U(0,0.01)
 params_mat$mtct_prob_s <- 0 + (0.5-0) * params_mat$mtct_prob_s # rescale U(0,1) to be U(0,0.5)
 
-params_mat <- data.frame(b1 = 0.11, b2 = 0.05, mtct_prob_s = 0.05)
+params_mat <- data.frame(b1 = 0.12, b2 = 0.04, mtct_prob_s = 0.05)
 
 # Run without parallelising
 time1 <- proc.time()
@@ -3317,17 +3318,17 @@ res_mat[res_mat$sse == min(res_mat$sse),]
 # Output plots
 
 # For loop to create plot set for every parameter combination
-pdf(file = here("output/manual_fit_plots", "change_betas.pdf"), paper="a4r")
+pdf(file = here("output/manual_fit_plots", "testplotparms.pdf"), paper="a4r")
 plot_list = list()
 for (i in 1:length(out_mat)) {
 
   # Parameter set table and SSE
-  p_parms <- print(grid.arrange(tableGrob(lapply(out_mat[[i]]$parameter_set[1:17], function(x) round(x,6)),
-                         rows = names(out_mat[[i]]$parameter_set[1:17]),
+  p_parms <- print(grid.arrange(tableGrob(lapply(out_mat[[i]]$parameter_set[1:21], function(x) round(x,6)),
+                         rows = names(out_mat[[i]]$parameter_set[1:21]),
                          cols = "Parameters",
                          theme = ttheme_minimal(base_size = 8)),
-               tableGrob(lapply(out_mat[[i]]$parameter_set[18:33], function(x) round(x,6)),
-                         rows = names(out_mat[[i]]$parameter_set[18:33]),
+               tableGrob(lapply(out_mat[[i]]$parameter_set[22:41], function(x) round(x,6)),
+                         rows = names(out_mat[[i]]$parameter_set[22:41]),
                          cols = "Parameters (cont.)", theme=ttheme_minimal(base_size = 8)),
                tableGrob(out_mat[[i]]$sse, cols = "SSE"),
                tableGrob("Legend:\n Crosses = data\n Lines = model\n Bars = model"),
@@ -3335,16 +3336,45 @@ for (i in 1:length(out_mat)) {
 
 
   ## HBsAg prevalence by time and age
-  p_hbsag1 <- print(ggplot(data = out_mat[[i]]$mapped_output$seromarker_prevalence[
-    out_mat[[i]]$mapped_output$seromarker_prevalence$outcome == "HBsAg_prevalence",]) +
+
+  # Define study labels
+  hbsag_studies <- unique(data.frame(time = subset(out_mat[[1]]$mapped_output$seromarker_prevalence,
+                                                   outcome == "HBsAg_prevalence" & is.na(data_value) == FALSE)$time,
+                                     paper_first_author = subset(out_mat[[1]]$mapped_output$seromarker_prevalence,
+                                                                 outcome == "HBsAg_prevalence" & is.na(data_value) == FALSE)$paper_first_author,
+                                     paper_year = subset(out_mat[[1]]$mapped_output$seromarker_prevalence,
+                                                         outcome == "HBsAg_prevalence" & is.na(data_value) == FALSE)$paper_year,
+                                     study_link = subset(out_mat[[1]]$mapped_output$seromarker_prevalence,
+                                                         outcome == "HBsAg_prevalence" & is.na(data_value) == FALSE)$study_link))
+  years_with_several_studies <- hbsag_studies[duplicated(hbsag_studies$time),1]
+  hbsag_studies_double <- data.frame(time = years_with_several_studies,
+                                     paper_first_author = "Several studies",
+                                     paper_year = "Several studies",
+                                     study_link = "Several studies")
+  hbsag_studies_double$label <- c("Thursz 1995, Bellamy 1998", "Whittle 1991, Whittle 1995", "Whittle 1995, Kirk 2004")
+  hbsag_studies_unique <- hbsag_studies[!(hbsag_studies$time %in% years_with_several_studies),]
+  hbsag_studies_unique$label <- paste(hbsag_studies_unique$paper_first_author, hbsag_studies_unique$paper_year)
+  hbsag_study_labels <- rbind(hbsag_studies_unique, hbsag_studies_double)
+
+  # Make plot
+  p_hbsag1 <- print(ggplot(data = subset(out_mat[[i]]$mapped_output$seromarker_prevalence,
+                                         outcome == "HBsAg_prevalence")) +
     geom_line(aes(x = age, y = model_value, group = sex, colour = sex)) +
     geom_point(aes(x = age, y = data_value, group = sex, colour = sex),
                shape = 4, stroke = 1.5) +
     #scale_fill_manual(name = "Type", values = c("Data" = "red")) +
     geom_errorbar(aes(x = age, ymax = ci_upper, ymin = ci_lower, group = sex, colour = sex)) +
     facet_wrap(~ time, ncol = 3) +
-    labs(title = "HBsAg", y = "Prevalence (proportion)", x = "Age (years)") +
-    theme(plot.title = element_text(hjust = 0.5)) +
+    geom_text(size = 3, data = hbsag_study_labels,
+              mapping = aes(x = Inf, y = Inf, label = label), hjust=1.05, vjust=1.5) +
+    labs(title = "HBsAg prevalence over time and by age",
+         y = "Prevalence (proportion)", x = "Age (years)",
+         tag = "- Model\nx Data",
+         caption = "Keneba Manduar cohort: Whittle studies, Van der Sande 2005 | GHIS: Chotard 1992, Fortuin 1993, Wild 1993 | GLCS: Kirk 2004 | PROLIFICA: Lemoine 2016") +
+    theme_bw() +
+    theme(plot.title = element_text(hjust = 0.5), plot.tag.position = c(0.89,0.7),
+          plot.tag = element_text(hjust = 0, size = 10),
+          plot.caption = element_text(hjust = 0, size = 6)) +
     ylim(0,0.6))
 
   # Carrier prevalence over time
@@ -3353,29 +3383,90 @@ for (i in 1:length(out_mat)) {
                   y = apply(out_mat[[i]]$full_output$carriers,1,sum)/
                     apply(out_mat[[i]]$full_output$pop,1,sum))) +
     labs(title = "HBsAg", y = "Prevalence (proportion)", x = "Time") +
+    theme_bw() +
     theme(plot.title = element_text(hjust = 0.5)) +
     ylim(0,0.6))
 
   ## Anti-HBc prevalence by time and age
+
+  # Define study labels
+  anti_hbc_studies <- unique(data.frame(time = subset(out_mat[[1]]$mapped_output$seromarker_prevalence,
+                                                      outcome == "Anti_HBc_prevalence" & is.na(data_value) == FALSE)$time,
+                                        paper_first_author = subset(out_mat[[1]]$mapped_output$seromarker_prevalence,
+                                                                    outcome == "Anti_HBc_prevalence" & is.na(data_value) == FALSE)$paper_first_author,
+                                        paper_year = subset(out_mat[[1]]$mapped_output$seromarker_prevalence,
+                                                            outcome == "Anti_HBc_prevalence" & is.na(data_value) == FALSE)$paper_year,
+                                        study_link = subset(out_mat[[1]]$mapped_output$seromarker_prevalence,
+                                                            outcome == "Anti_HBc_prevalence" & is.na(data_value) == FALSE)$study_link))
+  years_with_several_studies_antihbc <- anti_hbc_studies[duplicated(anti_hbc_studies$time),1]
+  anti_hbc_studies_double <- data.frame(time = years_with_several_studies_antihbc,
+                                        paper_first_author = "Several studies",
+                                        paper_year = "Several studies",
+                                        study_link = "Several studies")
+  anti_hbc_studies_double$label <- "Thursz 1995, Bellamy 1998"
+  anti_hbc_studies_unique <- anti_hbc_studies[!(anti_hbc_studies$time %in% years_with_several_studies_antihbc),]
+  anti_hbc_studies_unique$label <- paste(anti_hbc_studies_unique$paper_first_author, anti_hbc_studies_unique$paper_year)
+  antihbc_study_labels <- rbind(anti_hbc_studies_unique, anti_hbc_studies_double)
+
+  # Make plot
   p_antihbc <- print(ggplot(data = out_mat[[i]]$mapped_output$seromarker_prevalence[
     out_mat[[i]]$mapped_output$seromarker_prevalence$outcome == "Anti_HBc_prevalence",]) +
     geom_line(aes(x = age, y = model_value, group  = sex, colour = sex)) +
     geom_point(aes(x = age, y = data_value, group = sex, colour = sex), shape = 4, stroke = 1.5) +
     geom_errorbar(aes(x = age, ymax = ci_upper, ymin = ci_lower, group = sex, colour = sex)) +
     facet_wrap(~ time, ncol = 3) +
-    labs(title = "Anti-HBc", y = "Prevalence (proportion)", x = "Age (years)") +
-    theme(plot.title = element_text(hjust = 0.5)) +
+    geom_text(size = 3, data = antihbc_study_labels,
+                mapping = aes(x = Inf, y = Inf, label = label), hjust=1.05, vjust=1.5) +
+    labs(title = "Anti-HBc prevalence over time and by age",
+         y = "Prevalence (proportion)", x = "Age (years)",
+         tag = "- Model\nx Data",
+         caption = "Keneba Manduar cohort: Whittle studies") +
+    theme_bw() +
+    theme(plot.title = element_text(hjust = 0.5),
+          plot.tag.position = c(0.89,0.7),
+          plot.tag = element_text(hjust = 0, size = 10),
+          plot.caption = element_text(hjust = 0, size = 6)) +
     ylim(0,1))
 
   ## HBeAg prevalence by time and age
+
+  # Define study labels
+  hbeag_studies <- unique(data.frame(time = subset(out_mat[[1]]$mapped_output$seromarker_prevalence,
+                                                   outcome == "HBeAg_prevalence" & is.na(data_value) == FALSE)$time,
+                                     paper_first_author = subset(out_mat[[1]]$mapped_output$seromarker_prevalence,
+                                                                 outcome == "HBeAg_prevalence" & is.na(data_value) == FALSE)$paper_first_author,
+                                     paper_year = subset(out_mat[[1]]$mapped_output$seromarker_prevalence,
+                                                         outcome == "HBeAg_prevalence" & is.na(data_value) == FALSE)$paper_year,
+                                     study_link = subset(out_mat[[1]]$mapped_output$seromarker_prevalence,
+                                                         outcome == "HBeAg_prevalence" & is.na(data_value) == FALSE)$study_link))
+  years_with_several_studies_hbeag <- unique(hbeag_studies[duplicated(hbeag_studies$time),1])
+  hbeag_studies_double <- data.frame(time = years_with_several_studies_hbeag,
+                                     paper_first_author = "Several studies",
+                                     paper_year = "Several studies",
+                                     study_link = "Several studies")
+  hbeag_studies_double$label <- c("Whittle 1995, Mendy 2008", "Van der Sande 2006, Mendy 2008")
+  hbeag_studies_unique <- hbeag_studies[!(hbeag_studies$time %in% years_with_several_studies_hbeag),]
+  hbeag_studies_unique$label <- paste(hbeag_studies_unique$paper_first_author, hbeag_studies_unique$paper_year)
+  hbeag_study_labels <- rbind(hbeag_studies_unique, hbeag_studies_double)
+
+  # Make plot
   p_hbeag <- print(ggplot(data = out_mat[[i]]$mapped_output$seromarker_prevalence[
     out_mat[[i]]$mapped_output$seromarker_prevalence$outcome == "HBeAg_prevalence",]) +
     geom_line(aes(x = age, y = model_value, group  = sex, colour = sex)) +
     geom_point(aes(x = age, y = data_value, group = sex, colour = sex), shape = 4, stroke = 1.5) +
     geom_errorbar(aes(x = age, ymax = ci_upper, ymin = ci_lower, group = sex, colour = sex)) +
     facet_wrap(~ time, ncol = 3) +
-    labs(title = "HBeAg", y = "Prevalence (proportion)", x = "Age (years)") +
-    theme(plot.title = element_text(hjust = 0.5)) +
+    geom_text(size = 3, data = hbeag_study_labels,
+                mapping = aes(x = Inf, y = Inf, label = label), hjust=1.05, vjust=1.5) +
+    labs(title = "HBeAg prevalence over time and by age",
+         y = "Prevalence (proportion)", x = "Age (years)",
+         tag = "- Model\nx Data",
+         caption = "Keneba Manduar cohort: Whittle studies, Mendy 1999 & 2008, Van der Sande 2006, Shimakawa 2016 |\nGHIS: Chotard 1992, Fortuin 1993, Whittle 1995, Mendy 1999, Peto 2014 | GLCS: Mendy 2010 | PROLIFICA: Lemoine 2016") +
+    theme_bw() +
+    theme(plot.title = element_text(hjust = 0.5),
+          plot.tag.position = c(0.89,0.7),
+          plot.tag = element_text(hjust = 0, size = 10),
+          plot.caption = element_text(hjust = 0, size = 6)) +
     ylim(0,1))
 
   ## GLOBOCAN PAF-adjusted cancer incidence and mortality in 2018
@@ -3387,6 +3478,7 @@ for (i in 1:length(out_mat)) {
     geom_errorbar(aes(x = paste(age_min,"-",age_max), ymax = ci_upper*100000, ymin = ci_lower*100000),
                   col = "red", width = 0.2) +
     facet_grid(outcome ~ sex) +
+    theme_bw() +
     labs(title = "GLOBOCAN HBV-related HCC incidence and mortality rates 2018",
          y = "Cases/deaths per 100000 PY", x = "Age (years)") +
     theme(plot.title = element_text(hjust = 0.5)) +
@@ -3407,16 +3499,16 @@ for (i in 1:length(out_mat)) {
 
   ## GBD HBV-related cirrhosis mortality rate
   p_gbd <- print(ggplot(data = out_mat[[i]]$mapped_output$gbd_cirrhosis_mortality) +
-          geom_line(aes(x = (age_min+age_max)/2, y = model_value*100000)) +
-          geom_point(aes(x = (age_min+age_max)/2, y = data_value*100000), col = "red",
+          geom_col(aes(x = paste(age_min,"-",age_max), y = model_value*100000)) +
+          geom_point(aes(x = paste(age_min,"-",age_max), y = data_value*100000), col = "red",
                      shape = 4, stroke = 1.5) +
-          geom_errorbar(aes(x = (age_min+age_max)/2, ymax = ci_upper*100000, ymin = ci_lower*100000),
+          geom_errorbar(aes(x = paste(age_min,"-",age_max), ymax = ci_upper*100000, ymin = ci_lower*100000),
                         col = "red", width = 0.5) +
           facet_grid(time ~ sex) +
           labs(title = "GBD HBV-related cirrhosis mortality rates",
                y = "Deaths per 100000 PY", x = "Age (years)") +
           theme(plot.title = element_text(hjust = 0.5), axis.text.x = element_text(angle = 90)) +
-          ylim(0,600))
+          ylim(0,300))
 
   # Demographic characteristics of HBV-related liver disease patients
   # Proportion male
@@ -3478,13 +3570,13 @@ for (i in 1:length(out_mat)) {
 
   ## ORs
   p_or <- print(ggplot(data = out_mat[[i]]$mapped_output$odds_ratios) +
-    geom_col(aes(x = gsub("odds_ratio_", "", outcome), y = model_value)) +
-    geom_point(aes(x = gsub("odds_ratio_", "", outcome), y = data_value),
+    geom_col(aes(x = gsub("odds_ratio_", "", outcome), y = log(model_value))) +
+    geom_point(aes(x = gsub("odds_ratio_", "", outcome), y = log(data_value)),
                col = "red", shape = 4, size = 3, stroke = 2) +
     geom_errorbar(aes(x = gsub("odds_ratio_", "", outcome),
-                      ymax = ci_upper, ymin = ci_lower), col= "red", width = 0.2) +
-    labs(title = "Odds ratios",
-         y = "OR", x = "Exposure and outcome") +
+                      ymax = log(ci_upper), ymin = log(ci_lower)), col= "red", width = 0.2) +
+    labs(title = "Odds ratios for liver disease outcomes",
+         y = "ln(OR)", x = "Exposure and outcome") +
     theme(plot.title = element_text(hjust = 0.5),
           axis.text.x = element_text(angle = 10, vjust = 0.5)))
 
@@ -3756,6 +3848,7 @@ for (i in 1:length(out_mat)) {
 
 }
 dev.off()
+
 
 # Parallelised code ----
 # Set up cluster
