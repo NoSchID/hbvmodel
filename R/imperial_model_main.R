@@ -3328,15 +3328,14 @@ for (i in 1:length(out_mat)) {
 
   # Parameter set table and SSE
   p_parms <- print(grid.arrange(tableGrob(lapply(out_mat[[i]]$parameter_set[1:21], function(x) round(x,6)),
-                         rows = names(out_mat[[i]]$parameter_set[1:21]),
-                         cols = "Parameters",
-                         theme = ttheme_minimal(base_size = 8)),
-               tableGrob(lapply(out_mat[[i]]$parameter_set[22:41], function(x) round(x,6)),
-                         rows = names(out_mat[[i]]$parameter_set[22:41]),
-                         cols = "Parameters (cont.)", theme=ttheme_minimal(base_size = 8)),
-               tableGrob(out_mat[[i]]$sse, cols = "SSE"),
-               tableGrob("Legend:\n Crosses = data\n Lines = model\n Bars = model"),
-               nrow = 2, layout_matrix = rbind(c(1,2,3), c(1,2,4))))
+                                          rows = names(out_mat[[i]]$parameter_set[1:21]),
+                                          cols = "Parameters",
+                                          theme = ttheme_minimal(base_size = 8)),
+                                tableGrob(lapply(out_mat[[i]]$parameter_set[22:41], function(x) round(x,6)),
+                                          rows = names(out_mat[[i]]$parameter_set[22:41]),
+                                          cols = "Parameters (cont.)", theme=ttheme_minimal(base_size = 8)),
+                                tableGrob(out_mat[[i]]$sse, cols = "SSE"),
+                                nrow = 1))
 
 
   ## HBsAg prevalence by time and age
@@ -3363,33 +3362,36 @@ for (i in 1:length(out_mat)) {
   # Make plot
   p_hbsag1 <- print(ggplot(data = subset(out_mat[[i]]$mapped_output$seromarker_prevalence,
                                          outcome == "HBsAg_prevalence")) +
-    geom_line(aes(x = age, y = model_value, group = sex, colour = sex)) +
-    geom_point(aes(x = age, y = data_value, group = sex, colour = sex),
-               shape = 4, stroke = 1.5) +
-    #scale_fill_manual(name = "Type", values = c("Data" = "red")) +
-    geom_errorbar(aes(x = age, ymax = ci_upper, ymin = ci_lower, group = sex, colour = sex)) +
-    facet_wrap(~ time, ncol = 3) +
-    geom_text(size = 3, data = hbsag_study_labels,
-              mapping = aes(x = Inf, y = Inf, label = label), hjust=1.05, vjust=1.5) +
-    labs(title = "HBsAg prevalence over time and by age",
-         y = "Prevalence (proportion)", x = "Age (years)",
-         tag = "- Model\nx Data",
-         caption = "Keneba Manduar cohort: Whittle studies, Van der Sande 2005 | GHIS: Chotard 1992, Fortuin 1993, Wild 1993 | GLCS: Kirk 2004 | PROLIFICA: Lemoine 2016") +
-    theme_bw() +
-    theme(plot.title = element_text(hjust = 0.5), plot.tag.position = c(0.89,0.7),
-          plot.tag = element_text(hjust = 0, size = 10),
-          plot.caption = element_text(hjust = 0, size = 6)) +
-    ylim(0,0.6))
+                      geom_line(aes(x = age, y = model_value, linetype = "Model",
+                                    colour = sex)) +
+                      geom_point(aes(x = age, y = data_value,
+                                     fill = "Data", colour = sex),
+                                 shape = 4, stroke = 1.5) +
+                      scale_linetype_manual(name = NULL, values = c("Model" = "solid")) +
+                      scale_fill_manual(name = NULL, values = c("Data" = "black")) +
+                      geom_errorbar(aes(x = age, ymax = ci_upper, ymin = ci_lower, colour = sex)) +
+                      facet_wrap(~ time, ncol = 3) +
+                      geom_text(size = 3, data = hbsag_study_labels,
+                                mapping = aes(x = Inf, y = Inf, label = label), hjust=1.05, vjust=1.5) +
+                      labs(title = "HBsAg prevalence over time and by age",
+                           y = "Prevalence (proportion)", x = "Age (years)",
+                           colour = "Sex",
+                           caption = "Keneba Manduar cohort: Whittle studies, Van der Sande 2005 | GHIS: Chotard 1992, Fortuin 1993, Wild 1993 | GLCS: Kirk 2004 | PROLIFICA: Lemoine 2016") +
+                      theme_bw() +
+                      theme(plot.title = element_text(hjust = 0.5),
+                            plot.caption = element_text(hjust = 0, size = 6),
+                            legend.margin=margin(t = 0, unit="cm")) +
+                      ylim(0,0.6))
 
   # Carrier prevalence over time
   p_hbsag2 <- print(ggplot() +
-    geom_line(aes(x = out_mat[[i]]$full_output$time,
-                  y = apply(out_mat[[i]]$full_output$carriers,1,sum)/
-                    apply(out_mat[[i]]$full_output$pop,1,sum))) +
-    labs(title = "HBsAg", y = "Prevalence (proportion)", x = "Time") +
-    theme_bw() +
-    theme(plot.title = element_text(hjust = 0.5)) +
-    ylim(0,0.6))
+                      geom_line(aes(x = out_mat[[i]]$full_output$time,
+                                    y = apply(out_mat[[i]]$full_output$carriers,1,sum)/
+                                      apply(out_mat[[i]]$full_output$pop,1,sum))) +
+                      labs(title = "Modelled HBsAg prevalence over time", y = "Prevalence (proportion)", x = "Time") +
+                      theme_bw() +
+                      theme(plot.title = element_text(hjust = 0.5)) +
+                      ylim(0,0.6))
 
   ## Anti-HBc prevalence by time and age
 
@@ -3415,22 +3417,24 @@ for (i in 1:length(out_mat)) {
   # Make plot
   p_antihbc <- print(ggplot(data = out_mat[[i]]$mapped_output$seromarker_prevalence[
     out_mat[[i]]$mapped_output$seromarker_prevalence$outcome == "Anti_HBc_prevalence",]) +
-    geom_line(aes(x = age, y = model_value, group  = sex, colour = sex)) +
-    geom_point(aes(x = age, y = data_value, group = sex, colour = sex), shape = 4, stroke = 1.5) +
-    geom_errorbar(aes(x = age, ymax = ci_upper, ymin = ci_lower, group = sex, colour = sex)) +
-    facet_wrap(~ time, ncol = 3) +
-    geom_text(size = 3, data = antihbc_study_labels,
+      geom_line(aes(x = age, y = model_value, linetype = "Model", colour = sex)) +
+      geom_point(aes(x = age, y = data_value, fill = "Data", colour = sex),
+                 shape = 4, stroke = 1.5) +
+      geom_errorbar(aes(x = age, ymax = ci_upper, ymin = ci_lower, colour = sex)) +
+      scale_linetype_manual(name = NULL, values = c("Model" = "solid")) +
+      scale_fill_manual(name = NULL, values = c("Data" = "black")) +
+      facet_wrap(~ time, ncol = 3) +
+      geom_text(size = 3, data = antihbc_study_labels,
                 mapping = aes(x = Inf, y = Inf, label = label), hjust=1.05, vjust=1.5) +
-    labs(title = "Anti-HBc prevalence over time and by age",
-         y = "Prevalence (proportion)", x = "Age (years)",
-         tag = "- Model\nx Data",
-         caption = "Keneba Manduar cohort: Whittle studies") +
-    theme_bw() +
-    theme(plot.title = element_text(hjust = 0.5),
-          plot.tag.position = c(0.89,0.7),
-          plot.tag = element_text(hjust = 0, size = 10),
-          plot.caption = element_text(hjust = 0, size = 6)) +
-    ylim(0,1))
+      labs(title = "Anti-HBc prevalence over time and by age",
+           y = "Prevalence (proportion)", x = "Age (years)",
+           colour = "Sex",
+           caption = "Keneba Manduar cohort: Whittle studies") +
+      theme_bw() +
+      theme(plot.title = element_text(hjust = 0.5),
+            plot.caption = element_text(hjust = 0, size = 6),
+            legend.margin=margin(t = 0, unit="cm")) +
+      ylim(0,1))
 
   ## HBeAg prevalence by time and age
 
@@ -3456,80 +3460,82 @@ for (i in 1:length(out_mat)) {
   # Make plot
   p_hbeag <- print(ggplot(data = out_mat[[i]]$mapped_output$seromarker_prevalence[
     out_mat[[i]]$mapped_output$seromarker_prevalence$outcome == "HBeAg_prevalence",]) +
-    geom_line(aes(x = age, y = model_value, group  = sex, colour = sex)) +
-    geom_point(aes(x = age, y = data_value, group = sex, colour = sex), shape = 4, stroke = 1.5) +
-    geom_errorbar(aes(x = age, ymax = ci_upper, ymin = ci_lower, group = sex, colour = sex)) +
-    facet_wrap(~ time, ncol = 3) +
-    geom_text(size = 3, data = hbeag_study_labels,
+      geom_line(aes(x = age, y = model_value, linetype = "Model", colour = sex)) +
+      geom_point(aes(x = age, y = data_value, fill = "Data", colour = sex),
+                 shape = 4, stroke = 1.5) +
+      geom_errorbar(aes(x = age, ymax = ci_upper, ymin = ci_lower, colour = sex)) +
+      scale_linetype_manual(name = NULL, values = c("Model" = "solid")) +
+      scale_fill_manual(name = NULL, values = c("Data" = "black")) +
+      facet_wrap(~ time, ncol = 3) +
+      geom_text(size = 3, data = hbeag_study_labels,
                 mapping = aes(x = Inf, y = Inf, label = label), hjust=1.05, vjust=1.5) +
-    labs(title = "HBeAg prevalence over time and by age",
-         y = "Prevalence (proportion)", x = "Age (years)",
-         tag = "- Model\nx Data",
-         caption = "Keneba Manduar cohort: Whittle studies, Mendy 1999 & 2008, Van der Sande 2006, Shimakawa 2016 |\nGHIS: Chotard 1992, Fortuin 1993, Whittle 1995, Mendy 1999, Peto 2014 | GLCS: Mendy 2010 | PROLIFICA: Lemoine 2016") +
-    theme_bw() +
-    theme(plot.title = element_text(hjust = 0.5),
-          plot.tag.position = c(0.89,0.7),
-          plot.tag = element_text(hjust = 0, size = 10),
-          plot.caption = element_text(hjust = 0, size = 6)) +
-    ylim(0,1))
+      labs(title = "HBeAg prevalence over time and by age",
+           y = "Prevalence (proportion)", x = "Age (years)",
+           colour = "Sex",
+           caption = "Keneba Manduar cohort: Whittle studies, Mendy 1999 & 2008, Van der Sande 2006, Shimakawa 2016 |\nGHIS: Chotard 1992, Fortuin 1993, Whittle 1995, Mendy 1999, Peto 2014 | GLCS: Mendy 2010 | PROLIFICA: Lemoine 2016") +
+      theme_bw() +
+      theme(plot.title = element_text(hjust = 0.5),
+            plot.caption = element_text(hjust = 0, size = 6),
+            legend.margin=margin(t = 0, unit="cm")) +
+      ylim(0,1))
 
   ## GLOBOCAN PAF-adjusted cancer incidence and mortality in 2018
   p_globocan1 <- print(ggplot(data = subset(out_mat[[i]]$mapped_output$globocan_hcc_incidence,
-                       time == 2018)) +
-    geom_col(aes(x = paste(age_min,"-",age_max), y = model_value*100000, fill = "Model")) +
-    geom_point(aes(x = paste(age_min,"-",age_max), y = data_value*100000, colour = "Data"),
-               shape = 4, stroke = 1.5) +
-    geom_errorbar(aes(x = paste(age_min,"-",age_max), ymax = ci_upper*100000, ymin = ci_lower*100000),
-                  col = "red", width = 0.2) +
-    scale_fill_manual("", values = c("Model" = "gray35")) +
-    scale_colour_manual("", values = c("Data" = "red")) +
-    facet_grid(toupper(gsub("_", " ", outcome)) ~ sex) +
-    theme_bw() +
-    labs(title = "GLOBOCAN HBV-related HCC incidence and mortality rates in 2018",
-         y = "Cases/deaths per 100000 PY", x = "Age (years)",
-         subtitle = "GLOBOCAN rates were multiplied by PAF from Ryder 1992 and Kirk 2004 (GLCS)") +
-    theme(plot.title = element_text(hjust = 0.5),
-          plot.subtitle = element_text(hjust = 0.5, size = 10),
-          legend.margin=margin(t = 0, unit="cm")) +
-    ylim(0,100))
+                                            time == 2018)) +
+                         geom_col(aes(x = paste(age_min,"-",age_max), y = model_value*100000, fill = "Model")) +
+                         geom_point(aes(x = paste(age_min,"-",age_max), y = data_value*100000, colour = "Data"),
+                                    shape = 4, stroke = 1.5) +
+                         geom_errorbar(aes(x = paste(age_min,"-",age_max), ymax = ci_upper*100000, ymin = ci_lower*100000),
+                                       col = "red", width = 0.2) +
+                         scale_fill_manual("", values = c("Model" = "gray35")) +
+                         scale_colour_manual("", values = c("Data" = "red")) +
+                         facet_grid(toupper(gsub("_", " ", outcome)) ~ sex) +
+                         theme_bw() +
+                         labs(title = "GLOBOCAN HBV-related HCC incidence and mortality rates in 2018",
+                              y = "Cases/deaths per 100000 PY", x = "Age (years)",
+                              subtitle = "GLOBOCAN rates were multiplied by PAF from Ryder 1992 and Kirk 2004 (GLCS)") +
+                         theme(plot.title = element_text(hjust = 0.5),
+                               plot.subtitle = element_text(hjust = 0.5, size = 10),
+                               legend.margin=margin(t = 0, unit="cm")) +
+                         ylim(0,100))
 
   ## GLOBOCAN PAF-adjusted cancer incidence in 1988 and 1998
   p_globocan2 <- print(ggplot(data = subset(out_mat[[i]]$mapped_output$globocan_hcc_incidence,
-                       time != 2018)) +
-    geom_col(aes(x = paste(age_min,"-",age_max), y = model_value*100000, fill = "Model")) +
-    #  geom_errorbar(aes(x = paste(age_min,"-",age_max), ymax = ci_upper, ymin = ci_lower)) +
-    geom_point(aes(x = paste(age_min,"-",age_max), y = data_value*100000, colour = "Data"),
-               shape = 4, stroke = 1.5) +
-    scale_fill_manual("", values = c("Model" = "gray35")) +
-    scale_colour_manual("", values = c("Data" = "red")) +
-    facet_grid(time ~ sex) +
-    labs(title = "GLOBOCAN HBV-related HCC incidence rates in 1988 and 1998",
-         y = "Cases per 100000 PY", x = "Age (years)",
-         subtitle = "GLOBOCAN rates were multiplied by PAF from Ryder 1992 and Kirk 2004 (GLCS)") +
-    theme_bw() +
-    theme(plot.title = element_text(hjust = 0.5),
-          axis.text.x = element_text(angle = 90),
-          plot.subtitle = element_text(hjust = 0.5, size = 10),
-          legend.margin = margin(t = 0, unit="cm")) +
-    ylim(0,100))
+                                            time != 2018)) +
+                         geom_col(aes(x = paste(age_min,"-",age_max), y = model_value*100000, fill = "Model")) +
+                         #  geom_errorbar(aes(x = paste(age_min,"-",age_max), ymax = ci_upper, ymin = ci_lower)) +
+                         geom_point(aes(x = paste(age_min,"-",age_max), y = data_value*100000, colour = "Data"),
+                                    shape = 4, stroke = 1.5) +
+                         scale_fill_manual("", values = c("Model" = "gray35")) +
+                         scale_colour_manual("", values = c("Data" = "red")) +
+                         facet_grid(time ~ sex) +
+                         labs(title = "GLOBOCAN HBV-related HCC incidence rates in 1988 and 1998",
+                              y = "Cases per 100000 PY", x = "Age (years)",
+                              subtitle = "GLOBOCAN rates were multiplied by PAF from Ryder 1992 and Kirk 2004 (GLCS)") +
+                         theme_bw() +
+                         theme(plot.title = element_text(hjust = 0.5),
+                               axis.text.x = element_text(angle = 90),
+                               plot.subtitle = element_text(hjust = 0.5, size = 10),
+                               legend.margin = margin(t = 0, unit="cm")) +
+                         ylim(0,100))
 
   ## GBD HBV-related cirrhosis mortality rate
   p_gbd <- print(ggplot(data = out_mat[[i]]$mapped_output$gbd_cirrhosis_mortality) +
-          geom_col(aes(x = paste(age_min,"-",age_max), y = model_value*100000, fill = "Model")) +
-          geom_point(aes(x = paste(age_min,"-",age_max), y = data_value*100000, colour = "Data"),
-                     shape = 4, stroke = 1.5) +
-          geom_errorbar(aes(x = paste(age_min,"-",age_max), ymax = ci_upper*100000, ymin = ci_lower*100000),
-                        col = "red", width = 0.5) +
-          scale_fill_manual("", values = c("Model" = "gray35")) +
-          scale_colour_manual("", values = c("Data" = "red")) +
-          facet_grid(time ~ sex) +
-          labs(title = "Global Burden of Disease Study HBV-related cirrhosis mortality rates",
-               y = "Deaths per 100000 PY", x = "Age (years)") +
-          theme_bw() +
-          theme(plot.title = element_text(hjust = 0.5),
-                axis.text.x = element_text(angle = 90),
-                legend.margin = margin(t = 0, unit="cm")) +
-          ylim(0,300))
+                   geom_col(aes(x = paste(age_min,"-",age_max), y = model_value*100000, fill = "Model")) +
+                   geom_point(aes(x = paste(age_min,"-",age_max), y = data_value*100000, colour = "Data"),
+                              shape = 4, stroke = 1.5) +
+                   geom_errorbar(aes(x = paste(age_min,"-",age_max), ymax = ci_upper*100000, ymin = ci_lower*100000),
+                                 col = "red", width = 0.5) +
+                   scale_fill_manual("", values = c("Model" = "gray35")) +
+                   scale_colour_manual("", values = c("Data" = "red")) +
+                   facet_grid(time ~ sex) +
+                   labs(title = "Global Burden of Disease Study HBV-related cirrhosis mortality rates",
+                        y = "Deaths per 100000 PY", x = "Age (years)") +
+                   theme_bw() +
+                   theme(plot.title = element_text(hjust = 0.5),
+                         axis.text.x = element_text(angle = 90),
+                         legend.margin = margin(t = 0, unit="cm")) +
+                   ylim(0,300))
 
   # Demographic characteristics of HBV-related liver disease patients
   # Proportion male
@@ -3567,18 +3573,27 @@ for (i in 1:length(out_mat)) {
 
   ## Combined liver disease demography
   p_ld_demog <- grid.arrange(plot_ld_prop_male, plot_ld_mean_age, nrow = 1,
-               top = "HBV-related liver disease patients: demographic characteristics\nGambia Liver Cancer Study (Mendy 2010)")
+                             top = "HBV-related liver disease patients: demographic characteristics\nGambia Liver Cancer Study (Mendy 2010)")
 
-  ## Risk of chronic carriage
+  ## Risk of chronic carriage: change to author and year and add caption which ones are from Edmunds
   p_p_chronic <- print(ggplot(data = out_mat[[i]]$mapped_output$risk_of_chronic_carriage) +
-    geom_point(aes(x = age, y = data_value), col = "red", shape = 4, stroke = 1.5) +
-    geom_errorbar(aes(x = age, ymax = ci_upper, ymin = ci_lower), col = "red") +
-    geom_line(aes(x = age, y = model_value)) +
-    labs(title = "Risk of chronic carriage by age at infection",
-         y = "Risk (proportion)", x = "Age (years)") +
-    theme(plot.title = element_text(hjust = 0.5)) +
-    ylim(0,1) +
-    xlim(0,30))
+                         geom_line(aes(x = age, y = model_value, group = "Model", linetype = "Model")) +
+                         geom_point(data = subset(out_mat[[i]]$mapped_output$risk_of_chronic_carriage,
+                                                  is.na(data_value) == FALSE),
+                                    aes(x = age, y = data_value, colour = id_paper),
+                                    shape = 4, stroke = 1.5) +
+                         geom_errorbar(data = subset(out_mat[[i]]$mapped_output$risk_of_chronic_carriage,
+                                                     is.na(data_value) == FALSE),
+                                       aes(x = age, ymax = ci_upper, ymin = ci_lower, colour = id_paper)) +
+                         scale_linetype_manual(name = "", values = c("Model" = "solid")) +
+                         labs(title = "Risk of chronic carriage by age at infection",
+                              y = "Risk (proportion)", x = "Age (years)",
+                              colour = "Data") +
+                         theme_bw() +
+                         theme(plot.title = element_text(hjust = 0.5),
+                               legend.title = element_text(size = 9)) +
+                         ylim(0,1) +
+                         xlim(0,30))
 
   ## Mortality curves
   # Add articifial zeros at first timestep to allow plotting of step curves
@@ -3589,115 +3604,194 @@ for (i in 1:length(out_mat)) {
   mortality_curves_zeros$number_at_risk <- mortality_curves_zeros$sample_size
   mortality_curves_zeros <- unique(mortality_curves_zeros)
 
-  p_mort_curves <- print(ggplot(data = rbind(out_mat[[i]]$mapped_output$mortality_curves, mortality_curves_zeros)) +
-    geom_step(aes(x = time_interval_years, y = model_value)) +
-    geom_point(aes(x = time_interval_years, y = data_value), col = "red",
-               shape = 4, stroke = 1.5) +
-    facet_grid(~ outcome, scales = "free") +
-    labs(title = "Cumulative probability of death/HCC over time",
-         y = "Cumulative probability", x = "Follow-up time (years)") +
-    theme(plot.title = element_text(hjust = 0.5)))
+  # Add labels for panels with reference and study population
+  mort_curves_labels <- c("Shimakawa 2016:\ncumulative mortality in\ncomp. cirrhosis patients\n(Gambia)",
+                          "Yang 2017:\ncumulative mortality in\n HCC patients\n(sS Africa, not Gambia)",
+                          "Diarra 2010:\ncumulative HCC incid. in\n mixed cirrhosis patients\n(Mali)",
+                          "Diarra 2010:\ncumulative mortality in\nmixed cirrhosis patients\n(Mali)",
+                          "Bah 2011 (IARC):\ncumulative mortality in\nHCC patients\n(Gambia)")
+  names(mort_curves_labels) <- c("shadow4_cum_mortality", "shadow5_cum_mortality",
+                                 "shadow6_cum_hcc_incidence", "shadow6_cum_mortality",
+                                 "shadow7_cum_mortality")
+
+  p_mort_curves <- print(ggplot(data = rbind(out_mat[[i]]$mapped_output$mortality_curves,
+                                             mortality_curves_zeros)) +
+                           geom_step(aes(x = time_interval_years, y = model_value, linetype = "Model")) +
+                           geom_point(aes(x = time_interval_years, y = data_value, colour = "Data"),
+                                      shape = 4, stroke = 1.5) +
+                           facet_grid(~ outcome, scales = "free",
+                                      labeller = labeller(outcome = mort_curves_labels)) +
+                           scale_colour_manual(name = "", values = c("Data" = "red")) +
+                           scale_linetype_manual(name = "", values = c("Model" = "solid")) +
+                           labs(title = "Cumulative probability of death/HCC over time",
+                                y = "Cumulative probability", x = "Follow-up time (years)") +
+                           theme_bw() +
+                           theme(plot.title = element_text(hjust = 0.5),
+                                 legend.position = "bottom",
+                                 strip.text.x = element_text(size = 8)))
 
   ## ORs
   p_or <- print(ggplot(data = out_mat[[i]]$mapped_output$odds_ratios) +
-    geom_col(aes(x = gsub("odds_ratio_", "", outcome), y = log(model_value))) +
-    geom_point(aes(x = gsub("odds_ratio_", "", outcome), y = log(data_value)),
-               col = "red", shape = 4, size = 3, stroke = 2) +
-    geom_errorbar(aes(x = gsub("odds_ratio_", "", outcome),
-                      ymax = log(ci_upper), ymin = log(ci_lower)), col= "red", width = 0.2) +
-    labs(title = "Odds ratios for liver disease outcomes",
-         y = "ln(OR)", x = "Exposure and outcome") +
-    theme(plot.title = element_text(hjust = 0.5),
-          axis.text.x = element_text(angle = 10, vjust = 0.5)))
+                  geom_col(aes(x = gsub("odds_ratio_", "", outcome), y = log(model_value),
+                               fill = "Model")) +
+                  geom_point(aes(x = gsub("odds_ratio_", "", outcome), y = log(data_value),
+                                 colour = "Data"),
+                             shape = 4, size = 3, stroke = 2) +
+                  geom_errorbar(aes(x = gsub("odds_ratio_", "", outcome),
+                                    ymax = log(ci_upper), ymin = log(ci_lower)), col= "red", width = 0.2) +
+                  labs(title = "Odds ratios for liver disease outcomes",
+                       y = "ln(OR)", x = "") +
+                  scale_x_discrete(breaks=c("current_hbeag_positivity_and_cirrhosis",
+                                            "current_hbeag_positivity_and_hcc",
+                                            "male_sex_and_significant_liver_fibrosis_or_cirrhosis"),
+                                   labels=c("Association between\ncurrent HBeAg positivity\nand cirrhosis",
+                                            "Association between\ncurrent HBeAg positivity\nand HCC",
+                                            "Association between\nmale sex and\nsignificant liver fibrosis/cirrhosis")) +
+                  scale_fill_manual("", values = c("Model" = "gray35")) +
+                  scale_colour_manual("", values = c("Data" = "red")) +
+                  theme_bw() +
+                  theme(plot.title = element_text(hjust = 0.5)))
 
   # Natural history prevalence plots
   out_mat[[i]]$mapped_output$nat_hist_prevalence$model_num <-
     gsub(".*[[:digit:]]{4}_", "",out_mat[[i]]$mapped_output$nat_hist_prevalence$id_unique)
 
-  # GMB1 plots: infection phase in chronic carriers
+  # GMB1 PROLIFICA plots: infection phase in chronic carriers
+  gmb1_facet_labels <- c("Male blood donors", "Community screening pop.")
+  names(gmb1_facet_labels) <- c("Male", "Mixed")
+
   plot1_gmb1 <- ggplot(data = subset(out_mat[[i]]$mapped_output$nat_hist_prevalence,
                                      id_paper == "GMB1" &
-                                       model_num != "cc_dcc" & model_num != "hcc")) +
-    geom_col(aes(x = model_num, y = model_value))+
-    geom_point(aes(x = model_num, y = data_value), shape = 4, size = 3, stroke = 2, col = "red") +
-    geom_errorbar(aes(x = model_num,
-                      ymax = ci_upper, ymin = ci_lower), col= "red", width = 0.2) +
-    facet_grid(~sex, scales = "free") +
-    labs(title = "GMB1 Infection phase in \nchronic carriers",
+                                       model_num != "cc_dcc" & model_num != "hcc"),
+                       aes(x = model_num)) +
+    geom_col(aes(y = model_value))+
+    geom_point(aes(y = data_value), shape = 4, size = 1.5, stroke = 2, col = "red") +
+    geom_errorbar(aes(ymax = ci_upper, ymin = ci_lower), col= "red", width = 0.4) +
+    facet_grid(~sex, scales = "free", labeller = labeller(sex = gmb1_facet_labels)) +
+    scale_x_discrete(breaks=c("ic", "ir_enchb", "it_ic"),
+                     labels=c("IC", "IR or\nENCHB", "IT or IC")) +
+    labs(title = "Infection phase in chronic carriers",
+         subtitle = "PROLIFICA (Lemoine 2016)",
          y = "Prevalence (proportion)", x = "") +
-    theme(plot.title = element_text(hjust = 0.5)) +
+    theme_bw() +
+    theme(plot.title = element_text(hjust = 0.5, size = 11),
+          plot.subtitle = element_text(hjust = 0.5, size = 9),
+          strip.text.x = element_text(size = 8),
+          axis.text.x = element_text(size = 7),
+          axis.title.y = element_text(size = 8)) +
     ylim(0,1)
 
   # GMB1 plots: liver disease in chronic carriers
   plot2_gmb1 <-ggplot(data = subset(out_mat[[i]]$mapped_output$nat_hist_prevalence,
                                     id_paper == "GMB1" &
-                                      (model_num == "cc_dcc" | model_num == "hcc"))) +
-    geom_col(aes(x = model_num, y = model_value))+
-    geom_point(aes(x = model_num, y = data_value), shape = 4, size = 3, stroke = 2, col = "red") +
-    geom_errorbar(aes(x = model_num,
-                      ymax = ci_upper, ymin = ci_lower), col= "red", width = 0.2) +
-    facet_grid(~sex, scales = "free") +
-    labs(title = "GMB1 Liver disease in chronic carriers",
+                                      (model_num == "cc_dcc" | model_num == "hcc")),
+                      aes(x = gsub("_", " or ", toupper(model_num)))) +
+    geom_col(aes(y = model_value))+
+    geom_point(aes(y = data_value), shape = 4, size = 1.5, stroke = 2, col = "red") +
+    geom_errorbar(aes(ymax = ci_upper, ymin = ci_lower), col= "red", width = 0.4) +
+    facet_grid(~sex, scales = "free", labeller = labeller(sex = gmb1_facet_labels)) +
+    labs(title = "Liver disease in chronic carriers",
+         subtitle = "PROLIFICA (Lemoine 2016)",
          y = "Prevalence (proportion)", x = "") +
-    theme(plot.title = element_text(hjust = 0.5)) +
+    theme_bw() +
+    theme(plot.title = element_text(hjust = 0.5, size = 11),
+          plot.subtitle = element_text(hjust = 0.5, size = 9),
+          strip.text.x = element_text(size = 8),
+          axis.text.x = element_text(size = 7),
+          axis.title.y = element_text(size = 8)) +
     ylim(0,0.1)
 
   # 1-1 plots: infection phase in chronic carriers without liver disease
+  study_1_facet_labels <- c("1986: median age 11 years", "2013: median age 38 years")
+  names(study_1_facet_labels) <- c(1986, 2013)
+
   plot1_1 <- ggplot(data = subset(out_mat[[i]]$mapped_output$nat_hist_prevalence,
-                                  grepl(".*it,_ir,_ic_and_enchb$", out_mat[[i]]$mapped_output$nat_hist_prevalence$outcome))) +
-    geom_col(aes(x = model_num, y = model_value))+
-    geom_point(aes(x = model_num, y = data_value), shape = 4, size = 3, stroke = 2, col = "red") +
-    geom_errorbar(aes(x = model_num,
-                      ymax = ci_upper, ymin = ci_lower), col= "red", width = 0.2) +
-    facet_grid(~time, scales = "free") +
-    labs(title = "1 Infection phase in \nchronic carriers without liver disease",
+                                  grepl(".*it,_ir,_ic_and_enchb$", out_mat[[i]]$mapped_output$nat_hist_prevalence$outcome)),
+                    aes(x = toupper(model_num))) +
+    geom_col(aes(y = model_value))+
+    geom_point(aes(y = data_value), shape = 4, size = 1.5, stroke = 2, col = "red") +
+    geom_errorbar(aes(ymax = ci_upper, ymin = ci_lower), col= "red", width = 0.4) +
+    facet_grid(~time, scales = "free", labeller = labeller(time = study_1_facet_labels)) +
+    labs(title = "Infection phase in chronic carriers\nwithout liver disease",
+         subtitle = "Keneba Manduar chronic carrier cohort (Shimakawa 2016)",
          y = "Prevalence (proportion)", x = "") +
-    theme(plot.title = element_text(hjust = 0.5)) +
+    theme_bw() +
+    theme(plot.title = element_text(hjust = 0.5, size = 11),
+          plot.subtitle = element_text(hjust = 0.5, size = 8),
+          strip.text.x = element_text(size = 8),
+          axis.text.x = element_text(size = 7),
+          axis.title.y = element_text(size = 8)) +
     ylim(0,1)
 
   # 1-1 plots: liver disease in chronic carriers
   plot2_1 <-ggplot(data = subset(out_mat[[i]]$mapped_output$nat_hist_prevalence,
                                  id_paper == "1" &
                                    (outcome == "hcc_prevalence_in_chronic_carriers" |
-                                      outcome == "cc_and_dcc_prevalence_in_chronic_carriers"))) +
-    geom_col(aes(x = model_num, y = model_value))+
-    geom_point(aes(x = model_num, y = data_value), shape = 4, size = 3, stroke = 2, col = "red") +
-    geom_errorbar(aes(x = model_num,
-                      ymax = ci_upper, ymin = ci_lower), col= "red", width = 0.2) +
-    facet_grid(~time, scales = "free_x") +
-    labs(title = "1 Liver disease in chronic carriers",
+                                      outcome == "cc_and_dcc_prevalence_in_chronic_carriers")),
+                   aes(x = gsub("_", " or ", toupper(model_num)))) +
+    geom_col(aes(y = model_value))+
+    geom_point(aes(y = data_value), shape = 4, size = 1.5, stroke = 2, col = "red") +
+    geom_errorbar(aes(ymax = ci_upper, ymin = ci_lower), col= "red", width = 0.4) +
+    facet_grid(~time, scales = "free_x", labeller = labeller(time = study_1_facet_labels)) +
+    labs(title = "Liver disease in chronic carriers",
+         subtitle = "Keneba Manduar chronic carrier cohort (Shimakawa 2016)",
          y = "Prevalence (proportion)", x = "") +
-    theme(plot.title = element_text(hjust = 0.5)) +
+    theme_bw() +
+    theme(plot.title = element_text(hjust = 0.5, size = 11),
+          plot.subtitle = element_text(hjust = 0.5, size = 8),
+          strip.text.x = element_text(size = 8),
+          axis.text.x = element_text(size = 7),
+          axis.title.y = element_text(size = 8)) +
     ylim(0,0.1)
 
   # 1-1 plots: chronic carriers by age
   plot3_1 <- ggplot(data = out_mat[[i]]$mapped_output$nat_hist_prevalence[
     out_mat[[i]]$mapped_output$nat_hist_prevalence$id_unique == "id_1_1_2013_ir_enchb_cc_dcc",]) +
-    geom_col(aes(x = reorder(paste(age_min,"-",age_max), age_min), y = model_value))+
-    geom_point(aes(x = reorder(paste(age_min,"-",age_max), age_min), y = data_value),
-               shape = 4, size = 3, stroke = 2, col = "red") +
+    geom_col(aes(x = reorder(paste(age_min,"-",age_max), age_min), y = model_value, fill = "Model"))+
+    geom_point(aes(x = reorder(paste(age_min,"-",age_max), age_min), y = data_value, colour = "Data"),
+               shape = 4, size = 1.5, stroke = 2) +
     geom_errorbar(aes(x = reorder(paste(age_min,"-",age_max), age_min),
-                      ymax = ci_upper, ymin = ci_lower), col= "red", width = 0.2) +
-    labs(title = "1 Significant liver fibrosis or cirrhosis\n in chronic carriers",
-         y = "Prevalence (proportion)", x = "Age") +
-    theme(plot.title = element_text(hjust = 0.5)) +
+                      ymax = ci_upper, ymin = ci_lower), col= "red", width = 0.4) +
+    scale_fill_manual("", values = c("Model" = "gray35")) +
+    scale_colour_manual("", values = c("Data" = "red")) +
+    labs(title = "Significant liver fibrosis or cirrhosis in chronic carriers",
+         subtitle = "Keneba Manduar chronic carrier cohort (Shimakawa 2016)",
+         y = "Prevalence (proportion)", x = "Age (years)",
+         caption = "\nIT = Immune tolerant, IR = Immune reactive, IC = Inactive carrier, ENCHB = HBeAg-negative chronic hepatitis B,\nCC = Compensated cirrhosis, DCC = Decompensated cirrhosis, HCC = Hepatocellular carcinoma") +
+    theme_bw() +
+    theme(plot.title = element_text(hjust = 0.5, size = 11),
+          plot.subtitle = element_text(hjust = 0.5, size = 8),
+          axis.text.x = element_text(size = 7),
+          axis.title.y = element_text(size = 8),
+          legend.margin = margin(t = 0, unit="cm"),
+          legend.position = "left",
+          plot.caption = element_text(hjust = 0, size = 8)) +
     ylim(0,0.75)
 
   ## Natural history prevalence PLOT 1
-  p_nat_hist_prev1 <- grid.arrange(plot1_gmb1, plot1_1, plot2_gmb1, plot2_1, plot3_1, nrow = 3)
+  p_nat_hist_prev1 <- grid.arrange(plot1_gmb1, plot1_1, plot2_gmb1, plot2_1,
+                                   plot3_1, nrow = 3,
+                                   layout_matrix = rbind(c(1,2), c(3,4), c(5,5)))
 
-  # A4
+  # A4 Proportion of deaths from DCC and HCC in comp. cirrhosis cohort
   plot_nat_hist_a4 <- ggplot(data = subset(out_mat[[i]]$mapped_output$nat_hist_prevalence,
                                            id_paper == "A4")) +
-    geom_col(aes(x = model_num, y = model_value))+
-    geom_point(aes(x = model_num, y = data_value),
-               shape = 4, size = 3, stroke = 2, col = "red") +
-    labs(title = "Proportion of deaths from DCC and HCC\n in A4 compensated cirrhosis cohort",
+    geom_col(aes(x = model_num, y = model_value, fill = "Model"))+
+    geom_point(aes(x = model_num, y = data_value, colour = "Data"),
+               shape = 4, size = 3, stroke = 2) +
+    scale_fill_manual("", values = c("Model" = "gray35")) +
+    scale_colour_manual("", values = c("Data" = "red")) +
+    labs(title = "Proportion of deaths from\nDCC and HCC in\ncompensated cirrhosis cohort",
+         subtitle = "(Shimakawa 2016)",
          y = "Proportion", x = "") +
-    theme(plot.title = element_text(hjust = 0.5)) +
+    theme_bw() +
+    theme(plot.title = element_text(hjust = 0.5, size = 9),
+          plot.subtitle = element_text(hjust = 0.5, size = 8),
+          axis.text.x = element_blank(),
+          legend.position = "left") +
     ylim(0,1)
 
-  # GMB2
+  # GMB2 Cirrhosis prevalence in HBsAg-positive HCC patients (GLCS)
   plot_nat_hist_gmb2 <- ggplot(data = subset(out_mat[[i]]$mapped_output$nat_hist_prevalence,
                                              id_paper == "GMB2")) +
     geom_col(aes(x = model_num, y = model_value))+
@@ -3705,13 +3799,27 @@ for (i in 1:length(out_mat)) {
                shape = 4, size = 3, stroke = 2, col = "red") +
     geom_errorbar(aes(x = model_num,
                       ymax = ci_upper, ymin = ci_lower), col= "red", width = 0.2) +
-    labs(title = "Cirrhosis in HBsAg-positive HCC patients",
+    scale_x_discrete(breaks=c("incident_hcc_cases_from_cc",
+                              "incident_hcc_cases_from_dcc"),
+                     labels=c("Compensated\ncirrhosis",
+                              "Decompensated\ncirrhosis")) +
+    labs(title = "Cirrhosis prevalence in\nHBsAg-positive HCC patients",
+         subtitle = "Gambia Liver Cancer Study (Umoh 2011)",
          y = "Proportion", x = "") +
-    theme(plot.title = element_text(hjust = 0.5),
-          axis.text.x = element_text(angle = 10, vjust = 0.5)) +
+    theme_bw() +
+    theme(plot.title = element_text(hjust = 0.5, size = 10),
+          axis.text.x = element_text(size = 7),
+          plot.subtitle = element_text(hjust = 0.5, size = 8)) +
     ylim(0,1)
 
   # HBeAg prevalence in liver disease patients: GMB12 and GMB15
+  nat_hist_glcs_facet_labels <- c("Ryder 1992: HCC patients",
+                                  "Mendy 2010 (GLCS): HCC patients",
+                                  "Mendy 2010 (GLCS): cirrhosis patients")
+  names(nat_hist_glcs_facet_labels) <- c("id_gmb12_1_1982_hbeag_hcc",
+                                          "id_gmb15_1_1999_hbeag_hcc",
+                                          "id_gmb15_2_1999_hbeag_cirrhosis")
+
   plot_nat_hist_glcs <- ggplot(data = subset(out_mat[[i]]$mapped_output$nat_hist_prevalence,
                                              outcome == "hbeag_prevalence_in_hcc" |
                                                outcome == "hbeag_prevalence_in_cirrhosis")) +
@@ -3720,16 +3828,19 @@ for (i in 1:length(out_mat)) {
                shape = 4, size = 3, stroke = 2, col = "red") +
     geom_errorbar(aes(x = reorder(paste(age_min,"-",age_max),age_min),
                       ymax = ci_upper, ymin = ci_lower), col= "red", width = 0.2) +
-    facet_grid(~id_unique, scales = "free_x") +
+    facet_grid(~id_unique, scales = "free_x", labeller = labeller(id_unique = nat_hist_glcs_facet_labels)) +
     labs(title = "HBeAg prevalence in HBsAg-positive HCC/cirrhosis patients",
-         y = "Prevalence (proportion)", x = "Age") +
-    theme(plot.title = element_text(hjust = 0.5)) +
+         y = "Proportion", x = "Age group (years)") +
+    theme_bw() +
+    theme(plot.title = element_text(hjust = 0.5, size = 10),
+          axis.text.x = element_text(size = 8),
+          strip.text.x = element_text(size = 8)) +
     ylim(0,1)
 
   ## Natural history prevalence PLOT 2
   p_nat_hist_prev2 <- grid.arrange(plot_nat_hist_a4,  plot_nat_hist_gmb2, plot_nat_hist_glcs, nrow = 2,
-                                      layout_matrix = rbind(c(1,2),
-                                                            c(3,3)))
+                                   layout_matrix = rbind(c(1,2),
+                                                         c(3,3)))
 
   # Vertical transmission plots
   # 1-1 plots: chronic infections due to vertical transmission
@@ -3740,21 +3851,28 @@ for (i in 1:length(out_mat)) {
                shape = 4, size = 3, stroke = 2, col = "red") +
     geom_errorbar(aes(x = model_num, ymax = ci_upper, ymin = ci_lower),
                   col = "red", width = 0.1) +
-    labs(title = "Chronic infections due\nto vertical transmission",
+    labs(title = "Proportion of chronic infection\ndue to vertical transmission\nin unvaccinated pop.",
+         subtitle = "Keneba Manduar chronic carrier cohort (Shimakawa 2016)",
          y = "Proportion", x = "") +
-    theme(plot.title = element_text(hjust = 0.5)) +
+    theme_bw() +
+    theme(plot.title = element_text(hjust = 0.5, size = 12),
+          plot.subtitle = element_text(hjust = 0.5, size = 8),
+          axis.text.x = element_blank()) +
     ylim(0,1)
 
   # MTCT risk
   plot_mtct <- ggplot(data = out_mat[[i]]$mapped_output$mtct_risk) +
-    geom_col(aes(x = id_paper, y = model_value))+
-    geom_point(aes(x = id_paper, y = data_value),
-               shape = 4, size = 3, stroke = 2, col = "red") +
+    geom_col(aes(x = id_paper, y = model_value, fill = "Model"))+
+    geom_point(aes(x = id_paper, y = data_value, colour = "Data"),
+               shape = 4, size = 3, stroke = 2) +
     geom_errorbar(aes(x = id_paper, ymax = ci_upper, ymin = ci_lower),
                   col = "red", width = 0.1) +
-    facet_grid(~time, scales = "free_x") +
+    scale_fill_manual("", values = c("Model" = "gray35")) +
+    scale_colour_manual("", values = c("Data" = "red")) +
+    #facet_grid(~time, scales = "free_x") +
     labs(title = "Mother-to-child transmission risk",
-         y = "Risk (proportion)", x = "Study ID") +
+         y = "Proportion", x = "") +
+    theme_bw() +
     theme(plot.title = element_text(hjust = 0.5)) +
     ylim(0,1)
 
@@ -3772,9 +3890,12 @@ for (i in 1:length(out_mat)) {
     geom_errorbar(aes(x = paste(bl_age_min_years,"-",bl_age_max_years), ymax = ci_upper*100000, ymin = ci_lower*100000),
                   col = "red", width = 0.1)  +
     facet_grid(~sex, scales = "free") +
-    labs(title = "HCC incidence in chronic carrier cohort",
+    labs(title = "HCC incidence rate in chronic carriers",
+         subtitle = "Keneba Manduar chronic carrier cohort (Shimakawa 2016)",
          y = "Cases per 100000 PY", x = "Baseline age group (years)") +
-    theme(plot.title = element_text(hjust = 0.5))
+    theme_bw() +
+    theme(plot.title = element_text(hjust = 0.5, size = 11),
+          plot.subtitle = element_text(hjust = 0.5, size = 8))
 
   # Study 1: DCC incidence
   plot_1_dcc_incidence <- ggplot(data = subset(out_mat[[i]]$mapped_output$progression_rates,
@@ -3784,9 +3905,13 @@ for (i in 1:length(out_mat)) {
                shape = 4, size = 3, stroke = 2, col = "red") +
     geom_errorbar(aes(x = outcome, ymax = ci_upper*100000, ymin = ci_lower*100000),
                   col = "red", width = 0.1)  +
-    labs(title = "DCC incidence in chronic carrier cohort",
+    labs(title = "DCC incidence rate in chronic carriers",
+         subtitle = "Keneba Manduar chronic carrier cohort\n(Shimakawa 2016)",
          y = "Cases per 100000 PY", x = "") +
-    theme(plot.title = element_text(hjust = 0.5)) +
+    theme_bw() +
+    theme(plot.title = element_text(hjust = 0.5, size = 11),
+          plot.subtitle = element_text(hjust = 0.5, size = 8),
+          axis.text.x = element_blank()) +
     ylim(0,100)
 
 
@@ -3795,30 +3920,40 @@ for (i in 1:length(out_mat)) {
                                            id_paper == "1" & type == "mortality")) +
     geom_col(aes(x = sex, y = model_value*100000))+
     geom_point(aes(x = sex, y = data_value*100000),
-               shape = 4, size = 3, stroke = 2, col = "red") +
+               col = "red", shape = 4, size = 3, stroke = 2) +
     geom_errorbar(aes(x = sex, ymax = ci_upper*100000, ymin = ci_lower*100000),
                   col = "red", width = 0.1)  +
-    labs(title = "All-cause mortality in chronic carrier cohort",
+    labs(title = "All-cause mortality rate in chronic carriers",
+         subtitle = "Keneba Manduar chronic carrier cohort (Shimakawa 2016)",
          y = "Deaths per 100000 PY", x = "Sex") +
-    theme(plot.title = element_text(hjust = 0.5)) +
+    theme_bw() +
+    theme(plot.title = element_text(hjust = 0.5, size = 11),
+          plot.subtitle = element_text(hjust = 0.5, size = 8)) +
     ylim(0,1000)
 
   # Study A6: Mortality in cirrhosis cohort
   plot_a6_mortality <- ggplot(data = subset(out_mat[[i]]$mapped_output$progression_rates,
                                             id_paper == "A6")) +
-    geom_col(aes(x = outcome, y = model_value*100))+
-    geom_point(aes(x = outcome, y = data_value*100),
-               shape = 4, size = 3, stroke = 2, col = "red") +
+    geom_col(aes(x = outcome, y = model_value*100, fill = "Model"))+
+    geom_point(aes(x = outcome, y = data_value*100, colour = "Data"),
+               shape = 4, size = 3, stroke = 2) +
     geom_errorbar(aes(x = outcome, ymax = ci_upper*100, ymin = ci_lower*100),
                   col = "red", width = 0.1)  +
-    labs(title = "Mortality in cirrhosis cohort",
+    scale_fill_manual("", values = c("Model" = "gray35")) +
+    scale_colour_manual("", values = c("Data" = "red")) +
+    labs(title = "Mortality rate in liver disease patients",
+         subtitle = "Mixed cohort of Nigerian CC, DCC and HCC patients\n(Olubuyide 1996)",
          y = "Deaths per 100 PY", x = "") +
-    theme(plot.title = element_text(hjust = 0.5)) +
+    theme_bw() +
+    theme(plot.title = element_text(hjust = 0.5, size = 11),
+          plot.subtitle = element_text(hjust = 0.5, size = 8),
+          axis.text.x = element_blank(),
+          legend.position = "bottom") +
     ylim(0,60)
 
   ## Combined liver disease incidence and mortality rates
   p_prog_rates1 <- grid.arrange(plot_1_hcc_incidence, plot_1_dcc_incidence,
-               plot_1_mortality, plot_a6_mortality, nrow = 2, widths = 4:3)
+                                plot_1_mortality, plot_a6_mortality, nrow = 2, widths = 4:3)
 
   # Study 1: HBeAg loss
   plot_1_eag_loss <- ggplot(data = subset(out_mat[[i]]$mapped_output$progression_rates,
@@ -3828,22 +3963,31 @@ for (i in 1:length(out_mat)) {
                shape = 4, size = 3, stroke = 2, col = "red") +
     geom_errorbar(aes(x = sex, ymax = ci_upper*100, ymin = ci_lower*100),
                   col = "red", width = 0.1)  +
-    labs(title = "HBeAg loss in chronic carrier cohort",
+    labs(title = "Rate of HBeAg loss in chronic carriers",
+         subtitle = "Keneba Manduar chronic carrier cohort (Shimakawa 2016)",
          y = "Cases per 100 PY", x = "Sex") +
-    theme(plot.title = element_text(hjust = 0.5)) +
+    theme_bw() +
+    theme(plot.title = element_text(hjust = 0.5),
+          plot.subtitle = element_text(hjust = 0.5, size = 8)) +
     ylim(0,12)
 
   # Study 6: HBsAg loss
   plot_6_sag_loss <- ggplot(data = subset(out_mat[[i]]$mapped_output$progression_rates,
                                           id_paper == "6")) +
-    geom_col(aes(x = outcome, y = model_value*100))+
-    geom_point(aes(x = outcome, y = data_value*100),
-               shape = 4, size = 3, stroke = 2, col = "red") +
+    geom_col(aes(x = outcome, y = model_value*100, fill = "Model"))+
+    geom_point(aes(x = outcome, y = data_value*100, colour = "Data"),
+               shape = 4, size = 3, stroke = 2) +
     geom_errorbar(aes(x = outcome, ymax = ci_upper*100, ymin = ci_lower*100),
                   col = "red", width = 0.1)  +
-    labs(title = "HBsAg loss in\nchronic carrier children",
+    scale_fill_manual("", values = c("Model" = "gray35")) +
+    scale_colour_manual("", values = c("Data" = "red")) +
+    labs(title = "Rate of HBsAg loss in\nchronic carrier children",
+         subtitle = "Coursaget 1987 (Senegal)",
          y = "Cases per 100 PY", x = "") +
-    theme(plot.title = element_text(hjust = 0.5)) +
+    theme_bw() +
+    theme(plot.title = element_text(hjust = 0.5),
+          plot.subtitle = element_text(hjust = 0.5, size = 8),
+          axis.text.x = element_blank()) +
     ylim(0,5)
 
   ## Combined seromarker loss rates
@@ -3857,17 +4001,21 @@ for (i in 1:length(out_mat)) {
                shape = 4, size = 3, stroke = 2, col = "red") +
     geom_errorbar(aes(x = gsub(".*_","",outcome), ymax = ci_upper, ymin = ci_lower),
                   col = "red", width = 0.1)  +
+    scale_x_discrete(breaks=c("foi",
+                              "incidence"),
+                     labels=c("Force of infection\nin children in\nKeneba and Manduar\n(Whittle 1990)",
+                              "Chronic infection incidence\nin susceptible children\n(Ryder 1984)")) +
     labs(title = "Horizontal transmission-related rates",
          y = "Rate (per PY)", x = "") +
+    theme_bw() +
     theme(plot.title = element_text(hjust = 0.5)) +
-    scale_x_discrete(labels = c("Force of infection", "Chronic infection incidence")) +
     ylim(0,2)
 
 
   ## Combined transmission-related plot
   p_transmission_rates <- grid.arrange(plot_mtct, plot_nat_hist_1, plot_horizontal_transmission,
-               layout_matrix = rbind(c(1,1),
-                                     c(2,3)))
+                                       layout_matrix = rbind(c(1,1),
+                                                             c(2,3)))
 
   # List of all plots
   plot_list[[i]] = list(p_parms, p_hbsag1, p_hbsag2, p_antihbc, p_hbeag,
@@ -3879,27 +4027,8 @@ for (i in 1:length(out_mat)) {
 }
 dev.off()
 
-# Keep working on this - need to read in correct dataset with author and year
-ggplot(data = out_mat[[1]]$mapped_output$risk_of_chronic_carriage) +
-       geom_line(data = out_mat[[1]]$mapped_output$risk_of_chronic_carriage,
-                 aes(x = age, y = model_value, group = "Model", linetype = "Model")) +
-       geom_point(data = subset(out_mat[[1]]$mapped_output$risk_of_chronic_carriage,
-                                is.na(data_value) == FALSE),
-                                aes(x = age, y = data_value, colour = id_paper),
-                                shape = 4, stroke = 1.5) +
-       geom_errorbar(data = subset(out_mat[[1]]$mapped_output$risk_of_chronic_carriage,
-                                   is.na(data_value) == FALSE),
-                     aes(x = age, ymax = ci_upper, ymin = ci_lower,
-                         colour = id_paper)) +
-       scale_linetype_manual(name = "", values = c("Model" = "solid")) +
-       labs(title = "Risk of chronic carriage by age at infection",
-                            y = "Risk (proportion)", x = "Age (years)",
-            colour = "Data") +
-       theme_bw() +
-       theme(plot.title = element_text(hjust = 0.5),
-             legend.title = element_text(size = 10)) +
-       ylim(0,1) +
-       xlim(0,30)
+# Add author and year to: risk of chronic carriage
+
 
 # Parallelised code ----
 # Set up cluster
