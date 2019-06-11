@@ -2298,14 +2298,6 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
         denom_gmb1_2_2013)
 
   model_output_nat_hist[2,] <-
-    c("id_gmb1_2_2013_it_ic",
-      age_min = 27,
-      age_max = 35,
-      (sum(select(sim, starts_with("ITm"))[which(sim$time == 2013),which(ages ==27):which(ages ==35.5)])+
-         sum(select(sim, starts_with("ICm"))[which(sim$time == 2013),which(ages ==27):which(ages ==35.5)]))/
-        denom_gmb1_2_2013)
-
-  model_output_nat_hist[3,] <-
     c("id_gmb1_2_2013_ir_enchb",
       age_min = 27,
       age_max = 35,
@@ -2313,7 +2305,7 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
          sum(select(sim, starts_with("ENCHBm"))[which(sim$time == 2013),which(ages ==27):which(ages ==35.5)]))/
         denom_gmb1_2_2013)
 
-  model_output_nat_hist[4,] <-
+  model_output_nat_hist[3,] <-
     c("id_gmb1_2_2013_cc_dcc",
       age_min = 27,
       age_max = 35,
@@ -2321,14 +2313,14 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
          sum(select(sim, starts_with("DCCm"))[which(sim$time == 2013),which(ages ==27):which(ages ==35.5)]))/
         denom_gmb1_2_2013)
 
-  model_output_nat_hist[5,] <-
+  model_output_nat_hist[4,] <-
     c("id_gmb1_2_2013_hcc",
       age_min = 27,
       age_max = 35,
       (sum(select(sim, starts_with("HCCm"))[which(sim$time == 2013),which(ages ==27):which(ages ==35.5)]))/
         denom_gmb1_2_2013)
 
-  model_output_nat_hist[6,] <-
+  model_output_nat_hist[5,] <-
     c("id_1_1_1986_it",
       age_min = 4.5,
       age_max = 21.5,
@@ -2336,7 +2328,7 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
             select(sim, starts_with("ITm"))[which(sim$time == 1986),which(ages ==4.5):which(ages ==21.5)])/
         denom_1_1_1986)
 
-  model_output_nat_hist[7,] <-
+  model_output_nat_hist[6,] <-
     c("id_1_1_1986_ir",
       age_min = 4.5,
       age_max = 21.5,
@@ -2344,7 +2336,7 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
             select(sim, starts_with("IRm"))[which(sim$time == 1986),which(ages ==4.5):which(ages ==21.5)])/
         denom_1_1_1986)
 
-  model_output_nat_hist[8,] <-
+  model_output_nat_hist[7,] <-
     c("id_1_1_1986_enchb",
       age_min = 4.5,
       age_max = 21.5,
@@ -2352,7 +2344,7 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
             select(sim, starts_with("ENCHBm"))[which(sim$time == 1986),which(ages ==4.5):which(ages ==21.5)])/
         denom_1_1_1986)
 
-  model_output_nat_hist[9,] <-
+  model_output_nat_hist[8,] <-
     c("id_1_1_1986_ic",
       age_min = 4.5,
       age_max = 21.5,
@@ -2360,7 +2352,7 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
             select(sim, starts_with("ICm"))[which(sim$time == 1986),which(ages ==4.5):which(ages ==21.5)])/
         denom_1_1_1986)
 
-  model_output_nat_hist[10,] <-
+  model_output_nat_hist[9,] <-
     c("id_1_1_1986_hcc",
       age_min = 4.5,
       age_max = 21.5,
@@ -2368,7 +2360,7 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
             select(sim, starts_with("HCCm"))[which(sim$time == 1986),which(ages ==4.5):which(ages ==21.5)])/
         (sum(out$carriers[which(out$time == 1986),(which(ages ==4.5):which(ages ==21.5))])))
 
-  model_output_nat_hist[11,] <-
+  model_output_nat_hist[10,] <-
     c("id_gmb1_1_2012_ic",
       age_min = 33,
       age_max = 47,
@@ -2376,17 +2368,7 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
              select(sim, starts_with("ICm"))[which(sim$time == 2012),which(ages ==33):which(ages ==47)]))/
         denom_gmb1_1_2012)
 
-  model_output_nat_hist[12,] <-
-    c("id_gmb1_1_2012_it_ic",
-      age_min = 33,
-      age_max = 47,
-      (sum(select(sim, starts_with("ICf"))[which(sim$time == 2012),which(ages == 33):which(ages == 47)]+
-         select(sim, starts_with("ITf"))[which(sim$time == 2012),which(ages == 33):which(ages == 47)]+
-         select(sim, starts_with("ICm"))[which(sim$time == 2012),which(ages == 33):which(ages == 47)]+
-         select(sim, starts_with("ITm"))[which(sim$time == 2012),which(ages == 33):which(ages == 47)]))/
-        denom_gmb1_1_2012)
-
-  model_output_nat_hist[13,] <-
+  model_output_nat_hist[11,] <-
     c("id_gmb1_1_2012_ir_enchb",
       age_min = 33,
       age_max = 47,
@@ -2396,7 +2378,7 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
            select(sim, starts_with("ENCHBm"))[which(sim$time == 2012),which(ages == 33):which(ages == 47)]))/
         denom_gmb1_1_2012)
 
-  model_output_nat_hist[14,] <-
+  model_output_nat_hist[12,] <-
     c("id_gmb1_1_2012_cc_dcc",
       age_min = 33,
       age_max = 47,
@@ -2406,7 +2388,7 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
              select(sim, starts_with("DCCm"))[which(sim$time == 2012),which(ages == 33):which(ages == 47)]))/
         denom_gmb1_1_2012)
 
-  model_output_nat_hist[15,] <-
+  model_output_nat_hist[13,] <-
     c("id_gmb1_1_2012_hcc",
       age_min = 33,
       age_max = 47,
@@ -2414,7 +2396,7 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
              select(sim, starts_with("HCCm"))[which(sim$time == 2012),which(ages == 33):which(ages == 47)]))/
         denom_gmb1_1_2012)
 
-  model_output_nat_hist[16,] <-
+  model_output_nat_hist[14,] <-
     c("id_1_1_2013_it",
       age_min = 8,
       age_max = 95,
@@ -2422,7 +2404,7 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
             select(sim, starts_with("ITm"))[which(sim$time == 2013),which(ages ==8):which(ages ==95.5)])/
         denom_1_1_2013)
 
-  model_output_nat_hist[17,] <-
+  model_output_nat_hist[15,] <-
     c("id_1_1_2013_ir",
       age_min = 8,
       age_max = 95,
@@ -2430,7 +2412,7 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
             select(sim, starts_with("IRm"))[which(sim$time == 2013),which(ages ==8):which(ages ==95.5)])/
         denom_1_1_2013)
 
-  model_output_nat_hist[18,] <-
+  model_output_nat_hist[16,] <-
     c("id_1_1_2013_enchb",
       age_min = 8,
       age_max = 95,
@@ -2438,7 +2420,7 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
             select(sim, starts_with("ENCHBm"))[which(sim$time == 2013),which(ages ==8):which(ages ==95.5)])/
         denom_1_1_2013)
 
-  model_output_nat_hist[19,] <-
+  model_output_nat_hist[17,] <-
     c("id_1_1_2013_ic",
       age_min = 8,
       age_max = 95,
@@ -2446,7 +2428,7 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
             select(sim, starts_with("ICm"))[which(sim$time == 2013),which(ages ==8):which(ages ==95.5)])/
         denom_1_1_2013)
 
-  model_output_nat_hist[20,] <-
+  model_output_nat_hist[18,] <-
     c("id_1_1_2013_cc_dcc",
       age_min = 8,
       age_max = 95,
@@ -2456,28 +2438,28 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
          select(sim, starts_with("DCCm"))[which(sim$time == 2013),which(ages ==8):which(ages ==95.5)]))/
         (sum(out$carriers[which(out$time == 2013),(which(ages ==8):which(ages ==95.5))])))
 
-  model_output_nat_hist[21,] <-
+  model_output_nat_hist[19,] <-
     c("id_1_1_2013_ir_enchb_cc_dcc",
       age_min = 8,
       age_max = 29,
       (sum(num_1_1_2013[,which(ages ==8):which(ages == 29.5)]))/
         (sum(out$carriers[which(out$time == 2013),(which(ages ==8):which(ages ==29.5))])))
 
-  model_output_nat_hist[22,] <-
+  model_output_nat_hist[20,] <-
     c("id_1_1_2013_ir_enchb_cc_dcc",
       age_min = 30,
       age_max = 39,
       (sum(num_1_1_2013[,which(ages ==30):which(ages == 39.5)]))/
         (sum(out$carriers[which(out$time == 2013),(which(ages ==30):which(ages ==39.5))])))
 
-  model_output_nat_hist[23,] <-
+  model_output_nat_hist[21,] <-
     c("id_1_1_2013_ir_enchb_cc_dcc",
       age_min = 40,
       age_max = 49,
       (sum(num_1_1_2013[,which(ages ==40):which(ages == 49.5)]))/
         (sum(out$carriers[which(out$time == 2013),(which(ages ==40):which(ages ==49.5))])))
 
-  model_output_nat_hist[24,] <-
+  model_output_nat_hist[22,] <-
     c("id_1_1_2013_ir_enchb_cc_dcc",
       age_min = 50,
       age_max = 95,
@@ -2486,7 +2468,7 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
 
   # CC prevalence in HCC
   # Approximate as proportion of incident HCC cases in 1999 originating from CC
-  model_output_nat_hist[25,] <-
+  model_output_nat_hist[23,] <-
     c("id_gmb2_1_1999_incident_hcc_cases_from_cc",
       age_min = 15,
       age_max = 67,
@@ -2497,7 +2479,7 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
 
   # DCC prevalence in HCC, 1999
   # Approximate as proportion of incident HCC cases in 1999 originating from DCC
-  model_output_nat_hist[26,] <-
+  model_output_nat_hist[24,] <-
     c("id_gmb2_1_1999_incident_hcc_cases_from_dcc",
       age_min = 15,
       age_max = 67,
@@ -2508,7 +2490,7 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
 
   # HBeAg prevalence in cirrhosis patients, 1999
   # Approximate as proportion of incident CC cases in 1999 originating from IR
-  model_output_nat_hist[27,] <-
+  model_output_nat_hist[25,] <-
     c("id_gmb15_2_1999_hbeag_cirrhosis",
       age_min = 17,
       age_max = 34,
@@ -2518,7 +2500,7 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
                sum(select(sim, starts_with("cum_ir_to_ccm"))[which(sim$time == 1998),which(ages == 17):which(ages == 34.5)]))/
                sum(denom_gmb15_2_1999[which(ages == 17):which(ages == 34.5)]))
 
-  model_output_nat_hist[28,] <-
+  model_output_nat_hist[26,] <-
     c("id_gmb15_2_1999_hbeag_cirrhosis",
       age_min = 35,
       age_max = 44,
@@ -2528,7 +2510,7 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
          sum(select(sim, starts_with("cum_ir_to_ccm"))[which(sim$time == 1998),which(ages == 35):which(ages == 44.5)]))/
         sum(denom_gmb15_2_1999[which(ages == 35):which(ages == 44.5)]))
 
-  model_output_nat_hist[29,] <-
+  model_output_nat_hist[27,] <-
     c("id_gmb15_2_1999_hbeag_cirrhosis",
       age_min = 45,
       age_max = 54,
@@ -2538,7 +2520,7 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
          sum(select(sim, starts_with("cum_ir_to_ccm"))[which(sim$time == 1998),which(ages == 45):which(ages == 54.5)]))/
         sum(denom_gmb15_2_1999[which(ages == 45):which(ages == 54.5)]))
 
-  model_output_nat_hist[30,] <-
+  model_output_nat_hist[28,] <-
     c("id_gmb15_2_1999_hbeag_cirrhosis",
       age_min = 55,
       age_max = 64,
@@ -2551,49 +2533,49 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
   # HBeAg prevalence in HCC patients, 1982
   # Approximate as proportion of non-cirrhotic incident HCC cases in 1990
   # originating from IT and IR
-  model_output_nat_hist[31,] <-
+  model_output_nat_hist[29,] <-
     c("id_gmb12_1_1982_hbeag_hcc",
       age_min = 15,
       age_max = 49,
       sum(num_gmb12_gmb15_1990[which(ages == 15):which(ages==49.5)])/
        sum(denom_gmb12_gmb15_1990[which(ages == 15):which(ages == 49.5)]))
 
-  model_output_nat_hist[32,] <-
+  model_output_nat_hist[30,] <-
     c("id_gmb12_1_1982_hbeag_hcc",
       age_min = 50,
       age_max = 72,
       sum(num_gmb12_gmb15_1990[which(ages == 50):which(ages==72.5)])/
         sum(denom_gmb12_gmb15_1990[which(ages == 50):which(ages == 72.5)]))
 
-  model_output_nat_hist[33,] <-
+  model_output_nat_hist[31,] <-
     c("id_gmb15_1_1999_hbeag_hcc",
       age_min = 17,
       age_max = 34,
       sum(num_gmb12_gmb15_1990[which(ages == 17):which(ages == 34.5)])/
         sum(denom_gmb12_gmb15_1990[which(ages == 17):which(ages == 34.5)]))
 
-  model_output_nat_hist[34,] <-
+  model_output_nat_hist[32,] <-
     c("id_gmb15_1_1999_hbeag_hcc",
       age_min = 35,
       age_max = 44,
       sum(num_gmb12_gmb15_1990[which(ages == 35):which(ages == 44.5)])/
         sum(denom_gmb12_gmb15_1990[which(ages == 35):which(ages == 44.5)]))
 
-  model_output_nat_hist[35,] <-
+  model_output_nat_hist[33,] <-
     c("id_gmb15_1_1999_hbeag_hcc",
       age_min = 45,
       age_max = 54,
       sum(num_gmb12_gmb15_1990[which(ages == 45):which(ages == 54.5)])/
         sum(denom_gmb12_gmb15_1990[which(ages == 45):which(ages == 54.5)]))
 
-  model_output_nat_hist[36,] <-
+  model_output_nat_hist[34,] <-
     c("id_gmb15_1_1999_hbeag_hcc",
       age_min = 55,
       age_max = 64,
       sum(num_gmb12_gmb15_1990[which(ages == 55):which(ages == 64.5)])/
         sum(denom_gmb12_gmb15_1990[which(ages == 55):which(ages == 64.5)]))
 
-  model_output_nat_hist[37,] <-
+  model_output_nat_hist[35,] <-
     c("id_gmb15_1_1999_hbeag_hcc",
       age_min = 65,
       age_max = 87,
@@ -2601,7 +2583,7 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
         sum(denom_gmb12_gmb15_1990[which(ages == 65):which(ages == 87.5)]))
 
   # Proportion of chronic carriers attributable to mother-to-child transmission
-  model_output_nat_hist[38,] <-
+  model_output_nat_hist[36,] <-
     c("id_1_1_1986_incident_chronic_births",
       age_min = 0,
       age_max = 99.5,
@@ -2914,7 +2896,6 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
     (sum(select(shadow4_sim, starts_with("CC"))[which(shadow4_sim$time == 2012),]))
 
   # Proportion of deaths due to DCC and HCC
-
   mapped_nat_hist_prevalence$model_value[
     mapped_nat_hist_prevalence$id_unique == "id_a4_1_2014_shadow_incident_deaths"] <-
     (sum(select(shadow4_sim, starts_with("cum_hcc_deaths"))[which(shadow4_sim$time == 2012.5),]) +
@@ -3204,7 +3185,7 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
                                                by = "outcome")
 
 
-  # Combine all mapped outputs ----
+  # Combine all mapped outputs and calculate goodness of fit ----
   mapped_output_complete <- list(globocan_hcc_incidence = mapped_globocan_incidence,
                                  gbd_cirrhosis_mortality = mapped_gbd_cirrhosis_mortality,
                                  risk_of_chronic_carriage = mapped_p_chronic,
@@ -3221,8 +3202,10 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
   # Removing mapped output where no data point is available (missing data_value)
   mapped_output_for_sse <- lapply(mapped_output_complete, function(x) x[!is.na(x$data_value),])
 
-  data_model_diff <- as.numeric(unlist(lapply(mapped_output_for_sse, function(x) x$data_value)))-
-    as.numeric(unlist(lapply(mapped_output_for_sse, function(x) x$model_value)))
+  datapoints <- as.numeric(unlist(lapply(mapped_output_for_sse, function(x) x$data_value)))
+  model_prediction <- as.numeric(unlist(lapply(mapped_output_for_sse, function(x) x$model_value)))
+
+  data_model_diff <- datapoints-model_prediction  # observation - prediction
 
   sse <- sum(data_model_diff^2)
 
@@ -3317,6 +3300,41 @@ sim_duration["elapsed"]/60
 out_mat_subset <- sapply(out_mat, "[[", "sse")
 res_mat <- cbind(params_mat, sse = out_mat_subset)
 res_mat[res_mat$sse == min(res_mat$sse),]
+
+##### Adapting SSE
+# test: exclude those that don't have a paper ID yet
+output_test <- list(out_mat[[1]]$mapped_output$risk_of_chronic_carriage,
+                    out_mat[[1]]$mapped_output$seromarker_prevalence,
+                    out_mat[[1]]$mapped_output$nat_hist_prevalence,
+                    out_mat[[1]]$mapped_output$mtct_risk,
+                    out_mat[[1]]$mapped_output$progression_rates,
+                    out_mat[[1]]$mapped_output$mortality_curves,
+                    out_mat[[1]]$mapped_output$odds_ratios,
+                    out_mat[[1]]$mapped_output$mapped_liver_disease_demography)
+
+mapped_output_for_sse <- lapply(output_test, function(x) x[!is.na(x$data_value),])
+
+datapoints <- as.numeric(unlist(lapply(mapped_output_for_sse, function(x) x$data_value)))
+model_prediction <- as.numeric(unlist(lapply(mapped_output_for_sse, function(x) x$model_value)))
+study <- unlist(lapply(mapped_output_for_sse, function(x) x$id_paper))
+
+newtable <- data.frame(study, datapoints, model_prediction)
+
+View(newtable %>%
+  group_by(study) %>%
+  summarise(error = sum(abs(datapoints-model_prediction)/
+                          sapply(datapoints, function(x) max(x,1e-10)))))
+
+data_model_diff <- datapoints-model_prediction
+
+# dividing by datapoints gives Inf if the data = 0
+# circumvent this by setting those datapoints to 1e-10
+# Absolute normalised error for each point (unweighted):
+error <- abs(data_model_diff)/sapply(datapoints, function(x) max(x,1e-10))
+# now the scale (e.g. rare/common event) does not matter
+
+# Want to calculate the standardised absolute error for each study:
+
 
 
 # Output plots
@@ -3580,11 +3598,11 @@ for (i in 1:length(out_mat)) {
                          geom_line(aes(x = age, y = model_value, group = "Model", linetype = "Model")) +
                          geom_point(data = subset(out_mat[[i]]$mapped_output$risk_of_chronic_carriage,
                                                   is.na(data_value) == FALSE),
-                                    aes(x = age, y = data_value, colour = id_paper),
+                                    aes(x = age, y = data_value, colour = paste(paper_first_author, paper_year)),
                                     shape = 4, stroke = 1.5) +
                          geom_errorbar(data = subset(out_mat[[i]]$mapped_output$risk_of_chronic_carriage,
                                                      is.na(data_value) == FALSE),
-                                       aes(x = age, ymax = ci_upper, ymin = ci_lower, colour = id_paper)) +
+                                       aes(x = age, ymax = ci_upper, ymin = ci_lower, colour = paste(paper_first_author, paper_year))) +
                          scale_linetype_manual(name = "", values = c("Model" = "solid")) +
                          labs(title = "Risk of chronic carriage by age at infection",
                               y = "Risk (proportion)", x = "Age (years)",
@@ -3640,6 +3658,7 @@ for (i in 1:length(out_mat)) {
                   geom_errorbar(aes(x = gsub("odds_ratio_", "", outcome),
                                     ymax = log(ci_upper), ymin = log(ci_lower)), col= "red", width = 0.2) +
                   labs(title = "Odds ratios for liver disease outcomes",
+                       subtitle = "Gambia Liver Cancer Study (Mendy 2010)\nKeneba Manduar chronic carrier cohort (Shimakawa 2016)",
                        y = "ln(OR)", x = "") +
                   scale_x_discrete(breaks=c("current_hbeag_positivity_and_cirrhosis",
                                             "current_hbeag_positivity_and_hcc",
@@ -3650,7 +3669,8 @@ for (i in 1:length(out_mat)) {
                   scale_fill_manual("", values = c("Model" = "gray35")) +
                   scale_colour_manual("", values = c("Data" = "red")) +
                   theme_bw() +
-                  theme(plot.title = element_text(hjust = 0.5)))
+                  theme(plot.title = element_text(hjust = 0.5),
+                        plot.subtitle = element_text(hjust = 0.5, size = 8)))
 
   # Natural history prevalence plots
   out_mat[[i]]$mapped_output$nat_hist_prevalence$model_num <-
@@ -3861,15 +3881,15 @@ for (i in 1:length(out_mat)) {
     ylim(0,1)
 
   # MTCT risk
-  plot_mtct <- ggplot(data = out_mat[[i]]$mapped_output$mtct_risk) +
-    geom_col(aes(x = id_paper, y = model_value, fill = "Model"))+
-    geom_point(aes(x = id_paper, y = data_value, colour = "Data"),
+  plot_mtct <- ggplot(data = out_mat[[i]]$mapped_output$mtct_risk,
+                      aes(x = paste(paper_first_author, paper_year))) +
+    geom_col(aes(y = model_value, fill = "Model"))+
+    geom_point(aes(y = data_value, colour = "Data"),
                shape = 4, size = 3, stroke = 2) +
-    geom_errorbar(aes(x = id_paper, ymax = ci_upper, ymin = ci_lower),
+    geom_errorbar(aes(ymax = ci_upper, ymin = ci_lower),
                   col = "red", width = 0.1) +
     scale_fill_manual("", values = c("Model" = "gray35")) +
     scale_colour_manual("", values = c("Data" = "red")) +
-    #facet_grid(~time, scales = "free_x") +
     labs(title = "Mother-to-child transmission risk",
          y = "Proportion", x = "") +
     theme_bw() +
@@ -4026,8 +4046,6 @@ for (i in 1:length(out_mat)) {
 
 }
 dev.off()
-
-# Add author and year to: risk of chronic carriage
 
 
 # Parallelised code ----
