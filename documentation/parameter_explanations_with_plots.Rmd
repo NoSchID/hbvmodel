@@ -1,0 +1,212 @@
+---
+title: "Gambia model parameters"
+author: "Nora Schmit"
+date: "13 June 2019"
+output: html_document
+---
+
+```{r echo = FALSE}
+knitr::read_chunk('R/imperial_model_main.R')
+```
+
+```{r part1, include = FALSE}
+```
+
+```{r part3, include = FALSE, cache = TRUE}
+```
+# Notes
+
+## Age-specific progression functions
+
+**Risk of becoming a chronic carrier after acute infection (Edmunds function):**
+
+For ages < 0.5 years: risk = 0.89  
+For ages >= 0.5 years: risk = exp(-p_chronic_function_r * ages^p_chronic_function_s)  
+
+**Progressions through HBeAg-positive compartments:** 
+
+Rate = Multiplier * eag_prog_function_intercept * exp(-eag_prog_function_rate * ages)  
+
+*Multipliers: pr_it_ir for progression from Immune tolerant to Immune reactive, 
+pr_ir_ic for progression from Immune reactive to Inactive carrier*
+
+**Progressions to HCC:**
+
+In women and men aged < cancer_age_threshold: rate = 0  
+In women aged > cancer_age_threshold: rate = Multiplier * (cancer_prog_coefficient * (ages - cancer_age_threshold))^2  
+In men aged > cancer_age_threshold: rate = cancer_prog_male_cofactor * age-specific rate in women  
+
+*Multipliers: pr_hccr_it from Immune tolerant, pr_hccr_ir from Immune reactive, 
+pr_hccr_ic from Inactive carrier, pr_hccr_enchb from HBeAg-negative chronic hepatitis B,
+pr_hccr_cc from Compensated cirrhosis  
+Note progression from Decompensated cirrhosis to HCC (hccr_dcc) is not age- or sex-dependent.*
+
+**Progression from Immune reactive to HBeAg-negative chronic hepatitis B:**
+
+For ages < pr_ir_enchb_age_threshold: rate = 0  
+For ages > pr_ir_enchb_age_threshold: rate = pr_ir_enchb
+
+**Progression from immune reactive to Compensated cirrhosis:**
+
+For ages < pr_ir_cc_age_threshold: rate = 0  
+For ages > pr_ir_cc_age_threshold: rate = pr_ir_cc
+
+**Progression from HBeAg-negative chronic hepatitis B to Compensated cirrhosis:**
+
+In women and men aged < cirrhosis_age_threshold: rate = 0  
+In women aged > cirrhosis_age_threshold: rate = pr_enchb_cc  
+In men aged > cirrhosis_age_threshold: rate = cirrhosis_prog_male_cofactor * age-specific rate in women  
+
+
+```{r, echo = FALSE, fig.width = 9, fig.height = 9}
+for (i in 1:length(out_mat)) {
+  # AGE-SPECIFIC PROGRESSION FUNCTIONS
+  
+    # Progression through HBeAg-positive compartments
+  plot_eag_prog_function <- out_mat[[i]]$parameter_set$eag_prog_function_intercept *
+    exp(-out_mat[[i]]$parameter_set$eag_prog_function_rate * ages)
+  # IT to IR progression rate
+  plot_pr_it_ir <- ggplot() +
+    geom_line(aes(x = ages, y = out_mat[[i]]$parameter_set$pr_it_ir*plot_eag_prog_function)) +
+    labs(title = "Immune tolerant to\nImmune reactive",
+         x = "", y = "") +
+    theme_bw() +
+    theme(plot.title = element_text(size = 7)) +
+    ylim(0,1.5)
+  # IR to IC progression rate
+  plot_pr_ir_ic <-ggplot() +
+    geom_line(aes(x = ages, y = out_mat[[i]]$parameter_set$pr_ir_ic*plot_eag_prog_function)) +
+    labs(title = "Immune reactive (HBeAg+)\nto Inactive carrier (HBeAg-)",
+         x = "", y = "") +
+    theme_bw() +
+    theme(plot.title = element_text(size = 7)) +
+    ylim(0,1.5)
+
+  # Cancer progression function
+  plot_cancer_function_female <- (out_mat[[i]]$parameter_set$cancer_prog_coefficient *
+                                    (ages - out_mat[[i]]$parameter_set$cancer_age_threshold))^2 *
+    c(rep(0, times = which(ages == out_mat[[i]]$parameter_set$cancer_age_threshold-da)),
+      rep(1, times = n_agecat - which(ages ==out_mat[[i]]$parameter_set$cancer_age_threshold-da)))
+  # IT to HCC progression
+  plot_pr_hccr_it <- ggplot() +
+    geom_line(aes(x = ages, y = out_mat[[i]]$parameter_set$hccr_it*plot_cancer_function_female,
+                  colour = "Female")) +
+    geom_line(aes(x = ages, y = out_mat[[i]]$parameter_set$hccr_it*out_mat[[i]]$parameter_set$cancer_prog_male_cofactor*plot_cancer_function_female,
+                  colour = "Male"))+
+    labs(title = "Immune tolerant (HBeAg+)\nto HCC",
+         x = "", y = "", colour = "Sex") +
+    theme_bw() +
+    theme(plot.title = element_text(size = 7),
+          legend.position = "none") +
+    ylim(0,0.022)
+  # IR to HCC
+  plot_pr_hccr_ir <- ggplot() +
+    geom_line(aes(x = ages, y = out_mat[[i]]$parameter_set$hccr_ir*plot_cancer_function_female,
+                  colour = "Female")) +
+    geom_line(aes(x = ages, y = out_mat[[i]]$parameter_set$hccr_ir*out_mat[[i]]$parameter_set$cancer_prog_male_cofactor*plot_cancer_function_female,
+                  colour = "Male"))+
+    labs(title = "Immune reactive (HBeAg+)\nto HCC",
+         x = "", y = "", colour = "Sex") +
+    theme_bw() +
+    theme(plot.title = element_text(size = 7),
+          legend.position = "none") +
+    ylim(0,0.022)
+  # IC to HCC
+  plot_pr_hccr_ic <- ggplot() +
+    geom_line(aes(x = ages, y = out_mat[[i]]$parameter_set$hccr_ic*plot_cancer_function_female,
+                  colour = "Female")) +
+    geom_line(aes(x = ages, y = out_mat[[i]]$parameter_set$hccr_ic*out_mat[[i]]$parameter_set$cancer_prog_male_cofactor*plot_cancer_function_female,
+                  colour = "Male"))+
+    labs(title = "Inactive carrier (HBeAg-) to HCC",
+         x = "", y = "", colour = "Sex") +
+    theme_bw() +
+    theme(plot.title = element_text(size = 7),
+          legend.position = "none") +
+    ylim(0,0.022)
+  # ENCHB to HCC
+  plot_pr_hccr_enchb <- ggplot() +
+    geom_line(aes(x = ages, y = out_mat[[i]]$parameter_set$hccr_enchb*plot_cancer_function_female,
+                  colour = "Female")) +
+    geom_line(aes(x = ages, y = out_mat[[i]]$parameter_set$hccr_enchb*out_mat[[i]]$parameter_set$cancer_prog_male_cofactor*plot_cancer_function_female,
+                  colour = "Male"))+
+    labs(title = "HBeAg-negative chronic hepatitis B\n(HBeAg-) to HCC",
+         x = "", y = "", colour = "Sex") +
+    theme_bw() +
+    theme(plot.title = element_text(size = 7),
+          legend.position = "none") +
+    ylim(0,0.022)
+  # CC to HCC
+  plot_pr_hccr_cc <- ggplot() +
+    geom_line(aes(x = ages, y = out_mat[[i]]$parameter_set$hccr_cc*plot_cancer_function_female,
+                  colour = "Female")) +
+    geom_line(aes(x = ages, y = out_mat[[i]]$parameter_set$hccr_cc*out_mat[[i]]$parameter_set$cancer_prog_male_cofactor*plot_cancer_function_female,
+                  colour = "Male"))+
+    labs(title = "Compensated cirrhosis to HCC",
+         x = "", y = "", colour = "Sex") +
+    theme_bw() +
+    theme(plot.title = element_text(size = 7)) +
+    ylim(0,0.022)
+  
+  # IR to ENCHB progression rate
+  plot_pr_ir_enchb <- ggplot() +
+    geom_line(aes(x = ages,
+                  y = c(rep(0, times = which(ages == out_mat[[i]]$parameter_set$pr_ir_enchb_age_threshold-da)),
+                        rep(out_mat[[i]]$parameter_set$pr_ir_enchb, times = n_agecat - which(ages == out_mat[[i]]$parameter_set$pr_ir_enchb_age_threshold-da))))) +
+    labs(title = "Immune Reactive (HBeAg+) to\nHBeAg-negative CHB (HBeAg-)",
+         x = "", y = "") +
+    theme_bw() +
+    theme(plot.title = element_text(size = 7))
+  
+  # IR to CC progression rate (HBeAg-positive cirrhosis)
+  # No male cofactor for now
+  plot_pr_ir_cc <- ggplot() +
+    geom_line(aes(x = ages, y = c(rep(0, times = which(ages == out_mat[[i]]$parameter_set$pr_ir_cc_age_threshold-da)),
+                                  rep(out_mat[[i]]$parameter_set$pr_ir_cc, times = n_agecat - which(ages == out_mat[[i]]$parameter_set$pr_ir_cc_age_threshold-da))))) +
+    labs(title = "Immune Reactive (HBeAg+) to\nCompensated cirrhosis",
+         x = "", y = "") +
+    theme_bw() +
+    theme(plot.title = element_text(size = 7))
+  
+  # ENCHB to CC progression rate (I have removed age dependence from this)
+  plot_cirrhosis_prog_function_female <- out_mat[[i]]$parameter_set$pr_enchb_cc *
+    c(rep(0, times = which(ages == out_mat[[i]]$parameter_set$cirrhosis_age_threshold-da)),
+      rep(1, times = n_agecat - which(ages == out_mat[[i]]$parameter_set$cirrhosis_age_threshold-da)))  # Set rate to 0 in <25 year olds
+  
+  plot_pr_enchb_cc <- ggplot() +
+    geom_line(aes(x = ages, y = plot_cirrhosis_prog_function_female,
+                  colour = "Female")) +
+    geom_line(aes(x = ages, y = out_mat[[i]]$parameter_set$cirrhosis_prog_male_cofactor*plot_cirrhosis_prog_function_female,
+                  colour = "Male"))+
+    labs(title = "HBeAg-negative CHB to\nCompensated cirrhosis",
+         x = "", y = "", colour = "Sex") +
+    theme_bw() +
+    theme(plot.title = element_text(size = 7),
+          legend.position = "none")
+  
+  ## Combined plot of progression functions
+  p_functions <- grid.arrange(grobs = list(textGrob("Progressions to HCC", rot = 270,
+                                     gp=gpar(fontsize=9)),
+                            textGrob("Progressions through\nHBeAg-positive\ncompartments",
+                                     rot = 270, gp=gpar(fontsize=9)),
+                            textGrob("Progression to\nHBeAg-negative CHB &\nCompensated cirrhosis",
+                                     rot = 270, gp=gpar(fontsize=9)),
+                            plot_pr_hccr_it, #4
+                            plot_pr_hccr_ir, #5
+                            plot_pr_hccr_ic, #6
+                            plot_pr_hccr_enchb, #7
+                            plot_pr_hccr_cc, # 8
+                            plot_pr_it_ir, #9
+                            plot_pr_ir_ic, #10
+                            plot_pr_ir_enchb, #11
+                            plot_pr_ir_cc, #12
+                            plot_pr_enchb_cc), #13
+               top = "Age- and/or sex-specific progression rates",
+               left = "Rate per person-year",
+               bottom = "Age (years)",
+               widths = c(2,2,2,0.75),
+               layout_matrix = rbind(c(9,10,NA,2),
+                                     c(11,12,13,3),
+                                     c(4,5,6,1),
+                                     c(7,8,8,1)))
+}
+```

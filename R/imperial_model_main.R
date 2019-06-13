@@ -5,6 +5,7 @@
 # Currently only infant vaccination in second age group, no birth dose or treatment
 # Solving using ODE45
 
+## @knitr part1
 ### Load packages ----
 require(tidyr)  # for data processing
 require(dplyr)  # for data processing
@@ -15,6 +16,9 @@ library(profvis)  # for code profiling
 require(ggplot2)  # for calibration plots
 require(gridExtra)  # for calibration plots
 require(grid)
+require(lhs)
+require("parallel")
+
 
 ### Simulation parameters ----
 ## Country
@@ -66,7 +70,7 @@ fert_rates[,1] <- seq(1850, (2100-0.5), 0.5)
 mort_rates_female[,1] <- seq(1850, (2100-0.5), 0.5)
 mort_rates_male[,1] <- seq(1850, (2100-0.5), 0.5)
 migration_rates_female[,1] <- seq(1850, (2100-0.5), 0.5)
-mogration_rates_male[,1] <- seq(1850, (2100-0.5), 0.5)
+migration_rates_male[,1] <- seq(1850, (2100-0.5), 0.5)
 
 ### Load calibration HBV data ----
 # Define my datapoints to fit to
@@ -851,23 +855,27 @@ run_model <- function(..., sim_duration = runtime,
   parameters$pr_ir_enchb_function <- pr_ir_enchb_function
 
   # Age-specific progression from IR to CC (HBeAg-positive cirrhosis)
-  # I added a male cofactor (same as for ENCHB to CC)
+  # I was thinking of adding a male cofactor (same as for ENCHB to CC) - remove for now
   pr_ir_cc_function <- c(rep(0, times = which(ages == parameters$pr_ir_cc_age_threshold-da)),
                          rep(parameters$pr_ir_cc, times = n_agecat - which(ages == parameters$pr_ir_cc_age_threshold-da)))
   #pr_ir_cc_function_female <- sapply(pr_ir_cc_function, function(x) min(x,5))  # annual rate cannot exceed 5
   #pr_ir_cc_function_male <- sapply(pr_ir_cc_function_female*parameters$cirrhosis_prog_male_cofactor,
   #                                 function(x) min(x,5))
   pr_ir_cc_function_female <- pr_ir_cc_function
-  pr_ir_cc_function_male <- pr_ir_cc_function*parameters$cirrhosis_prog_male_cofactor
+  # FOR NOW REMOVE THE MALE COFACTOR I HAD SUGGESTED
+  pr_ir_cc_function_male <- pr_ir_cc_function
+  #pr_ir_cc_function_male <- pr_ir_cc_function*parameters$cirrhosis_prog_male_cofactor
   parameters$pr_ir_cc_function <- matrix(data = c(pr_ir_cc_function_female,
                                                   pr_ir_cc_function_male),
                                          nrow = n_agecat, ncol = 2)  # store in a matrix to apply to compartment
 
   # Age-specific progression from ENCHB to CC
-  # Represented by a shifted quadratic function that increases with age and
-  # prevents people younger than 25 years to progress to HCC
-  cirrhosis_prog_function <- parameters$pr_enchb_cc
-  #cirrhosis_prog_function <- parameters$pr_enchb_cc * (parameters$cirrhosis_prog_coefficient * (ages - 25))^2  # Rate in females
+  # Margaret represents this using a shifted quadratic function that increases with age and
+  # prevents people younger than 25 years to progress to HCC:
+  #cirrhosis_prog_function <- parameters$pr_enchb_cc * (parameters$cirrhosis_prog_coefficient * (ages - parameters$cirrhosis_age_threshold))^2  # Rate in females
+  # Shimakawa 2016 found no association between current age and development of significant liver fibrosis,
+  # so I remove this age dependence other than the age threshold
+  cirrhosis_prog_function <- parameters$pr_enchb_cc  # Rate in females
   cirrhosis_prog_function <- cirrhosis_prog_function *
     c(rep(0, times = which(ages == parameters$cirrhosis_age_threshold-da)),
       rep(1, times = n_agecat - which(ages == parameters$cirrhosis_age_threshold-da)))  # Set rate to 0 in <25 year olds
@@ -1369,52 +1377,52 @@ N0 <- sum(init_pop[1:(n_infectioncat * n_agecat * 2)])
 
 parameter_list <- list(
   # TRANSMISSION PARAMETERS
-  b1 = 0.1,     # Margaret value in Ethiopia is 0.2027
-  b2 = 0.009,   # Margaret value in Ethiopia is 0.001
-  b3 = 0.001,   # Margaret value in Ethiopia
+  b1 = 0.1,     # Parameter not the same as in original model. Margaret value in Ethiopia is 0.2027
+  b2 = 0.009,   # Parameter not the same as in original model. Margaret value in Ethiopia is 0.001
+  b3 = 0.001,   # Parameter not the same as in original model. Margaret value in Ethiopia
   alpha = 15,         # Relative infectiousness of eAg-positives (Shevanthi value)
   mtct_prob_e = 0.9,  # Shevanthi value, probability of perinatal transmission from HBeAg-positive mother
-  mtct_prob_s = 0.14, # Margaret value in Ethiopia is 0.3681, probability of perinatal transmission from HBeAg-negative infected mother
+  mtct_prob_s = 0.3681, # Margaret value in Ethiopia is 0.3681, probability of perinatal transmission from HBeAg-negative infected mother
   # NATURAL HISTORY PROGRESSION RATES AND PARAMETERS
   p_chronic_function_r = 0.65,  # Edmunds decay rate parameter in exponential function of age-specific chronic carriage risk
   p_chronic_function_s = 0.46,  # Edmunds s parameter in exponential function of age-specific chronic carriage risk
-  pr_it_ir = 0.1,
-  pr_ir_ic = 0.05,
+  pr_it_ir = 0.1,  # S
+  pr_ir_ic = 0.05,  # S
   eag_prog_function_intercept = 9.5,  # Margaret's Ethiopia fit, 19.8873 in Shevanthi's
   eag_prog_function_rate = 0.1281,  # Margaret's Ethiopia fit, 0.977 in Shevanthi's
-  pr_ir_enchb = 0.005,
-  pr_ir_enchb_age_threshold = 20,
-  pr_ir_cc = 0.028,
-  pr_ir_cc_age_threshold = 30,
-  pr_ic_enchb = 0.01,
+  pr_ir_enchb = 0.005,  # S
+  pr_ir_enchb_age_threshold = 20,  # M, not present in S model
+  pr_ir_cc = 0.028,  # S but not present in published model
+  pr_ir_cc_age_threshold = 20,  # M, not present in S model
+  pr_ic_enchb = 0.01,  # S
   sag_loss_0to9 = 0.001,  # Shimakawa values, inactive carrier to recovered transition
-  sag_loss_10to19 = 0.0046,
-  sag_loss_20to29 = 0.0101,
-  sag_loss_30to39 = 0.0105,
-  sag_loss_40to49 = 0.0232,
-  sag_loss_50to70 = 0.0239,
-  pr_enchb_cc = 0.04,  # Progression to CC (from ENCHB)
-  cirrhosis_prog_coefficient = 0.0341,
-  cirrhosis_age_threshold = 25,
-  cirrhosis_prog_male_cofactor = 12.32,
-  dccrate = 0.04,  # Progression from CC to DCC
+  sag_loss_10to19 = 0.0046,  # Shimakawa values, inactive carrier to recovered transition
+  sag_loss_20to29 = 0.0101,  # Shimakawa values, inactive carrier to recovered transition
+  sag_loss_30to39 = 0.0105,  # Shimakawa values, inactive carrier to recovered transition
+  sag_loss_40to49 = 0.0232,  # Shimakawa values, inactive carrier to recovered transition
+  sag_loss_50to70 = 0.0239,  # Shimakawa values, inactive carrier to recovered transition
+  pr_enchb_cc = 0.04,  # Progression to CC (from ENCHB) S value
+  #cirrhosis_prog_coefficient = 0.0341,  # Margaret value
+  cirrhosis_age_threshold = 25,  # M value, not present in S model
+  cirrhosis_prog_male_cofactor = 12.32,  # M value
+  dccrate = 0.04,  # Progression from CC to DCC, S value
   # PROGRESSION RATES TO HEPATOCELLULAR CARCINOMA
   cancer_prog_coefficient = 4.0452e-05,  # value from Margaret
   cancer_age_threshold = 10,  # value from Margaret
   cancer_prog_male_cofactor = 5.2075,  # value from Margaret
-  hccr_it = 1,
-  hccr_ir = 2,
-  hccr_ic = 0.5,
-  hccr_enchb = 2,
-  hccr_cc = 13,
-  hccr_dcc = 0.04,
+  hccr_it = 1,  # S
+  hccr_ir = 2, # S
+  hccr_ic = 0.5, # S
+  hccr_enchb = 2, # S
+  hccr_cc = 13, # S
+  hccr_dcc = 0.04, # S
   # HBV-RELATED MORTALITY RATES (MORTALITY FROM LIVER DISEASE)
-  mu_cc = 0.039,
-  mu_dcc = 0.314,
-  mu_hcc = 0.5,
+  mu_cc = 0.039,  # S
+  mu_dcc = 0.314,  # S
+  mu_hcc = 0.5,  # S
   # INFANT VACCINATION PARAMETERS
   # Vaccine coverage is read in through a function
-  vacc_eff = 0.95,                           # vaccine efficacy
+  vacc_eff = 0.95,                           # vaccine efficacy, S
   vacc_introtime = 1990,                     # year of vaccine introduction
   # SIMULATION PARAMETERS
   sim_starttime = starttime,
@@ -1425,10 +1433,63 @@ parameter_list <- list(
   migration_on = 1,
   mortality_on = 1)
 
-
 # Store names of all parameters
 parameter_names <- names(parameter_list)
+parameter_definitions <-
+  c("Horizontal transmission rate among children (age 1-5 years).
+    Note <1 year olds are not involved in horizontal transmission.",
+    "Horizontal transmission rate among juveniles (age 6-15 years) and
+    between children and juveniles",
+    "Horizontal transmission rate among adults (age 16-100 years) and
+    between adults and juveniles. Note there is no mixing between adults and children.",
+    "Relative infectiousness of HBeAg-positives compared to HBeAg-negatives for
+    horizontal transmission",
+    "Mother-to-child transmission risk from HBeAg-positive mother",
+    "Mother-to-child transmission risk from HBeAg-negative mother",
+    "Parameter r of age-specific function for risk of becoming a chronic carrier after acute infection",
+    "Parameter s of age-specific function for risk of becoming a chronic carrier after acute infection",
+    "Multiplier on annual progression rate from Immune tolerant to Immune reactive stage",
+    "Multiplier on annual progression rate from Immune reactive to Inactive carrier stage (HBeAg loss)",
+    "Intercept of exponential decay function for age-specific progression through the HBeAg-positive compartments
+    (Immune tolerant and Immune reactive)",
+    "Rate parameter of exponential decay function for age-specific progression through the HBeAg-positive compartments
+    (Immune tolerant and Immune reactive)",
+    "Annual progression rate from Immune reactive to HBeAg-negative chronic hepatitis B (HBeAg loss)",
+    "Age threshold for progression from Immune reactive to HBeAg-negative chronic hepatitis B (rate = 0 below this age)",
+    "Annual progression rate from Immune reactive to Compensated cirrhosis",
+    "Age threshold for progression from Immune reactive to Compensated cirrhosis (rate = 0 below this age)",
+    "Annual progression rate from Inactive carrier to HBeAg-negative chronic hepatitis B (reactivation)",
+    "Annual rate of HBsAg loss in 0-9 year olds (progression rate from Inactive carrier to Immune)",
+    "Annual rate of HBsAg loss in 10-19 year olds (progression rate from Inactive carrier to Immune)",
+    "Annual rate of HBsAg loss in 20-29 year olds (progression rate from Inactive carrier to Immune)",
+    "Annual rate of HBsAg loss in 30-39 year olds (progression rate from Inactive carrier to Immune)",
+    "Annual rate of HBsAg loss in 40-49 year olds (progression rate from Inactive carrier to Immune)",
+    "Annual rate of HBsAg loss in 50+ year olds (progression rate from Inactive carrier to Immune)",
+    "Annual progression rate from HBeAg-negative chronic hepatitis B to Compensated cirrhosis",
+    "Age threshold for progression from HBeAg-negative chronic hepatitis B to Compensated cirrhosis (rate = 0 below this age)",
+    "Multiplier on progression rate to from HBeAg-negative chronic hepatitis B to Compensated cirrhosis for men",
+    "Annual progression rate from Compensatd cirrhosis to Decompensated cirrhosis",
+    "Coefficient of quadratic function for age-specific progression rate to HCC",
+    "Age threshold for progression to HCC (from any compartment) (rate = 0 below this age)",
+    "Multiplier on progression rates to HCC (from any compartment) for men",
+    "Multiplier on annual progression rate to HCC from Immune tolerant stage",
+    "Multiplier on annual progression rate to HCC from Immune reactive stage",
+    "Multiplier on annual progression rate to HCC from Inactive carrier stage",
+    "Multiplier on annual progression rate to HCC from HBeAg-negative chronic hepatitis B stage",
+    "Multiplier on annual progression rate to HCC from Compensated cirrhosis stage",
+    "Annual progression rate from Decompensated cirrhosis to HCC",
+    "Annual rate of additional mortality from Compensated cirrhosis",
+    "Annual rate of additional mortality from Deompensated cirrhosis",
+    "Annual rate of additional mortality from HCC",
+    "Infant vaccine efficacy against chronic carriage",
+    "Switch: Time of vaccine introduction",
+    "Switch: Start year of simulation",
+    "Switch: Turn vaccination on or off",
+    "Switch: Turn births on or off",
+    "Switch: Turn migration on or off",
+    "Switch: Turn background mortality on or off")
 
+## @knitr part2
 ### Run the simulation: 1 SCENARIO (vacc/no_vacc) ----
 # Default scenario: infant vaccine (apply_vacc = 1)
 
@@ -1835,10 +1896,8 @@ save(model_pop1960, file = here("data/simulated_inits_1960.RData"))
 model_pop1880 <- out$full_output[out$time == 1880,1:(2*n_infectioncat*n_agecat)+1]
 save(model_pop1880, file = here("data/simulated_inits_1880.RData"))
 
+## @knitr part3
 ### Model calibration ----
-require(lhs)
-require("parallel")
-
 # Function to simulate shadow models within fitting function
 run_shadow_model <- function(init_age_from, init_age_to, init_sex,
                              init_compartment_from, init_compartment_to,
@@ -3207,7 +3266,8 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
 
   data_model_diff <- datapoints-model_prediction  # observation - prediction
 
-  sse <- sum(data_model_diff^2)
+  #sse <- sum(data_model_diff^2)
+  sse <- sum((abs(data_model_diff)/sapply(datapoints, function(x) max(x,1e-10))))  # need to rename
 
   # Return relevant info (given parameter set, SSE and the matched datapoints and outputs)
   res <- list(parameter_set = parameters_for_fit,
@@ -3280,10 +3340,11 @@ out_mat <- apply(params_mat,1,
                                            b2 = as.list(x)$b2,
                                            mtct_prob_s = as.list(x)$mtct_prob_s,
                                            alpha = 7,
-                                           eag_prog_function_intercept = 1,
+                                           eag_prog_function_intercept = 1, #1
                                            eag_prog_function_rate = 0,
-                                           pr_it_ir = 0.1, pr_ir_ic = 0.7,
+                                           pr_it_ir = 0.1, pr_ir_ic = 1, #0.1,0.7
                                            pr_ir_cc = 0.7, pr_enchb_cc = 0.005,
+                                           pr_ir_cc_age_threshold = 30,
                                            hccr_ir = 4,
                                            cirrhosis_prog_male_cofactor = 20,
                                            cancer_prog_coefficient = 0.0002,
@@ -3301,51 +3362,17 @@ out_mat_subset <- sapply(out_mat, "[[", "sse")
 res_mat <- cbind(params_mat, sse = out_mat_subset)
 res_mat[res_mat$sse == min(res_mat$sse),]
 
-##### Adapting SSE
-# test: exclude those that don't have a paper ID yet
-output_test <- list(out_mat[[1]]$mapped_output$risk_of_chronic_carriage,
-                    out_mat[[1]]$mapped_output$seromarker_prevalence,
-                    out_mat[[1]]$mapped_output$nat_hist_prevalence,
-                    out_mat[[1]]$mapped_output$mtct_risk,
-                    out_mat[[1]]$mapped_output$progression_rates,
-                    out_mat[[1]]$mapped_output$mortality_curves,
-                    out_mat[[1]]$mapped_output$odds_ratios,
-                    out_mat[[1]]$mapped_output$mapped_liver_disease_demography)
 
-mapped_output_for_sse <- lapply(output_test, function(x) x[!is.na(x$data_value),])
-
-datapoints <- as.numeric(unlist(lapply(mapped_output_for_sse, function(x) x$data_value)))
-model_prediction <- as.numeric(unlist(lapply(mapped_output_for_sse, function(x) x$model_value)))
-study <- unlist(lapply(mapped_output_for_sse, function(x) x$id_paper))
-
-newtable <- data.frame(study, datapoints, model_prediction)
-
-View(newtable %>%
-  group_by(study) %>%
-  summarise(error = sum(abs(datapoints-model_prediction)/
-                          sapply(datapoints, function(x) max(x,1e-10)))))
-
-data_model_diff <- datapoints-model_prediction
-
-# dividing by datapoints gives Inf if the data = 0
-# circumvent this by setting those datapoints to 1e-10
-# Absolute normalised error for each point (unweighted):
-error <- abs(data_model_diff)/sapply(datapoints, function(x) max(x,1e-10))
-# now the scale (e.g. rare/common event) does not matter
-
-# Want to calculate the standardised absolute error for each study:
-
-
-
-# Output plots
+## @knitr part4
+# Output plots ----
 
 # For loop to create plot set for every parameter combination
-pdf(file = here("output/manual_fit_plots", "testplotparms.pdf"), paper="a4r")
+pdf(file = here("output/manual_fit_plots", "testplots.pdf"), paper="a4r")
 plot_list = list()
 for (i in 1:length(out_mat)) {
 
   # Parameter set table and SSE
-  p_parms <- print(grid.arrange(tableGrob(lapply(out_mat[[i]]$parameter_set[1:21], function(x) round(x,6)),
+  p_parms <- grid.arrange(tableGrob(lapply(out_mat[[i]]$parameter_set[1:21], function(x) round(x,6)),
                                           rows = names(out_mat[[i]]$parameter_set[1:21]),
                                           cols = "Parameters",
                                           theme = ttheme_minimal(base_size = 8)),
@@ -3353,8 +3380,9 @@ for (i in 1:length(out_mat)) {
                                           rows = names(out_mat[[i]]$parameter_set[22:41]),
                                           cols = "Parameters (cont.)", theme=ttheme_minimal(base_size = 8)),
                                 tableGrob(out_mat[[i]]$sse, cols = "SSE"),
-                                nrow = 1))
+                                nrow = 1)
 
+  # OUTPUTS
 
   ## HBsAg prevalence by time and age
 
@@ -4038,7 +4066,7 @@ for (i in 1:length(out_mat)) {
                                                              c(2,3)))
 
   # List of all plots
-  plot_list[[i]] = list(p_parms, p_hbsag1, p_hbsag2, p_antihbc, p_hbeag,
+  plot_list[[i]] <- list(p_parms, p_hbsag1, p_hbsag2, p_antihbc, p_hbeag,
                         p_globocan1, p_globocan2, p_gbd, p_ld_demog,
                         p_p_chronic, p_mort_curves, p_or,
                         p_nat_hist_prev1, p_nat_hist_prev2,
@@ -4047,6 +4075,38 @@ for (i in 1:length(out_mat)) {
 }
 dev.off()
 
+## @knitr part5
+##### Adapting SSE ----
+# test: exclude those that don't have a paper ID yet
+output_test <- list(out_mat[[1]]$mapped_output$risk_of_chronic_carriage,
+                    out_mat[[1]]$mapped_output$seromarker_prevalence,
+                    out_mat[[1]]$mapped_output$nat_hist_prevalence,
+                    out_mat[[1]]$mapped_output$mtct_risk,
+                    out_mat[[1]]$mapped_output$progression_rates,
+                    out_mat[[1]]$mapped_output$mortality_curves,
+                    out_mat[[1]]$mapped_output$odds_ratios,
+                    out_mat[[1]]$mapped_output$mapped_liver_disease_demography)
+
+mapped_output_for_sse <- lapply(output_test, function(x) x[!is.na(x$data_value),])
+
+datapoints <- as.numeric(unlist(lapply(mapped_output_for_sse, function(x) x$data_value)))
+model_prediction <- as.numeric(unlist(lapply(mapped_output_for_sse, function(x) x$model_value)))
+study <- unlist(lapply(mapped_output_for_sse, function(x) x$id_paper))
+
+newtable <- data.frame(study, datapoints, model_prediction)
+
+View(newtable %>%
+       group_by(study) %>%
+       summarise(error = sum(abs(datapoints-model_prediction)/
+                               sapply(datapoints, function(x) max(x,1e-10)))))
+
+data_model_diff <- datapoints-model_prediction
+
+# dividing by datapoints gives Inf if the data = 0
+# circumvent this by setting those datapoints to 1e-10
+# Absolute normalised error for each point (unweighted):
+error <- abs(data_model_diff)/sapply(datapoints, function(x) max(x,1e-10))
+# now the scale (e.g. rare/common event) does not matter
 
 # Parallelised code ----
 # Set up cluster

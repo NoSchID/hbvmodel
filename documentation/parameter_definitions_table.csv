@@ -1,0 +1,41 @@
+Parameter name,Parameter definition,Shevanthi value,Margaret Ethiopia fit,Notes,Parameter type
+  b1 ,Horizontal transmission rate among children (age 1-5 years). Note <1 year olds are not involved in horizontal transmission.,NA,NA,,Transmission
+  b2 ,Horizontal transmission rate among juveniles (age 6-15 years) and between children and juveniles,NA,NA,,Transmission
+  b3 ,Horizontal transmission rate among adults (age 16-100 years) and between adults and juveniles. Note there is no mixing between adults and children.,NA,NA,,Transmission
+  alpha ,Relative infectiousness of HBeAg-positives compared to HBeAg-negatives for horizontal transmission,15,15,,Transmission
+  mtct_prob_e ,Mother-to-child transmission risk from HBeAg-positive mother,0.9,0.9,,Transmission
+  mtct_prob_s ,Mother-to-child transmission risk from HBeAg-negative mother,0.14?,0.3681,,Transmission
+  p_chronic_function_r ,Parameter r of exponential decay function for age-specific risk of becoming a chronic carrier after acute infection,0.65,0.65,Edmunds value,Natural history
+  p_chronic_function_s ,Parameter s of exponential decay function for age-specific risk of becoming a chronic carrier after acute infection,0.46,0.46,Edmunds value,Natural history
+  pr_it_ir ,Multiplier on progression rate from Immune tolerant to Immune reactive stage,0.1,0.1,,Natural history
+  pr_ir_ic ,Multiplier on progression rate from Immune reactive to Inactive carrier stage (HBeAg loss),0.05,0.05,,Natural history
+  eag_prog_function_intercept ,Intercept of exponential decay function for age-specific progression through the HBeAg-positive compartments (Immune tolerant and Immune reactive),19.8873,9.5,,Natural history
+  eag_prog_function_rate ,Rate parameter of exponential decay function for age-specific progression through the HBeAg-positive compartments (Immune tolerant and Immune reactive),0.977,0.1281,,Natural history
+  pr_ir_enchb ,Annual progression rate from Immune reactive to HBeAg-negative chronic hepatitis B (HBeAg loss),0.005,0.005,,Natural history
+  pr_ir_enchb_age_threshold ,Age threshold for progression from Immune reactive to HBeAg-negative chronic hepatitis B (rate = 0 below this age),NA,20,,Natural history
+  pr_ir_cc ,Annual progression rate from Immune reactive to Compensated cirrhosis,0.028,0.028,Added after publication,Natural history
+  pr_ir_cc_age_threshold ,Age threshold for progression from Immune reactive to Compensated cirrhosis (rate = 0 below this age),NA,20,,Natural history
+  pr_ic_enchb ,Annual progression rate from Inactive carrier to HBeAg-negative chronic hepatitis B (reactivation),0.01,0.01,,Natural history
+  sag_loss_0to9 ,Annual rate of HBsAg loss in 0-9 year olds (progression rate from Inactive carrier to Immune),0.01,0.01,Shimakawa age-specific values,Natural history
+  sag_loss_10to19 ,Annual rate of HBsAg loss in 10-19 year olds (progression rate from Inactive carrier to Immune),0.01,0.01,Shimakawa age-specific values,Natural history
+  sag_loss_20to29 ,Annual rate of HBsAg loss in 20-29 year olds (progression rate from Inactive carrier to Immune),0.01,0.01,Shimakawa age-specific values,Natural history
+  sag_loss_30to39 ,Annual rate of HBsAg loss in 30-39 year olds (progression rate from Inactive carrier to Immune),0.01,0.01,Shimakawa age-specific values,Natural history
+  sag_loss_40to49 ,Annual rate of HBsAg loss in 40-49 year olds (progression rate from Inactive carrier to Immune),0.01,0.01,Shimakawa age-specific values,Natural history
+  sag_loss_50to70 ,Annual rate of HBsAg loss in 50+ year olds (progression rate from Inactive carrier to Immune),0.01,0.01,Shimakawa age-specific values,Natural history
+  pr_enchb_cc ,Annual progression rate from HBeAg-negative chronic hepatitis B to Compensated cirrhosis,0.04,0.04,,Natural history
+  cirrhosis_age_threshold ,Age threshold for progression from HBeAg-negative chronic hepatitis B to Compensated cirrhosis (rate = 0 below this age),NA,25,,Natural history
+  cirrhosis_prog_male_cofactor ,Multiplier on progression rate to from HBeAg-negative chronic hepatitis B to Compensated cirrhosis for men,?,12.32,,Natural history
+  dccrate ,Annual progression rate from Compensatd cirrhosis to Decompensated cirrhosis,0.04,0.04,,Natural history
+  cancer_prog_coefficient ,Coefficient of quadratic shift function for age-specific progression rates to HCC,NA,4.05E-05,,Natural history: progression to HCC
+  cancer_age_threshold ,Age threshold for progression to HCC (from any carrier compartment other than DCC) (rate = 0 below this age),NA,10,,Natural history: progression to HCC
+  cancer_prog_male_cofactor ,Multiplier on progression rates to HCC (from any carrier compartment other than DCC) for men,?,5.2075,,Natural history: progression to HCC
+  hccr_it ,Multiplier on progression rate to HCC from Immune tolerant,1,1,,Natural history: progression to HCC
+  hccr_ir ,Multiplier on progression rate to HCC from Immune reactive,2,2,,Natural history: progression to HCC
+  hccr_ic ,Multiplier on progression rate to HCC from Inactive carrier,0.5,0.5,,Natural history: progression to HCC
+  hccr_enchb ,Multiplier on progression rate to HCC from HBeAg-negative chronic hepatitis B stage,2,2,,Natural history: progression to HCC
+  hccr_cc ,Multiplier on progression rate to HCC from Compensated cirrhosis stage,13,13,,Natural history: progression to HCC
+  hccr_dcc ,Annual progression rate from Decompensated cirrhosis to HCC,0.04,0.04,,Natural history: progression to HCC
+  mu_cc ,Annual rate of additional mortality from Compensated cirrhosis,0.039,0.039,,HBV-related mortality rates
+  mu_dcc ,Annual rate of additional mortality from Deompensated cirrhosis,0.314,0.314,,HBV-related mortality rates
+  mu_hcc ,Annual rate of additional mortality from HCC,0.5,0.5,,HBV-related mortality rates
+  vacc_eff ,Infant vaccine efficacy against chronic carriage,0.95,,,Intervention
