@@ -1,0 +1,12 @@
+base
+here
+tidyr
+dplyr
+deSolve
+tictoc
+profvis
+ggplot2
+gridExtra
+lhs
+bindrcpp
+knitr

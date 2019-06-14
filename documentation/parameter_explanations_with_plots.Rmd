@@ -5,8 +5,10 @@ date: "13 June 2019"
 output: html_document
 ---
 
-```{r echo = FALSE}
-knitr::read_chunk('R/imperial_model_main.R')
+```{r, echo = FALSE}
+library(here)
+library(knitr)
+read_chunk(here("R","imperial_model_main.R"))
 ```
 
 ```{r part1, include = FALSE}
@@ -14,7 +16,16 @@ knitr::read_chunk('R/imperial_model_main.R')
 
 ```{r part3, include = FALSE, cache = TRUE}
 ```
-# Notes
+## Parameter definitions
+
+```{r, echo = FALSE}
+parameter_table <- read.csv(here("documentation",
+                                 "parameter_definitions_table.csv"),
+                                header = TRUE, check.names = FALSE,
+                                stringsAsFactors = FALSE)
+
+kable(parameter_table)
+```
 
 ## Age-specific progression functions
 
@@ -59,6 +70,8 @@ In men aged > cirrhosis_age_threshold: rate = cirrhosis_prog_male_cofactor * age
 
 
 ```{r, echo = FALSE, fig.width = 9, fig.height = 9}
+print(out_mat[[1]]$parameter_set)
+
 for (i in 1:length(out_mat)) {
   # AGE-SPECIFIC PROGRESSION FUNCTIONS
   

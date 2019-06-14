@@ -838,6 +838,7 @@ run_model <- function(..., sim_duration = runtime,
   # Represented by a shifted quadratic function that increases with age and
   # prevents people younger than 10 years to progress to HCC
   cancer_prog_function <- (parameters$cancer_prog_coefficient * (ages - parameters$cancer_age_threshold))^2  # Rate in females
+#  cancer_prog_function <- parameters$cancer_prog_coefficient
   cancer_prog_function <- cancer_prog_function *
     c(rep(0, times = which(ages == parameters$cancer_age_threshold-da)),
       rep(1, times = n_agecat - which(ages == parameters$cancer_age_threshold-da)))  # Set transition to 0 in <10 year olds
@@ -3339,21 +3340,52 @@ out_mat <- apply(params_mat,1,
                                       list(b1 = as.list(x)$b1,
                                            b2 = as.list(x)$b2,
                                            mtct_prob_s = as.list(x)$mtct_prob_s,
+                                           mtct_prob_e = 0.6,  # decrease
                                            alpha = 7,
-                                           eag_prog_function_intercept = 1, #1
+                                           b3 = 0.01,
+                                           eag_prog_function_intercept = 1,
                                            eag_prog_function_rate = 0,
-                                           pr_it_ir = 0.1, pr_ir_ic = 1, #0.1,0.7
-                                           pr_ir_cc = 0.7, pr_enchb_cc = 0.005,
-                                           pr_ir_cc_age_threshold = 30,
-                                           hccr_ir = 4,
-                                           cirrhosis_prog_male_cofactor = 20,
-                                           cancer_prog_coefficient = 0.0002,
-                                           mu_hcc = 1.5,
-                                           mu_dcc = 1,
-                                           hccr_dcc = 0.2,
-                                           mu_cc = 0.005,
-                                           mtct_prob_e = 0.6,
-                                           b3 = 0.01)))
+                                           pr_it_ir = 0.1,
+                                           pr_ir_ic = 1, # 0.1,0.7
+                                           pr_ir_cc = 0.05,
+                                           pr_enchb_cc = 0.004, # reduced 0.005
+                                           pr_ir_cc_age_threshold = 30,  # increase
+                                           hccr_dcc = 0.2,  # 5 times increase
+                                           hccr_ir = 4,  # doubled
+                                           hccr_ic = 0.5,
+                                           hccr_enchb = 2,
+                                           hccr_cc = 15,
+                                           cirrhosis_prog_male_cofactor = 15,  # increase, 20
+                                           cancer_prog_coefficient = 0.0002,  # doubled
+                                           cancer_age_threshold = 20,
+                                           cancer_prog_male_cofactor = 5,
+                                           mu_cc = 0.005, # decrease
+                                           mu_hcc = 1.5,  # increase
+                                           mu_dcc = 1)))    # increase
+
+# my values:
+#params_mat <- data.frame(b1 = 0.12, b2 = 0.04, mtct_prob_s = 0.05)
+#list(b1 = as.list(x)$b1,
+ #    b2 = as.list(x)$b2,
+#     mtct_prob_s = as.list(x)$mtct_prob_s,
+#     mtct_prob_e = 0.6,  # decrease
+#     alpha = 7,
+#     b3 = 0.01,
+#     eag_prog_function_intercept = 1, #1
+#     eag_prog_function_rate = 0,
+#     pr_it_ir = 0.1,
+#     pr_ir_ic = 1, #0.1,0.7
+#     pr_ir_cc = 0.7,# increased
+#     pr_enchb_cc = 0.005, # reduced
+#     pr_ir_cc_age_threshold = 30,  # increase
+#     hccr_dcc = 0.2,  # 5 times increase
+#     hccr_ir = 4,  # doubled
+#     cirrhosis_prog_male_cofactor = 20,  # increase
+#     cancer_prog_coefficient = 0.0002,  # doubled
+#     mu_cc = 0.005, # decrease
+#     mu_hcc = 1.5,  # increase
+#     mu_dcc = 1)))    # increase
+
 sim_duration = proc.time() - time1
 sim_duration["elapsed"]/60
 
@@ -3367,7 +3399,7 @@ res_mat[res_mat$sse == min(res_mat$sse),]
 # Output plots ----
 
 # For loop to create plot set for every parameter combination
-pdf(file = here("output/manual_fit_plots", "testplots.pdf"), paper="a4r")
+pdf(file = here("output/manual_fit_plots", "change_priors_from_studies_cancer7.pdf"), paper="a4r")
 plot_list = list()
 for (i in 1:length(out_mat)) {
 
@@ -3526,6 +3558,9 @@ for (i in 1:length(out_mat)) {
       ylim(0,1))
 
   ## GLOBOCAN PAF-adjusted cancer incidence and mortality in 2018
+  globocan_outcome_facet_labels <- c("HCC case incidence", "HCC mortality")
+  names(globocan_outcome_facet_labels) <- c("hcc_incidence", "hcc_mortality")
+
   p_globocan1 <- print(ggplot(data = subset(out_mat[[i]]$mapped_output$globocan_hcc_incidence,
                                             time == 2018)) +
                          geom_col(aes(x = paste(age_min,"-",age_max), y = model_value*100000, fill = "Model")) +
@@ -3535,7 +3570,8 @@ for (i in 1:length(out_mat)) {
                                        col = "red", width = 0.2) +
                          scale_fill_manual("", values = c("Model" = "gray35")) +
                          scale_colour_manual("", values = c("Data" = "red")) +
-                         facet_grid(toupper(gsub("_", " ", outcome)) ~ sex) +
+                         facet_grid(outcome ~ sex,
+                                    labeller = labeller(outcome =globocan_outcome_facet_labels)) +
                          theme_bw() +
                          labs(title = "GLOBOCAN HBV-related HCC incidence and mortality rates in 2018",
                               y = "Cases/deaths per 100000 PY", x = "Age (years)",
@@ -3634,9 +3670,11 @@ for (i in 1:length(out_mat)) {
                          scale_linetype_manual(name = "", values = c("Model" = "solid")) +
                          labs(title = "Risk of chronic carriage by age at infection",
                               y = "Risk (proportion)", x = "Age (years)",
-                              colour = "Data") +
+                              colour = "Data",
+                              caption = "Gambian studies - Keneba Manduar cohort: Whittle 1990* | GHIS: Wild 1993, Fortuin 1993\nWest African studies - Senegal: Barin 1981, Marinier 1985*, Coursaget 1987* |  Liberia: Prince 1981\n* In Edmunds 1993 review") +
                          theme_bw() +
                          theme(plot.title = element_text(hjust = 0.5),
+                               plot.caption = element_text(hjust = 0, size = 6),
                                legend.title = element_text(size = 9)) +
                          ylim(0,1) +
                          xlim(0,30))
@@ -3685,20 +3723,28 @@ for (i in 1:length(out_mat)) {
                              shape = 4, size = 3, stroke = 2) +
                   geom_errorbar(aes(x = gsub("odds_ratio_", "", outcome),
                                     ymax = log(ci_upper), ymin = log(ci_lower)), col= "red", width = 0.2) +
-                  labs(title = "Odds ratios for liver disease outcomes",
+                  geom_hline(aes(yintercept=0), colour = "blue") +
+                  geom_text(aes(3.5, 0.25, label = ">0 positive association", vjust = 0.25, hjust = 0),
+                            size = 3, colour = "blue") +
+                  geom_text(aes(3.5, -0.25, label = "<0 negative association", vjust = 0.25, hjust = 0),
+                            size = 3, colour = "blue") +
+                  coord_cartesian(xlim = c(0.75,3.25), clip = "off") +
+                  labs(title = "Log odds ratios for liver disease outcomes",
                        subtitle = "Gambia Liver Cancer Study (Mendy 2010)\nKeneba Manduar chronic carrier cohort (Shimakawa 2016)",
                        y = "ln(OR)", x = "") +
                   scale_x_discrete(breaks=c("current_hbeag_positivity_and_cirrhosis",
                                             "current_hbeag_positivity_and_hcc",
                                             "male_sex_and_significant_liver_fibrosis_or_cirrhosis"),
-                                   labels=c("Association between\ncurrent HBeAg positivity\nand cirrhosis",
-                                            "Association between\ncurrent HBeAg positivity\nand HCC",
-                                            "Association between\nmale sex and\nsignificant liver fibrosis/cirrhosis")) +
+                                   labels=c("Odds of cirrhosis in\ncurrent HBeAg-positives\nvs.\ncurrent HBeAg-negatives",
+                                            "Odds of HCC in\ncurrent HBeAg-positives vs.\ncurrent HBeAg-negatives",
+                                            "Odds of\nsignificant liver fibrosis\nor cirrhosis\nin males vs. females")) +
                   scale_fill_manual("", values = c("Model" = "gray35")) +
                   scale_colour_manual("", values = c("Data" = "red")) +
                   theme_bw() +
                   theme(plot.title = element_text(hjust = 0.5),
-                        plot.subtitle = element_text(hjust = 0.5, size = 8)))
+                        plot.subtitle = element_text(hjust = 0.5, size = 8),
+                        axis.text.x = element_text(size = 8),
+                        plot.margin = unit(c(1,3,1,1), "lines")))
 
   # Natural history prevalence plots
   out_mat[[i]]$mapped_output$nat_hist_prevalence$model_num <-
@@ -3819,7 +3865,8 @@ for (i in 1:length(out_mat)) {
   ## Natural history prevalence PLOT 1
   p_nat_hist_prev1 <- grid.arrange(plot1_gmb1, plot1_1, plot2_gmb1, plot2_1,
                                    plot3_1, nrow = 3,
-                                   layout_matrix = rbind(c(1,2), c(3,4), c(5,5)))
+                                   layout_matrix = rbind(c(1,2), c(3,4), c(5,5)),
+                                   top = "Prevalence measures in chronic carriers")
 
   # A4 Proportion of deaths from DCC and HCC in comp. cirrhosis cohort
   plot_nat_hist_a4 <- ggplot(data = subset(out_mat[[i]]$mapped_output$nat_hist_prevalence,
@@ -3888,7 +3935,8 @@ for (i in 1:length(out_mat)) {
   ## Natural history prevalence PLOT 2
   p_nat_hist_prev2 <- grid.arrange(plot_nat_hist_a4,  plot_nat_hist_gmb2, plot_nat_hist_glcs, nrow = 2,
                                    layout_matrix = rbind(c(1,2),
-                                                         c(3,3)))
+                                                         c(3,3)),
+                                   top = "Prevalence measures in liver disease patients")
 
   # Vertical transmission plots
   # 1-1 plots: chronic infections due to vertical transmission
@@ -4001,7 +4049,8 @@ for (i in 1:length(out_mat)) {
 
   ## Combined liver disease incidence and mortality rates
   p_prog_rates1 <- grid.arrange(plot_1_hcc_incidence, plot_1_dcc_incidence,
-                                plot_1_mortality, plot_a6_mortality, nrow = 2, widths = 4:3)
+                                plot_1_mortality, plot_a6_mortality, nrow = 2, widths = 4:3,
+                                top = "Liver disease-related rates")
 
   # Study 1: HBeAg loss
   plot_1_eag_loss <- ggplot(data = subset(out_mat[[i]]$mapped_output$progression_rates,
@@ -4039,7 +4088,8 @@ for (i in 1:length(out_mat)) {
     ylim(0,5)
 
   ## Combined seromarker loss rates
-  p_prog_rates2 <- grid.arrange(plot_1_eag_loss, plot_6_sag_loss, nrow = 1, widths = 2:1)
+  p_prog_rates2 <- grid.arrange(plot_1_eag_loss, plot_6_sag_loss, nrow = 1, widths = 2:1,
+                                top = "Seromarker clearance rates")
 
   # Transmission-related data from GMB6 and GMB7
   plot_horizontal_transmission <- ggplot(data = subset(out_mat[[i]]$mapped_output$progression_rates,
@@ -4063,7 +4113,8 @@ for (i in 1:length(out_mat)) {
   ## Combined transmission-related plot
   p_transmission_rates <- grid.arrange(plot_mtct, plot_nat_hist_1, plot_horizontal_transmission,
                                        layout_matrix = rbind(c(1,1),
-                                                             c(2,3)))
+                                                             c(2,3)),
+                                       top = "Transmission-related measures")
 
   # List of all plots
   plot_list[[i]] <- list(p_parms, p_hbsag1, p_hbsag2, p_antihbc, p_hbeag,
