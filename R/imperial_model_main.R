@@ -1,7 +1,10 @@
 ###################################
-### Imperial HBV model 28/05/19 ###
+### Imperial HBV model 19/06/19 ###
 ###################################
 # Model described in Shevanthi's thesis and adapted by Margaret
+# New adaptations in this version:
+# - male cofactor on IR=>CC progression
+# - 0.5 year olds participating in horizontal transmission
 # Currently only infant vaccination in second age group, no birth dose or treatment
 # Solving using ODE45
 
@@ -542,7 +545,7 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
       # Incidence of HBeAg loss: transition from IR to IC and IR to ENCHB
       dcum_eag_loss[index$ages_all,i] <-
         pr_ir_ic * eag_prog_function * pop[index$ages_all,IR,i] +
-        pr_ir_enchb * pop[index$ages_all,IR,i]
+        pr_ir_enchb_function * pop[index$ages_all,IR,i]
 
       # Transition from IC to R (sAg loss)
       dcum_sag_loss[index$ages_all,i] <- sag_loss * pop[index$ages_all,IC,i]
@@ -587,6 +590,7 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
       # ENCHB to CC transitions = cirrhosis incidence in HBeAg-negatives
       enchb_to_cc_transitions[index$ages_all,i] <-
         cirrhosis_prog_rates[index$ages_all,i] * pop[index$ages_all,ENCHB,i]
+        #enchb_cc_prog_rates[index$ages_all,i] * pop[index$ages_all,ENCHB,i]
 
       # Transitions between compartments:
 
@@ -791,8 +795,19 @@ run_model <- function(..., sim_duration = runtime,
   # Age-specific progression to HCC from all carrier compartments other than DCC
   # Represented by a shifted quadratic function that increases with age and
   # prevents people younger than 10 years to progress to HCC
-  cancer_prog_function <- (parameters$cancer_prog_coefficient * (ages - parameters$cancer_age_threshold))^2  # Rate in females
-#  cancer_prog_function <- parameters$cancer_prog_coefficient
+# Margaret's version:
+#  cancer_prog_function <- (parameters$cancer_prog_coefficient * (ages - parameters$cancer_age_threshold))^2  # Rate in females
+#  cancer_prog_function <- cancer_prog_function *
+#    c(rep(0, times = which(ages == parameters$cancer_age_threshold-da)),
+#      rep(1, times = n_agecat - which(ages == parameters$cancer_age_threshold-da)))  # Set transition to 0 in <10 year olds
+#  cancer_prog_female <- sapply(cancer_prog_function, function(x) min(x,1)) # Set maximum annual rate is 1
+#  cancer_prog_male <- sapply(parameters$cancer_prog_male_cofactor*cancer_prog_female, function(x) min(x,1))  # Rate in males, cannot exceed 1
+#  cancer_prog_rates <- matrix(data = c(cancer_prog_female, cancer_prog_male),
+#                              nrow = n_agecat, ncol = 2)  # store in a matrix to apply to compartment
+#  parameters$cancer_prog_rates <- cancer_prog_rates
+
+  # Updated version: add an intercept to allow switching off of age dependence
+  cancer_prog_function <- parameters$cancer_prog_intercept + (parameters$cancer_prog_coefficient * (ages - parameters$cancer_age_threshold))^2  # Rate in females
   cancer_prog_function <- cancer_prog_function *
     c(rep(0, times = which(ages == parameters$cancer_age_threshold-da)),
       rep(1, times = n_agecat - which(ages == parameters$cancer_age_threshold-da)))  # Set transition to 0 in <10 year olds
@@ -802,10 +817,11 @@ run_model <- function(..., sim_duration = runtime,
                               nrow = n_agecat, ncol = 2)  # store in a matrix to apply to compartment
   parameters$cancer_prog_rates <- cancer_prog_rates
 
-  # Age-specific progression from IR to ENCHB
+  # Age-specific progression from IR to ENCHB: REMOVED
   # Is set to 0 in under 20 year olds and a constant in over 20 year olds
-  pr_ir_enchb_function <- c(rep(0, times = which(ages == parameters$pr_ir_enchb_age_threshold-da)),
-                            rep(parameters$pr_ir_enchb, times = n_agecat - which(ages == parameters$pr_ir_enchb_age_threshold-da)))
+#  pr_ir_enchb_function <- c(rep(0, times = which(ages == 0.5-da)),
+#                            rep(parameters$pr_ir_enchb, times = n_agecat - which(ages == 0.5-da)))
+  pr_ir_enchb_function <- parameters$pr_ir_enchb
   pr_ir_enchb_function <- sapply(pr_ir_enchb_function, function(x) min(x,5))  # annual rate cannot exceed 5
   parameters$pr_ir_enchb_function <- pr_ir_enchb_function
 
@@ -823,20 +839,29 @@ run_model <- function(..., sim_duration = runtime,
   # Age-specific progression from ENCHB to CC
   # Margaret represents this using a shifted quadratic function that increases with age and
   # prevents people younger than 25 years to progress to HCC:
-  #cirrhosis_prog_function <- parameters$pr_enchb_cc * (parameters$cirrhosis_prog_coefficient * (ages - parameters$pr_enchb_cc_age_threshold))^2  # Rate in females
+  # cirrhosis_prog_function <- parameters$pr_enchb_cc_female * (parameters$cirrhosis_prog_coefficient * (ages - parameters$pr_enchb_cc_age_threshold))^2  # Rate in females
   # Shimakawa 2016 found no association between current age and development of significant liver fibrosis,
   # so I remove this age dependence other than the age threshold
   cirrhosis_prog_function <- parameters$pr_enchb_cc   # Rate in females
-  cirrhosis_prog_function <- cirrhosis_prog_function *
-    c(rep(0, times = which(ages == parameters$pr_enchb_cc_age_threshold-da)),
-      rep(1, times = n_agecat - which(ages == parameters$pr_enchb_cc_age_threshold-da)))  # Set rate to 0 in <25 year olds
+#  cirrhosis_prog_function <- cirrhosis_prog_function *
+#      c(rep(0, times = which(ages == 0.5-da)),
+#        rep(1, times = n_agecat - which(ages == 0.5-da)))  # Set rate to 0 in <25 year olds
   cirrhosis_prog_function_female <- sapply(cirrhosis_prog_function, function(x) min(x,5)) # Set maximum annual rate to 5
   cirrhosis_prog_function_male <- sapply(parameters$cirrhosis_male_cofactor *
-                                           cirrhosis_prog_function_female, function(x) min(x,5))  # Rate in males, cannot exceed 5
+  cirrhosis_prog_function_female, function(x) min(x,5))  # Rate in males, cannot exceed 5
   cirrhosis_prog_rates <- matrix(data = c(cirrhosis_prog_function_female,
-                                          cirrhosis_prog_function_male),
-                                 nrow = n_agecat, ncol = 2)  # store in a matrix to apply to compartment
+                                        cirrhosis_prog_function_male),
+                               nrow = n_agecat, ncol = 2)
   parameters$cirrhosis_prog_rates <- cirrhosis_prog_rates
+
+#  pr_enchb_cc_function <- parameters$pr_enchb_cc_female   # Rate in females
+#  pr_enchb_cc_function_female <- sapply(pr_enchb_cc_function, function(x) min(x,5)) # Set maximum annual rate to 5
+#  pr_enchb_cc_function_male <- sapply(parameters$cirrhosis_male_cofactor *
+#                                      pr_enchb_cc_function_female, function(x) min(x,5))  # Rate in males, cannot exceed 5
+#  enchb_cc_prog_rates <- matrix(data = c(pr_enchb_cc_function_female,
+#                                          pr_enchb_cc_function_male),
+#                                 nrow = n_agecat, ncol = 2)  # store in a matrix to apply to compartment
+#  parameters$enchb_cc_prog_rates <- enchb_cc_prog_rates
 
   # Age-specific HBsAg loss: added by me
   # Assuming rate in 50-70 year olds extends to 70+ year olds
@@ -1342,7 +1367,7 @@ parameter_list <- list(
   eag_prog_function_intercept = 2.0374,  # S Ethiopia, 9.5 in Margaret's Ethiopia fit
   eag_prog_function_rate = 0.001,  # S Ethiopia, 0.1281 in Margaret's Ethiopia fit
   pr_ir_enchb = 0.005,  # S
-  pr_ir_enchb_age_threshold = 20,  # M, not present in S model
+#  pr_ir_enchb_age_threshold = 20,  # M, not present in S model
   pr_ir_cc = 0.028,  # S but not present in published model
   pr_ir_cc_age_threshold = 20,  # M, not present in S model
   pr_ic_enchb = 0.01,   # S
@@ -1352,13 +1377,15 @@ parameter_list <- list(
   sag_loss_30to39 = 0.0105,  # Shimakawa values, inactive carrier to recovered transition
   sag_loss_40to49 = 0.0232,  # Shimakawa values, inactive carrier to recovered transition
   sag_loss_50to70 = 0.0239,  # Shimakawa values, inactive carrier to recovered transition
-  pr_enchb_cc = 0.04,  # Progression to CC (from ENCHB) S value
-  #cirrhosis_prog_coefficient = 0.0341,  # Margaret value
-  pr_enchb_cc_age_threshold = 25,  # M value, not present in S model
+#  pr_enchb_cc_female = 0.04,  # Progression to CC (from ENCHB) S value
+  pr_enchb_cc = 0.04,
+#cirrhosis_prog_coefficient = 0.0341,  # Margaret value
+#  pr_enchb_cc_age_threshold = 25,  # M value, not present in S model
   cirrhosis_male_cofactor = 12.32,  # M value
   dccrate = 0.04,  # Progression from CC to DCC, S value
   # PROGRESSION RATES TO HEPATOCELLULAR CARCINOMA
   cancer_prog_coefficient = 4.0452e-05,  # value from Margaret
+  cancer_prog_intercept = 1e-7,
   cancer_age_threshold = 10,  # value from Margaret
   cancer_prog_male_cofactor = 5.2075,  # value from Margaret
   hccr_it = 1,  # S
@@ -1386,59 +1413,6 @@ parameter_list <- list(
 
 # Store names of all parameters
 parameter_names <- names(parameter_list)
-parameter_definitions <-
-  c("Horizontal transmission rate among children (age 1-5 years).
-    Note <1 year olds are not involved in horizontal transmission.",
-    "Horizontal transmission rate among juveniles (age 6-15 years) and
-    between children and juveniles",
-    "Horizontal transmission rate among adults (age 16-100 years) and
-    between adults and juveniles. Note there is no mixing between adults and children.",
-    "Relative infectiousness of HBeAg-positives compared to HBeAg-negatives for
-    horizontal transmission",
-    "Mother-to-child transmission risk from HBeAg-positive mother",
-    "Mother-to-child transmission risk from HBeAg-negative mother",
-    "Parameter r of age-specific function for risk of becoming a chronic carrier after acute infection",
-    "Parameter s of age-specific function for risk of becoming a chronic carrier after acute infection",
-    "Multiplier on annual progression rate from Immune tolerant to Immune reactive stage",
-    "Multiplier on annual progression rate from Immune reactive to Inactive carrier stage (HBeAg loss)",
-    "Intercept of exponential decay function for age-specific progression through the HBeAg-positive compartments
-    (Immune tolerant and Immune reactive)",
-    "Rate parameter of exponential decay function for age-specific progression through the HBeAg-positive compartments
-    (Immune tolerant and Immune reactive)",
-    "Annual progression rate from Immune reactive to HBeAg-negative chronic hepatitis B (HBeAg loss)",
-    "Age threshold for progression from Immune reactive to HBeAg-negative chronic hepatitis B (rate = 0 below this age)",
-    "Annual progression rate from Immune reactive to Compensated cirrhosis",
-    "Age threshold for progression from Immune reactive to Compensated cirrhosis (rate = 0 below this age)",
-    "Annual progression rate from Inactive carrier to HBeAg-negative chronic hepatitis B (reactivation)",
-    "Annual rate of HBsAg loss in 0-9 year olds (progression rate from Inactive carrier to Immune)",
-    "Annual rate of HBsAg loss in 10-19 year olds (progression rate from Inactive carrier to Immune)",
-    "Annual rate of HBsAg loss in 20-29 year olds (progression rate from Inactive carrier to Immune)",
-    "Annual rate of HBsAg loss in 30-39 year olds (progression rate from Inactive carrier to Immune)",
-    "Annual rate of HBsAg loss in 40-49 year olds (progression rate from Inactive carrier to Immune)",
-    "Annual rate of HBsAg loss in 50+ year olds (progression rate from Inactive carrier to Immune)",
-    "Annual progression rate from HBeAg-negative chronic hepatitis B to Compensated cirrhosis",
-    "Age threshold for progression from HBeAg-negative chronic hepatitis B to Compensated cirrhosis (rate = 0 below this age)",
-    "Multiplier on progression rate to from HBeAg-negative chronic hepatitis B to Compensated cirrhosis for men",
-    "Annual progression rate from Compensatd cirrhosis to Decompensated cirrhosis",
-    "Coefficient of quadratic function for age-specific progression rate to HCC",
-    "Age threshold for progression to HCC (from any compartment) (rate = 0 below this age)",
-    "Multiplier on progression rates to HCC (from any compartment) for men",
-    "Multiplier on annual progression rate to HCC from Immune tolerant stage",
-    "Multiplier on annual progression rate to HCC from Immune reactive stage",
-    "Multiplier on annual progression rate to HCC from Inactive carrier stage",
-    "Multiplier on annual progression rate to HCC from HBeAg-negative chronic hepatitis B stage",
-    "Multiplier on annual progression rate to HCC from Compensated cirrhosis stage",
-    "Annual progression rate from Decompensated cirrhosis to HCC",
-    "Annual rate of additional mortality from Compensated cirrhosis",
-    "Annual rate of additional mortality from Deompensated cirrhosis",
-    "Annual rate of additional mortality from HCC",
-    "Infant vaccine efficacy against chronic carriage",
-    "Switch: Time of vaccine introduction",
-    "Switch: Start year of simulation",
-    "Switch: Turn vaccination on or off",
-    "Switch: Turn births on or off",
-    "Switch: Turn migration on or off",
-    "Switch: Turn background mortality on or off")
 
 ## @knitr part2
 ### Run the simulation: 1 SCENARIO (vacc/no_vacc) ----
@@ -1456,9 +1430,8 @@ sim <- run_model(sim_duration = runtime, default_parameter_list = parameter_list
                                         eag_prog_function_rate = 0,
                                         pr_it_ir = 0.2,
                                         pr_ir_ic = 0.5, # 0.1,0.7
-                                        pr_ir_enchb_age_threshold = 0.5,
                                         pr_ir_cc = 0.05,
-                                        pr_enchb_cc = 0.004, # reduced 0.005
+                                        pr_enchb_cc_female = 0.004, # reduced 0.005
                                         pr_ir_cc_age_threshold = 30,  # increase
                                         hccr_dcc = 0.2,  # 5 times increase
                                         hccr_ir = 4,  # doubled
@@ -3303,20 +3276,51 @@ out_mat <- apply(params_mat,1,
                                            eag_prog_function_rate = 0,
                                            pr_it_ir = 0.1,
                                            pr_ir_ic = 0.8, # 0.1,0.7
-                                           pr_ir_enchb_age_threshold = 0.5,
-                                           pr_ir_cc = 0.05,
-                                           pr_enchb_cc = 0.016, # 0.004
+                                           pr_ir_cc = 0.1,
+                                           pr_ir_enchb = 0.005,
+                                           #pr_enchb_cc_female = 0.005, # 0.016
+                                           pr_enchb_cc = 0.005, # 0.016
                                            pr_ir_cc_age_threshold = 30,  # increase
                                            hccr_dcc = 0.2,  # 5 times increase
-                                           hccr_ir = 4,  # doubled
-                                           cirrhosis_male_cofactor = 5,  # increase, 20
-                                           cancer_prog_coefficient = 0.0002,  # doubled
+                                           hccr_ir = 8,  # doubled
+                                           hccr_enchb = 4,
+                                           hccr_cc = 20,
+                                           cirrhosis_male_cofactor = 10,  # increase, 20
+                                           cancer_prog_coefficient = 0,  # doubled 0.0002
+                                           cancer_prog_intercept = 0.0001, # started with 0.0001 but too high in <20 ages
                                            cancer_age_threshold = 10,
                                            cancer_prog_male_cofactor = 5,
                                            mu_cc = 0.005, # decrease
                                            mu_hcc = 1.5,  # increase
                                            mu_dcc = 1
                                            )))    # increase
+
+#list(b1 = as.list(x)$b1,
+#     b2 = as.list(x)$b2,
+#     mtct_prob_s = as.list(x)$mtct_prob_s,
+#     mtct_prob_e = 0.6,  # decrease
+#     alpha = 7,
+#     b3 = 0.01,
+#     eag_prog_function_intercept = 1,
+#     eag_prog_function_rate = 0,
+#     pr_it_ir = 0.1,
+#     pr_ir_ic = 0.8, # 0.1,0.7
+#     pr_ir_enchb_age_threshold = 0.5,
+#     pr_ir_cc = 0.06,
+#     pr_enchb_cc_female = 0.005, # 0.016
+#     pr_enchb_cc_age_threshold = 20,
+#     pr_ir_cc_age_threshold = 30,  # increase
+#     hccr_dcc = 0.2,  # 5 times increase
+#     hccr_ir = 4,  # doubled
+#     cirrhosis_male_cofactor = 5,  # increase, 20
+#     cancer_prog_coefficient = 0,  # doubled 0.0002
+#     cancer_prog_intercept = 0.0002, # started with 0.0001 but too high in <20 ages
+#     cancer_age_threshold = 20,
+#     cancer_prog_male_cofactor = 5,
+#     mu_cc = 0.005, # decrease
+#     mu_hcc = 1.5,  # increase
+#     mu_dcc = 1
+#)))    # increase
 
 
 sim_duration = proc.time() - time1
@@ -3332,7 +3336,7 @@ res_mat[res_mat$sse == min(res_mat$sse),]
 # Output plots ----
 
 # For loop to create plot set for every parameter combination
-pdf(file = here("output/manual_fit_plots", "manual_fit2.pdf"), paper="a4r")
+pdf(file = here("output/manual_fit_plots", "test4.pdf"), paper="a4r")
 plot_list = list()
 for (i in 1:length(out_mat)) {
 
@@ -4058,30 +4062,6 @@ for (i in 1:length(out_mat)) {
 
 }
 dev.off()
-
-
-# my values:
-#params_mat <- data.frame(b1 = 0.12, b2 = 0.04, mtct_prob_s = 0.05)
-#list(b1 = as.list(x)$b1,
-#    b2 = as.list(x)$b2,
-#     mtct_prob_s = as.list(x)$mtct_prob_s,
-#     mtct_prob_e = 0.6,  # decrease
-#     alpha = 7,
-#     b3 = 0.01,
-#     eag_prog_function_intercept = 1, #1
-#     eag_prog_function_rate = 0,
-#     pr_it_ir = 0.1,
-#     pr_ir_ic = 1, #0.1,0.7
-#     pr_ir_cc = 0.7,# increased
-#     pr_enchb_cc = 0.005, # reduced
-#     pr_ir_cc_age_threshold = 30,  # increase
-#     hccr_dcc = 0.2,  # 5 times increase
-#     hccr_ir = 4,  # doubled
-#     cirrhosis_male_cofactor = 20,  # increase
-#     cancer_prog_coefficient = 0.0002,  # doubled
-#     mu_cc = 0.005, # decrease
-#     mu_hcc = 1.5,  # increase
-#     mu_dcc = 1)))    # increase
 
 ## @knitr part5
 ##### Adapting SSE ----
