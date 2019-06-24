@@ -18,10 +18,13 @@ require(here)  # for setting working directory
 library(profvis)  # for code profiling
 require(ggplot2)  # for calibration plots
 require(gridExtra)  # for calibration plots
-require(grid)
-require(lhs)
-require("parallel")
+require(grid)  # for calibration plots
+require(lhs)  # Latin Hypercube sampling
+require(parallel)
+library(efficient)
 
+devtools::install_github("csgillespie/efficient",
+                         args = "--with-keep.source")
 
 ### Simulation parameters ----
 ## Country
@@ -2172,7 +2175,8 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
   ## 3) RISK OF CHRONIC CARRIAGE BY AGE AT INFECTION ----
   model_p_chronic <- data.frame(outcome = "p_chronic",
                                 age = ages,
-                                model_value = unlist(head(select(sim, starts_with("p_chronic_function")),1)))
+                                model_value = unlist(head(sim[,grepl("^p_chronic_function.",names(sim))],1)))
+
   model_p_chronic$outcome <- as.character(model_p_chronic$outcome)
 
   mapped_p_chronic <- full_join(data_to_fit$p_chronic,
@@ -2221,231 +2225,230 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
   denom_gmb1_2_2013 <- (sum(out$carriers_male[which(out$time == 2013),(which(ages ==27):which(ages ==35.5))]))
 
   # Carriers without liver disease, aged 4.5 to 21.5 years, in 1986
-  denom_1_1_1986 <- sum(select(sim, starts_with("ITf"))[which(sim$time == 1986),which(ages ==4.5):which(ages ==21.5)] +
-                          select(sim, starts_with("IRf"))[which(sim$time == 1986),which(ages ==4.5):which(ages ==21.5)] +
-                          select(sim, starts_with("ICf"))[which(sim$time == 1986),which(ages ==4.5):which(ages ==21.5)] +
-                          select(sim, starts_with("ENCHBf"))[which(sim$time == 1986),which(ages ==4.5):which(ages ==21.5)]+
-                          select(sim, starts_with("ITm"))[which(sim$time == 1986),which(ages ==4.5):which(ages ==21.5)] +
-                          select(sim, starts_with("IRm"))[which(sim$time == 1986),which(ages ==4.5):which(ages ==21.5)] +
-                          select(sim, starts_with("ICm"))[which(sim$time == 1986),which(ages ==4.5):which(ages ==21.5)] +
-                          select(sim, starts_with("ENCHBm"))[which(sim$time == 1986),which(ages ==4.5):which(ages ==21.5)])
+  denom_1_1_1986 <- sum(sim[,grepl("^ITf.",names(sim))][which(sim$time == 1986),which(ages ==4.5):which(ages ==21.5)] +
+                          sim[,grepl("^IRf.",names(sim))][which(sim$time == 1986),which(ages ==4.5):which(ages ==21.5)] +
+                          sim[,grepl("^ICf.",names(sim))][which(sim$time == 1986),which(ages ==4.5):which(ages ==21.5)] +
+                          sim[,grepl("^ENCHBf.",names(sim))][which(sim$time == 1986),which(ages ==4.5):which(ages ==21.5)]+
+                          sim[,grepl("^ITm.",names(sim))][which(sim$time == 1986),which(ages ==4.5):which(ages ==21.5)] +
+                          sim[,grepl("^IRm.",names(sim))][which(sim$time == 1986),which(ages ==4.5):which(ages ==21.5)] +
+                          sim[,grepl("^ICm.",names(sim))][which(sim$time == 1986),which(ages ==4.5):which(ages ==21.5)] +
+                          sim[,grepl("^ENCHBm.",names(sim))][which(sim$time == 1986),which(ages ==4.5):which(ages ==21.5)])
 
   # Carriers, aged 33 to 47 years, in 2012
   denom_gmb1_1_2012 <- (sum(out$carriers[which(out$time == 2012),(which(ages ==33):which(ages ==47))]))
 
   # Carriers without liver disease, aged 8 to 95.5 years, in 2013
-  denom_1_1_2013 <- sum(select(sim, starts_with("ITf"))[which(sim$time == 2013),which(ages ==8):which(ages ==95.5)] +
-                          select(sim, starts_with("IRf"))[which(sim$time == 2013),which(ages ==8):which(ages ==95.5)] +
-                          select(sim, starts_with("ICf"))[which(sim$time == 2013),which(ages ==8):which(ages ==95.5)] +
-                          select(sim, starts_with("ENCHBf"))[which(sim$time == 2013),which(ages ==8):which(ages ==95.5)]+
-                          select(sim, starts_with("ITm"))[which(sim$time == 2013),which(ages ==8):which(ages ==95.5)] +
-                          select(sim, starts_with("IRm"))[which(sim$time == 2013),which(ages ==8):which(ages ==95.5)] +
-                          select(sim, starts_with("ICm"))[which(sim$time == 2013),which(ages ==8):which(ages ==95.5)] +
-                          select(sim, starts_with("ENCHBm"))[which(sim$time == 2013),which(ages ==8):which(ages ==95.5)])
+  denom_1_1_2013 <- sum(sim[,grepl("^ITf.",names(sim))][which(sim$time == 2013),which(ages ==8):which(ages ==95.5)] +
+                          sim[,grepl("^IRf.",names(sim))][which(sim$time == 2013),which(ages ==8):which(ages ==95.5)] +
+                          sim[,grepl("^ICf.",names(sim))][which(sim$time == 2013),which(ages ==8):which(ages ==95.5)] +
+                          sim[,grepl("^ENCHBf.",names(sim))][which(sim$time == 2013),which(ages ==8):which(ages ==95.5)]+
+                          sim[,grepl("^ITm.",names(sim))][which(sim$time == 2013),which(ages ==8):which(ages ==95.5)] +
+                          sim[,grepl("^IRm.",names(sim))][which(sim$time == 2013),which(ages ==8):which(ages ==95.5)] +
+                          sim[,grepl("^ICm.",names(sim))][which(sim$time == 2013),which(ages ==8):which(ages ==95.5)] +
+                          sim[,grepl("^ENCHBm.",names(sim))][which(sim$time == 2013),which(ages ==8):which(ages ==95.5)])
 
   # Carriers with significant liver fibrosis or cirrhosis in 2013
-  num_1_1_2013 <- select(sim, starts_with("IRf"))[which(sim$time == 2013),]+
-    select(sim, starts_with("ENCHBf"))[which(sim$time == 2013),]+
-    select(sim, starts_with("CCf"))[which(sim$time == 2013),]+
-    select(sim, starts_with("DCCf"))[which(sim$time == 2013),]+
-    select(sim, starts_with("IRm"))[which(sim$time == 2013),]+
-    select(sim, starts_with("ENCHBm"))[which(sim$time == 2013),]+
-    select(sim, starts_with("CCm"))[which(sim$time == 2013),]+
-    select(sim, starts_with("DCCm"))[which(sim$time == 2013),]
+  num_1_1_2013 <- sim[,grepl("^IRf.",names(sim))][which(sim$time == 2013),]+
+    sim[,grepl("^ENCHBf.",names(sim))][which(sim$time == 2013),]+
+    sim[,grepl("^CCf.",names(sim))][which(sim$time == 2013),]+
+    sim[,grepl("^DCCf.",names(sim))][which(sim$time == 2013),]+
+    sim[,grepl("^IRm.",names(sim))][which(sim$time == 2013),]+
+    sim[,grepl("^ENCHBm.",names(sim))][which(sim$time == 2013),]+
+    sim[,grepl("^CCm.",names(sim))][which(sim$time == 2013),]+
+    sim[,grepl("^DCCm.",names(sim))][which(sim$time == 2013),]
 
   # Incident CC cases in 1999
   denom_gmb15_2_1999 <-
-    select(sim, starts_with("cum_ir_to_ccf"))[which(sim$time == 1999),]+
-    select(sim, starts_with("cum_ir_to_ccm"))[which(sim$time == 1999),]+
-    select(sim, starts_with("cum_enchb_to_ccf"))[which(sim$time == 1999),]+
-    select(sim, starts_with("cum_enchb_to_ccm"))[which(sim$time == 1999),]-
-    select(sim, starts_with("cum_ir_to_ccf"))[which(sim$time == 1998),]-
-    select(sim, starts_with("cum_ir_to_ccm"))[which(sim$time == 1998),]-
-    select(sim, starts_with("cum_enchb_to_ccf"))[which(sim$time == 1998),]-
-    select(sim, starts_with("cum_enchb_to_ccm"))[which(sim$time == 1998),]
+    sim[,grepl("^cum_ir_to_ccf.",names(sim))][which(sim$time == 1999),]+
+    sim[,grepl("^cum_ir_to_ccm.",names(sim))][which(sim$time == 1999),]+
+    sim[,grepl("^cum_enchb_to_ccf.",names(sim))][which(sim$time == 1999),]+
+    sim[,grepl("^cum_enchb_to_ccm.",names(sim))][which(sim$time == 1999),]-
+    sim[,grepl("^cum_ir_to_ccf.",names(sim))][which(sim$time == 1998),]-
+    sim[,grepl("^cum_ir_to_ccm.",names(sim))][which(sim$time == 1998),]-
+    sim[,grepl("^cum_enchb_to_ccf.",names(sim))][which(sim$time == 1998),]-
+    sim[,grepl("^cum_enchb_to_ccm.",names(sim))][which(sim$time == 1998),]
 
   # Incident HBeAg-positive non-cirrhotic HCC cases in 1990
   # (same intermediate timepoint used for 2 studies)
   num_gmb12_gmb15_1990 <-
-    select(sim, starts_with("cum_it_to_hccf"))[which(sim$time == 1991),]+
-    select(sim, starts_with("cum_it_to_hccm"))[which(sim$time == 1991),]+
-    select(sim, starts_with("cum_ir_to_hccf"))[which(sim$time == 1991),]+
-    select(sim, starts_with("cum_ir_to_hccm"))[which(sim$time == 1991),]-
-    select(sim, starts_with("cum_it_to_hccf"))[which(sim$time == 1990),]-
-    select(sim, starts_with("cum_it_to_hccm"))[which(sim$time == 1990),]-
-    select(sim, starts_with("cum_ir_to_hccf"))[which(sim$time == 1990),]-
-    select(sim, starts_with("cum_ir_to_hccm"))[which(sim$time == 1990),]
+    sim[,grepl("^cum_it_to_hccf.",names(sim))][which(sim$time == 1991),]+
+    sim[,grepl("^cum_it_to_hccm.",names(sim))][which(sim$time == 1991),]+
+    sim[,grepl("^cum_ir_to_hccf.",names(sim))][which(sim$time == 1991),]+
+    sim[,grepl("^cum_ir_to_hccm.",names(sim))][which(sim$time == 1991),]-
+    sim[,grepl("^cum_it_to_hccf.",names(sim))][which(sim$time == 1990),]-
+    sim[,grepl("^cum_it_to_hccm.",names(sim))][which(sim$time == 1990),]-
+    sim[,grepl("^cum_ir_to_hccf.",names(sim))][which(sim$time == 1990),]-
+    sim[,grepl("^cum_ir_to_hccm.",names(sim))][which(sim$time == 1990),]
 
   # Incident non-cirrhotic HCC cases in 1990
   # (same intermediate timepoint used for 2 studies)
   denom_gmb12_gmb15_1990 <-
-    select(sim, starts_with("cum_it_to_hccf"))[which(sim$time == 1991),]+
-    select(sim, starts_with("cum_it_to_hccm"))[which(sim$time == 1991),]+
-    select(sim, starts_with("cum_ir_to_hccf"))[which(sim$time == 1991),]+
-    select(sim, starts_with("cum_ir_to_hccm"))[which(sim$time == 1991),]+
-    select(sim, starts_with("cum_ic_to_hccf"))[which(sim$time == 1991),]+
-    select(sim, starts_with("cum_ic_to_hccm"))[which(sim$time == 1991),]+
-    select(sim, starts_with("cum_enchb_to_hccf"))[which(sim$time == 1991),]+
-    select(sim, starts_with("cum_enchb_to_hccm"))[which(sim$time == 1991),] -
-    select(sim, starts_with("cum_it_to_hccf"))[which(sim$time == 1990),]-
-    select(sim, starts_with("cum_it_to_hccm"))[which(sim$time == 1990),]-
-    select(sim, starts_with("cum_ir_to_hccf"))[which(sim$time == 1990),]-
-    select(sim, starts_with("cum_ir_to_hccm"))[which(sim$time == 1990),]-
-    select(sim, starts_with("cum_ic_to_hccf"))[which(sim$time == 1990),]-
-    select(sim, starts_with("cum_ic_to_hccm"))[which(sim$time == 1990),]-
-    select(sim, starts_with("cum_enchb_to_hccf"))[which(sim$time == 1990),]-
-    select(sim, starts_with("cum_enchb_to_hccm"))[which(sim$time == 1990),]
+    sim[,grepl("^cum_it_to_hccf.",names(sim))][which(sim$time == 1991),]+
+    sim[,grepl("^cum_it_to_hccm.",names(sim))][which(sim$time == 1991),]+
+    sim[,grepl("^cum_ir_to_hccf.",names(sim))][which(sim$time == 1991),]+
+    sim[,grepl("^cum_ir_to_hccm.",names(sim))][which(sim$time == 1991),]+
+    sim[,grepl("^cum_ic_to_hccf.",names(sim))][which(sim$time == 1991),]+
+    sim[,grepl("^cum_ic_to_hccm.",names(sim))][which(sim$time == 1991),]+
+    sim[,grepl("^cum_enchb_to_hccf.",names(sim))][which(sim$time == 1991),]+
+    sim[,grepl("^cum_enchb_to_hccm.",names(sim))][which(sim$time == 1991),] -
+    sim[,grepl("^cum_it_to_hccf.",names(sim))][which(sim$time == 1990),]-
+    sim[,grepl("^cum_it_to_hccm.",names(sim))][which(sim$time == 1990),]-
+    sim[,grepl("^cum_ir_to_hccf.",names(sim))][which(sim$time == 1990),]-
+    sim[,grepl("^cum_ir_to_hccm.",names(sim))][which(sim$time == 1990),]-
+    sim[,grepl("^cum_ic_to_hccf.",names(sim))][which(sim$time == 1990),]-
+    sim[,grepl("^cum_ic_to_hccm.",names(sim))][which(sim$time == 1990),]-
+    sim[,grepl("^cum_enchb_to_hccf.",names(sim))][which(sim$time == 1990),]-
+    sim[,grepl("^cum_enchb_to_hccm.",names(sim))][which(sim$time == 1990),]
 
   # Calculate each datapoint manually and distinguish by minimum and maximum age and
   # a unique ID as follows:
   # id_*study ID*_*group ID*_*datapoint time*_*numerator*
-
   model_output_nat_hist[1,] <-
     c("id_gmb1_2_2013_ic",
       age_min = 27,
       age_max = 35,
-      (sum(select(sim, starts_with("ICm"))[which(sim$time == 2013),which(ages ==27):which(ages ==35.5)]))/
+      (sum(sim[,grepl("^ICm.",names(sim))][which(sim$time == 2013),which(ages ==27):which(ages ==35.5)]))/
         denom_gmb1_2_2013)
 
   model_output_nat_hist[2,] <-
     c("id_gmb1_2_2013_ir_enchb",
       age_min = 27,
       age_max = 35,
-      (sum(select(sim, starts_with("IRm"))[which(sim$time == 2013),which(ages ==27):which(ages ==35.5)])+
-         sum(select(sim, starts_with("ENCHBm"))[which(sim$time == 2013),which(ages ==27):which(ages ==35.5)]))/
+      (sum(sim[,grepl("^IRm.",names(sim))][which(sim$time == 2013),which(ages ==27):which(ages ==35.5)])+
+         sum(sim[,grepl("^ENCHBm.",names(sim))][which(sim$time == 2013),which(ages ==27):which(ages ==35.5)]))/
         denom_gmb1_2_2013)
 
   model_output_nat_hist[3,] <-
     c("id_gmb1_2_2013_cc_dcc",
       age_min = 27,
       age_max = 35,
-      (sum(select(sim, starts_with("CCm"))[which(sim$time == 2013),which(ages ==27):which(ages ==35.5)])+
-         sum(select(sim, starts_with("DCCm"))[which(sim$time == 2013),which(ages ==27):which(ages ==35.5)]))/
+      (sum(sim[,grepl("^CCm.",names(sim))][which(sim$time == 2013),which(ages ==27):which(ages ==35.5)])+
+         sum(sim[,grepl("^DCCm.",names(sim))][which(sim$time == 2013),which(ages ==27):which(ages ==35.5)]))/
         denom_gmb1_2_2013)
 
   model_output_nat_hist[4,] <-
     c("id_gmb1_2_2013_hcc",
       age_min = 27,
       age_max = 35,
-      (sum(select(sim, starts_with("HCCm"))[which(sim$time == 2013),which(ages ==27):which(ages ==35.5)]))/
+      (sum(sim[,grepl("^HCCm.",names(sim))][which(sim$time == 2013),which(ages ==27):which(ages ==35.5)]))/
         denom_gmb1_2_2013)
 
   model_output_nat_hist[5,] <-
     c("id_1_1_1986_it",
       age_min = 4.5,
       age_max = 21.5,
-      sum(select(sim, starts_with("ITf"))[which(sim$time == 1986),which(ages ==4.5):which(ages ==21.5)]+
-            select(sim, starts_with("ITm"))[which(sim$time == 1986),which(ages ==4.5):which(ages ==21.5)])/
+      sum(sim[,grepl("^ITf.",names(sim))][which(sim$time == 1986),which(ages ==4.5):which(ages ==21.5)]+
+            sim[,grepl("^ITm.",names(sim))][which(sim$time == 1986),which(ages ==4.5):which(ages ==21.5)])/
         denom_1_1_1986)
 
   model_output_nat_hist[6,] <-
     c("id_1_1_1986_ir",
       age_min = 4.5,
       age_max = 21.5,
-      sum(select(sim, starts_with("IRf"))[which(sim$time == 1986),which(ages ==4.5):which(ages ==21.5)]+
-            select(sim, starts_with("IRm"))[which(sim$time == 1986),which(ages ==4.5):which(ages ==21.5)])/
+      sum(sim[,grepl("^IRf.",names(sim))][which(sim$time == 1986),which(ages ==4.5):which(ages ==21.5)]+
+            sim[,grepl("^IRm.",names(sim))][which(sim$time == 1986),which(ages ==4.5):which(ages ==21.5)])/
         denom_1_1_1986)
 
   model_output_nat_hist[7,] <-
     c("id_1_1_1986_enchb",
       age_min = 4.5,
       age_max = 21.5,
-      sum(select(sim, starts_with("ENCHBf"))[which(sim$time == 1986),which(ages ==4.5):which(ages ==21.5)]+
-            select(sim, starts_with("ENCHBm"))[which(sim$time == 1986),which(ages ==4.5):which(ages ==21.5)])/
+      sum(sim[,grepl("^ENCHBf.",names(sim))][which(sim$time == 1986),which(ages ==4.5):which(ages ==21.5)]+
+            sim[,grepl("^ENCHBm.",names(sim))][which(sim$time == 1986),which(ages ==4.5):which(ages ==21.5)])/
         denom_1_1_1986)
 
   model_output_nat_hist[8,] <-
     c("id_1_1_1986_ic",
       age_min = 4.5,
       age_max = 21.5,
-      sum(select(sim, starts_with("ICf"))[which(sim$time == 1986),which(ages ==4.5):which(ages ==21.5)]+
-            select(sim, starts_with("ICm"))[which(sim$time == 1986),which(ages ==4.5):which(ages ==21.5)])/
+      sum(sim[,grepl("^ICf.",names(sim))][which(sim$time == 1986),which(ages ==4.5):which(ages ==21.5)]+
+            sim[,grepl("^ICm.",names(sim))][which(sim$time == 1986),which(ages ==4.5):which(ages ==21.5)])/
         denom_1_1_1986)
 
   model_output_nat_hist[9,] <-
     c("id_1_1_1986_hcc",
       age_min = 4.5,
       age_max = 21.5,
-      sum(select(sim, starts_with("HCCf"))[which(sim$time == 1986),which(ages ==4.5):which(ages ==21.5)]+
-            select(sim, starts_with("HCCm"))[which(sim$time == 1986),which(ages ==4.5):which(ages ==21.5)])/
+      sum(sim[,grepl("^HCCf.",names(sim))][which(sim$time == 1986),which(ages ==4.5):which(ages ==21.5)]+
+            sim[,grepl("^HCCm.",names(sim))][which(sim$time == 1986),which(ages ==4.5):which(ages ==21.5)])/
         (sum(out$carriers[which(out$time == 1986),(which(ages ==4.5):which(ages ==21.5))])))
 
   model_output_nat_hist[10,] <-
     c("id_gmb1_1_2012_ic",
       age_min = 33,
       age_max = 47,
-      (sum(select(sim, starts_with("ICf"))[which(sim$time == 2012),which(ages ==33):which(ages ==47)]+
-             select(sim, starts_with("ICm"))[which(sim$time == 2012),which(ages ==33):which(ages ==47)]))/
+      (sum(sim[,grepl("^ICf.",names(sim))][which(sim$time == 2012),which(ages ==33):which(ages ==47)]+
+             sim[,grepl("^ICm.",names(sim))][which(sim$time == 2012),which(ages ==33):which(ages ==47)]))/
         denom_gmb1_1_2012)
 
   model_output_nat_hist[11,] <-
     c("id_gmb1_1_2012_ir_enchb",
       age_min = 33,
       age_max = 47,
-      (sum(select(sim, starts_with("IRf"))[which(sim$time == 2012),which(ages == 33):which(ages == 47)]+
-         select(sim, starts_with("ENCHBf"))[which(sim$time == 2012),which(ages == 33):which(ages == 47)]+
-           select(sim, starts_with("IRm"))[which(sim$time == 2012),which(ages == 33):which(ages == 47)]+
-           select(sim, starts_with("ENCHBm"))[which(sim$time == 2012),which(ages == 33):which(ages == 47)]))/
+      (sum(sim[,grepl("^IRf.",names(sim))][which(sim$time == 2012),which(ages == 33):which(ages == 47)]+
+             sim[,grepl("^ENCHBf.",names(sim))][which(sim$time == 2012),which(ages == 33):which(ages == 47)]+
+             sim[,grepl("^IRm.",names(sim))][which(sim$time == 2012),which(ages == 33):which(ages == 47)]+
+             sim[,grepl("^ENCHBm.",names(sim))][which(sim$time == 2012),which(ages == 33):which(ages == 47)]))/
         denom_gmb1_1_2012)
 
   model_output_nat_hist[12,] <-
     c("id_gmb1_1_2012_cc_dcc",
       age_min = 33,
       age_max = 47,
-      (sum(select(sim, starts_with("CCf"))[which(sim$time == 2012),which(ages == 33):which(ages == 47)]+
-             select(sim, starts_with("DCCf"))[which(sim$time == 2012),which(ages == 33):which(ages == 47)]+
-             select(sim, starts_with("CCm"))[which(sim$time == 2012),which(ages == 33):which(ages == 47)]+
-             select(sim, starts_with("DCCm"))[which(sim$time == 2012),which(ages == 33):which(ages == 47)]))/
+      (sum(sim[,grepl("^CCf.",names(sim))][which(sim$time == 2012),which(ages == 33):which(ages == 47)]+
+             sim[,grepl("^DCCf.",names(sim))][which(sim$time == 2012),which(ages == 33):which(ages == 47)]+
+             sim[,grepl("^CCm.",names(sim))][which(sim$time == 2012),which(ages == 33):which(ages == 47)]+
+             sim[,grepl("^DCCm.",names(sim))][which(sim$time == 2012),which(ages == 33):which(ages == 47)]))/
         denom_gmb1_1_2012)
 
   model_output_nat_hist[13,] <-
     c("id_gmb1_1_2012_hcc",
       age_min = 33,
       age_max = 47,
-      (sum(select(sim, starts_with("HCCf"))[which(sim$time == 2012),which(ages == 33):which(ages == 47)]+
-             select(sim, starts_with("HCCm"))[which(sim$time == 2012),which(ages == 33):which(ages == 47)]))/
+      (sum(sim[,grepl("^HCCf.",names(sim))][which(sim$time == 2012),which(ages == 33):which(ages == 47)]+
+             sim[,grepl("^HCCm.",names(sim))][which(sim$time == 2012),which(ages == 33):which(ages == 47)]))/
         denom_gmb1_1_2012)
 
   model_output_nat_hist[14,] <-
     c("id_1_1_2013_it",
       age_min = 8,
       age_max = 95,
-      sum(select(sim, starts_with("ITf"))[which(sim$time == 2013),which(ages ==8):which(ages ==95.5)]+
-            select(sim, starts_with("ITm"))[which(sim$time == 2013),which(ages ==8):which(ages ==95.5)])/
+      sum(sim[,grepl("^ITf.",names(sim))][which(sim$time == 2013),which(ages ==8):which(ages ==95.5)]+
+            sim[,grepl("^ITm.",names(sim))][which(sim$time == 2013),which(ages ==8):which(ages ==95.5)])/
         denom_1_1_2013)
 
   model_output_nat_hist[15,] <-
     c("id_1_1_2013_ir",
       age_min = 8,
       age_max = 95,
-      sum(select(sim, starts_with("IRf"))[which(sim$time == 2013),which(ages ==8):which(ages ==95.5)]+
-            select(sim, starts_with("IRm"))[which(sim$time == 2013),which(ages ==8):which(ages ==95.5)])/
+      sum(sim[,grepl("^IRf.",names(sim))][which(sim$time == 2013),which(ages ==8):which(ages ==95.5)]+
+            sim[,grepl("^IRm.",names(sim))][which(sim$time == 2013),which(ages ==8):which(ages ==95.5)])/
         denom_1_1_2013)
 
   model_output_nat_hist[16,] <-
     c("id_1_1_2013_enchb",
       age_min = 8,
       age_max = 95,
-      sum(select(sim, starts_with("ENCHBf"))[which(sim$time == 2013),which(ages ==8):which(ages ==95.5)]+
-            select(sim, starts_with("ENCHBm"))[which(sim$time == 2013),which(ages ==8):which(ages ==95.5)])/
+      sum(sim[,grepl("^ENCHBf.",names(sim))][which(sim$time == 2013),which(ages ==8):which(ages ==95.5)]+
+            sim[,grepl("^ENCHBm.",names(sim))][which(sim$time == 2013),which(ages ==8):which(ages ==95.5)])/
         denom_1_1_2013)
 
   model_output_nat_hist[17,] <-
     c("id_1_1_2013_ic",
       age_min = 8,
       age_max = 95,
-      sum(select(sim, starts_with("ICf"))[which(sim$time == 2013),which(ages ==8):which(ages ==95.5)]+
-            select(sim, starts_with("ICm"))[which(sim$time == 2013),which(ages ==8):which(ages ==95.5)])/
+      sum(sim[,grepl("^ICf.",names(sim))][which(sim$time == 2013),which(ages ==8):which(ages ==95.5)]+
+            sim[,grepl("^ICm.",names(sim))][which(sim$time == 2013),which(ages ==8):which(ages ==95.5)])/
         denom_1_1_2013)
 
   model_output_nat_hist[18,] <-
     c("id_1_1_2013_cc_dcc",
       age_min = 8,
       age_max = 95,
-      (sum(select(sim, starts_with("CCf"))[which(sim$time == 2013),which(ages ==8):which(ages ==95.5)]+
-         select(sim, starts_with("DCCf"))[which(sim$time == 2013),which(ages ==8):which(ages ==95.5)]+
-         select(sim, starts_with("CCm"))[which(sim$time == 2013),which(ages ==8):which(ages ==95.5)]+
-         select(sim, starts_with("DCCm"))[which(sim$time == 2013),which(ages ==8):which(ages ==95.5)]))/
+      (sum(sim[,grepl("^CCf.",names(sim))][which(sim$time == 2013),which(ages ==8):which(ages ==95.5)]+
+             sim[,grepl("^DCCf.",names(sim))][which(sim$time == 2013),which(ages ==8):which(ages ==95.5)]+
+             sim[,grepl("^CCm.",names(sim))][which(sim$time == 2013),which(ages ==8):which(ages ==95.5)]+
+             sim[,grepl("^DCCm.",names(sim))][which(sim$time == 2013),which(ages ==8):which(ages ==95.5)]))/
         (sum(out$carriers[which(out$time == 2013),(which(ages ==8):which(ages ==95.5))])))
 
   model_output_nat_hist[19,] <-
@@ -2482,10 +2485,10 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
     c("id_gmb2_1_1999_incident_hcc_cases_from_cc",
       age_min = 15,
       age_max = 67,
-      (sum(select(sim, starts_with("cum_cc_to_hcc"))[which(sim$time == 1999),])-
-         sum(select(sim, starts_with("cum_cc_to_hcc"))[which(sim$time == 1998),]))/
-        (sum(select(sim, starts_with("cum_incident_hcc"))[which(sim$time == 1999),])-
-           sum(select(sim, starts_with("cum_incident_hcc"))[which(sim$time == 1998),])))
+      (sum(sim[,grepl("^cum_cc_to_hcc.",names(sim))][which(sim$time == 1999),])-
+         sum(sim[,grepl("^cum_cc_to_hcc.",names(sim))][which(sim$time == 1998),]))/
+        (sum(sim[,grepl("^cum_incident_hcc.",names(sim))][which(sim$time == 1999),])-
+           sum(sim[,grepl("^cum_incident_hcc.",names(sim))][which(sim$time == 1998),])))
 
   # DCC prevalence in HCC, 1999
   # Approximate as proportion of incident HCC cases in 1999 originating from DCC
@@ -2493,10 +2496,10 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
     c("id_gmb2_1_1999_incident_hcc_cases_from_dcc",
       age_min = 15,
       age_max = 67,
-      (sum(select(sim, starts_with("cum_dcc_to_hcc"))[which(sim$time == 1999),])-
-         sum(select(sim, starts_with("cum_dcc_to_hcc"))[which(sim$time == 1998),]))/
-        (sum(select(sim, starts_with("cum_incident_hcc"))[which(sim$time == 1999),])-
-           sum(select(sim, starts_with("cum_incident_hcc"))[which(sim$time == 1998),])))
+      (sum(sim[,grepl("^cum_dcc_to_hcc.",names(sim))][which(sim$time == 1999),])-
+         sum(sim[,grepl("^cum_dcc_to_hcc.",names(sim))][which(sim$time == 1998),]))/
+        (sum(sim[,grepl("^cum_incident_hcc.",names(sim))][which(sim$time == 1999),])-
+           sum(sim[,grepl("^cum_incident_hcc.",names(sim))][which(sim$time == 1998),])))
 
   # HBeAg prevalence in cirrhosis patients, 1999
   # Approximate as proportion of incident CC cases in 1999 originating from IR
@@ -2504,40 +2507,40 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
     c("id_gmb15_2_1999_hbeag_cirrhosis",
       age_min = 17,
       age_max = 34,
-      (sum(select(sim, starts_with("cum_ir_to_ccf"))[which(sim$time == 1999),which(ages == 17):which(ages == 34.5)])+
-         sum(select(sim, starts_with("cum_ir_to_ccm"))[which(sim$time == 1999),which(ages == 17):which(ages == 34.5)])-
-            sum(select(sim, starts_with("cum_ir_to_ccf"))[which(sim$time == 1998),which(ages == 17):which(ages == 34.5)])-
-               sum(select(sim, starts_with("cum_ir_to_ccm"))[which(sim$time == 1998),which(ages == 17):which(ages == 34.5)]))/
-               sum(denom_gmb15_2_1999[which(ages == 17):which(ages == 34.5)]))
+      (sum(sim[,grepl("^cum_ir_to_ccf.",names(sim))][which(sim$time == 1999),which(ages == 17):which(ages == 34.5)])+
+         sum(sim[,grepl("^cum_ir_to_ccm.",names(sim))][which(sim$time == 1999),which(ages == 17):which(ages == 34.5)])-
+         sum(sim[,grepl("^cum_ir_to_ccf.",names(sim))][which(sim$time == 1998),which(ages == 17):which(ages == 34.5)])-
+         sum(sim[,grepl("^cum_ir_to_ccm.",names(sim))][which(sim$time == 1998),which(ages == 17):which(ages == 34.5)]))/
+        sum(denom_gmb15_2_1999[which(ages == 17):which(ages == 34.5)]))
 
   model_output_nat_hist[26,] <-
     c("id_gmb15_2_1999_hbeag_cirrhosis",
       age_min = 35,
       age_max = 44,
-      (sum(select(sim, starts_with("cum_ir_to_ccf"))[which(sim$time == 1999),which(ages == 35):which(ages == 44.5)])+
-         sum(select(sim, starts_with("cum_ir_to_ccm"))[which(sim$time == 1999),which(ages == 35):which(ages == 44.5)])-
-         sum(select(sim, starts_with("cum_ir_to_ccf"))[which(sim$time == 1998),which(ages == 35):which(ages == 44.5)])-
-         sum(select(sim, starts_with("cum_ir_to_ccm"))[which(sim$time == 1998),which(ages == 35):which(ages == 44.5)]))/
+      (sum(sim[,grepl("^cum_ir_to_ccf.",names(sim))][which(sim$time == 1999),which(ages == 35):which(ages == 44.5)])+
+         sum(sim[,grepl("^cum_ir_to_ccm.",names(sim))][which(sim$time == 1999),which(ages == 35):which(ages == 44.5)])-
+         sum(sim[,grepl("^cum_ir_to_ccf.",names(sim))][which(sim$time == 1998),which(ages == 35):which(ages == 44.5)])-
+         sum(sim[,grepl("^cum_ir_to_ccm.",names(sim))][which(sim$time == 1998),which(ages == 35):which(ages == 44.5)]))/
         sum(denom_gmb15_2_1999[which(ages == 35):which(ages == 44.5)]))
 
   model_output_nat_hist[27,] <-
     c("id_gmb15_2_1999_hbeag_cirrhosis",
       age_min = 45,
       age_max = 54,
-      (sum(select(sim, starts_with("cum_ir_to_ccf"))[which(sim$time == 1999),which(ages == 45):which(ages == 54.5)])+
-         sum(select(sim, starts_with("cum_ir_to_ccm"))[which(sim$time == 1999),which(ages == 45):which(ages == 54.5)])-
-         sum(select(sim, starts_with("cum_ir_to_ccf"))[which(sim$time == 1998),which(ages == 45):which(ages == 54.5)])-
-         sum(select(sim, starts_with("cum_ir_to_ccm"))[which(sim$time == 1998),which(ages == 45):which(ages == 54.5)]))/
+      (sum(sim[,grepl("^cum_ir_to_ccf.",names(sim))][which(sim$time == 1999),which(ages == 45):which(ages == 54.5)])+
+         sum(sim[,grepl("^cum_ir_to_ccm.",names(sim))][which(sim$time == 1999),which(ages == 45):which(ages == 54.5)])-
+         sum(sim[,grepl("^cum_ir_to_ccf.",names(sim))][which(sim$time == 1998),which(ages == 45):which(ages == 54.5)])-
+         sum(sim[,grepl("^cum_ir_to_ccm.",names(sim))][which(sim$time == 1998),which(ages == 45):which(ages == 54.5)]))/
         sum(denom_gmb15_2_1999[which(ages == 45):which(ages == 54.5)]))
 
   model_output_nat_hist[28,] <-
     c("id_gmb15_2_1999_hbeag_cirrhosis",
       age_min = 55,
       age_max = 64,
-      (sum(select(sim, starts_with("cum_ir_to_ccf"))[which(sim$time == 1999),which(ages == 55):which(ages == 64.5)])+
-         sum(select(sim, starts_with("cum_ir_to_ccm"))[which(sim$time == 1999),which(ages == 55):which(ages == 64.5)])-
-         sum(select(sim, starts_with("cum_ir_to_ccf"))[which(sim$time == 1998),which(ages == 55):which(ages == 64.5)])-
-         sum(select(sim, starts_with("cum_ir_to_ccm"))[which(sim$time == 1998),which(ages == 55):which(ages == 64.5)]))/
+      (sum(sim[,grepl("^cum_ir_to_ccf.",names(sim))][which(sim$time == 1999),which(ages == 55):which(ages == 64.5)])+
+         sum(sim[,grepl("^cum_ir_to_ccm.",names(sim))][which(sim$time == 1999),which(ages == 55):which(ages == 64.5)])-
+         sum(sim[,grepl("^cum_ir_to_ccf.",names(sim))][which(sim$time == 1998),which(ages == 55):which(ages == 64.5)])-
+         sum(sim[,grepl("^cum_ir_to_ccm.",names(sim))][which(sim$time == 1998),which(ages == 55):which(ages == 64.5)]))/
         sum(denom_gmb15_2_1999[which(ages == 55):which(ages == 64.5)]))
 
   # HBeAg prevalence in HCC patients, 1982
@@ -2597,9 +2600,9 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
     c("id_1_1_1986_incident_chronic_births",
       age_min = 0,
       age_max = 99.5,
-      sum(select(sim, starts_with("cum_chronic_births"))[which(sim$time == 1985),])/
-        (sum(select(sim, starts_with("cum_chronic_births"))[which(sim$time == 1985),])+
-           sum(select(sim, starts_with("cum_chronic_infections"))[which(sim$time == 1985),])))
+      sum(sim[which(sim$time == 1985),grepl("^cum_chronic_births",names(sim))])/
+        (sum(sim[which(sim$time == 1985),grepl("^cum_chronic_births",names(sim))])+
+           sum(sim[,grepl("^cum_chronic_infections.",names(sim))][which(sim$time == 1985),])))
 
   # Turn age into numeric format:
   model_output_nat_hist$age_min <- as.numeric(model_output_nat_hist$age_min)
@@ -3208,28 +3211,51 @@ fit_model_sse <- function(..., default_parameter_list, parms_to_change = list(..
                                  mapped_liver_disease_demography = mapped_liver_disease_demography)
 
 
-  # Calculate sum of least squares
+  # Calculate the distance metric/error term:
   # Removing mapped output where no data point is available (missing data_value)
-  mapped_output_for_sse <- lapply(mapped_output_complete, function(x) x[!is.na(x$data_value),])
+  mapped_output_for_error <- lapply(mapped_output_complete, function(x) x[!is.na(x$data_value),])
 
-  datapoints <- as.numeric(unlist(lapply(mapped_output_for_sse, function(x) x$data_value)))
-  quality_weights <- as.numeric(unlist(lapply(mapped_output_for_sse, function(x) x$quality_weight)))
-  model_prediction <- as.numeric(unlist(lapply(mapped_output_for_sse, function(x) x$model_value)))
+  datapoints <- as.numeric(unlist(lapply(mapped_output_for_error, function(x) x$data_value)))
+  quality_weights <- as.numeric(unlist(lapply(mapped_output_for_error, function(x) x$quality_weight)))
+  model_prediction <- as.numeric(unlist(lapply(mapped_output_for_error, function(x) x$model_value)))
 
   data_model_diff <- datapoints-model_prediction  # observation - prediction
 
-  #sse <- sum(data_model_diff^2)
-  sse <- sum(quality_weights * (abs(data_model_diff)/sapply(datapoints, function(x) max(x,1e-10))))/sum(quality_weights)  # need to rename
+  error_term <- sum(quality_weights * (abs(data_model_diff)/
+                                  sapply(datapoints, function(x) max(x,1e-10))))/
+    sum(quality_weights)
 
-  # Return relevant info (given parameter set, SSE and the matched datapoints and outputs)
+  # Return relevant info (given parameter set, error term and the matched datapoints and outputs)
   res <- list(parameter_set = parameters_for_fit,
-              sse = sse,
+              error_term = error_term,
               mapped_output = mapped_output_complete,
               full_output = out)
 
   return(res)
 
 }
+
+#load(here("data/simulated_inits_1960.RData"))  # this is saved from previous model run
+#init_pop_sim <- c("Sf" = select(model_pop1960, starts_with("Sf")),
+#                  "ITf" = select(model_pop1960, starts_with("ITf")),
+#                  "IRf" = select(model_pop1960, starts_with("IRf")),
+#                  "ICf" = select(model_pop1960, starts_with("ICf")),
+#                  "ENCHBf" = select(model_pop1960, starts_with("ENCHBf")),
+#                  "CCf" = select(model_pop1960, starts_with("CCf")),
+#                  "DCCf" = select(model_pop1960, starts_with("DCCf")),
+#                  "HCCf" = select(model_pop1960, starts_with("HCCf")),
+#                  "Rf" = select(model_pop1960, starts_with("Rf")),
+#                  "Sm" = select(model_pop1960, starts_with("Sm")),
+#                  "ITm" = select(model_pop1960, starts_with("ITm")),
+#                  "IRm" = select(model_pop1960, starts_with("IRm")),
+#                  "ICm" = select(model_pop1960, starts_with("ICm")),
+#                  "ENCHBm" = select(model_pop1960, starts_with("ENCHBm")),
+#                  "CCm" = select(model_pop1960, starts_with("CCm")),
+#                  "DCCm" = select(model_pop1960, starts_with("DCCm")),
+#                  "HCCm" = select(model_pop1960, starts_with("HCCm")),
+#                  "Rm" = select(model_pop1960, starts_with("Rm")),
+#                  output_storage)
+#init_pop_sim <- unlist(init_pop_sim)
 
 load(here("data/simulated_inits_1880.RData"))  # this is saved from previous model run
 init_pop_sim <- c("Sf" = select(model_pop1880, starts_with("Sf")),
@@ -3252,6 +3278,7 @@ init_pop_sim <- c("Sf" = select(model_pop1880, starts_with("Sf")),
                   "Rm" = select(model_pop1880, starts_with("Rm")),
                   output_storage)
 init_pop_sim <- unlist(init_pop_sim)
+
 
 
 # Input datasets
@@ -3295,10 +3322,10 @@ out_mat <- apply(params_mat,1,
                                            mtct_prob_e = 0.6,  # decrease
                                            alpha = 7,
                                            b3 = 0.01,
-                                           eag_prog_function_intercept = 1,
+                                           eag_prog_function_intercept = 0.1,
                                            eag_prog_function_rate = 0,
-                                           pr_it_ir = 0.1,
-                                           pr_ir_ic = 0.8, # 0.1,0.7
+                                           pr_it_ir = 1,  # fix
+                                           pr_ir_ic = 8,
                                            pr_ir_cc_female = 0.1,
                                            pr_ir_cc_age_threshold = 30,  # increase
                                            pr_ir_enchb = 0.005,
@@ -3306,7 +3333,7 @@ out_mat <- apply(params_mat,1,
                                            hccr_dcc = 0.2,  # 5 times increase
                                            hccr_ir = 16,  # doubled
                                            hccr_enchb = 6,
-                                           hccr_cc = 100,
+                                           hccr_cc = 25,
                                            cirrhosis_male_cofactor = 5,  # increase, 20
                                            cancer_prog_coefficient_female = 0,  # doubled 0.0002
                                            cancer_prog_constant_female = 0.00008, # started with 0.0001 but too high in <20 ages
@@ -3317,51 +3344,36 @@ out_mat <- apply(params_mat,1,
                                            mu_dcc = 0.8  # 1
                                            )))    # increase
 
-
-#list(b1 = as.list(x)$b1,
-#     b2 = as.list(x)$b2,
-#     mtct_prob_s = as.list(x)$mtct_prob_s,
-#     mtct_prob_e = 0.6,  # decrease
-#     alpha = 7,
-#     b3 = 0.01,
-#     eag_prog_function_intercept = 1,
-#     eag_prog_function_rate = 0,
-#     pr_it_ir = 0.1,
-#     pr_ir_ic = 0.8, # 0.1,0.7
-#     pr_ir_enchb_age_threshold = 0.5,
-#     pr_ir_cc_female = 0.06,
-#     pr_enchb_cc_female = 0.005, # 0.016
-#     pr_enchb_cc_age_threshold = 20,
-#     pr_ir_cc_age_threshold = 30,  # increase
-#     hccr_dcc = 0.2,  # 5 times increase
-#     hccr_ir = 4,  # doubled
-#     cirrhosis_male_cofactor = 5,  # increase, 20
-#     cancer_prog_coefficient_female = 0,  # doubled 0.0002
-#     cancer_prog_constant_female = 0.0002, # started with 0.0001 but too high in <20 ages
-#     cancer_age_threshold = 20,
-#     cancer_male_cofactor = 5,
-#     mu_cc = 0.005, # decrease
-#     mu_hcc = 1.5,  # increase
-#     mu_dcc = 1
-#)))    # increase
 sim_duration = proc.time() - time1
 sim_duration["elapsed"]/60
 
-# Matrix of parameter values, model estimates for prevalence in 1980 and 2015, and SSE
-out_mat_subset <- sapply(out_mat, "[[", "sse")
-res_mat <- cbind(params_mat, sse = out_mat_subset)
-res_mat[res_mat$sse == min(res_mat$sse),]
+# Profiling
+#profvis(fit_model_sse(default_parameter_list = parameter_list,
+#                      data_to_fit = calibration_datasets_list))
+
+
+# Using grepl directly
+select_fun3 <- function(df) {
+  res <- df[,grepl("cum_hcc",names(df))]
+  return(res)
+}
+
+
+# Matrix of parameter values, model estimates for prevalence in 1980 and 2015, and error term
+out_mat_subset <- sapply(out_mat, "[[", "error_term")
+res_mat <- cbind(params_mat, error_term = out_mat_subset)
+res_mat[res_mat$error_term == min(res_mat$error_term),]
 
 
 ## @knitr part4
 # Output plots ----
 
 # Loop to create plot set for every parameter combination
-pdf(file = here("output/manual_fit_plots", "cancer_test_revised_error2.pdf"), paper="a4r")
+pdf(file = here("output/manual_fit_plots", "testp.pdf"), paper="a4r")
 plot_list = list()
 for (i in 1:length(out_mat)) {
 
-  # Parameter set table and SSE
+  # Parameter set table and error
   p_parms <- grid.arrange(tableGrob(lapply(out_mat[[i]]$parameter_set[1:21], function(x) round(x,6)),
                                           rows = names(out_mat[[i]]$parameter_set[1:21]),
                                           cols = "Parameters",
@@ -3369,7 +3381,7 @@ for (i in 1:length(out_mat)) {
                                 tableGrob(lapply(out_mat[[i]]$parameter_set[22:41], function(x) round(x,6)),
                                           rows = names(out_mat[[i]]$parameter_set[22:41]),
                                           cols = "Parameters (cont.)", theme=ttheme_minimal(base_size = 8)),
-                                tableGrob(out_mat[[i]]$sse, cols = "SSE"),
+                                tableGrob(out_mat[[i]]$error_term, cols = "Error term"),
                                 nrow = 1)
 
   # OUTPUTS
@@ -4085,38 +4097,6 @@ for (i in 1:length(out_mat)) {
 dev.off()
 
 ## @knitr part5
-##### Adapting SSE ----
-# test: exclude those that don't have a paper ID yet
-output_test <- list(out_mat[[1]]$mapped_output$risk_of_chronic_carriage,
-                    out_mat[[1]]$mapped_output$seromarker_prevalence,
-                    out_mat[[1]]$mapped_output$nat_hist_prevalence,
-                    out_mat[[1]]$mapped_output$mtct_risk,
-                    out_mat[[1]]$mapped_output$progression_rates,
-                    out_mat[[1]]$mapped_output$mortality_curves,
-                    out_mat[[1]]$mapped_output$odds_ratios,
-                    out_mat[[1]]$mapped_output$mapped_liver_disease_demography)
-
-mapped_output_for_sse <- lapply(output_test, function(x) x[!is.na(x$data_value),])
-
-datapoints <- as.numeric(unlist(lapply(mapped_output_for_sse, function(x) x$data_value)))
-model_prediction <- as.numeric(unlist(lapply(mapped_output_for_sse, function(x) x$model_value)))
-study <- unlist(lapply(mapped_output_for_sse, function(x) x$id_paper))
-
-newtable <- data.frame(study, datapoints, model_prediction)
-
-View(newtable %>%
-       group_by(study) %>%
-       summarise(error = sum(abs(datapoints-model_prediction)/
-                               sapply(datapoints, function(x) max(x,1e-10)))))
-
-data_model_diff <- datapoints-model_prediction
-
-# dividing by datapoints gives Inf if the data = 0
-# circumvent this by setting those datapoints to 1e-10
-# Absolute normalised error for each point (unweighted):
-error <- abs(data_model_diff)/sapply(datapoints, function(x) max(x,1e-10))
-# now the scale (e.g. rare/common event) does not matter
-
 # Parallelised code ----
 # Set up cluster
 cl <- makeCluster(4)

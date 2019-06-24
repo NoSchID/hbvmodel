@@ -9,7 +9,7 @@ p_chronic_function_r ,Parameter r of exponential decay function for age-specific
 p_chronic_function_s ,Parameter s of exponential decay function for age-specific risk of becoming a chronic carrier after acute infection,0.46,0.46,Edmunds value,Transmission/natural history
 pr_it_ir ,Multiplier on progression rate from Immune tolerant to Immune reactive stage,0.1,0.1,,Natural history
 pr_ir_ic ,Multiplier on progression rate from Immune reactive to Inactive carrier stage (HBeAg loss),0.05,0.05,,Natural history
-eag_prog_function_intercept ,Y intercept of exponential decay function for age-specific progression through the HBeAg-positive compartments (Immune tolerant and Immune reactive),2.0374,9.5,,Natural history
+eag_prog_function_intercept ,Y intercept of exponential decay function for age-specific progression through the HBeAg-positive compartments (Immune tolerant and Immune reactive).,2.0374,9.5,,Natural history
 eag_prog_function_rate ,Rate parameter of exponential decay function for age-specific progression through the HBeAg-positive compartments (Immune tolerant and Immune reactive),0.001,0.1281,,Natural history
 pr_ir_enchb ,Annual progression rate from Immune reactive to HBeAg-negative chronic hepatitis B (HBeAg loss),0.005,0.005,,Natural history
 pr_ir_cc_female,Annual progression rate from Immune reactive to Compensated cirrhosis for women,0.028,0.028,Added after publication,Natural history
