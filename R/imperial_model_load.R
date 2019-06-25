@@ -3,6 +3,9 @@
 ### Load required input              ###
 ########################################
 
+### Note: Running this script requires running the simulation parameters
+### in the imperial_model_main script first
+
 ### Load demographic datasets ----
 # Manual data preparation in Excel for 1950-2015 data:
 # copy relevant data in a new file

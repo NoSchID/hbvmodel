@@ -1,8 +1,11 @@
 ########################################
 ### Imperial HBV model               ###
 ### Clean input demographic data     ###
-### Source: UN WPP                   ###
+### Source: UN WPP 2017              ###
 ########################################
+
+### Note: running this script requires running the
+### imperial_model_load script first to read in the datasets
 
 ### Prepare datasets for all years between 1850 and 2100
 # UN WPP 2017 provides data from 1950 to 2015, and projections from 2015 to 2100
@@ -507,6 +510,13 @@ deaths_1950 <- deaths_1950[rep(seq_len(nrow(deaths_1950)), each = 5/da),] %>%
 input_births_clean <- rbind(clean_number_dataset(input_births_1950to2015, "Gambia", "births"),
                             clean_number_dataset(input_births_2015to2100, "Gambia", "births"))
 
+
+# Assign years to first column
+fert_rates[,1] <- seq(1850, 2100, da)
+mort_rates_female[,1] <- seq(1850, 2100, da)
+mort_rates_male[,1] <- seq(1850, 2100, da)
+migration_rates_female[,1] <- seq(1850, 2100, da)
+migration_rates_male[,1] <- seq(1850, 2100, da)
 
 # Save the cleaned datasets (need to specify time/agestep in filename)
 #save(input_popsize_female_clean = input_popsize_female_clean,
