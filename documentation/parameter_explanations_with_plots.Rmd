@@ -10,13 +10,13 @@ output:
 ```{r, echo = FALSE, include = FALSE}
 library(here)
 library(knitr)
-read_chunk(here("R","imperial_model_main.R"))
+read_chunk(here("R","imperial_model_calibration.R"))
 ```
 
 ```{r part1, include = FALSE}
 ```
 
-```{r part3, include = FALSE}
+```{r part2, include = FALSE}
 ```
 ## Parameter definitions
 
@@ -43,18 +43,9 @@ Rate = Multiplier * eag_prog_function_intercept * exp(-eag_prog_function_rate * 
 *Multipliers: pr_it_ir for progression from Immune tolerant to Immune reactive, 
 pr_ir_ic for progression from Immune reactive to Inactive carrier*
 
-**Progressions to HCC:**
+** HBsAg loss (Inactive carrier to Immune compartment):**  
 
-In women and men aged < cancer_age_threshold: rate = 0  
-In women aged > cancer_age_threshold: rate = Multiplier * cancer_prog_constant_female * (cancer_prog_coefficient_female * (ages - cancer_age_threshold))^2  
-In men aged > cancer_age_threshold: rate = cancer_male_cofactor * age-specific rate in women  
-
-Annual age- and sex-specific rates cannot exceed 1. 
-
-*Multipliers: pr_hccr_it from Immune tolerant, pr_hccr_ir from Immune reactive, 
-pr_hccr_ic from Inactive carrier, pr_hccr_enchb from HBeAg-negative chronic hepatitis B,
-pr_hccr_cc from Compensated cirrhosis  
-Note progression from Decompensated cirrhosis to HCC (hccr_dcc) is not age- or sex-dependent.*
+Rate = sag_loss_intercept + sag_loss_slope * ages  
 
 **Progression from Immune reactive to Compensated cirrhosis:**
 
@@ -68,6 +59,19 @@ In women: rate = pr_enchb_cc_female
 In men: rate = cirrhosis_male_cofactor * pr_enchb_cc_female
 
 Annual sex-specific rates cannot exceed 5.
+
+**Progressions to HCC:**
+
+In women and men aged < cancer_age_threshold: rate = 0  
+In women aged > cancer_age_threshold: rate = Multiplier * cancer_prog_constant_female * (cancer_prog_coefficient_female * (ages - cancer_age_threshold))^2  
+In men aged > cancer_age_threshold: rate = cancer_male_cofactor * age-specific rate in women  
+
+Annual age- and sex-specific rates cannot exceed 1. 
+
+*Multipliers: pr_hccr_it from Immune tolerant, pr_hccr_ir from Immune reactive, 
+pr_hccr_ic from Inactive carrier, pr_hccr_enchb from HBeAg-negative chronic hepatitis B,
+pr_hccr_cc from Compensated cirrhosis  
+Note progression from Decompensated cirrhosis to HCC (hccr_dcc) is not age- or sex-dependent.*
 
 # Output  
 

@@ -15,12 +15,8 @@ pr_ir_enchb ,Annual progression rate from Immune reactive to HBeAg-negative chro
 pr_ir_cc_female,Annual progression rate from Immune reactive to Compensated cirrhosis for women,0.028,0.028,Added after publication,Natural history
 pr_ir_cc_age_threshold ,Age threshold for progression from Immune reactive to Compensated cirrhosis (rate = 0 below this age),NA,20,,Natural history
 pr_ic_enchb ,Annual progression rate from Inactive carrier to HBeAg-negative chronic hepatitis B (reactivation),0.01,0.01,,Natural history
-sag_loss_0to9 ,Annual rate of HBsAg loss in 0-9 year olds (progression rate from Inactive carrier to Immune),0.01,0.01,Shimakawa age-specific values,Natural history
-sag_loss_10to19 ,Annual rate of HBsAg loss in 10-19 year olds (progression rate from Inactive carrier to Immune),0.01,0.01,Shimakawa age-specific values,Natural history
-sag_loss_20to29 ,Annual rate of HBsAg loss in 20-29 year olds (progression rate from Inactive carrier to Immune),0.01,0.01,Shimakawa age-specific values,Natural history
-sag_loss_30to39 ,Annual rate of HBsAg loss in 30-39 year olds (progression rate from Inactive carrier to Immune),0.01,0.01,Shimakawa age-specific values,Natural history
-sag_loss_40to49 ,Annual rate of HBsAg loss in 40-49 year olds (progression rate from Inactive carrier to Immune),0.01,0.01,Shimakawa age-specific values,Natural history
-sag_loss_50to70 ,Annual rate of HBsAg loss in 50+ year olds (progression rate from Inactive carrier to Immune),0.01,0.01,Shimakawa age-specific values,Natural history
+sag_loss_intercept,Intercept of linear function for age-specific annual rate of HBsAg loss (progression rate from Inactive carrier to Immune),0.01,0.01,Based on analysis of Shimakawa age-specific values,Natural history
+sag_loss_slope,Slope of linear function for age-specific annual rate of HBsAg loss (progression rate from Inactive carrier to Immune),0,0,Based on analysis of Shimakawa age-specific values,Natural history
 pr_enchb_cc_female,Annual progression rate from HBeAg-negative chronic hepatitis B to Compensated cirrhosis for women,0.04,0.04,,Natural history
 cirrhosis_male_cofactor ,Multiplier on progression rate to Compensated cirrhosis for men (from Immune reactive and HBeAg-negative chronic hepatitis B),NA,12.32,,Natural history
 pr_cc_dcc,Annual progression rate from Compensatd cirrhosis to Decompensated cirrhosis (rate of decompensation),0.04,0.04,,Natural history
