@@ -1588,7 +1588,7 @@ map_incidence_rates <- function(rate_outcome, rate_num, rate_denom, rate_timepoi
   rate_f <- subset(rate_dataset, outcome == rate_outcome & sex == "Female"
                    & time == rate_timepoint)[,c("outcome", "time", "sex", "age_min", "age_max")]
   rate_f$model_value <- 0
-  #rate_f$model_denom <- 0
+  rate_f$model_events <- 0
 
   # Extract denominator  dataset
   denom_f_label <- paste0(rate_denom, "_female")
@@ -1601,21 +1601,22 @@ map_incidence_rates <- function(rate_outcome, rate_num, rate_denom, rate_timepoi
       sum(denom_f[which(model_sim$time == (rate_f$time[i]+0.5)),which(ages == rate_f$age_min[i]):which(ages == rate_f$age_max[i])])
   }
 
-  #for (i in 1:nrow(rate_f)){
-  #  rate_f$model_denom[i] <-
-  #    sum(denom_f[which(model_sim$time == (rate_f$time[i]+0.5)),which(ages == rate_f$age_min[i]):which(ages == rate_f$age_max[i])])
-  #}
+  for (i in 1:nrow(rate_f)){
+    rate_f$model_events[i] <-
+      (sum(num_f[which(model_sim$time == (rate_f$time[i]+1)), which(ages == rate_f$age_min[i]):which(ages == rate_f$age_max[i])])-
+         sum(num_f[which(model_sim$time == rate_f$time[i]), which(ages == rate_f$age_min[i]):which(ages == rate_f$age_max[i])]))
+    }
 
   # For men:
   denom_m_label <- paste0(rate_denom, "_male")
   rate_m <- subset(rate_dataset, outcome == rate_outcome & sex == "Male"
                    & time == rate_timepoint)[,c("outcome", "time", "sex", "age_min", "age_max")]
   rate_m$model_value <- 0
-  rate_m$model_denom <- 0
+  rate_m$model_events <- 0
 
   # Extract denominator  dataset
   denom_m_label <- paste0(rate_denom, "_male")
-  #denom_m <- model_out[[denom_m_label]]
+  denom_m <- model_out[[denom_m_label]]
 
   for (i in 1:nrow(rate_m)){
     rate_m$model_value[i] <-
@@ -1626,10 +1627,13 @@ map_incidence_rates <- function(rate_outcome, rate_num, rate_denom, rate_timepoi
       sum(denom_m[which(model_sim$time == (rate_m$time[i]+0.5)),which(ages == rate_m$age_min[i]):which(ages == rate_f$age_max[i])])
   }
 
-  #for (i in 1:nrow(rate_m)){
-  #  rate_m$model_denom[i] <-
-  #    sum(denom_m[which(model_sim$time == (rate_m$time[i]+0.5)),which(ages == rate_m$age_min[i]):which(ages == rate_f$age_max[i])])
-  #}
+  for (i in 1:nrow(rate_m)){
+    rate_m$model_events[i] <-
+      (sum(num_m[which(model_sim$time == (rate_m$time[i]+1)),
+                 which(ages == rate_m$age_min[i]):which(ages == rate_m$age_max[i])])-
+         sum(num_m[which(model_sim$time == rate_m$time[i]),
+                   which(ages == rate_m$age_min[i]):which(ages == rate_m$age_max[i])]))
+  }
 
 
   # Combine HCC incidence and mortality sets and map to GLOBOCAN input data
@@ -1742,8 +1746,8 @@ out_mat <- apply(params_mat,1,
                                         hccr_enchb = 6,
                                         hccr_cc = 25,
                                         cirrhosis_male_cofactor = 5,  # increase, 20
-                                        cancer_prog_coefficient_female = 0,  # doubled 0.0002
-                                        cancer_prog_constant_female = 0.00008, # started with 0.0001 but too high in <20 ages
+                                        cancer_prog_coefficient_female = 0.00017,  # doubled 0.0002
+                                        cancer_prog_constant_female = 0.000022,  # 0.00008 started with 0.0001 but too high in <20 ages
                                         cancer_age_threshold = 15,
                                         cancer_male_cofactor = 5,
                                         mu_cc = 0.005, # decrease
@@ -1767,7 +1771,7 @@ res_mat[res_mat$error_term == min(res_mat$error_term),]
 ### Output calibration plots ----
 
 # Loop to create plot set for every parameter combination
-pdf(file = here("output/manual_fit_plots", "testp3.pdf"), paper="a4r")
+pdf(file = here("output/manual_fit_plots", "hcc_incid_with_age_specific_paf.pdf"), paper="a4r")
 plot_list = list()
 for (i in 1:length(out_mat)) {
 
@@ -1949,6 +1953,19 @@ for (i in 1:length(out_mat)) {
                                legend.margin=margin(t = 0, unit="cm")) +
                          ylim(0,100))
 
+  ## Modelled age pattern in corresponding number of HCC cases
+  p_hcc_pattern1 <- print(ggplot(data = subset(out_mat[[1]]$mapped_output$globocan_hcc_incidence,
+                                               outcome == "hcc_incidence" & time == 2018)) +
+                            geom_col(aes(x = paste(age_min,"-",age_max), y = model_events)) +
+                            facet_grid(~ sex, scales = "free") +
+                            theme_bw() +
+                            labs(title = "Modelled age pattern in number of incident HBV-attributable HCC cases in 2018",
+                                 y = "Number of cases", x = "Age (years)") +
+                            theme_bw() +
+                            theme(plot.title = element_text(hjust = 0.5),
+                                  plot.subtitle = element_text(hjust = 0.5, size = 10),
+                                  legend.margin=margin(t = 0, unit="cm")))
+
   ## GLOBOCAN PAF-adjusted cancer incidence in 1988 and 1998
   p_globocan2 <- print(ggplot(data = subset(out_mat[[i]]$mapped_output$globocan_hcc_incidence,
                                             time != 2018)) +
@@ -1968,6 +1985,20 @@ for (i in 1:length(out_mat)) {
                                plot.subtitle = element_text(hjust = 0.5, size = 10),
                                legend.margin = margin(t = 0, unit="cm")) +
                          ylim(0,100))
+
+  ## Modelled age pattern in corresponding number of HCC cases
+  p_hcc_pattern2 <- print(ggplot(data = subset(out_mat[[1]]$mapped_output$globocan_hcc_incidence,
+                                               outcome == "hcc_incidence" & time != 2018)) +
+                            geom_col(aes(x = paste(age_min,"-",age_max), y = model_events)) +
+                            facet_grid(time ~ sex, scales = "free") +
+                            theme_bw() +
+                            labs(title = "Modelled age pattern in number of incident HBV-attributable HCC cases\nin 1988 and 1998",
+                                 y = "Number of cases", x = "Age (years)") +
+                            theme_bw() +
+                            theme(plot.title = element_text(hjust = 0.5),
+                                  plot.subtitle = element_text(hjust = 0.5, size = 10),
+                                  axis.text.x = element_text(angle = 90),
+                                  legend.margin=margin(t = 0, unit="cm")))
 
   ## GBD HBV-related cirrhosis mortality rate
   p_gbd <- print(ggplot(data = out_mat[[i]]$mapped_output$gbd_cirrhosis_mortality) +
@@ -2486,7 +2517,8 @@ for (i in 1:length(out_mat)) {
 
   # List of all plots
   plot_list[[i]] <- list(p_parms, p_hbsag1, p_hbsag2, p_antihbc, p_hbeag,
-                         p_globocan1, p_globocan2, p_gbd, p_ld_demog,
+                         p_globocan1, p_globocan2, p_hcc_pattern1, p_hcc_pattern2,
+                         p_gbd, p_ld_demog,
                          p_p_chronic, p_mort_curves, p_or,
                          p_nat_hist_prev1, p_nat_hist_prev2,
                          p_prog_rates1, p_prog_rates2, p_transmission_rates)
@@ -2510,7 +2542,6 @@ dev.off()
 # 8) Define the desired number of particles/parameter sets N
 # 9) Repeat steps 1-7) until N particles have been accepted.
 #    The accepted particles represent an approximation of the posterior distribution.
-
 
 ### Parallelised code ----
 # Set up cluster
@@ -2579,6 +2610,8 @@ boxplot(res_mat$mtct_prob_s, subset(res_mat,fit==1)$mtct_prob_s, col=c(grey(0.6)
         ylim=c(0,0.6), names=c("Prior","Posterior"),
         main="LHS for 'mtct_prob_s':\nprior/posteriors distributions")
 par(mfrow=c(1,1))
+
+
 
 
 
