@@ -54,22 +54,9 @@ input_globocan_incidence_data <- read.csv(here(calibration_data_path,
                                           stringsAsFactors = FALSE)
 
 # Input GLOBOCAN incidence data is population-wide
-# Need to multiply by age-specific PAF to get HBV-related HCC only
-paf_under50 <- 0.83
-paf_over50 <- 0.32
+# Need to multiply by PAF from GLCS to get HBV-related HCC only
 paf_average <- 0.56
-input_globocan_incidence_data$data_value[input_globocan_incidence_data$age_min < 50 &
-                                           input_globocan_incidence_data$age_max < 50] <-
-  input_globocan_incidence_data$data_value[input_globocan_incidence_data$age_min < 50 &
-                                             input_globocan_incidence_data$age_max < 50]*paf_under50
-input_globocan_incidence_data$data_value[input_globocan_incidence_data$age_min < 50 &
-                                           input_globocan_incidence_data$age_max > 50] <-
-  input_globocan_incidence_data$data_value[input_globocan_incidence_data$age_min < 50 &
-                                             input_globocan_incidence_data$age_max > 50]*paf_average
-input_globocan_incidence_data$data_value[input_globocan_incidence_data$age_min >= 50 &
-                                           input_globocan_incidence_data$age_max >= 50] <-
-  input_globocan_incidence_data$data_value[input_globocan_incidence_data$age_min >= 50 &
-                                             input_globocan_incidence_data$age_max >= 50]*paf_over50
+input_globocan_incidence_data$data_value <- input_globocan_incidence_data$data_value*paf_average
 
 input_globocan_mortality_curve <- read.csv(here(calibration_data_path,
                                                 "globocan_mortality_curve.csv"),
@@ -1737,17 +1724,17 @@ out_mat <- apply(params_mat,1,
                                         eag_prog_function_rate = 0,
                                         pr_it_ir = 1,  # fix
                                         pr_ir_ic = 8,
-                                        pr_ir_cc_female = 0.1,
-                                        pr_ir_cc_age_threshold = 30,  # increase
+                                        pr_ir_cc_female = 0.028, # 0.028
+                                        pr_ir_cc_age_threshold = 0,  # increase 30
                                         pr_ir_enchb = 0.005,
                                         pr_enchb_cc_female = 0.005, # 0.005, 0.016
                                         hccr_dcc = 0.2,  # 5 times increase
                                         hccr_ir = 16,  # doubled
                                         hccr_enchb = 6,
-                                        hccr_cc = 25,
+                                        hccr_cc = 13,
                                         cirrhosis_male_cofactor = 5,  # increase, 20
-                                        cancer_prog_coefficient_female = 0.00017,  # doubled 0.0002
-                                        cancer_prog_constant_female = 0.000022,  # 0.00008 started with 0.0001 but too high in <20 ages
+                                        cancer_prog_coefficient_female = 0.00025,  # doubled 0.0002
+                                        cancer_prog_constant_female = 0,  # 0.00008 started with 0.0001 but too high in <20 ages
                                         cancer_age_threshold = 15,
                                         cancer_male_cofactor = 5,
                                         mu_cc = 0.005, # decrease
@@ -1771,7 +1758,7 @@ res_mat[res_mat$error_term == min(res_mat$error_term),]
 ### Output calibration plots ----
 
 # Loop to create plot set for every parameter combination
-pdf(file = here("output/manual_fit_plots", "hcc_incid_with_age_specific_paf.pdf"), paper="a4r")
+pdf(file = here("output/manual_fit_plots", "test_no_pr_ir_cc_age_threshold3.pdf"), paper="a4r")
 plot_list = list()
 for (i in 1:length(out_mat)) {
 
@@ -2542,6 +2529,153 @@ dev.off()
 # 8) Define the desired number of particles/parameter sets N
 # 9) Repeat steps 1-7) until N particles have been accepted.
 #    The accepted particles represent an approximation of the posterior distribution.
+
+# ABC rejection alogorithm from LSHTM fitting course
+run_rejection_algorithm2 <- function(N, epsilon) {
+
+
+  # Set up empty matrix to store results
+  results <- data.frame(b1 = 0, b2 = 0, mtct_prob_s = 0, error = 0)
+
+  # Initialise the loop with i=0
+  i <- 0
+
+  # while the length of the accepted values (result) is less than the desired length (N)
+  while(i<N) {
+
+    # A) DRAW PARAMETERS TO BE VARIED FROM THE PRIOR DISTRIBUTION
+
+    # Draw a new theta from prior distributions
+    b1_sample <- runif(1, min = 0.01, max = 0.4)
+    b2_sample <- runif(1, min = 0, max = b1)
+    mtct_prob_s_sample <- runif(1, min = 0, max = 0.3)
+
+    # Combine parameters to be varied
+    params_mat <- data.frame(b1 = b1_sample, b2 = b2_sample, mtct_prob_s = mtct_prob_s_sample)
+
+    # B) RUN THE MODEL WITH THE GIVEN PARAMETER SET,
+    # CALCUTE AND PERTURB OUTPUT, ANC CALCULATE DISTANCE TO DATA
+    # Noise still needs to be added
+    out_mat <- apply(params_mat,1,
+                     function(x)
+                       fit_model(default_parameter_list = parameter_list,
+                                 data_to_fit = calibration_datasets_list,
+                                 parms_to_change =
+                                   list(b1 = as.list(x)$b1,
+                                        b2 = as.list(x)$b2,
+                                        mtct_prob_s = as.list(x)$mtct_prob_s,
+                                        mtct_prob_e = 0.6,  # decrease
+                                        alpha = 7,
+                                        b3 = 0.01,
+                                        eag_prog_function_intercept = 0.1,
+                                        eag_prog_function_rate = 0,
+                                        pr_it_ir = 1,  # fix
+                                        pr_ir_ic = 8,
+                                        pr_ir_cc_female = 0.1,
+                                        pr_ir_cc_age_threshold = 30,  # increase
+                                        pr_ir_enchb = 0.005,
+                                        pr_enchb_cc_female = 0.005, # 0.005, 0.016
+                                        hccr_dcc = 0.2,  # 5 times increase
+                                        hccr_ir = 16,  # doubled
+                                        hccr_enchb = 6,
+                                        hccr_cc = 25,
+                                        cirrhosis_male_cofactor = 5,  # increase, 20
+                                        cancer_prog_coefficient_female = 0.00017,  # doubled 0.0002
+                                        cancer_prog_constant_female = 0.000022,  # 0.00008 started with 0.0001 but too high in <20 ages
+                                        cancer_age_threshold = 15,
+                                        cancer_male_cofactor = 5,
+                                        mu_cc = 0.005, # decrease
+                                        mu_hcc = 1.5,  # increase
+                                        mu_dcc = 0.8  # 1
+                                   )))  # increase
+
+    dist <- out_mat[[1]]$error_term
+
+    params_mat <- data.frame(params_mat, error = dist)
+
+    # C) COMPARE THE DISTANCE TO THE EPSILON TOLERANCE
+    # If the distance is within the epsilon window,
+    # accept and store the parameter values.
+
+    if(dist<=epsilon){
+
+      results <- rbind(results,params_mat)
+
+    }
+
+    # Update i (dimension of results store)
+    i <- dim(results)[1]-1
+
+    # D) REPEAT PROCEDURE UNTIL N PARAMETER SETS HAVE BEEN ACCEPTED
+
+  }
+  # return the accepted values
+  return(results[-1,])
+}
+# Run the algorithm
+res <- run_rejection_algorithm2(N=10, epsilon = 300)
+
+# Issue with this is that it uses a while loop and defines the required number of accepted particles
+# This cannot be parallelised
+# However it is possible to calculate with all the parameter sets before accepting/rejecting
+# Only issue is need to figure out how many runs to make to get enough accepted parameter sets
+run_rejection_algorithm <- function(n) {
+
+  # A) RANDOMLY DRAW n PARAMETERS TO BE VARIED FROM THE PRIOR DISTRIBUTION
+
+  # Draw a new theta from prior distributions
+  b1_sample <- runif(n, min = 0.01, max = 0.4)
+  b2_sample <- runif(n, min = 0, max = b1_sample)
+  mtct_prob_s_sample <- runif(n, min = 0, max = 0.3)
+
+  # Combine parameters to be varied
+  params_mat <- data.frame(b1 = b1_sample, b2 = b2_sample, mtct_prob_s = mtct_prob_s_sample)
+
+  # B) RUN THE MODEL FOR ALL PARAMETER SETS,
+  # CALCUTE AND PERTURB OUTPUT, ANC CALCULATE DISTANCE TO DATA
+  # Noise still needs to be added
+  out_mat <- apply(params_mat,1,
+                   function(x)
+                     fit_model(default_parameter_list = parameter_list,
+                               data_to_fit = calibration_datasets_list,
+                               parms_to_change =
+                                 list(b1 = as.list(x)$b1,
+                                      b2 = as.list(x)$b2,
+                                      mtct_prob_s = as.list(x)$mtct_prob_s,
+                                      mtct_prob_e = 0.6,  # decrease
+                                      alpha = 7,
+                                      b3 = 0.01,
+                                      eag_prog_function_intercept = 0.1,
+                                      eag_prog_function_rate = 0,
+                                      pr_it_ir = 1,  # fix
+                                      pr_ir_ic = 8,
+                                      pr_ir_cc_female = 0.1,
+                                      pr_ir_cc_age_threshold = 30,  # increase
+                                      pr_ir_enchb = 0.005,
+                                      pr_enchb_cc_female = 0.005, # 0.005, 0.016
+                                      hccr_dcc = 0.2,  # 5 times increase
+                                      hccr_ir = 16,  # doubled
+                                      hccr_enchb = 6,
+                                      hccr_cc = 25,
+                                      cirrhosis_male_cofactor = 5,  # increase, 20
+                                      cancer_prog_coefficient_female = 0.00017,  # doubled 0.0002
+                                      cancer_prog_constant_female = 0.000022,  # 0.00008 started with 0.0001 but too high in <20 ages
+                                      cancer_age_threshold = 15,
+                                      cancer_male_cofactor = 5,
+                                      mu_cc = 0.005, # decrease
+                                      mu_hcc = 1.5,  # increase
+                                      mu_dcc = 0.8  # 1
+                                 )))  # increase
+
+  # C) COMBINE INTO OUTPUT TABLE
+  out_mat_subset <- sapply(out_mat, "[[", "error_term")
+  res_mat <- cbind(params_mat, error_term = out_mat_subset)
+
+  return(res_mat)
+
+}
+res <- run_rejection_algorithm(n=10)
+
 
 ### Parallelised code ----
 # Set up cluster
