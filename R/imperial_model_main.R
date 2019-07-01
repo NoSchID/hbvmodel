@@ -609,8 +609,7 @@ run_model <- function(..., sim_duration = runtime,
 
   # Age-specific function of progression through IT and IR (IT=>IR and IR=>IC)
   # Represented by an exponential function that decreases with age
-  parameters$eag_prog_function <- parameters$eag_prog_function_intercept *
-                                  exp(-parameters$eag_prog_function_rate * ages)
+  parameters$eag_prog_function <- exp(-parameters$eag_prog_function_rate * ages)
 
   # Age-specific progression to HCC from all carrier compartments other than DCC
   # Represented by a shifted quadratic function that increases with age and
@@ -1175,9 +1174,8 @@ parameter_list <- list(
   p_chronic_in_mtct = 0.89,  # Edmunds value for risk of chronic carriage in <0.5 year olds (infected perinatally)
   p_chronic_function_r = 0.65,  # Edmunds decay rate parameter in exponential function of age-specific chronic carriage risk
   p_chronic_function_s = 0.46,  # Edmunds s parameter in exponential function of age-specific chronic carriage risk
-  pr_it_ir = 0.1,  # S
-  pr_ir_ic = 0.05,  # S
-  eag_prog_function_intercept = 2.0374,  # S Ethiopia, 9.5 in Margaret's Ethiopia fit
+  pr_it_ir = 0.20374,  # S
+  pr_ir_ic = 0.10187,  # S
   eag_prog_function_rate = 0.001,  # S Ethiopia, 0.1281 in Margaret's Ethiopia fit
   pr_ir_enchb = 0.005,  # S
 # pr_ir_enchb_age_threshold = 20,  # M, not present in S model
