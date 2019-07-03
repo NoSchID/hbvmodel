@@ -676,14 +676,7 @@ run_model <- function(..., sim_duration = runtime,
   # Age-specific HBsAg loss (addition by me)
   # ADAPTATION 26/06/19: express this as a linear function with age based on analysis of Yusuke's data
   #sag_loss <- rep(0.01, n_agecat)
-  #sag_loss[which(ages == 0):which(ages == 10-da)] <- parameters$sag_loss_0to9
-  #sag_loss[which(ages == 10):which(ages == 20-da)] <- parameters$sag_loss_10to19
-  #sag_loss[which(ages == 20):which(ages == 30-da)] <- parameters$sag_loss_20to29
-  #sag_loss[which(ages == 30):which(ages == 40-da)] <- parameters$sag_loss_30to39
-  #sag_loss[which(ages == 40):which(ages == 50-da)] <- parameters$sag_loss_40to49
-  #sag_loss[which(ages == 50):n_agecat] <- parameters$sag_loss_50to70
-  #parameters$sag_loss <- sag_loss
-  parameters$sag_loss <- sapply(parameters$sag_loss_intercept + parameters$sag_loss_slope * ages, function(x) max(x,0))
+  parameters$sag_loss <- parameters$sag_loss_slope * ages
 
   # Update parameters for intervention scenario: vaccine (= default) or no vaccine (counterfactual)
   if (scenario == "vacc") {
@@ -1182,8 +1175,8 @@ parameter_list <- list(
   pr_ir_cc_female = 0.028,  # S but not present in published model
   pr_ir_cc_age_threshold = 20,  # M, not present in S model
   pr_ic_enchb = 0.01,   # S
-  sag_loss_intercept = -0.001697,  # intercept of linear function with age
-  sag_loss_slope = 0.0004513,  # slope of linear function with age
+#  sag_loss_intercept = -0.001697,  # intercept of linear function with age
+  sag_loss_slope = 0.0004106,  # slope of linear function with age
   pr_enchb_cc_female = 0.04,  # Progression to CC (from ENCHB) S value
 # cirrhosis_prog_coefficient = 0.0341,  # Margaret value
 # pr_enchb_cc_age_threshold = 20,  # M value, not present in S model
