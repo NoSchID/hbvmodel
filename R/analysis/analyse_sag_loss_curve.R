@@ -14,7 +14,22 @@ plot(sag_loss_data$age, sag_loss_data$ci_upper, col = "red", type = "l", ylim = 
 points(sag_loss_data$age, sag_loss_data$rate, col = "red")
 lines(sag_loss_data$age, sag_loss_data$ci_lower, col = "red", lty = "dotted")
 
+
+# BEST RESULT
+# Linear model with intercept fixed at 0
+plot(ages, 4.106e-04*ages, type = "l", ylim = c(0,0.05))
+lines(sag_loss_data$age, sag_loss_data$ci_upper, col = "red", lty = "dotted")
+lines(sag_loss_data$age, sag_loss_data$ci_lower, col = "red", lty = "dotted")
+points(sag_loss_data$age, sag_loss_data$rate, col = "red")
+# Chose priors empirically - which coefficients fit within 95% CIs while not exceed 0.05?
+lines(ages, 5e-04*ages, col = "blue")
+lines(ages, 3e-04*ages, col = "blue")
+
+# EXPLORE AND ANALYSE
+
 plot(ages, -1.697e-03+4.513e-04*ages, type = "l")
+lines(ages, 4.106e-04*ages, col = "green")
+lines(ages, 4.2e-04*ages, col = "blue")
 lines(sag_loss_data$age, sag_loss_data$ci_upper, col = "red",
      lty = "dotted", xlab = "Age", ylab = "Rate of sAg loss (per person-year)")
 points(sag_loss_data$age, sag_loss_data$rate, col = "red")
@@ -30,10 +45,20 @@ abline(lm(rate ~ age, data = sag_loss_data), col = "blue")
 abline(2*-1.697e-03, 2*4.513e-04)
 abline(0.5*-1.697e-03, 0.5*4.513e-04)
 
-
 lines(sag_loss_data$age, sag_loss_data$ci_upper, col = "red", type = "l", lty = "dotted")
 points(sag_loss_data$age, sag_loss_data$rate)
 lines(sag_loss_data$age, sag_loss_data$ci_lower, col = "red", lty = "dotted")
+
+# Linear model without intercept
+linear_model2 <- lm(rate ~ 0 + age, data = sag_loss_data)
+summary(linear_model2)
+linear_pred <- predict(linear_model2)
+# Add straight line to plot
+abline(lm(rate ~ 0 + age, data = sag_loss_data), col = "green")
+abline(2*-1.697e-03, 2*4.513e-04)
+abline(0.5*-1.697e-03, 0.5*4.513e-04)
+
+
 
 # Quadratic model
 age2 <- sag_loss_data$age^2

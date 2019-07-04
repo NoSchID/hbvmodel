@@ -13,31 +13,48 @@ source(here("R/imperial_model_main.R"))
 #parameter_list <- lapply(parameter_list, FUN= function(x) x*0)
 tic()
 sim <- run_model(sim_duration = runtime, default_parameter_list = parameter_list,
-                 parms_to_change = list(b1 = 0.14, b2 = 0.04, mtct_prob_s = 0.05,
+                 parms_to_change = list(b1 = 0.8, b2 = 0.001, mtct_prob_s = 0.05,
                                         mtct_prob_e = 0.6,  # decrease
-                                        alpha = 7.5,
-                                        b3 = 0.01,
-                                        eag_prog_function_intercept = 1,
+                                        alpha = 1.5,
+                                        b3 = 0.001,
                                         eag_prog_function_rate = 0,
-                                        pr_it_ir = 0.2,
-                                        pr_ir_ic = 0.5, # 0.1,0.7
-                                        pr_ir_cc_female = 0.05,
-                                        pr_enchb_cc_female = 0.004, # reduced 0.005
-                                        pr_ir_cc_age_threshold = 30,  # increase
-                                        hccr_dcc = 0.2,  # 5 times increase
-                                        hccr_ir = 4,  # doubled
-                                        cirrhosis_male_cofactor = 15,  # increase, 20
-                                        cancer_prog_coefficient_female = 0.0002,  # doubled 0.0002
-                                        cancer_age_threshold = 10,
-                                        cancer_male_cofactor = 5,
-                                        mu_cc = 0.005, # decrease
-                                        mu_hcc = 1.5,  # increase
-                                        mu_dcc = 1),
+                                        pr_it_ir = 0.1,  # fix
+                                        pr_ir_ic = 0.8,
+                                        pr_ir_cc_female = 0.01, # 0.028
+                                        pr_ir_cc_age_threshold = 0,  # increase 30
+                                        pr_ir_enchb = 0.005,
+                                        pr_ic_enchb = 0.01,
+                                        pr_enchb_cc_female = 0.008, # 0.005, 0.016
+                                        hccr_dcc = 0.07,  # 5 times increase
+                                        hccr_it = 5,
+                                        hccr_ic = 1,
+                                        hccr_ir = 15,  # doubled
+                                        hccr_enchb = 10,
+                                        hccr_cc = 25,
+                                        cirrhosis_male_cofactor = 5,  # increase, 20
+                                        cancer_prog_coefficient_female = 0.00022,  # doubled 0.0002
+                                        cancer_prog_constant_female = 0,  # 0.00008 started with 0.0001 but too high in <20 ages
+                                        cancer_age_threshold = 0,
+                                        cancer_male_cofactor = 3,
+                                        mu_cc = 0.005,
+                                        mu_hcc = 1.5,
+                                        mu_dcc = 0.8),
                  scenario = "vacc")
 out <- code_model_output(sim)
 toc()
 
 outpath <- out
+
+# Proportion in each infection compartment per timestep
+plot(outpath$time,outpath$infectioncat_total$carriers/outpath$pop_total$pop_total,type = "l",
+     ylim = c(0,0.7), xlim = c(1880,2020))
+lines(outpath$time,outpath$infectioncat_total$sus/outpath$pop_total$pop_total,col= "red")
+lines(outpath$time,outpath$infectioncat_total$immune/outpath$pop_total$pop_total,col= "blue")
+
+# Carrier prevalence by age in 1980
+plot(ages, outpath$carriers[which(outpath$time == 1980),]/
+       outpath$pop[which(outpath$time == 1980),], type = "l", ylim = c(0,0.3))
+#points(gambia_prevdata$age, gambia_prevdata$edmunds_prev, col = "red")
 
 # Save numbers in each compartment in given year
 #model_pop1880 <- out$full_output[out$time == 1880,1:(2*n_infectioncat*n_agecat)+1]
