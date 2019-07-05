@@ -13,29 +13,28 @@ source(here("R/imperial_model_main.R"))
 #parameter_list <- lapply(parameter_list, FUN= function(x) x*0)
 tic()
 sim <- run_model(sim_duration = runtime, default_parameter_list = parameter_list,
-                 parms_to_change = list(b1 = 0.8, b2 = 0.001, mtct_prob_s = 0.05,
+                 parms_to_change = list(b1 = 0.04, b2 = 0.04, mtct_prob_s = 0.05,
                                         mtct_prob_e = 0.6,  # decrease
-                                        alpha = 1.5,
-                                        b3 = 0.001,
+                                        alpha = 10,
+                                        b3 = 0.01,
                                         eag_prog_function_rate = 0,
-                                        pr_it_ir = 0.1,  # fix
+                                        pr_it_ir = 0.1,
                                         pr_ir_ic = 0.8,
-                                        pr_ir_cc_female = 0.01, # 0.028
-                                        pr_ir_cc_age_threshold = 0,  # increase 30
+                                        pr_ir_cc_female = 0.1,
+                                        pr_ir_cc_age_threshold = 30,
                                         pr_ir_enchb = 0.005,
                                         pr_ic_enchb = 0.01,
-                                        pr_enchb_cc_female = 0.008, # 0.005, 0.016
-                                        hccr_dcc = 0.07,  # 5 times increase
-                                        hccr_it = 5,
-                                        hccr_ic = 1,
-                                        hccr_ir = 15,  # doubled
-                                        hccr_enchb = 10,
-                                        hccr_cc = 25,
+                                        pr_enchb_cc_female = 0.005, # 0.005, 0.016
+                                        sag_loss_slope = 0.0004106,
+                                        hccr_dcc = 0.2,  # 5 times increase
+                                        hccr_it = 1,
+                                        hccr_ir = 8,  # doubled
+                                        hccr_enchb = 4,
+                                        hccr_cc = 20,
                                         cirrhosis_male_cofactor = 5,  # increase, 20
-                                        cancer_prog_coefficient_female = 0.00022,  # doubled 0.0002
-                                        cancer_prog_constant_female = 0,  # 0.00008 started with 0.0001 but too high in <20 ages
-                                        cancer_age_threshold = 0,
-                                        cancer_male_cofactor = 3,
+                                        cancer_prog_coefficient_female = 0,  # doubled 0.0002
+                                        cancer_age_threshold = 10,
+                                        cancer_male_cofactor = 5,
                                         mu_cc = 0.005,
                                         mu_hcc = 1.5,
                                         mu_dcc = 0.8),
@@ -44,17 +43,6 @@ out <- code_model_output(sim)
 toc()
 
 outpath <- out
-
-# Proportion in each infection compartment per timestep
-plot(outpath$time,outpath$infectioncat_total$carriers/outpath$pop_total$pop_total,type = "l",
-     ylim = c(0,0.7), xlim = c(1880,2020))
-lines(outpath$time,outpath$infectioncat_total$sus/outpath$pop_total$pop_total,col= "red")
-lines(outpath$time,outpath$infectioncat_total$immune/outpath$pop_total$pop_total,col= "blue")
-
-# Carrier prevalence by age in 1980
-plot(ages, outpath$carriers[which(outpath$time == 1980),]/
-       outpath$pop[which(outpath$time == 1980),], type = "l", ylim = c(0,0.3))
-#points(gambia_prevdata$age, gambia_prevdata$edmunds_prev, col = "red")
 
 # Save numbers in each compartment in given year
 #model_pop1880 <- out$full_output[out$time == 1880,1:(2*n_infectioncat*n_agecat)+1]

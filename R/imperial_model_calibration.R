@@ -191,6 +191,13 @@ input_globocan_incidence_data$quality_weight[input_globocan_incidence_data$time 
 # Other options:
 # Olubuyide mortality rate in liver disease patients (neither HBV only nor Gambia - plus this also involves progression through the stages).
 
+# Test: give weights so that TRANSMISSION datapoints = NAT HIST datapoints
+#input_hbsag_dataset$quality_weight <- 1.4
+#input_antihbc_dataset$quality_weight <- 1.4
+#input_progression_rates$quality_weight[12:14] <- 1.4
+#input_natural_history_prev_dataset$quality_weight[input_natural_history_prev_dataset$id_unique ==
+                                     "id_1_1_1986_incident_chronic_births"] <- 1.4
+
 # Need to change name of this list
 calibration_datasets_list <- list(hbsag_prevalence = input_hbsag_dataset,
                                   antihbc_prevalence = input_antihbc_dataset,
@@ -1732,13 +1739,11 @@ out_mat <- apply(params_mat,1,
                                         pr_enchb_cc_female = 0.008, # 0.005, 0.016
                                         hccr_dcc = 0.07,  # 5 times increase
                                         hccr_it = 5,
-                                        hccr_ic = 1,
                                         hccr_ir = 15,  # doubled
                                         hccr_enchb = 10,
                                         hccr_cc = 25,
                                         cirrhosis_male_cofactor = 5,  # increase, 20
                                         cancer_prog_coefficient_female = 0.00022,  # doubled 0.0002
-                                        cancer_prog_constant_female = 0,  # 0.00008 started with 0.0001 but too high in <20 ages
                                         cancer_age_threshold = 0,
                                         cancer_male_cofactor = 3,
                                         mu_cc = 0.005, # decrease
@@ -1761,9 +1766,9 @@ res_mat[res_mat$error_term == min(res_mat$error_term),]
 ## @knitr part3
 ### Run the model with each parameter set: vary all parameters ----
 # Option 2: Draw parameter sets randomly from prior distribution
-n_sims <- 100  # number of simulations/parameter sets
+n_sims <- 10  # number of simulations/parameter sets
 # First sample parameters where prior distributions depend on each other
-b1 <- runif(n_sims, 0.01, 0.7)
+b1 <- runif(n_sims, 0.03, 0.7)
 b2 <- runif(n_sims, 0, b1)
 b3 <- runif(n_sims, 0, b1)
 mtct_prob_s <- rbeta(n_sims, 1.5,13.5)
@@ -1778,23 +1783,23 @@ params_mat <- data.frame(b1 = b1,
                          b3 = b3,
                          mtct_prob_s = mtct_prob_s,
                          mtct_prob_e = mtct_prob_e,
-                         alpha = runif(n_sims, 1,15),
+                         alpha = runif(n_sims, 1.5,10),
                          p_chronic_in_mtct = rbeta(n_sims, 10.49,1.3),
                          p_chronic_function_r = rnorm(n_sims,0.65,0.1),
                          p_chronic_function_s = rnorm(n_sims,0.46,0.1),
                          pr_it_ir = rgamma(n_sims,3.63,26.27),
                          pr_ir_ic = runif(n_sims, 0,1),
-                         eag_prog_function_rate = rnorm(n_sims,0,0.005),
+                         eag_prog_function_rate = runif(n_sims,0,0.01),
                          pr_ir_enchb = rgamma(n_sims, 1.49, 97.58),
                          pr_ir_cc_female = runif(n_sims, 0.005, 0.05),
-                         pr_ir_cc_age_threshold = runif(n_sims, 0, 15),
+                         pr_ir_cc_age_threshold = round(runif(n_sims, 0, 15),0),
                          pr_ic_enchb = rgamma(n_sims, 3.12, 141.30),
                          sag_loss_slope = rnorm(n_sims, 0.0004106, 0.00005),
                          pr_enchb_cc_female = rgamma(n_sims, 2.3, 123.8),
                          cirrhosis_male_cofactor = rtruncnorm(n_sims, a = 1, mean = 3.5, sd = 4),
                          pr_cc_dcc = rgamma(n_sims,17.94,423.61),
                          cancer_prog_coefficient_female = runif(n_sims, 0.0001, 0.0003),
-                         cancer_age_threshold = runif(n_sims, 0, 15),
+                         cancer_age_threshold = round(runif(n_sims, 0, 15),0),
                          cancer_male_cofactor = rtruncnorm(n_sims, a = 1, mean = 3.5, sd = 4),
                          hccr_it = hccr_it,
                          hccr_ir = hccr_ir,
@@ -1845,8 +1850,6 @@ out_mat <- apply(params_mat,1,
                                     mu_dcc = as.list(x)$mu_dcc,
                                     mu_hcc = as.list(x)$mu_hcc,
                                     vacc_eff = as.list(x)$vacc_eff,
-                                    hccr_ic = 1,
-                                    cancer_prog_constant_female = 0
                                )))  # increase
 
 sim_duration = proc.time() - time1
@@ -1864,10 +1867,10 @@ res_mat[res_mat$error_term == min(res_mat$error_term),]
 ### Output calibration plots ----
 
 # Loop to create plot set for every parameter combination
-pdf(file = here("output/random_fit_plots", "test_vary_all_100sims_errorunder300.pdf"), paper="a4r")
+pdf(file = here("output/random_fit_plots", "test_vary_all_10sims_transmission_weights.pdf"), paper="a4r")
 plot_list = list()
 #for (i in 1:length(out_mat)) {
-for (i in c(11,33,35,41,72)) {
+for (i in 10:10) {
   # Parameter set table and error
   p_parms <- grid.arrange(tableGrob(lapply(out_mat[[i]]$parameter_set[1:17], function(x) round(x,6)),
                                     rows = names(out_mat[[i]]$parameter_set[1:17]),
@@ -2687,7 +2690,6 @@ run_rejection_algorithm2 <- function(N, epsilon) {
                                         hccr_cc = 25,
                                         cirrhosis_male_cofactor = 5,  # increase, 20
                                         cancer_prog_coefficient_female = 0.00017,  # doubled 0.0002
-                                        cancer_prog_constant_female = 0.000022,  # 0.00008 started with 0.0001 but too high in <20 ages
                                         cancer_age_threshold = 15,
                                         cancer_male_cofactor = 5,
                                         mu_cc = 0.005, # decrease
@@ -2765,7 +2767,6 @@ run_rejection_algorithm <- function(n) {
                                       hccr_cc = 25,
                                       cirrhosis_male_cofactor = 5,  # increase, 20
                                       cancer_prog_coefficient_female = 0.00017,  # doubled 0.0002
-                                      cancer_prog_constant_female = 0.000022,  # 0.00008 started with 0.0001 but too high in <20 ages
                                       cancer_age_threshold = 15,
                                       cancer_male_cofactor = 5,
                                       mu_cc = 0.005, # decrease
@@ -2826,8 +2827,6 @@ out_mat <- parApply(cl = cl, params_mat,1,
                                                  mu_dcc = as.list(x)$mu_dcc,
                                                  mu_hcc = as.list(x)$mu_hcc,
                                                  vacc_eff = as.list(x)$vacc_eff,
-                                                 hccr_ic = 1,
-                                                 cancer_prog_constant_female = 0
                                             )))
 sim_duration = proc.time() - time1
 sim_duration["elapsed"]/60

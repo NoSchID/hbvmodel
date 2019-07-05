@@ -375,14 +375,14 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
       dcum_dcc[index$ages_all,i] <- pr_cc_dcc * pop[index$ages_all,CC,i]
 
       # Transitions to HCC
+      ic_to_hcc_transitions[index$ages_all,i] <-
+        cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,IC,i]
+
       it_to_hcc_transitions[index$ages_all,i] <-
         hccr_it * cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,IT,i]
 
       ir_to_hcc_transitions[index$ages_all,i] <-
         hccr_ir * cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,IR,i]
-
-      ic_to_hcc_transitions[index$ages_all,i] <-
-        hccr_ic * cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,IC,i]
 
       enchb_to_hcc_transitions[index$ages_all,i] <-
         hccr_enchb * cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,ENCHB,i]
@@ -609,7 +609,7 @@ run_model <- function(..., sim_duration = runtime,
 
   # Age-specific function of progression through IT and IR (IT=>IR and IR=>IC)
   # Represented by an exponential function that decreases with age
-  parameters$eag_prog_function <- exp(-parameters$eag_prog_function_rate * ages)
+  parameters$eag_prog_function <- exp(parameters$eag_prog_function_rate * ages)
 
   # Age-specific progression to HCC from all carrier compartments other than DCC
   # Represented by a shifted quadratic function that increases with age and
@@ -626,7 +626,7 @@ run_model <- function(..., sim_duration = runtime,
 #  parameters$cancer_prog_rates <- cancer_prog_rates
 
   # ADAPTATION 18/06/19: add an intercept to allow switching off of age dependence
-  cancer_prog_function <- parameters$cancer_prog_constant_female + (parameters$cancer_prog_coefficient_female * (ages - parameters$cancer_age_threshold))^2  # Rate in females
+  cancer_prog_function <- (parameters$cancer_prog_coefficient_female * (ages - parameters$cancer_age_threshold))^2  # Rate in females
   cancer_prog_function <- cancer_prog_function *
     c(rep(0, times = parameters$cancer_age_threshold/da),
       rep(1, times = n_agecat - parameters$cancer_age_threshold/da))  # Set transition to 0 in <10 year olds
@@ -1184,12 +1184,10 @@ parameter_list <- list(
   pr_cc_dcc = 0.04,  # Progression from CC to DCC, S value
   # PROGRESSION RATES TO HEPATOCELLULAR CARCINOMA
   cancer_prog_coefficient_female = 4.0452e-05,  # value from Margaret
-  cancer_prog_constant_female = 1e-7,
   cancer_age_threshold = 10,  # value from Margaret
   cancer_male_cofactor = 5.2075,  # value from Margaret
   hccr_it = 1,  # S
   hccr_ir = 2, # S
-  hccr_ic = 0.5, # S
   hccr_enchb = 2, # S
   hccr_cc = 13, # S
   hccr_dcc = 0.04, # S

@@ -5,12 +5,12 @@ b3 ,Horizontal transmission rate among adults (age 16-100 years) and between adu
 alpha ,Relative infectiousness of HBeAg-positives compared to HBeAg-negatives for horizontal transmission,15,15,,Transmission
 mtct_prob_e ,Mother-to-child transmission risk from HBeAg-positive mother,0.9,0.9,,Transmission
 mtct_prob_s ,Mother-to-child transmission risk from HBeAg-negative mother,0.2,0.3681,,Transmission
-p_chronic_function_r ,Parameter r of exponential decay function for age-specific risk of becoming a chronic carrier after acute infection,0.65,0.65,Edmunds value,Transmission/natural history
-p_chronic_function_s ,Parameter s of exponential decay function for age-specific risk of becoming a chronic carrier after acute infection,0.46,0.46,Edmunds value,Transmission/natural history
-pr_it_ir ,Multiplier on progression rate from Immune tolerant to Immune reactive stage,0.1,0.1,,Natural history
-pr_ir_ic ,Multiplier on progression rate from Immune reactive to Inactive carrier stage (HBeAg loss),0.05,0.05,,Natural history
-eag_prog_function_intercept ,Y intercept of exponential decay function for age-specific progression through the HBeAg-positive compartments (Immune tolerant and Immune reactive).,2.0374,9.5,,Natural history
-eag_prog_function_rate ,Rate parameter of exponential decay function for age-specific progression through the HBeAg-positive compartments (Immune tolerant and Immune reactive),0.001,0.1281,,Natural history
+p_chronic_in_mtct,Risk of becoming a chronic carrier after acute infection in <0.5 year olds,0.89,0.89,Edmunds value,Transmission
+p_chronic_function_r ,Parameter r of exponential decay function for age-specific risk of becoming a chronic carrier after acute infection in >= 0.5 year olds,0.65,0.65,Edmunds value,Transmission/natural history
+p_chronic_function_s ,Parameter s of exponential decay function for age-specific risk of becoming a chronic carrier after acute infection in >= 0.5 year olds,0.46,0.46,Edmunds value,Transmission/natural history
+pr_it_ir ,"Annual progression rate from Immune tolerant to Immune reactive stage. This is the average progression rate at every age if eag_prog_function_intercept = 0, or the rate in 0-year olds otherwise. ",0.20374,0.95,"This was derived from 2 parameters specified in previous model versions, one of which was fitted. ",Natural history
+pr_ir_ic ,"Annual progression rate from  Immune reactive to Inactive carrier stage (HBeAg loss). This is the average progression rate at every age if eag_prog_function_intercept = 0, or the rate in 0-year olds otherwise. ",0.10187,0.475,"This was derived from 2 parameters specified in previous model versions, one of which was fitted. ",Natural history
+eag_prog_function_rate ,Rate parameter of exponential growth function for age-specific progression through the HBeAg-positive compartments (Immune tolerant and Immune reactive),-0.001,-0.1281,,Natural history
 pr_ir_enchb ,Annual progression rate from Immune reactive to HBeAg-negative chronic hepatitis B (HBeAg loss),0.005,0.005,,Natural history
 pr_ir_cc_female,Annual progression rate from Immune reactive to Compensated cirrhosis for women,0.028,0.028,Added after publication,Natural history
 pr_ir_cc_age_threshold ,Age threshold for progression from Immune reactive to Compensated cirrhosis (rate = 0 below this age),NA,20,,Natural history
@@ -20,13 +20,11 @@ sag_loss_slope,Slope of linear function for age-specific annual rate of HBsAg lo
 pr_enchb_cc_female,Annual progression rate from HBeAg-negative chronic hepatitis B to Compensated cirrhosis for women,0.04,0.04,,Natural history
 cirrhosis_male_cofactor ,Multiplier on progression rate to Compensated cirrhosis for men (from Immune reactive and HBeAg-negative chronic hepatitis B),NA,12.32,,Natural history
 pr_cc_dcc,Annual progression rate from Compensatd cirrhosis to Decompensated cirrhosis (rate of decompensation),0.04,0.04,,Natural history
-cancer_prog_coefficient_female,"Coefficient of quadratic shift function for age-specific progression rates to HCC in women. This describes the rate of increase in the progression rate with age. If 0, the progression rate to HCC from all carrier compartments does not change with age.",NA,4.05E-05,,Natural history: progression to HCC
-cancer_prog_constant_female,Constant term of quadratic shift function for age-specific progression rates to HCC in women. This describes the annual progression rate from Immune tolerant to HCC in women aged cancer_age_threshold+1 (or the average age-independent rate if cancer_prog_coefficient_female = 0),NA,NA,,Natural history: progression to HCC
+cancer_prog_coefficient_female,"Coefficient of quadratic shift function for age-specific progression rates to HCC in inactive carrier women. This describes the rate of increase in the progression rate with age. If 0, the progression rate to HCC from all carrier compartments does not change with age.",NA,2.03E-05,,Natural history: progression to HCC
 cancer_age_threshold ,Age threshold for progression to HCC (from any carrier compartment other than DCC) (rate = 0 below this age),NA,10,,Natural history: progression to HCC
 cancer_male_cofactor ,Multiplier on progression rates to HCC (from any carrier compartment other than DCC) for men,5,5.2075,,Natural history: progression to HCC
 hccr_it ,Multiplier on progression rate to HCC from Immune tolerant,1,1,,Natural history: progression to HCC
 hccr_ir ,Multiplier on progression rate to HCC from Immune reactive,2,2,,Natural history: progression to HCC
-hccr_ic ,Multiplier on progression rate to HCC from Inactive carrier,0.5,0.5,,Natural history: progression to HCC
 hccr_enchb ,Multiplier on progression rate to HCC from HBeAg-negative chronic hepatitis B stage,2,2,,Natural history: progression to HCC
 hccr_cc ,Multiplier on progression rate to HCC from Compensated cirrhosis stage,13,13,,Natural history: progression to HCC
 hccr_dcc ,Annual progression rate from Decompensated cirrhosis to HCC,0.04,0.04,,Natural history: progression to HCC
