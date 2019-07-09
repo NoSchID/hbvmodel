@@ -192,11 +192,11 @@ input_globocan_incidence_data$quality_weight[input_globocan_incidence_data$time 
 # Olubuyide mortality rate in liver disease patients (neither HBV only nor Gambia - plus this also involves progression through the stages).
 
 # Test: give weights so that TRANSMISSION datapoints = NAT HIST datapoints
-#input_hbsag_dataset$quality_weight <- 1.4
-#input_antihbc_dataset$quality_weight <- 1.4
-#input_progression_rates$quality_weight[12:14] <- 1.4
+#input_hbsag_dataset$quality_weight <- 1.5
+#input_antihbc_dataset$quality_weight <- 1.5
+#input_progression_rates$quality_weight[12:14] <- 1.5
 #input_natural_history_prev_dataset$quality_weight[input_natural_history_prev_dataset$id_unique ==
-                                     "id_1_1_1986_incident_chronic_births"] <- 1.4
+#                                     "id_1_1_1986_incident_chronic_births"] <- 1.5
 
 # Need to change name of this list
 calibration_datasets_list <- list(hbsag_prevalence = input_hbsag_dataset,
@@ -1673,6 +1673,104 @@ calculate_distance <- function(mapped_output) {
 
 }
 
+# Algorithm for random sampling and simulation with those parameter sets
+run_on_cluster <- function(n_sims, data) {
+
+  # 1) Draw parameter sets randomly from prior distribution
+  n_sims <- n_sims  # number of simulations/parameter sets
+  # First sample parameters where prior distributions depend on each other
+  b1 <- runif(n_sims, 0.03, 0.7)
+  b2 <- runif(n_sims, 0, b1)
+  b3 <- runif(n_sims, 0, b1)
+  mtct_prob_s <- rbeta(n_sims, 1.5,13.5)
+  mtct_prob_e <- runif(n_sims, mtct_prob_s, 0.9)
+  hccr_it <- rtruncnorm(n_sims, a=1, b=Inf, mean=6, sd=3) # normal truncated at 1
+  hccr_cc <- runif(n_sims, hccr_it, 100)
+  hccr_enchb <- runif(n_sims, hccr_it, hccr_cc)
+  hccr_ir <- runif(n_sims, hccr_enchb, hccr_cc)
+  # Combine in dataframe and sample remaining parameters
+  params_mat <- data.frame(b1 = b1,
+                           b2 = b2,
+                           b3 = b3,
+                           mtct_prob_s = mtct_prob_s,
+                           mtct_prob_e = mtct_prob_e,
+                           alpha = runif(n_sims, 1.5,10),
+                           p_chronic_in_mtct = rbeta(n_sims, 10.49,1.3),
+                           p_chronic_function_r = rnorm(n_sims,0.65,0.1),
+                           p_chronic_function_s = rnorm(n_sims,0.46,0.1),
+                           pr_it_ir = rgamma(n_sims,3.63,26.27),
+                           pr_ir_ic = runif(n_sims, 0,1),
+                           eag_prog_function_rate = runif(n_sims,0,0.01),
+                           pr_ir_enchb = rgamma(n_sims, 1.49, 97.58),
+                           pr_ir_cc_female = runif(n_sims, 0.005, 0.05),
+                           pr_ir_cc_age_threshold = round(runif(n_sims, 0, 15),0),
+                           pr_ic_enchb = rgamma(n_sims, 3.12, 141.30),
+                           sag_loss_slope = rnorm(n_sims, 0.0004106, 0.00005),
+                           pr_enchb_cc_female = rgamma(n_sims, 2.3, 123.8),
+                           cirrhosis_male_cofactor = rtruncnorm(n_sims, a = 1, mean = 3.5, sd = 4),
+                           pr_cc_dcc = rgamma(n_sims,17.94,423.61),
+                           cancer_prog_coefficient_female = runif(n_sims, 0.0001, 0.0003),
+                           cancer_age_threshold = round(runif(n_sims, 0, 15),0),
+                           cancer_male_cofactor = rtruncnorm(n_sims, a = 1, mean = 3.5, sd = 4),
+                           hccr_it = hccr_it,
+                           hccr_ir = hccr_ir,
+                           hccr_enchb = hccr_enchb,
+                           hccr_cc = hccr_cc,
+                           hccr_dcc = rgamma(n_sims, 8.09, 101.33),
+                           mu_cc = rgamma(n_sims, 4.25, 124.91),
+                           mu_dcc = rgamma(n_sims, 1.49, 0.98),
+                           mu_hcc = rgamma(n_sims, 1.49, 0.98),
+                           vacc_eff = rbeta(n_sims, 7.07, 0.37))
+
+  # 2) Run n_sims simulations with these parameter sets and
+  # calculate the distance function to compare to data
+  out_mat <- apply(params_mat,1,
+                   function(x)
+                     fit_model(default_parameter_list = parameter_list,
+                               data_to_fit = data,
+                               parms_to_change =
+                                 list(b1 = as.list(x)$b1,
+                                      b2 = as.list(x)$b2,
+                                      b3 = as.list(x)$b3,
+                                      mtct_prob_s = as.list(x)$mtct_prob_s,
+                                      mtct_prob_e = as.list(x)$mtct_prob_e,
+                                      alpha = as.list(x)$alpha,
+                                      p_chronic_in_mtct = as.list(x)$p_chronic_in_mtct,
+                                      p_chronic_function_r = as.list(x)$p_chronic_function_r,
+                                      p_chronic_function_s = as.list(x)$p_chronic_function_s,
+                                      pr_it_ir = as.list(x)$pr_it_ir,
+                                      pr_ir_ic = as.list(x)$pr_ir_ic,
+                                      eag_prog_function_rate = as.list(x)$eag_prog_function_rate,
+                                      pr_ir_enchb = as.list(x)$pr_ir_enchb,
+                                      pr_ir_cc_female = as.list(x)$pr_ir_cc_female,
+                                      pr_ir_cc_age_threshold = as.list(x)$pr_ir_cc_age_threshold,
+                                      pr_ic_enchb = as.list(x)$pr_ic_enchb,
+                                      sag_loss_slope = as.list(x)$sag_loss_slope,
+                                      pr_enchb_cc_female = as.list(x)$pr_enchb_cc_female,
+                                      cirrhosis_male_cofactor = as.list(x)$cirrhosis_male_cofactor,
+                                      pr_cc_dcc = as.list(x)$pr_cc_dcc,
+                                      cancer_prog_coefficient_female = as.list(x)$cancer_prog_coefficient_female,
+                                      cancer_age_threshold = as.list(x)$cancer_age_threshold,
+                                      cancer_male_cofactor = as.list(x)$cancer_male_cofactor,
+                                      hccr_it = as.list(x)$hccr_it,
+                                      hccr_ir = as.list(x)$hccr_ir,
+                                      hccr_enchb = as.list(x)$hccr_enchb,
+                                      hccr_cc = as.list(x)$hccr_cc,
+                                      hccr_dcc = as.list(x)$hccr_dcc,
+                                      mu_cc = as.list(x)$mu_cc,
+                                      mu_dcc = as.list(x)$mu_dcc,
+                                      mu_hcc = as.list(x)$mu_hcc,
+                                      vacc_eff = as.list(x)$vacc_eff
+                                 )))
+
+  # 3) Return matrix of parameter sets and matching error term
+  out_mat_subset <- sapply(out_mat, "[[", "error_term")
+  res_mat <- cbind(params_mat, error_term = out_mat_subset)
+
+  return(res_mat)
+
+}
+
 ### Set up calibration ----
 
 # For fitting, the model is run from 1880 to allow 100 years (1 generation)
@@ -1766,7 +1864,7 @@ res_mat[res_mat$error_term == min(res_mat$error_term),]
 ## @knitr part3
 ### Run the model with each parameter set: vary all parameters ----
 # Option 2: Draw parameter sets randomly from prior distribution
-n_sims <- 10  # number of simulations/parameter sets
+n_sims <- 100  # number of simulations/parameter sets
 # First sample parameters where prior distributions depend on each other
 b1 <- runif(n_sims, 0.03, 0.7)
 b2 <- runif(n_sims, 0, b1)
@@ -1849,7 +1947,7 @@ out_mat <- apply(params_mat,1,
                                     mu_cc = as.list(x)$mu_cc,
                                     mu_dcc = as.list(x)$mu_dcc,
                                     mu_hcc = as.list(x)$mu_hcc,
-                                    vacc_eff = as.list(x)$vacc_eff,
+                                    vacc_eff = as.list(x)$vacc_eff
                                )))  # increase
 
 sim_duration = proc.time() - time1
@@ -1867,10 +1965,10 @@ res_mat[res_mat$error_term == min(res_mat$error_term),]
 ### Output calibration plots ----
 
 # Loop to create plot set for every parameter combination
-pdf(file = here("output/random_fit_plots", "test_vary_all_10sims_transmission_weights.pdf"), paper="a4r")
+pdf(file = here("output/random_fit_plots", "test_vary_all_100sims_transmission_weights1point5.pdf"), paper="a4r")
 plot_list = list()
 #for (i in 1:length(out_mat)) {
-for (i in 10:10) {
+for (i in 21:21) {
   # Parameter set table and error
   p_parms <- grid.arrange(tableGrob(lapply(out_mat[[i]]$parameter_set[1:17], function(x) round(x,6)),
                                     rows = names(out_mat[[i]]$parameter_set[1:17]),
@@ -2784,7 +2882,7 @@ run_rejection_algorithm <- function(n) {
 res <- run_rejection_algorithm(n=10)
 
 
-### Parallelised code: var all parms ----
+### Parallelised code: vary all parameters ----
 # Set up cluster
 cl <- makeCluster(4)
 clusterEvalQ(cl, {library(dplyr); library(tidyr); library(deSolve)})
@@ -2826,7 +2924,7 @@ out_mat <- parApply(cl = cl, params_mat,1,
                                                  mu_cc = as.list(x)$mu_cc,
                                                  mu_dcc = as.list(x)$mu_dcc,
                                                  mu_hcc = as.list(x)$mu_hcc,
-                                                 vacc_eff = as.list(x)$vacc_eff,
+                                                 vacc_eff = as.list(x)$vacc_eff
                                             )))
 sim_duration = proc.time() - time1
 sim_duration["elapsed"]/60
@@ -2835,9 +2933,12 @@ sim_duration["elapsed"]/60
 stopCluster(cl)
 # 10 sims take 3.33 min, 100 sims take 35 min
 
-#res_mat <- cbind(params_mat, do.call(rbind.data.frame, out_mat_subset)) # this would work for a list
-#out_mat_subset <- as.data.frame(t(sapply(out_mat, "[", c("prev_est_1980", "prev_est_2015", "sse"))))
-#res_mat <- cbind(params_mat, unnest(out_mat_subset))
+# Matrix of parameter values and error term
+out_mat_subset <- sapply(out_mat, "[[", "error_term")
+res_mat <- cbind(params_mat, error_term = out_mat_subset)
+res_mat[res_mat$error_term == min(res_mat$error_term),]
+
+### Target fitting approach ----
 
 # Fit to overall prevalence for minimum SSE
 plot(x = seq(1960,2019.5, by = 0.5),
