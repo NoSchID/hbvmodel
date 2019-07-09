@@ -215,18 +215,19 @@ calibration_datasets_list <- list(hbsag_prevalence = input_hbsag_dataset,
 
 
 ### Load input datasets: to work on ----
-prior_vaccine_efficacy <- read.csv(here("data-raw", "input_infant_vaccine_efficacy.csv"),
-                                   header = TRUE, check.names = FALSE,
-                                   stringsAsFactors = FALSE)
-prior_mtct_risk <- read.csv(here("data-raw", "input_mtct_risk.csv"),
-                            header = TRUE, check.names = FALSE,
-                            stringsAsFactors = FALSE)
-prior_paf_liver_disease <- read.csv(here("data-raw", "input_paf_liver_disease.csv"),
-                                    header = TRUE, check.names = FALSE,
-                                    stringsAsFactors = FALSE)
-prior_progression_rates <- read.csv(here("data-raw", "input_progression_rates.csv"),
-                                    header = TRUE, check.names = FALSE,
-                                    stringsAsFactors = FALSE)
+#prior_vaccine_efficacy <- read.csv(here("data-raw", "input_infant_vaccine_efficacy.csv"),
+#                                   header = TRUE, check.names = FALSE,
+#                                   stringsAsFactors = FALSE)
+#prior_mtct_risk <- read.csv(here("data-raw", "input_mtct_risk.csv"),
+#                            header = TRUE, check.names = FALSE,
+#                            stringsAsFactors = FALSE)
+#prior_paf_liver_disease <- read.csv(here("data-raw", "input_paf_liver_disease.csv"),
+#                                    header = TRUE, check.names = FALSE,
+#                                    stringsAsFactors = FALSE)
+#prior_progression_rates <- read.csv(here("data-raw", "input_progression_rates.csv"),
+#                                    header = TRUE, check.names = FALSE,
+#                                    stringsAsFactors = FALSE)
+
 ### Define functions for calibration ----
 
 ## Main calibration function:

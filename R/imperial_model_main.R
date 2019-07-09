@@ -22,9 +22,9 @@ require(gridExtra)  # for calibration plots
 require(grid)  # for calibration plots
 
 # Packages for timing, profiling and making code more efficient
-library(tictoc)  # for timing code
-library(profvis)  # for profiling
-library(efficient)  # for profiling
+#library(tictoc)  # for timing code
+#library(profvis)  # for profiling
+#library(efficient)  # for profiling
 
 
 ### Define simulation parameters ----
