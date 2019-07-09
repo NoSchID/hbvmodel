@@ -1,0 +1,2 @@
+# testscript
+print("test")
