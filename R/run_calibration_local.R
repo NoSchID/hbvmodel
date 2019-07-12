@@ -2,7 +2,7 @@
 ### Run calibration on laptop ###
 #################################
 
-# Load packages
+# Load packages ----
 require(here)
 require(truncnorm)
 
@@ -174,10 +174,10 @@ res_mat[res_mat$error_term == min(res_mat$error_term),]
 ### Output calibration plots ----
 
 # Loop to create plot set for every parameter combination
-pdf(file = here("output/random_fit_plots", "test_vary_all_100sims_transmission_weights1point5.pdf"), paper="a4r")
+pdf(file = here("output/random_fit_plots", "test_vary_all_100sims_errorunder800_transmission_weights5.pdf"), paper="a4r")
 plot_list = list()
 #for (i in 1:length(out_mat)) {
-for (i in 21:21) {
+for (i in c(21,30,42,44,80,99)) {
   # Parameter set table and error
   p_parms <- grid.arrange(tableGrob(lapply(out_mat[[i]]$parameter_set[1:17], function(x) round(x,6)),
                                     rows = names(out_mat[[i]]$parameter_set[1:17]),

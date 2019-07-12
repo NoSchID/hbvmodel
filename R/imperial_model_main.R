@@ -13,13 +13,13 @@ require(here)  # for setting working directory
 require(tidyr)  # for data processing
 require(dplyr)  # for data processing
 require(deSolve)  # ODE solver
-require(lhs)  # Latin Hypercube sampling
-require(parallel)  # for running code in parallel
+#require(lhs)  # Latin Hypercube sampling
+#require(parallel)  # for running code in parallel
 
 # Packages for making plots
-require(ggplot2)  # for calibration plots
-require(gridExtra)  # for calibration plots
-require(grid)  # for calibration plots
+#require(ggplot2)  # for calibration plots
+#require(gridExtra)  # for calibration plots
+#require(grid)  # for calibration plots
 
 # Packages for timing, profiling and making code more efficient
 #library(tictoc)  # for timing code
