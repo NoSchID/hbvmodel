@@ -2,7 +2,7 @@
 ### Run calibration on laptop ###
 #################################
 
-# Load packages and data ----
+### Load packages and source file ----
 require(here)
 require(truncnorm)
 
@@ -22,6 +22,7 @@ params_mat$b2 <- 0 + (0.01-0) * params_mat$b2 # rescale U(0,1) to be U(0,0.01)
 params_mat$mtct_prob_s <- 0 + (0.5-0) * params_mat$mtct_prob_s # rescale U(0,1) to be U(0,0.5)
 
 params_mat <- data.frame(b1 = 0.13, b2 = 0.04, mtct_prob_s = 0.05)
+
 ## @knitr part2
 
 time1 <- proc.time()

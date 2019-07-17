@@ -261,6 +261,14 @@ fit_model <- function(..., default_parameter_list, parms_to_change = list(...),
   model_pop2005 <- sim[which(out$time==2005),1:(2*n_infectioncat*n_agecat)+1]
   model_pop2012 <- sim[which(out$time==2012),1:(2*n_infectioncat*n_agecat)+1]
 
+  # Check: Is HBsAg prevalence in 1980 within reasonable limits? ----
+  prev_check <- sum(out$carriers[which(out$time == 1980),])/sum(out$pop[which(out$time == 1980),])
+
+  if (prev_check < 0.01 | prev_check > 0.5) {
+    return(list(parameter_set = parameters_for_fit,
+                error_term = NA))
+  }
+
   # Matching datasets to model ouput ----
 
   # Define my datapoints to fit to:
