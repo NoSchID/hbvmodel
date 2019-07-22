@@ -57,7 +57,7 @@ out_mat <- apply(params_mat,1,
                                     mu_cc = 0.005, # decrease
                                     mu_hcc = 1.5,  # increase
                                     mu_dcc = 0.8  # 1
-                               )))  # increase
+                               )))
 
 sim_duration = proc.time() - time1
 paste(sim_duration["elapsed"], "seconds")
@@ -1201,6 +1201,122 @@ par(mfrow=c(1,1))
 
 
 
+
+### Save a training dataset with known parameter values ----
+
+# Save the training dataset
+mapped_output <- unlist(lapply(out_mat, "[[", "mapped_output"), recursive = FALSE)
+mapped_output2 <- lapply(mapped_output, function(x) {names(x)[names(x) == "model_value"] <- "training_data_value"; x })
+
+training_hbsag_prevalence <- left_join(calibration_datasets_list$hbsag_prevalence,
+                                       mapped_output2$seromarker_prevalence[mapped_output2$seromarker_prevalence$outcome == "HBsAg_prevalence",])
+
+training_antihbc_prevalence <- left_join(calibration_datasets_list$antihbc_prevalence,
+                                         mapped_output2$seromarker_prevalence[mapped_output2$seromarker_prevalence$outcome == "Anti_HBc_prevalence",])
+
+training_hbeag_prevalence <- left_join(calibration_datasets_list$hbeag_prevalence,
+                                       mapped_output2$seromarker_prevalence[mapped_output2$seromarker_prevalence$outcome == "HBeAg_prevalence",])
+
+training_natural_history_prevalence <- left_join(calibration_datasets_list$natural_history_prevalence,
+                                                 mapped_output2$nat_hist_prevalence)
+
+training_mtct_risk <- left_join(calibration_datasets_list$mtct_risk,
+                                mapped_output2$mtct_risk)
+
+training_progression_rates <-  left_join(calibration_datasets_list$progression_rates,
+                                         mapped_output2$progression_rates)
+
+training_mortality_curves <- left_join(calibration_datasets_list$mortality_curves,
+                                       mapped_output2$mortality_curves)
+
+training_globocan_incidence_data <- left_join(calibration_datasets_list$globocan_incidence_data,
+                                              mapped_output2$globocan_hcc_incidence)
+training_globocan_incidence_data$model_events <- NULL
+
+training_globocan_mortality_curve <- left_join(calibration_datasets_list$globocan_mortality_curve,
+                                               mapped_output2$mortality_curves)
+training_globocan_mortality_curve <- select(training_globocan_mortality_curve, c(names(calibration_datasets_list$globocan_mortality_curve), "training_data_value"))
+
+training_gbd_cirrhosis_mortality <- left_join(calibration_datasets_list$gbd_cirrhosis_mortality,
+                                              mapped_output2$gbd_cirrhosis_mortality)
+training_gbd_cirrhosis_mortality$model_events <- NULL
+
+training_p_chronic <- left_join(calibration_datasets_list$p_chronic,
+                                mapped_output2$risk_of_chronic_carriage)
+
+training_odds_ratios <- left_join(calibration_datasets_list$odds_ratios,
+                                  mapped_output2$odds_ratios)
+
+training_liver_disease_demography <- left_join(calibration_datasets_list$liver_disease_demography,
+                                               mapped_output2$mapped_liver_disease_demography)
+
+# Checks
+training_hbsag_prevalence[,-ncol(training_hbsag_prevalence)] == calibration_datasets_list$hbsag_prevalence
+dim(training_hbsag_prevalence)
+dim(calibration_datasets_list$hbsag_prevalence)
+
+training_antihbc_prevalence[,-ncol(training_antihbc_prevalence)] == calibration_datasets_list$antihbc_prevalence
+dim(training_antihbc_prevalence)
+dim(calibration_datasets_list$antihbc_prevalence)
+
+training_hbeag_prevalence[,-ncol(training_hbeag_prevalence)] == calibration_datasets_list$hbeag_prevalence
+dim(training_hbeag_prevalence)
+dim(calibration_datasets_list$hbeag_prevalence)
+
+training_natural_history_prevalence[,-ncol(training_natural_history_prevalence)] == calibration_datasets_list$natural_history_prevalence
+dim(training_natural_history_prevalence)
+dim(calibration_datasets_list$natural_history_prevalence)
+
+training_mtct_risk[,-ncol(training_mtct_risk)] == calibration_datasets_list$mtct_risk
+
+training_progression_rates[,-ncol(training_progression_rates)] == calibration_datasets_list$progression_rates
+dim(training_progression_rates)
+dim(calibration_datasets_list$progression_rates)
+
+training_mortality_curves[,-ncol(training_mortality_curves)] == calibration_datasets_list$mortality_curves
+dim(training_mortality_curves)
+dim(calibration_datasets_list$mortality_curves)
+
+training_globocan_incidence_data[,-ncol(training_globocan_incidence_data)] == calibration_datasets_list$globocan_incidence_data
+dim(training_globocan_incidence_data)
+dim(calibration_datasets_list$globocan_incidence_data)
+
+training_globocan_mortality_curve[,-ncol(training_globocan_mortality_curve)] ==
+  calibration_datasets_list$globocan_mortality_curve
+dim(training_globocan_mortality_curve)
+dim(calibration_datasets_list$globocan_mortality_curve)
+
+training_gbd_cirrhosis_mortality[,-ncol(training_gbd_cirrhosis_mortality)] ==
+  calibration_datasets_list$gbd_cirrhosis_mortality
+dim(training_gbd_cirrhosis_mortality)
+dim(calibration_datasets_list$gbd_cirrhosis_mortality)
+
+training_p_chronic[,-ncol(training_p_chronic)] ==
+  calibration_datasets_list$p_chronic
+
+training_odds_ratios[,-ncol(training_odds_ratios)] ==
+  calibration_datasets_list$odds_ratios
+
+training_liver_disease_demography[,-ncol(training_liver_disease_demography)] ==
+  calibration_datasets_list$liver_disease_demography
+
+# Combine into list
+
+training_datasets_list <- list(hbsag_prevalence = training_hbsag_prevalence,
+                               antihbc_prevalence = training_antihbc_prevalence,
+                               hbeag_prevalence = training_hbeag_prevalence,
+                               natural_history_prevalence = training_natural_history_prevalence,
+                               mtct_risk = training_mtct_risk,
+                               progression_rates = training_progression_rates,
+                               mortality_curves = training_mortality_curves,
+                               globocan_incidence_data = training_globocan_incidence_data,
+                               globocan_mortality_curve = training_globocan_mortality_curve,
+                               gbd_cirrhosis_mortality = training_gbd_cirrhosis_mortality,
+                               p_chronic = training_p_chronic,
+                               odds_ratios = training_odds_ratios,
+                               liver_disease_demography = training_liver_disease_demography)
+
+#save(training_datasets_list, file = here("output", "distance_metric_trials", "training_datasets_list.Rdata"))
 
 ### Analyse cluster fits ----
 #load(here("output", "fits", "cluster_fit_150719.Rdata"))
