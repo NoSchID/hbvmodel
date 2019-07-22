@@ -192,11 +192,12 @@ input_globocan_incidence_data$quality_weight[input_globocan_incidence_data$time 
 # Olubuyide mortality rate in liver disease patients (neither HBV only nor Gambia - plus this also involves progression through the stages).
 
 # Test: give weights so that TRANSMISSION datapoints = NAT HIST datapoints
-input_hbsag_dataset$quality_weight <- 5
-input_antihbc_dataset$quality_weight <- 5
-input_progression_rates$quality_weight[12:14] <- 5
+input_hbsag_dataset$quality_weight <- 1.37
+input_antihbc_dataset$quality_weight <- 1.37
+input_progression_rates$quality_weight[12:14] <- 1.37
 input_natural_history_prev_dataset$quality_weight[input_natural_history_prev_dataset$id_unique ==
-                                     "id_1_1_1986_incident_chronic_births"] <- 5
+                                     "id_1_1_1986_incident_chronic_births"] <- 1.37
+input_mtct_risk_dataset$quality_weight <- 1.37
 
 # Need to change name of this list
 calibration_datasets_list <- list(hbsag_prevalence = input_hbsag_dataset,
@@ -262,12 +263,12 @@ fit_model <- function(..., default_parameter_list, parms_to_change = list(...),
   model_pop2012 <- sim[which(out$time==2012),1:(2*n_infectioncat*n_agecat)+1]
 
   # Check: Is HBsAg prevalence in 1980 within reasonable limits? ----
-  prev_check <- sum(out$carriers[which(out$time == 1980),])/sum(out$pop[which(out$time == 1980),])
+  #prev_check <- sum(out$carriers[which(out$time == 1980),])/sum(out$pop[which(out$time == 1980),])
 
-  if (prev_check < 0.01 | prev_check > 0.5) {
-    return(list(parameter_set = parameters_for_fit,
-                error_term = NA))
-  }
+  #if (prev_check < 0.01 | prev_check > 0.5) {
+  #  return(list(parameter_set = parameters_for_fit,
+  #              error_term = NA))
+  #}
 
   # Matching datasets to model ouput ----
 

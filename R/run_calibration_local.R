@@ -36,23 +36,23 @@ out_mat <- apply(params_mat,1,
                                     mtct_prob_s = as.list(x)$mtct_prob_s,
                                     mtct_prob_e = 0.6,  # decrease
                                     alpha = 7,
-                                    b3 = 0.001,
+                                    b3 = 0.01,
                                     eag_prog_function_rate = 0,
-                                    pr_it_ir = 0.1,  # fix
+                                    pr_it_ir = 0.1,
                                     pr_ir_ic = 0.8,
-                                    pr_ir_cc_female = 0.01, # 0.028
-                                    pr_ir_cc_age_threshold = 0,  # increase 30
+                                    pr_ir_cc_female = 0.028,
+                                    pr_ir_cc_age_threshold = 15,
                                     pr_ir_enchb = 0.005,
                                     pr_ic_enchb = 0.01,
-                                    pr_enchb_cc_female = 0.008, # 0.005, 0.016
+                                    pr_enchb_cc_female = 0.005, # 0.005, 0.016
                                     hccr_dcc = 0.07,  # 5 times increase
                                     hccr_it = 5,
-                                    hccr_ir = 15,  # doubled
+                                    hccr_ir = 15,
                                     hccr_enchb = 10,
                                     hccr_cc = 25,
                                     cirrhosis_male_cofactor = 5,  # increase, 20
                                     cancer_prog_coefficient_female = 0.00022,  # doubled 0.0002
-                                    cancer_age_threshold = 0,
+                                    cancer_age_threshold = 10,
                                     cancer_male_cofactor = 3,
                                     mu_cc = 0.005, # decrease
                                     mu_hcc = 1.5,  # increase
@@ -1203,14 +1203,20 @@ par(mfrow=c(1,1))
 
 
 ### Analyse cluster fits ----
-load(here("output", "fits", "cluster_fit_150719.Rdata"))
+#load(here("output", "fits", "cluster_fit_150719.Rdata"))
+load(here("output", "fits", "cluster_fit_with_prev_check_170719.Rdata")) # loads out
+
+out_mat <- out
 
 # Dataframe of parameter values and error term
 out_mat_subset <- sapply(out_mat, "[[", "error_term")
 res_mat <- data.frame(t(sapply(out_mat, "[[", "parameter_set"))[,1:32], error_term = out_mat_subset)
-res_mat[res_mat$error_term == min(res_mat$error_term),]
+
+# Distribution of error
+quantile(res_mat$error_term, na.rm = TRUE)
 
 best_fit_ids <- which(res_mat$error_term < 1000)
+medium_fit_ids <- which(res_mat$error_term >= 1000 & res_mat$error_term < 2000)
 worst_fit_ids <- which(res_mat$error_term > 6000)
 
 # Packages for making plots
@@ -1218,10 +1224,10 @@ require(ggplot2)  # for calibration plots
 require(gridExtra)  # for calibration plots
 require(grid)  # for calibration plots
 
-pdf(file = here("output/fits", "cluster150719_worstfits_transmission_weights5.pdf"), paper="a4r")
+pdf(file = here("output/fits", "add_prev_check_170719_mediumfits_transmission_weights5.pdf"), paper="a4r")
 plot_list = list()
 #for (i in 1:length(out_mat)) {
-for (i in worst_fit_ids) {
+for (i in medium_fit_ids) {
   # Parameter set table and error
   p_parms <- grid.arrange(tableGrob(lapply(out_mat[[i]]$parameter_set[1:17], function(x) round(x,6)),
                                     rows = names(out_mat[[i]]$parameter_set[1:17]),
@@ -1977,6 +1983,8 @@ prev <- 0
 for (i in 1:length(out_mat)) {
   prev[i] <- sum(out_mat[[i]]$full_output$carriers[201,])/sum(out_mat[[i]]$full_output$pop[201,])
 }
+prev[best_fit_ids]
+
 median(res_mat[which(prev > 0.1 & prev < 0.25),"error_term"])
 
 plot(out_mat[[1]]$full_output$time,
