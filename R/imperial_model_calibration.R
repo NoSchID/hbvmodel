@@ -1403,7 +1403,7 @@ fit_model <- function(..., default_parameter_list, parms_to_change = list(...),
                                  mapped_liver_disease_demography = mapped_liver_disease_demography)
 
   # Calculate the distance metric/error term:
-  error_term <- calculate_distance(mapped_output_complete)
+  error_term <- calculate_distance_metrics(mapped_output_complete, metric = "median_rel_diff")
 
   # Return relevant info (given parameter set, error term and the matched datapoints and outputs)
   res <- list(parameter_set = parameters_for_fit,
@@ -1682,6 +1682,61 @@ calculate_distance <- function(mapped_output) {
   return(error_term)
 
 }
+# Calculate_distance_metrics function allows switching between metrics
+calculate_distance_metrics <- function(mapped_output, metric) {
+
+  # Remove mapped output where no data point is available (missing data_value)
+  mapped_output_for_error <- lapply(mapped_output, function(x) x[!is.na(x$data_value),])
+
+  # Extract datapoints, their assigned quality weights and the matching model prediction
+  # into separate vectors
+  datapoints <- as.numeric(unlist(lapply(mapped_output_for_error, function(x) x$data_value)))
+  quality_weights <- as.numeric(unlist(lapply(mapped_output_for_error, function(x) x$quality_weight)))
+  model_prediction <- as.numeric(unlist(lapply(mapped_output_for_error, function(x) x$model_value)))
+
+  # Calculate vector of differences between each datapoint and simulated output
+  data_model_diff <- datapoints-model_prediction  # observation - prediction
+
+  # Metric 1: Mean weighted relative difference
+  # Mean of the weighted normalised absolute differences
+  # between each datapoint and matching model output
+
+  if(metric == "sum_rel_diff") {
+
+    # Take absolute value of difference, normalise it by dividing by the datapoint
+    # multiply by the respective quality weight and sum across the vector of differences
+    # For datapoints that are 0, replace with a value of 1 upon dividing.
+    # This automatically gives a lower weight to these points though.
+    error_term <- sum(quality_weights *
+                        (abs(data_model_diff)/replace(datapoints, datapoints==0, 1)))
+    # if datapoint = 0, divide by 1. This automatically gives a lower weight to these points though.
+
+  }
+
+  else if(metric == "mean_rel_diff") {
+    error_term <- mean(quality_weights * (abs(data_model_diff)/replace(datapoints, datapoints==0, 1)))
+  }
+
+  else if(metric == "median_rel_diff") {
+    error_term <- median(quality_weights * (abs(data_model_diff)/replace(datapoints, datapoints==0, 1)))
+  }
+
+  else if(metric == "euclidian") {
+    error_term <- sqrt(sum((quality_weights * data_model_diff)^2))
+  }
+
+  else if(metric == "chisq") {
+    error_term <- sum(quality_weights *
+                        (data_model_diff^2/replace(datapoints, datapoints==0, 1)))
+  }
+
+  else if(metric == "rel_diff_vect") {
+    error_term <- quality_weights *(abs(data_model_diff)/replace(datapoints, datapoints==0, 1))
+  }
+
+  return(error_term)
+
+}
 
 # Algorithm for random sampling and simulation with those parameter sets
 run_on_cluster <- function(n_sims, data) {
@@ -1869,10 +1924,17 @@ run_on_cluster_parallel <- function(n_sims, data) {
                                                    vacc_eff = as.list(x)$vacc_eff)))
 
   # 3) Return matrix of parameter sets and matching error term
-  #out_mat_subset <- sapply(out_mat, "[[", "error_term")
-  #res_mat <- cbind(params_mat, error_term = out_mat_subset)
+  out_mat_subset <- sapply(out_mat, "[[", "error_term")
+  res_mat <- cbind(params_mat, error_term = out_mat_subset)
 
-  return(out_mat)
+  # TEST: only return full output if median rel diff is less than 0.5
+  best_fit_ids <- which(sapply(out_mat, "[[", "error_term") < 0.5)
+  res <- list(res_mat = res_mat,
+              out_mat = out_mat[best_fit_ids])
+
+  return(res)
+
+  #return(out_mat)
 
 }
 
