@@ -192,12 +192,12 @@ input_globocan_incidence_data$quality_weight[input_globocan_incidence_data$time 
 # Olubuyide mortality rate in liver disease patients (neither HBV only nor Gambia - plus this also involves progression through the stages).
 
 # Test: give weights so that TRANSMISSION datapoints = NAT HIST datapoints
-input_hbsag_dataset$quality_weight <- 1.37
-input_antihbc_dataset$quality_weight <- 1.37
-input_progression_rates$quality_weight[12:14] <- 1.37
-input_natural_history_prev_dataset$quality_weight[input_natural_history_prev_dataset$id_unique ==
-                                     "id_1_1_1986_incident_chronic_births"] <- 1.37
-input_mtct_risk_dataset$quality_weight <- 1.37
+#input_hbsag_dataset$quality_weight <- 1.37
+#input_antihbc_dataset$quality_weight <- 1.37
+#input_progression_rates$quality_weight[12:14] <- 1.37
+#input_natural_history_prev_dataset$quality_weight[input_natural_history_prev_dataset$id_unique ==
+#                                     "id_1_1_1986_incident_chronic_births"] <- 1.37
+#input_mtct_risk_dataset$quality_weight <- 1.37
 
 # Need to change name of this list
 calibration_datasets_list <- list(hbsag_prevalence = input_hbsag_dataset,
@@ -1928,11 +1928,13 @@ run_on_cluster_parallel <- function(n_sims, data) {
   res_mat <- cbind(params_mat, error_term = out_mat_subset)
 
   # TEST: only return full output if median rel diff is less than 0.5
-  best_fit_ids <- which(sapply(out_mat, "[[", "error_term") < 0.5)
-  res <- list(res_mat = res_mat,
-              out_mat = out_mat[best_fit_ids])
+  #best_fit_ids <- which(sapply(out_mat, "[[", "error_term") < 0.5)
+  #res <- list(res_mat = res_mat,
+  #            out_mat = out_mat[best_fit_ids])
 
-  return(res)
+  return(res_mat)
+
+  #return(res)
 
   #return(out_mat)
 
