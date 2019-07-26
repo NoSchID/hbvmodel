@@ -173,7 +173,45 @@ input_risk_of_chronic_carriage$quality_weight <- 1
 input_odds_ratios$quality_weight <- 1
 input_liver_disease_demography$quality_weight <- 1
 
-# Downweight specific datapoints according to expert opinion
+# WEIGHTING SCHEME
+
+# Sample size weighting strategy:
+# downweight all datapoints that have sample size (for proportions)
+# or number at risk (for mortality curves) < 10 and upweight those >= 250
+# This does not affect rates, so upweight all Shimakawa progression rates
+input_hbsag_dataset$quality_weight[input_hbsag_dataset$sample_size < 10] <- 0.5
+input_hbsag_dataset$quality_weight[input_hbsag_dataset$sample_size >= 250] <- 1.5
+
+input_antihbc_dataset$quality_weight[input_antihbc_dataset$sample_size < 10] <- 0.5
+input_antihbc_dataset$quality_weight[input_antihbc_dataset$sample_size >= 250] <- 1.5
+
+input_hbeag_dataset$quality_weight[input_hbeag_dataset$sample_size < 10] <- 0.5
+input_hbeag_dataset$quality_weight[input_hbeag_dataset$sample_size >= 250] <- 1.5
+
+input_natural_history_prev_dataset$quality_weight[input_natural_history_prev_dataset$sample_size < 10] <- 0.5
+input_natural_history_prev_dataset$quality_weight[input_natural_history_prev_dataset$sample_size >= 250] <- 1.5
+
+input_mtct_risk_dataset$quality_weight[input_mtct_risk_dataset$sample_size < 10] <- 0.5
+input_mtct_risk_dataset$quality_weight[input_mtct_risk_dataset$sample_size >= 250] <- 1.5
+
+input_risk_of_chronic_carriage$quality_weight[input_risk_of_chronic_carriage$sample_size < 10] <- 0.5
+input_risk_of_chronic_carriage$quality_weight[input_risk_of_chronic_carriage$sample_size >= 250] <- 1.5
+
+input_odds_ratios$quality_weight[input_odds_ratios$sample_size < 10] <- 0.5
+input_odds_ratios$quality_weight[input_odds_ratios$sample_size >= 250] <- 1.5
+
+input_liver_disease_demography$quality_weight[input_liver_disease_demography$sample_size < 10] <- 0.5
+input_liver_disease_demography$quality_weight[input_liver_disease_demography$sample_size >= 250] <- 1.5
+
+input_mortality_curves$quality_weight[input_mortality_curves$number_at_risk < 10] <- 0.5
+input_mortality_curves$quality_weight[input_mortality_curves$number_at_risk >= 250] <- 1.5
+
+input_globocan_mortality_curve$quality_weight[input_globocan_mortality_curve$number_at_risk < 10] <- 0.5
+input_globocan_mortality_curve$quality_weight[input_globocan_mortality_curve$number_at_risk >= 250] <- 1.5
+
+input_progression_rates$quality_weight[input_progression_rates$id_paper == 1] <- 1.5
+
+# Downweight specific datapoints according to expert opinion:
 
 # All GBD cirrhosis mortality datapoints as these are modelled estimates
 # and there is no data on cirrhosis cases/mortality
@@ -185,8 +223,6 @@ input_mortality_curves$quality_weight[input_mortality_curves$id_paper == "A3" |
 input_natural_history_prev_dataset$quality_weight[
   input_natural_history_prev_dataset$id_unique == "id_gmb2_1_1999_incident_hcc_cases_from_cc" |
     input_natural_history_prev_dataset$id_unique == "id_gmb2_1_1999_incident_hcc_cases_from_dcc"] <- 0.5
-# Optional: older GLOBOCAN HCC incidence data:
-input_globocan_incidence_data$quality_weight[input_globocan_incidence_data$time != 2018] <- 0.5
 
 # Other options:
 # Olubuyide mortality rate in liver disease patients (neither HBV only nor Gambia - plus this also involves progression through the stages).
@@ -1732,6 +1768,15 @@ calculate_distance_metrics <- function(mapped_output, metric) {
 
   else if(metric == "rel_diff_vect") {
     error_term <- quality_weights *(abs(data_model_diff)/replace(datapoints, datapoints==0, 1))
+  }
+
+  else if(metric == "median_rel_squares") {
+    error_term <- median(quality_weights *
+                           (data_model_diff^2/replace(datapoints, datapoints==0, 1)))
+  }
+
+  else if(metric == "rel_euclidian") {
+    error_term <- sqrt(sum((quality_weights*data_model_diff/replace(datapoints, datapoints==0, 1))^2))
   }
 
   return(error_term)
