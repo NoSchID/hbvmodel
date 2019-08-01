@@ -1969,20 +1969,17 @@ run_on_cluster_parallel <- function(n_sims, data) {
                                                    vacc_eff = as.list(x)$vacc_eff)))
 
   # 3) Return matrix of parameter sets and matching error term
-  #out_mat_subset <- sapply(out_mat, "[[", "error_term")
-  #res_mat <- cbind(params_mat, error_term = out_mat_subset)
-
-  res <- list(parameter_set = lapply(out_mat, "[[", "parameter_set"),
-              error_term = lapply(out_mat, "[[", "error_term"))
+  out_mat_subset <- sapply(out_mat, "[[", "error_term")
+  res_mat <- cbind(params_mat, error_term = out_mat_subset)
 
   # TEST: only return full output if median rel diff is less than 0.5
   #best_fit_ids <- which(sapply(out_mat, "[[", "error_term") < 0.5)
   #res <- list(res_mat = res_mat,
   #            out_mat = out_mat[best_fit_ids])
 
-  #return(res_mat)
+  return(res_mat)
 
-  return(res)
+  #return(res)
 
   #return(out_mat)
 
