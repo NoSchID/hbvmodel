@@ -1750,7 +1750,8 @@ calculate_distance_metrics <- function(mapped_output, metric) {
   }
 
   else if(metric == "mean_rel_diff") {
-    error_term <- mean(quality_weights * (abs(data_model_diff)/replace(datapoints, datapoints==0, 1)))
+    error_term <- sum(quality_weights * (abs(data_model_diff)/replace(datapoints, datapoints==0, 1)))/
+                   sum(quality_weights)
   }
 
   else if(metric == "median_rel_diff") {
