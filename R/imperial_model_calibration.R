@@ -1439,7 +1439,7 @@ fit_model <- function(..., default_parameter_list, parms_to_change = list(...),
                                  mapped_liver_disease_demography = mapped_liver_disease_demography)
 
   # Calculate the distance metric/error term:
-  error_term <- calculate_distance_metrics(mapped_output_complete, metric = "median_rel_diff")
+  error_term <- calculate_distance_metrics(mapped_output_complete, metric = "mean_rel_diff")
 
   # Return relevant info (given parameter set, error term and the matched datapoints and outputs)
   res <- list(parameter_set = parameters_for_fit,
@@ -1764,6 +1764,11 @@ calculate_distance_metrics <- function(mapped_output, metric) {
   else if(metric == "chisq") {
     error_term <- sum(quality_weights *
                         (data_model_diff^2/replace(datapoints, datapoints==0, 1)))
+  }
+
+  else if(metric == "test") {
+    error_term <- sum(quality_weights * (data_model_diff^2)/
+                        sum(replace(datapoints, datapoints==0, 1)))
   }
 
   else if(metric == "rel_diff_vect") {
