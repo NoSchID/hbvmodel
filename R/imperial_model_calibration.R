@@ -173,43 +173,11 @@ input_risk_of_chronic_carriage$quality_weight <- 1
 input_odds_ratios$quality_weight <- 1
 input_liver_disease_demography$quality_weight <- 1
 
+# From HBeAg dataset, need to remove points in liver disease patients! These are already in nat hist prev
+input_hbeag_dataset <- input_hbeag_dataset[input_hbeag_dataset$pop_group_clinical != "HBsAg_positive_HCC_patients_cirrhosis_unknown" &
+                      input_hbeag_dataset$pop_group_clinical != "HBsAg_positive_cirrhosis_patients_no_HCC",]
+
 # WEIGHTING SCHEME
-
-# Sample size weighting strategy:
-# downweight all datapoints that have sample size (for proportions)
-# or number at risk (for mortality curves) < 10 and upweight those >= 250
-# This does not affect rates, so upweight all Shimakawa progression rates
-input_hbsag_dataset$quality_weight[input_hbsag_dataset$sample_size < 10] <- 0.5
-input_hbsag_dataset$quality_weight[input_hbsag_dataset$sample_size >= 250] <- 1.5
-
-input_antihbc_dataset$quality_weight[input_antihbc_dataset$sample_size < 10] <- 0.5
-input_antihbc_dataset$quality_weight[input_antihbc_dataset$sample_size >= 250] <- 1.5
-
-input_hbeag_dataset$quality_weight[input_hbeag_dataset$sample_size < 10] <- 0.5
-input_hbeag_dataset$quality_weight[input_hbeag_dataset$sample_size >= 250] <- 1.5
-
-input_natural_history_prev_dataset$quality_weight[input_natural_history_prev_dataset$sample_size < 10] <- 0.5
-input_natural_history_prev_dataset$quality_weight[input_natural_history_prev_dataset$sample_size >= 250] <- 1.5
-
-input_mtct_risk_dataset$quality_weight[input_mtct_risk_dataset$sample_size < 10] <- 0.5
-input_mtct_risk_dataset$quality_weight[input_mtct_risk_dataset$sample_size >= 250] <- 1.5
-
-input_risk_of_chronic_carriage$quality_weight[input_risk_of_chronic_carriage$sample_size < 10] <- 0.5
-input_risk_of_chronic_carriage$quality_weight[input_risk_of_chronic_carriage$sample_size >= 250] <- 1.5
-
-input_odds_ratios$quality_weight[input_odds_ratios$sample_size < 10] <- 0.5
-input_odds_ratios$quality_weight[input_odds_ratios$sample_size >= 250] <- 1.5
-
-input_liver_disease_demography$quality_weight[input_liver_disease_demography$sample_size < 10] <- 0.5
-input_liver_disease_demography$quality_weight[input_liver_disease_demography$sample_size >= 250] <- 1.5
-
-input_mortality_curves$quality_weight[input_mortality_curves$number_at_risk < 10] <- 0.5
-input_mortality_curves$quality_weight[input_mortality_curves$number_at_risk >= 250] <- 1.5
-
-input_globocan_mortality_curve$quality_weight[input_globocan_mortality_curve$number_at_risk < 10] <- 0.5
-input_globocan_mortality_curve$quality_weight[input_globocan_mortality_curve$number_at_risk >= 250] <- 1.5
-
-input_progression_rates$quality_weight[input_progression_rates$id_paper == 1] <- 1.5
 
 # Downweight specific datapoints according to expert opinion:
 
@@ -224,8 +192,27 @@ input_natural_history_prev_dataset$quality_weight[
   input_natural_history_prev_dataset$id_unique == "id_gmb2_1_1999_incident_hcc_cases_from_cc" |
     input_natural_history_prev_dataset$id_unique == "id_gmb2_1_1999_incident_hcc_cases_from_dcc"] <- 0.5
 
-# Other options:
-# Olubuyide mortality rate in liver disease patients (neither HBV only nor Gambia - plus this also involves progression through the stages).
+# Sample size/quality weighting strategy: upweight the best in each dataset
+# try to represent all ages and time periods
+input_hbsag_dataset$quality_weight[input_hbsag_dataset$sample_size >= 250 |
+                                     input_hbsag_dataset$geographic_scope == "National"] <- 1.5
+input_antihbc_dataset$quality_weight[input_antihbc_dataset$sample_size >= 250 |
+                                       input_antihbc_dataset$geographic_scope == "National"] <- 1.5
+input_hbeag_dataset$quality_weight[input_hbeag_dataset$sample_size >= 50] <- 1.5
+input_natural_history_prev_dataset$quality_weight[input_natural_history_prev_dataset$sample_size >= 250] <- 1.5
+# Risk of chronic carriage: upweight those where the age at infection was known and sample size > 25
+input_risk_of_chronic_carriage$quality_weight[(input_risk_of_chronic_carriage$id_paper == "6" |
+                                 input_risk_of_chronic_carriage$id_paper == "19" |
+                                 (input_risk_of_chronic_carriage$id_paper == "GMB6" &
+                                    input_risk_of_chronic_carriage$id_proc == "c")) &
+                                 input_risk_of_chronic_carriage$sample_size > 25] <- 1.5
+# No upweights on odds ratios
+# MTCT risk: upweight Kodjoh cause they confirmed the maternal HBsAg persistence post-natally and had highest sample
+input_mtct_risk_dataset$quality_weight[input_mtct_risk_dataset$id_paper == "PLUS3"] <- 1.5
+# No upweights on liver disease demography or mortality curves
+# Progression rates: upweight those with person-years information (only Shimakawa)
+# FOI and infection incidence is setting-specific, and Olubuyide mortality rate is neither HBV only nor Gambia
+input_progression_rates$quality_weight[is.na(input_progression_rates$py_at_risk) == FALSE] <- 1.5
 
 # Test: give weights so that TRANSMISSION datapoints = NAT HIST datapoints
 #input_hbsag_dataset$quality_weight <- 1.37
@@ -1767,11 +1754,6 @@ calculate_distance_metrics <- function(mapped_output, metric) {
                         (data_model_diff^2/replace(datapoints, datapoints==0, 1)))
   }
 
-  else if(metric == "test") {
-    error_term <- sum(quality_weights * (data_model_diff^2)/
-                        sum(replace(datapoints, datapoints==0, 1)))
-  }
-
   else if(metric == "rel_diff_vect") {
     error_term <- quality_weights *(abs(data_model_diff)/replace(datapoints, datapoints==0, 1))
   }
@@ -1819,14 +1801,14 @@ run_on_cluster <- function(n_sims, data) {
                            eag_prog_function_rate = runif(n_sims,0,0.01),
                            pr_ir_enchb = rgamma(n_sims, 1.49, 97.58),
                            pr_ir_cc_female = runif(n_sims, 0.005, 0.05),
-                           pr_ir_cc_age_threshold = round(runif(n_sims, 0, 15),0),
+                           pr_ir_cc_age_threshold = sample(0:15, n_sims,replace = TRUE),
                            pr_ic_enchb = rgamma(n_sims, 3.12, 141.30),
                            sag_loss_slope = rnorm(n_sims, 0.0004106, 0.00005),
                            pr_enchb_cc_female = rgamma(n_sims, 2.3, 123.8),
                            cirrhosis_male_cofactor = rtruncnorm(n_sims, a = 1, mean = 3.5, sd = 4),
                            pr_cc_dcc = rgamma(n_sims,17.94,423.61),
                            cancer_prog_coefficient_female = runif(n_sims, 0.0001, 0.0003),
-                           cancer_age_threshold = round(runif(n_sims, 0, 15),0),
+                           cancer_age_threshold = sample(0:15, n_sims,replace = TRUE),
                            cancer_male_cofactor = rtruncnorm(n_sims, a = 1, mean = 3.5, sd = 4),
                            hccr_it = hccr_it,
                            hccr_ir = hccr_ir,
@@ -1916,14 +1898,14 @@ run_on_cluster_parallel <- function(n_sims, data) {
                            eag_prog_function_rate = runif(n_sims,0,0.01),
                            pr_ir_enchb = rgamma(n_sims, 1.49, 97.58),
                            pr_ir_cc_female = runif(n_sims, 0.005, 0.05),
-                           pr_ir_cc_age_threshold = round(runif(n_sims, 0, 15),0),
+                           pr_ir_cc_age_threshold = sample(0:15,n_sims,replace=TRUE),
                            pr_ic_enchb = rgamma(n_sims, 3.12, 141.30),
                            sag_loss_slope = rnorm(n_sims, 0.0004106, 0.00005),
                            pr_enchb_cc_female = rgamma(n_sims, 2.3, 123.8),
                            cirrhosis_male_cofactor = rtruncnorm(n_sims, a = 1, mean = 3.5, sd = 4),
                            pr_cc_dcc = rgamma(n_sims,17.94,423.61),
                            cancer_prog_coefficient_female = runif(n_sims, 0.0001, 0.0003),
-                           cancer_age_threshold = round(runif(n_sims, 0, 15),0),
+                           cancer_age_threshold = sample(0:15,n_sims,replace=TRUE),
                            cancer_male_cofactor = rtruncnorm(n_sims, a = 1, mean = 3.5, sd = 4),
                            hccr_it = hccr_it,
                            hccr_ir = hccr_ir,
