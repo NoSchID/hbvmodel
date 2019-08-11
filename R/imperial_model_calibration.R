@@ -9,7 +9,7 @@ require(truncnorm)
 ### Load main script with model, data and other functions ----
 source(here("R/imperial_model_main.R"))
 
-### Load calibration data ----
+### Load calibration data and assign weights ----
 # Define my datapoints to fit to
 calibration_data_path <- "data/calibration_data"
 input_hbsag_dataset <- read.csv(here(calibration_data_path,
@@ -157,6 +157,12 @@ input_liver_disease_demography[input_liver_disease_demography$outcome == "hcc_pr
 input_progression_rates <- calculate_95_ci(input_progression_rates, "rate")  # this doesn't add any CIs
 input_globocan_incidence_data <- calculate_95_ci(input_globocan_incidence_data, "rate")
 
+# From HBeAg dataset, need to remove points in liver disease patients! These are already in nat hist prev
+input_hbeag_dataset <- input_hbeag_dataset[input_hbeag_dataset$pop_group_clinical != "HBsAg_positive_HCC_patients_cirrhosis_unknown" &
+                      input_hbeag_dataset$pop_group_clinical != "HBsAg_positive_cirrhosis_patients_no_HCC",]
+
+# OPTION 1: WEIGHTING SCHEME BASED ON QUALITY
+
 # Add quality weights to datapoints
 # First add standard weight of 1 to all:
 input_hbsag_dataset$quality_weight <- 1
@@ -172,12 +178,6 @@ input_gbd_cirrhosis_mortality$quality_weight <- 1
 input_risk_of_chronic_carriage$quality_weight <- 1
 input_odds_ratios$quality_weight <- 1
 input_liver_disease_demography$quality_weight <- 1
-
-# From HBeAg dataset, need to remove points in liver disease patients! These are already in nat hist prev
-input_hbeag_dataset <- input_hbeag_dataset[input_hbeag_dataset$pop_group_clinical != "HBsAg_positive_HCC_patients_cirrhosis_unknown" &
-                      input_hbeag_dataset$pop_group_clinical != "HBsAg_positive_cirrhosis_patients_no_HCC",]
-
-# WEIGHTING SCHEME
 
 # Downweight specific datapoints according to expert opinion:
 
@@ -221,6 +221,45 @@ input_progression_rates$quality_weight[is.na(input_progression_rates$py_at_risk)
 #input_natural_history_prev_dataset$quality_weight[input_natural_history_prev_dataset$id_unique ==
 #                                     "id_1_1_1986_incident_chronic_births"] <- 1.37
 #input_mtct_risk_dataset$quality_weight <- 1.37
+
+# OPTION 2: WEIGHTING SCHEME BASED ON UPWEIGHTING TRANSMISSION
+
+# Add quality weights to datapoints
+# First add standard weight of 1 to all:
+input_hbsag_dataset$quality_weight <- 1
+input_antihbc_dataset$quality_weight <- 1
+input_hbeag_dataset$quality_weight <- 1
+input_natural_history_prev_dataset$quality_weight <- 1
+input_mtct_risk_dataset$quality_weight <- 1
+input_progression_rates$quality_weight <- 1
+input_mortality_curves$quality_weight <- 1
+input_globocan_incidence_data$quality_weight <- 1
+input_globocan_mortality_curve$quality_weight <- 1
+input_gbd_cirrhosis_mortality$quality_weight <- 1
+input_risk_of_chronic_carriage$quality_weight <- 1
+input_odds_ratios$quality_weight <- 1
+input_liver_disease_demography$quality_weight <- 1
+
+# Downweight specific datapoints according to expert opinion:
+
+# All GBD cirrhosis mortality datapoints as these are modelled estimates
+# and there is no data on cirrhosis cases/mortality
+input_gbd_cirrhosis_mortality$quality_weight <- 0.5
+# Survival curve data: Diarra (A3) and Shimakawa (A4) (feedback from Mark)
+input_mortality_curves$quality_weight[input_mortality_curves$id_paper == "A3" |
+                                        input_mortality_curves$id_paper == "A4"] <- 0.5
+# Cirrhosis prevalence in HCC patients from GLCS (feedback from Maud, difficult to measure)
+input_natural_history_prev_dataset$quality_weight[
+  input_natural_history_prev_dataset$id_unique == "id_gmb2_1_1999_incident_hcc_cases_from_cc" |
+    input_natural_history_prev_dataset$id_unique == "id_gmb2_1_1999_incident_hcc_cases_from_dcc"] <- 0.5
+
+# Upweight HBsAg, anti-HBc and HBeAg prevalence to 10 and upweight Shimakawa rates to 5
+input_hbsag_dataset$quality_weight <- 10
+input_antihbc_dataset$quality_weight <- 10
+input_hbeag_dataset$quality_weight <- 10
+input_progression_rates$quality_weight[input_progression_rates$id_paper == "1"] <- 5
+input_natural_history_prev_dataset$quality_weight[input_natural_history_prev_dataset$id_unique ==
+                                     "id_1_1_1986_incident_chronic_births"] <- 10
 
 # Need to change name of this list
 calibration_datasets_list <- list(hbsag_prevalence = input_hbsag_dataset,
