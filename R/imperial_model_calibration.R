@@ -261,6 +261,37 @@ input_progression_rates$quality_weight[input_progression_rates$id_paper == "1"] 
 input_natural_history_prev_dataset$quality_weight[input_natural_history_prev_dataset$id_unique ==
                                      "id_1_1_1986_incident_chronic_births"] <- 10
 
+# OPTION 3: BASIC WEIGHTING SCHEME FOR MEDIAN REL DIFF
+
+# Add quality weights to datapoints
+# First add standard weight of 1 to all:
+input_hbsag_dataset$quality_weight <- 1
+input_antihbc_dataset$quality_weight <- 1
+input_hbeag_dataset$quality_weight <- 1
+input_natural_history_prev_dataset$quality_weight <- 1
+input_mtct_risk_dataset$quality_weight <- 1
+input_progression_rates$quality_weight <- 1
+input_mortality_curves$quality_weight <- 1
+input_globocan_incidence_data$quality_weight <- 1
+input_globocan_mortality_curve$quality_weight <- 1
+input_gbd_cirrhosis_mortality$quality_weight <- 1
+input_risk_of_chronic_carriage$quality_weight <- 1
+input_odds_ratios$quality_weight <- 1
+input_liver_disease_demography$quality_weight <- 1
+
+# Downweight specific datapoints according to expert opinion:
+
+# All GBD cirrhosis mortality datapoints as these are modelled estimates
+# and there is no data on cirrhosis cases/mortality
+input_gbd_cirrhosis_mortality$quality_weight <- 0.5
+# Survival curve data: Diarra (A3) and Shimakawa (A4) (feedback from Mark)
+input_mortality_curves$quality_weight[input_mortality_curves$id_paper == "A3" |
+                                        input_mortality_curves$id_paper == "A4"] <- 0.5
+# Cirrhosis prevalence in HCC patients from GLCS (feedback from Maud, difficult to measure)
+input_natural_history_prev_dataset$quality_weight[
+  input_natural_history_prev_dataset$id_unique == "id_gmb2_1_1999_incident_hcc_cases_from_cc" |
+    input_natural_history_prev_dataset$id_unique == "id_gmb2_1_1999_incident_hcc_cases_from_dcc"] <- 0.5
+
 # Need to change name of this list
 calibration_datasets_list <- list(hbsag_prevalence = input_hbsag_dataset,
                                   antihbc_prevalence = input_antihbc_dataset,
