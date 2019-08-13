@@ -1496,13 +1496,22 @@ fit_model <- function(..., default_parameter_list, parms_to_change = list(...),
                                  mapped_liver_disease_demography = mapped_liver_disease_demography)
 
   # Calculate the distance metric/error term:
-  error_term <- calculate_distance_metrics(mapped_output_complete, metric = "mean_rel_diff")
+  #error_term <- calculate_distance_metrics(mapped_output_complete, metric = "mean_rel_diff")
 
   # Return relevant info (given parameter set, error term and the matched datapoints and outputs)
-  res <- list(parameter_set = parameters_for_fit,
-              error_term = error_term,
-              mapped_output = mapped_output_complete,
-              full_output = out)
+  #res <- list(parameter_set = parameters_for_fit,
+  #            error_term = error_term,
+  #            mapped_output = mapped_output_complete,
+  #            full_output = out)
+
+  # Remove mapped output where no data point is available (missing data_value)
+  mapped_output_for_error <- lapply(mapped_output_complete, function(x) x[!is.na(x$data_value),])
+  # Extract model prediction matching datapoints
+  model_prediction <- unlist(sapply(mapped_output_for_error, function(x) x$model_value))
+  params_matrix <- t(as.matrix(unlist(parameters_for_fit)))
+
+  res <- list(parameter_set = params_matrix,
+              model_value = model_prediction)
 
   return(res)
 
@@ -2027,19 +2036,19 @@ run_on_cluster_parallel <- function(n_sims, data) {
                                                    vacc_eff = as.list(x)$vacc_eff)))
 
   # 3) Return matrix of parameter sets and matching error term
-  out_mat_subset <- sapply(out_mat, "[[", "error_term")
-  res_mat <- cbind(params_mat, error_term = out_mat_subset)
+  #out_mat_subset <- sapply(out_mat, "[[", "error_term")
+  #res_mat <- cbind(params_mat, error_term = out_mat_subset)
 
   # TEST: only return full output if median rel diff is less than 0.5
   #best_fit_ids <- which(sapply(out_mat, "[[", "error_term") < 0.5)
   #res <- list(res_mat = res_mat,
   #            out_mat = out_mat[best_fit_ids])
 
-  return(res_mat)
+  #return(res_mat)
 
   #return(res)
 
-  #return(out_mat)
+  return(out_mat)
 
 }
 
