@@ -36,8 +36,8 @@ sim <- run_model(sim_duration = runtime, default_parameter_list = parameter_list
                                         cancer_age_threshold = 10,
                                         cancer_male_cofactor = 5,
                                         mu_cc = 0.005,
-                                        mu_hcc = 1.5,
-                                        mu_dcc = 0.8),
+                                        mu_hcc = 0.8,
+                                        mu_dcc = 1.5),
                  scenario = "vacc")
 out <- code_model_output(sim)
 toc()
