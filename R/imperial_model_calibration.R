@@ -6,6 +6,7 @@
 ### Load packages ----
 require(here)
 require(truncnorm)
+require(binom)  # for calculation of confidence intervals
 ### Load main script with model, data and other functions ----
 source(here("R/imperial_model_main.R"))
 
@@ -85,26 +86,22 @@ input_liver_disease_demography <- read.csv(here(calibration_data_path,
 # Calculate 95% CIs for proportions using standard formulas based on normal approximation
 # For data points that don't have 95% CIs and (for proportions) where
 # prop*sample size and sample size-prop*sample size > 10
+# Calculate Wilson confidence intervals for proportions where sample size is smaller
 # For rate datasets, exclude datasets where rate = 0
 # Function:
 calculate_95_ci <- function(input_dataset, data_type) {
 
   if(data_type == "proportion") {
 
-    input_dataset[is.na(input_dataset$ci_lower) &
-                    (input_dataset$data_value*input_dataset$sample_size) >= 10 &
-                    (input_dataset$sample_size-
-                       input_dataset$data_value*input_dataset$sample_size) >= 10,] <-
+    input_dataset[is.na(input_dataset$ci_lower),] <-
       filter(input_dataset,
-             is.na(ci_lower) &
-               data_value*sample_size >= 10 &
-               sample_size-data_value*sample_size >= 10) %>%
+             is.na(ci_lower)) %>%
       mutate(ci_lower = replace(ci_lower,
-                                values = data_value -
-                                  1.96*sqrt(data_value*(1-data_value)/sample_size))) %>%
+                                values = as.numeric(unlist(binom.confint(data_value*sample_size, sample_size,
+                                                           methods = "wilson")["lower"])))) %>%
       mutate(ci_upper = replace(ci_upper,
-                                values = data_value +
-                                  1.96*sqrt(data_value*(1-data_value)/sample_size)))
+                                values = as.numeric(unlist(binom.confint(data_value*sample_size, sample_size,
+                                                       methods = "wilson")["upper"]))))
 
     return(input_dataset)
 
