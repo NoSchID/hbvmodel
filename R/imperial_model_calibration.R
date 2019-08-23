@@ -2701,6 +2701,37 @@ fit_model_full_output <- function(..., default_parameter_list, parms_to_change =
 
 }
 
+simulate_validation_outcomes <- function(..., default_parameter_list, parms_to_change = list(...),
+                                          scenario = "vacc") {
+
+  # Simulation parameters for fitting procedure:
+  # Simulation starts in 1880, runs for 140 years
+  # This is because data starts in 1980, so the population can reach equilibrium with
+  # given parameter set
+  parameters_for_fit <- generate_parameters(default_parameter_list = default_parameter_list,
+                                            parms_to_change = c(parms_to_change,
+                                                                sim_starttime = 1880))
+
+  sim <- run_model(sim_duration = 140, init_pop_vector = init_pop_sim,
+                   default_parameter_list = parameters_for_fit,
+                   parms_to_change = NULL,
+                   scenario = "vacc")
+  out <- code_model_output_summary(sim)
+
+
+  # Overall HCC incidence in 2018:
+  total_hcc_incid_2018_f <- (sum(select(sim, starts_with("cum_incident_hccf"))[which(sim$time == 2019),])-
+                               sum(select(sim, starts_with("cum_incident_hccf"))[which(sim$time == 2018),]))/
+    sum(out[["pop_female"]][which(sim$time == 2018.5),])
+  total_hcc_incid_2018_m <- (sum(select(sim, starts_with("cum_incident_hccm"))[which(sim$time == 2019),])-
+                               sum(select(sim, starts_with("cum_incident_hccm"))[which(sim$time == 2018),]))/
+    sum(out[["pop_male"]][which(sim$time == 2018.5),])
+
+  return(c(total_hcc_incid_2018_f = total_hcc_incid_2018_f,
+           total_hcc_incid_2018_m = total_hcc_incid_2018_m))
+
+}
+
 ## Sub-functions called within main calibration function:
 
 # Function to simulate shadow models within main calibration function
