@@ -2718,17 +2718,73 @@ simulate_validation_outcomes <- function(..., default_parameter_list, parms_to_c
                    scenario = "vacc")
   out <- code_model_output_summary(sim)
 
-
   # Overall HCC incidence in 2018:
-  total_hcc_incid_2018_f <- (sum(select(sim, starts_with("cum_incident_hccf"))[which(sim$time == 2019),])-
-                               sum(select(sim, starts_with("cum_incident_hccf"))[which(sim$time == 2018),]))/
-    sum(out[["pop_female"]][which(sim$time == 2018.5),])
-  total_hcc_incid_2018_m <- (sum(select(sim, starts_with("cum_incident_hccm"))[which(sim$time == 2019),])-
-                               sum(select(sim, starts_with("cum_incident_hccm"))[which(sim$time == 2018),]))/
-    sum(out[["pop_male"]][which(sim$time == 2018.5),])
+  total_hcc_cases_2018_f <- (sum(select(sim, starts_with("cum_incident_hccf"))[which(sim$time == 2019),])-
+                               sum(select(sim, starts_with("cum_incident_hccf"))[which(sim$time == 2018),]))
 
-  return(c(total_hcc_incid_2018_f = total_hcc_incid_2018_f,
-           total_hcc_incid_2018_m = total_hcc_incid_2018_m))
+  pop_female_2018point5 <- sum(out[["pop_female"]][which(sim$time == 2018.5),])
+
+  total_hcc_cases_2018_m <- (sum(select(sim, starts_with("cum_incident_hccm"))[which(sim$time == 2019),])-
+                               sum(select(sim, starts_with("cum_incident_hccm"))[which(sim$time == 2018),]))
+
+  pop_male_2018point5 <-sum(out[["pop_male"]][which(sim$time == 2018.5),])
+
+  # Overall HCC mortality in 2018:
+  total_hcc_deaths_2018_f <- (sum(select(sim, starts_with("cum_hcc_deathsf"))[which(sim$time == 2019),])-
+                               sum(select(sim, starts_with("cum_hcc_deathsf"))[which(sim$time == 2018),]))
+  total_hcc_deaths_2018_m <- (sum(select(sim, starts_with("cum_hcc_deathsm"))[which(sim$time == 2019),])-
+                               sum(select(sim, starts_with("cum_hcc_deathsm"))[which(sim$time == 2018),]))
+
+  # Overall cirrhosis mortality in 2017:
+  incident_cirrhosis_deathsf <- sim[,grepl("^cum_hbv_deathsf.",names(sim))]-sim[,grepl("^cum_hcc_deathsf.",names(sim))]
+  incident_cirrhosis_deathsm <- sim[,grepl("^cum_hbv_deathsm.",names(sim))]-sim[,grepl("^cum_hcc_deathsm.",names(sim))]
+
+  total_cirrhosis_deaths_2017_f <- (sum(incident_cirrhosis_deathsf[which(sim$time == 2018),])-
+                                      sum(incident_cirrhosis_deathsf[which(sim$time == 2017),]))
+  total_cirrhosis_deaths_2017_m <- (sum(incident_cirrhosis_deathsm[which(sim$time == 2018),])-
+                                      sum(incident_cirrhosis_deathsm[which(sim$time == 2017),]))
+
+  pop_female_2017point5 <- sum(out[["pop_female"]][which(sim$time == 2017.5),])
+  pop_male_2017point5 <- sum(out[["pop_male"]][which(sim$time == 2017.5),])
+
+  # Overall cirrhosis mortality in 2018:
+  total_cirrhosis_deaths_2018_f <- (sum(incident_cirrhosis_deathsf[which(sim$time == 2019),])-
+                                      sum(incident_cirrhosis_deathsf[which(sim$time == 2018),]))
+  total_cirrhosis_deaths_2018_m <- (sum(incident_cirrhosis_deathsm[which(sim$time == 2019),])-
+                                      sum(incident_cirrhosis_deathsm[which(sim$time == 2018),]))
+
+  # Number eligible for treatment in 2019 by age
+  number_eligible_2019_f <- sim[,grepl("^IRf.",names(sim))][which(sim$time == 2019),]+
+    sim[,grepl("^ENCHBf.",names(sim))][which(sim$time == 2019),]+
+    sim[,grepl("^CCf.",names(sim))][which(sim$time == 2019),]+
+    sim[,grepl("^DCCf.",names(sim))][which(sim$time == 2019),]
+  number_eligible_2019_m <- sim[,grepl("^IRm.",names(sim))][which(sim$time == 2019),]+
+    sim[,grepl("^ENCHBm.",names(sim))][which(sim$time == 2019),]+
+    sim[,grepl("^CCm.",names(sim))][which(sim$time == 2019),]+
+    sim[,grepl("^DCCm.",names(sim))][which(sim$time == 2019),]
+
+  # Number of carriers in 2019 by age
+  number_carriers_2019_f <- out$carriers_female[which(out$time == 2019),]
+  number_carriers_2019_m <- out$carriers_male[which(out$time == 2019),]
+
+  res <- list(total_hcc_cases_2018_f = total_hcc_cases_2018_f,
+              total_hcc_cases_2018_m = total_hcc_cases_2018_m,
+              total_hcc_deaths_2018_f = total_hcc_deaths_2018_f,
+              total_hcc_deaths_2018_m = total_hcc_deaths_2018_m,
+              total_cirrhosis_deaths_2018_f = total_cirrhosis_deaths_2018_f,
+              total_cirrhosis_deaths_2018_m = total_cirrhosis_deaths_2018_m,
+              total_cirrhosis_deaths_2017_f = total_cirrhosis_deaths_2017_f,
+              total_cirrhosis_deaths_2017_m = total_cirrhosis_deaths_2017_m,
+              pop_female_2018point5 = pop_female_2018point5,
+              pop_male_2018point5 = pop_male_2018point5,
+              pop_female_2017point5 = pop_female_2017point5,
+              pop_male_2017point5 = pop_male_2017point5,
+              number_eligible_2019_f =number_eligible_2019_f,
+              number_eligible_2019_m =number_eligible_2019_m,
+              number_carriers_2019_f = number_carriers_2019_f,
+              number_carriers_2019_m = number_carriers_2019_m)
+
+  return(res)
 
 }
 
