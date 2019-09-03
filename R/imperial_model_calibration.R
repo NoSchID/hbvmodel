@@ -2754,14 +2754,32 @@ simulate_validation_outcomes <- function(..., default_parameter_list, parms_to_c
                                       sum(incident_cirrhosis_deathsm[which(sim$time == 2018),]))
 
   # Number eligible for treatment in 2019 by age
-  number_eligible_2019_f <- sim[,grepl("^IRf.",names(sim))][which(sim$time == 2019),]+
-    sim[,grepl("^ENCHBf.",names(sim))][which(sim$time == 2019),]+
-    sim[,grepl("^CCf.",names(sim))][which(sim$time == 2019),]+
-    sim[,grepl("^DCCf.",names(sim))][which(sim$time == 2019),]
-  number_eligible_2019_m <- sim[,grepl("^IRm.",names(sim))][which(sim$time == 2019),]+
-    sim[,grepl("^ENCHBm.",names(sim))][which(sim$time == 2019),]+
-    sim[,grepl("^CCm.",names(sim))][which(sim$time == 2019),]+
-    sim[,grepl("^DCCm.",names(sim))][which(sim$time == 2019),]
+  #number_eligible_2019_f <- sim[,grepl("^IRf.",names(sim))][which(sim$time == 2019),]+
+  #  sim[,grepl("^ENCHBf.",names(sim))][which(sim$time == 2019),]+
+  #  sim[,grepl("^CCf.",names(sim))][which(sim$time == 2019),]+
+  #  sim[,grepl("^DCCf.",names(sim))][which(sim$time == 2019),]
+  #number_eligible_2019_m <- sim[,grepl("^IRm.",names(sim))][which(sim$time == 2019),]+
+  #  sim[,grepl("^ENCHBm.",names(sim))][which(sim$time == 2019),]+
+  #  sim[,grepl("^CCm.",names(sim))][which(sim$time == 2019),]+
+  #  sim[,grepl("^DCCm.",names(sim))][which(sim$time == 2019),]
+
+  number_chb_2019_f <- sim[,grepl("^IRf.",names(sim))][which(sim$time == 2019),]+
+    sim[,grepl("^ENCHBf.",names(sim))][which(sim$time == 2019),]
+
+  number_chb_2019_m <- sim[,grepl("^IRm.",names(sim))][which(sim$time == 2019),]+
+    sim[,grepl("^ENCHBm.",names(sim))][which(sim$time == 2019),]
+
+  number_cc_2019_f <- sim[,grepl("^CCf.",names(sim))][which(sim$time == 2019),]
+
+  number_dcc_2019_f <- sim[,grepl("^DCCf.",names(sim))][which(sim$time == 2019),]
+
+  number_cc_2019_m <- sim[,grepl("^CCm.",names(sim))][which(sim$time == 2019),]
+
+  number_dcc_2019_m <- sim[,grepl("^DCCm.",names(sim))][which(sim$time == 2019),]
+
+  number_it_2019_f <- sim[,grepl("^ITf.",names(sim))][which(sim$time == 2019),]
+
+  number_it_2019_m <- sim[,grepl("^ITm.",names(sim))][which(sim$time == 2019),]
 
   # Number of carriers in 2019 by age
   number_carriers_2019_f <- out$carriers_female[which(out$time == 2019),]
@@ -2779,8 +2797,14 @@ simulate_validation_outcomes <- function(..., default_parameter_list, parms_to_c
               pop_male_2018point5 = pop_male_2018point5,
               pop_female_2017point5 = pop_female_2017point5,
               pop_male_2017point5 = pop_male_2017point5,
-              number_eligible_2019_f =number_eligible_2019_f,
-              number_eligible_2019_m =number_eligible_2019_m,
+              number_chb_2019_f = number_chb_2019_f,
+              number_chb_2019_m = number_chb_2019_m,
+              number_cc_2019_f = number_cc_2019_f,
+              number_cc_2019_m = number_cc_2019_m,
+              number_dcc_2019_f = number_dcc_2019_f,
+              number_dcc_2019_m = number_dcc_2019_m,
+              number_it_2019_f = number_it_2019_f,
+              number_it_2019_m = number_it_2019_m,
               number_carriers_2019_f = number_carriers_2019_f,
               number_carriers_2019_m = number_carriers_2019_m)
 
