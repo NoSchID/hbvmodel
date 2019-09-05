@@ -66,6 +66,19 @@ nat_hist_prev_out_mat$ci_lower <- c(out_mat$nat_hist_prevalence$ci_lower,
 nat_hist_prev_out_mat$ci_upper<- c(out_mat$nat_hist_prevalence$ci_upper,
                                    ci_upper_model_values[grepl("^nat_hist_prevalence.*",names(ci_upper_model_values))])
 
+# Mortality curves
+mort_curves_out_mat <- select(out_mat$mortality_curves, -ci_lower, -ci_upper)
+# Turn into long format then remove the mock value column
+mort_curves_out_mat  <- gather(mort_curves_out_mat, key = "type", value = "value",
+                                 c("data_value", "model_value"))
+mort_curves_out_mat$value <- NULL
+mort_curves_out_mat$median <- c(out_mat$mortality_curves$data_value,
+                                  median_model_values[grepl("^mortality_curves.*",names(median_model_values))])
+mort_curves_out_mat$ci_lower <- c(out_mat$mortality_curves$ci_lower,
+                                ci_lower_model_values[grepl("^mortality_curves.*",names(ci_lower_model_values))])
+mort_curves_out_mat$ci_upper <- c(out_mat$mortality_curves$ci_upper,
+                                  ci_upper_model_values[grepl("^mortality_curves.*",names(ci_upper_model_values))])
+
 
 # Plots
 # HBsAg prevalence by time, age and sex ----
@@ -88,14 +101,6 @@ hbsag_studies_double$label <- c("Thursz 1995, Bellamy 1998", "Whittle 1991, Whit
 hbsag_studies_unique <- hbsag_studies[!(hbsag_studies$time %in% years_with_several_studies),]
 hbsag_studies_unique$label <- paste(hbsag_studies_unique$paper_first_author, hbsag_studies_unique$paper_year)
 hbsag_study_labels <- rbind(hbsag_studies_unique, hbsag_studies_double)
-
-mapped_output_for_error$seromarker_prevalence$quality_weight[
-  (mapped_output_for_error$seromarker_prevalence$outcome == "HBsAg_prevalence"|
-     mapped_output_for_error$seromarker_prevalence$outcome == "Anti_HBc_prevalence") &
-    (mapped_output_for_error$seromarker_prevalence$sample_size >= 250|
-       mapped_output_for_error$seromarker_prevalence$geographic_scope == "National")] <- 2
-
-
 
 # Make plot
 tiff(here("output", "fits", "lsr_plots", "hbsag_plot2.tiff"), height = 15, width =10, units = 'in', res=300)
@@ -385,7 +390,10 @@ gmb1_facet_labels <- c("Male blood donors", "Community screening pop.")
 names(gmb1_facet_labels) <- c("Male", "Mixed")
 
 # Remove data 95% CI for plot
+nat_hist_prev_out_mat$ci_lower[nat_hist_prev_out_mat$type == "data_value"] <- NA
+nat_hist_prev_out_mat$ci_upper[nat_hist_prev_out_mat$type == "data_value"] <- NA
 
+tiff(here("output", "fits", "lsr_plots", "infection_phase_prolifica_plot.tiff"), height = 9, width = 12, units = 'in', res=300)
 ggplot(data = subset(nat_hist_prev_out_mat,
                      id_paper == "GMB1" &
                        model_num != "cc_dcc" & model_num != "hcc"),
@@ -395,8 +403,8 @@ ggplot(data = subset(nat_hist_prev_out_mat,
                     group = type, colour = type), position = position_dodge(width=0.9), width = 0.3,
                 show.legend = FALSE)+
   facet_grid(~sex, scales = "free", labeller = labeller(sex = gmb1_facet_labels)) +
-  scale_x_discrete(breaks=c("ic", "ir_enchb", "it_ic"),
-                   labels=c("IC", "IR or\nENCHB", "IT or IC")) +
+  scale_x_discrete(breaks=c("ic", "ir_enchb"),
+                   labels=c("HBeAg-negative\ninfection", "Chronic\nhepatitis B")) +
   scale_fill_manual("", values = c("model_value" = "gray35", "data_value" = "steelblue"),
                     labels = c("model_value" = "Median model projection\nwith 5th and 95th percentile\nerror bars",
                                "data_value" = "Observed proportion")) +
@@ -412,11 +420,14 @@ ggplot(data = subset(nat_hist_prev_out_mat,
         legend.text = element_text(size = 15),
         strip.text = element_text(size = 15))+
   ylim(0,1)
+dev.off()
 
 # 1-1 plots: infection phase in chronic carriers without liver disease
 study_1_facet_labels <- c("1986: median age 11 years", "2013: median age 38 years")
 names(study_1_facet_labels) <- c(1986, 2013)
+study_1_x_labels <- c("HBeAg+\ninfection", "HBeAg+\nCHB", "HBeAg-\ninfection", "HBeAg-\nCHB")
 
+tiff(here("output", "fits", "lsr_plots", "infection_phase_shimakawa_plot.tiff"), height = 9, width = 12, units = 'in', res=300)
 ggplot(data = subset(nat_hist_prev_out_mat,
                      grepl(".*it,_ir,_ic_and_enchb$", nat_hist_prev_out_mat$outcome)),
                   aes(x = toupper(model_num))) +
@@ -429,6 +440,8 @@ ggplot(data = subset(nat_hist_prev_out_mat,
                     labels = c("model_value" = "Median model projection\nwith 5th and 95th percentile\nerror bars",
                                "data_value" = "Observed proportion")) +
   scale_colour_manual("", values = c("model_value" = "black", "data_value" = "white")) +
+  scale_x_discrete(labels = c("IT" = "HBeAg+\ninfection", "IR" = "HBeAg+\nCHB",
+                              "IC" = "HBeAg-\ninfection", "ENCHB" = "HBeAg-\nCHB")) +
   labs(title = "Infection phase in chronic carriers\nwithout liver disease",
        subtitle = "Keneba Manduar chronic carrier cohort (Shimakawa 2016)",
        y = "Prevalence (proportion)", x = "") +
@@ -436,7 +449,8 @@ ggplot(data = subset(nat_hist_prev_out_mat,
   theme(plot.title = element_text(hjust = 0.5, size = 11),
         plot.subtitle = element_text(hjust = 0.5, size = 8),
         axis.title = element_text(size = 15),
-        axis.text = element_text(size = 15),
+        axis.text.y = element_text(size = 15),
+        axis.text.x = element_text(size = 10),
         legend.text = element_text(size = 15),
-        strip.text = element_text(size = 15)) +
-  ylim(0,1)
+        strip.text = element_text(size = 15))
+dev.off()
