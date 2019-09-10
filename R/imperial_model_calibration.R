@@ -2781,6 +2781,22 @@ simulate_validation_outcomes <- function(..., default_parameter_list, parms_to_c
 
   number_it_2019_m <- sim[,grepl("^ITm.",names(sim))][which(sim$time == 2019),]
 
+  number_hcc_2019_f <- sim[,grepl("^HCCf.",names(sim))][which(sim$time == 2019),]
+
+  number_hcc_2019_m <- sim[,grepl("^HCCm.",names(sim))][which(sim$time == 2019),]
+
+  number_ic_2019_f <- sim[,grepl("^ICf.",names(sim))][which(sim$time == 2019),]
+
+  number_ic_2019_m <- sim[,grepl("^ICm.",names(sim))][which(sim$time == 2019),]
+
+  number_ir_2019_f <- sim[,grepl("^IRf.",names(sim))][which(sim$time == 2019),]
+
+  number_ir_2019_m <- sim[,grepl("^IRm.",names(sim))][which(sim$time == 2019),]
+
+  number_enchb_2019_f <- sim[,grepl("^ENCHBf.",names(sim))][which(sim$time == 2019),]
+
+  number_enchb_2019_m <- sim[,grepl("^ENCHBm.",names(sim))][which(sim$time == 2019),]
+
   # Number of carriers in 2019 by age
   number_carriers_2019_f <- out$carriers_female[which(out$time == 2019),]
   number_carriers_2019_m <- out$carriers_male[which(out$time == 2019),]
@@ -2806,7 +2822,15 @@ simulate_validation_outcomes <- function(..., default_parameter_list, parms_to_c
               number_it_2019_f = number_it_2019_f,
               number_it_2019_m = number_it_2019_m,
               number_carriers_2019_f = number_carriers_2019_f,
-              number_carriers_2019_m = number_carriers_2019_m)
+              number_carriers_2019_m = number_carriers_2019_m,
+              number_hcc_2019_f = number_hcc_2019_f,
+              number_hcc_2019_m = number_hcc_2019_m,
+              number_ic_2019_f = number_ic_2019_f,
+              number_ic_2019_m = number_ic_2019_f,
+              number_ir_2019_f = number_ir_2019_f,
+              number_ir_2019_m = number_ir_2019_m,
+              number_enchb_2019_f = number_enchb_2019_f,
+              number_enchb_2019_m = number_enchb_2019_m)
 
   return(res)
 
@@ -3173,25 +3197,25 @@ run_on_cluster <- function(n_sims, data) {
                            pr_it_ir = rgamma(n_sims,3.63,26.27),
                            pr_ir_ic = runif(n_sims, 0,1),
                            eag_prog_function_rate = runif(n_sims,0,0.01),
-                           pr_ir_enchb = rgamma(n_sims, 1.49, 97.58),
+                           pr_ir_enchb = rgamma(n_sims, 1.22, 44.20),
                            pr_ir_cc_female = runif(n_sims, 0.005, 0.05),
-                           pr_ir_cc_age_threshold = sample(0:15, n_sims,replace = TRUE),
-                           pr_ic_enchb = rgamma(n_sims, 3.12, 141.30),
+                           pr_ir_cc_age_threshold = sample(0:15,n_sims,replace=TRUE),
+                           pr_ic_enchb = rgamma(n_sims, 3.49, 83.05),
                            sag_loss_slope = rnorm(n_sims, 0.0004106, 0.00005),
-                           pr_enchb_cc_female = rgamma(n_sims, 2.3, 123.8),
+                           pr_enchb_cc_female = rgamma(n_sims, 1.23, 22.33),
                            cirrhosis_male_cofactor = rtruncnorm(n_sims, a = 1, mean = 3.5, sd = 4),
                            pr_cc_dcc = rgamma(n_sims,17.94,423.61),
                            cancer_prog_coefficient_female = runif(n_sims, 0.0001, 0.0003),
-                           cancer_age_threshold = sample(0:15, n_sims,replace = TRUE),
+                           cancer_age_threshold = sample(0:15,n_sims,replace=TRUE),
                            cancer_male_cofactor = rtruncnorm(n_sims, a = 1, mean = 3.5, sd = 4),
                            hccr_it = hccr_it,
                            hccr_ir = hccr_ir,
                            hccr_enchb = hccr_enchb,
                            hccr_cc = hccr_cc,
-                           hccr_dcc = rgamma(n_sims, 8.09, 101.33),
+                           hccr_dcc = rgamma(n_sims, 3.08, 29.76),
                            mu_cc = rgamma(n_sims, 4.25, 124.91),
-                           mu_dcc = rgamma(n_sims, 1.49, 0.98),
-                           mu_hcc = rgamma(n_sims, 1.49, 0.98),
+                           mu_dcc = rgamma(n_sims, 2.18, 1.18),
+                           mu_hcc = rgamma(n_sims, 2.18, 1.18),
                            vacc_eff = rbeta(n_sims, 7.07, 0.37))
 
   # 2) Run n_sims simulations with these parameter sets and
@@ -3244,7 +3268,7 @@ run_on_cluster <- function(n_sims, data) {
 }
 
 # This function uses my first choice of priors
-run_on_cluster_parallel <- function(n_sims, data) {
+run_on_cluster_parallel_old_priors <- function(n_sims, data) {
 
   # 1) Draw parameter sets randomly from prior distribution
   n_sims <- n_sims  # number of simulations/parameter sets
@@ -3349,7 +3373,7 @@ run_on_cluster_parallel <- function(n_sims, data) {
 }
 
 # This function uses my updated choice of priors - less informative and more in line with African data
-run_on_cluster_parallel_new_priors <- function(n_sims, data) {
+run_on_cluster_parallel <- function(n_sims, data) {
 
   # 1) Draw parameter sets randomly from prior distribution
   n_sims <- n_sims  # number of simulations/parameter sets
