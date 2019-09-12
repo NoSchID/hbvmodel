@@ -20,12 +20,12 @@ calculate_sos <- function(mapped_output) {
 
 # Test fit for 1 parameter:
 #least_squares_function <- function(pr_ic_enchb) {
-  temp <- fit_model_full_output(default_parameter_list = parameter_list,
-                                data_to_fit = calibration_datasets_list,
-                                parms_to_change = list(pr_ic_enchb = pr_ic_enchb))
-  sse <- calculate_sos(temp$mapped_output)
-  return(sse)
-}
+#  temp <- fit_model_full_output(default_parameter_list = parameter_list,
+#                                data_to_fit = calibration_datasets_list,
+#                                parms_to_change = list(pr_ic_enchb = pr_ic_enchb))
+#  sse <- calculate_sos(temp$mapped_output)
+#  return(sse)
+#}
 #inits_test <- c(pr_ic_enchb = 0.05)
 #optim(fn=least_squares_function, par = inits_test, method = "Brent", lower = 0, upper = 1)
 
