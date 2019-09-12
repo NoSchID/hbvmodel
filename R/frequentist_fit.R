@@ -1,4 +1,4 @@
-# Try to fit the model deterministically using least squares
+# Fit the model in a frequentist framework using least squares
 
 library(here)
 source(here("R", "imperial_model_calibration.R"))
@@ -18,27 +18,18 @@ calculate_sos <- function(mapped_output) {
   return(sos)
 }
 
-test <- fit_model_full_output(default_parameter_list = parameter_list,
-                      data_to_fit = calibration_datasets_list)
-
-# function to optimise needs to run the model and calculate sum of squares
-# return: sum of squares
-# arguments: parms to estimate
-
-least_squares_function <- function(pr_ic_enchb) {
+# Test fit for 1 parameter:
+#least_squares_function <- function(pr_ic_enchb) {
   temp <- fit_model_full_output(default_parameter_list = parameter_list,
                                 data_to_fit = calibration_datasets_list,
                                 parms_to_change = list(pr_ic_enchb = pr_ic_enchb))
   sse <- calculate_sos(temp$mapped_output)
   return(sse)
 }
+#inits_test <- c(pr_ic_enchb = 0.05)
+#optim(fn=least_squares_function, par = inits_test, method = "Brent", lower = 0, upper = 1)
 
-
-inits_test <- c(pr_ic_enchb = 0.05)
-optim(fn=least_squares_function, par = inits_test, method = "Brent", lower = 0, upper = 1)
-
-
-## Vary all parms
+## Vary all parameters
 
 # Define prior ranges
 range <- data.frame(b1 = c(0.03,0.7),
@@ -165,12 +156,6 @@ least_squares_function_all <- function(all_parms) {
   }
 }
 
-inits <- unlist(parameter_list[1:32])
-inits["alpha"] <- 9
-inits["pr_ir_cc_age_threshold"] <- 10
-optim(fn=least_squares_function_all, par = inits)
-
-
 # Starting values
 starting_values1 <- unlist(parameter_list[1:32])  # default parameter list: done
 starting_values1["alpha"] <- 9
@@ -191,6 +176,23 @@ starting_values3 <- c(b1 = 0.6, b2 = 0.01, b3 = 0.1, mtct_prob_s = 0.2, mtct_pro
                       pr_cc_dcc = 0.09, cancer_prog_coefficient_female = 0.0003, cancer_age_threshold = 10,
                       cancer_male_cofactor = 12, hccr_it = 2, hccr_ir = 8, hccr_enchb = 4, hccr_cc = 15,
                       hccr_dcc = 0.5, mu_cc = 0, mu_dcc = 0.05, mu_hcc = 0.05, vacc_eff = 0.6) # manual variation
-#starting_values4 <- pick random number between min and max here
+starting_values4 <- c(b1 = 0.6935, b2 = 0.4969, b3 = 0.0287, mtct_prob_s = 0.1361, mtct_prob_e =0.4,
+                      alpha = 2.8248, p_chronic_in_mtct = 0.9320, p_chronic_function_r =  0.7110,
+                      p_chronic_function_s = 0.5471, pr_it_ir = 0.4279, pr_ir_ic = 0.0160, eag_prog_function_rate = 0.0048,
+                      pr_ir_enchb = 0.1216, pr_ir_cc_female = 0.0059, pr_ir_cc_age_threshold = 11, pr_ic_enchb = 0.0251,
+                      sag_loss_slope = 0.0006, pr_enchb_cc_female = 0.0301, cirrhosis_male_cofactor = 10,
+                      pr_cc_dcc = 0.0574, cancer_prog_coefficient_female = 0.0002, cancer_age_threshold = 1,
+                      cancer_male_cofactor = 13.7530, hccr_it = 1.9665, hccr_ir = 5.0727, hccr_enchb = 3.0000, hccr_cc = 53.6816,
+                      hccr_dcc = 0.5379, mu_cc = 0.01, mu_dcc = 2.9266, mu_hcc = 2.0062, vacc_eff =  0.6943)
+# picked random number between min and max here
+
 # Also need to try different distance functions!
 
+# Optimise with different starting values: using least squares
+#res <- optim(fn=least_squares_function_all, par = starting_values1)
+res2 <- optim(fn=least_squares_function_all, par = starting_values2)
+
+run_frequentist_fit_cluster <- function(fit_function, starting_parms) {
+  res <- optim(fn=fit_function, par = starting_parms)
+  return(res)
+}
