@@ -190,7 +190,7 @@ starting_values4 <- c(b1 = 0.6935, b2 = 0.4969, b3 = 0.0287, mtct_prob_s = 0.136
 
 # Optimise with different starting values: using least squares
 #res <- optim(fn=least_squares_function_all, par = starting_values1)
-res2 <- optim(fn=least_squares_function_all, par = starting_values2)
+#res2 <- optim(fn=least_squares_function_all, par = starting_values2)
 
 run_frequentist_fit_cluster <- function(fit_function, starting_parms) {
   res <- optim(fn=fit_function, par = starting_parms)
