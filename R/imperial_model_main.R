@@ -581,6 +581,9 @@ generate_parameters <- function(..., default_parameter_list, parms_to_change = l
 
   # Final parameter set to use in model run: updated default parameter list
   final_parms <- modifyList(defaults, parms_to_change)
+  # Turn age thresholds into integers:
+  final_parms$cancer_age_threshold <- round(final_parms$cancer_age_threshold,0)
+  final_parms$pr_ir_cc_age_threshold <- round(final_parms$pr_ir_cc_age_threshold,0)
 
   return(final_parms)
 
