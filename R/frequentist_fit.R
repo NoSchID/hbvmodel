@@ -12,8 +12,9 @@ calculate_sos <- function(mapped_output) {
 
   # Calculate vector of differences between each datapoint and simulated output
   data_model_diff <- datapoints-model_prediction  # observation - prediction
+  data_model_mean <- (datapoints+model_prediction)/2
 
-  sos <- sum((data_model_diff/pmax(datapoints, model_prediction))^2)
+  sos <- sum((data_model_diff/data_model_mean)^2)
 
   return(sos)
 }
