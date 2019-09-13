@@ -13,10 +13,11 @@ calculate_sos <- function(mapped_output) {
   # Calculate vector of differences between each datapoint and simulated output
   data_model_diff <- datapoints-model_prediction  # observation - prediction
 
-  sos <- sum((data_model_diff/replace(datapoints, datapoints==0, 1))^2)
+  sos <- sum((data_model_diff/pmax(datapoints, model_prediction))^2)
 
   return(sos)
 }
+
 
 # Test fit for 1 parameter:
 #least_squares_function <- function(pr_ic_enchb) {
