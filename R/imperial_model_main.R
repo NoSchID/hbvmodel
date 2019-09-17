@@ -138,21 +138,21 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
     if (migration_on == 0) {
       migration_rate <- matrix(rep(0, times = 2*n_agecat), ncol = 2)
     } else {
-    migration_rate <- matrix(c(migration_rates_female[min(which(abs(migration_rates_female[,1]-(timestep+sim_starttime))==
-                                                                  min(abs(migration_rates_female[,1]-(timestep+sim_starttime))))),-1],
-                               migration_rates_male[min(which(abs(migration_rates_male[,1]-(timestep+sim_starttime))==
-                                                                min(abs(migration_rates_male[,1]-(timestep+sim_starttime))))),-1]),
-                             ncol = 2)    # 2 columns for sex-specific rates
+      migration_rate <- matrix(c(migration_rates_female[min(which(abs(migration_rates_female[,1]-(timestep+sim_starttime))==
+                                                                    min(abs(migration_rates_female[,1]-(timestep+sim_starttime))))),-1],
+                                 migration_rates_male[min(which(abs(migration_rates_male[,1]-(timestep+sim_starttime))==
+                                                                  min(abs(migration_rates_male[,1]-(timestep+sim_starttime))))),-1]),
+                               ncol = 2)    # 2 columns for sex-specific rates
     }
 
     if (mortality_on == 0) {
       mortality_rate <- matrix(rep(0, times = 2*n_agecat), ncol = 2)
     } else {
-    mortality_rate <- matrix(c(mort_rates_female[min(which(abs(mort_rates_female[,1]-(timestep+sim_starttime))==
-                                                             min(abs(mort_rates_female[,1]-(timestep+sim_starttime))))),-1],
-                               mort_rates_male[min(which(abs(mort_rates_male[,1]-(timestep+sim_starttime))==
-                                                           min(abs(mort_rates_male[,1]-(timestep+sim_starttime))))),-1]),
-                             ncol = 2)    # 2 columns for sex-specific rates
+      mortality_rate <- matrix(c(mort_rates_female[min(which(abs(mort_rates_female[,1]-(timestep+sim_starttime))==
+                                                               min(abs(mort_rates_female[,1]-(timestep+sim_starttime))))),-1],
+                                 mort_rates_male[min(which(abs(mort_rates_male[,1]-(timestep+sim_starttime))==
+                                                             min(abs(mort_rates_male[,1]-(timestep+sim_starttime))))),-1]),
+                               ncol = 2)    # 2 columns for sex-specific rates
     }
 
     # Notation:
@@ -213,19 +213,19 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
     ic_to_hcc_transitions <- matrix(rep(0, 2* n_agecat),
                                     ncol = 2, nrow = n_agecat)  # from inactive carrier
     enchb_to_hcc_transitions <- matrix(rep(0, 2* n_agecat),
-                                    ncol = 2, nrow = n_agecat)  # from HBeAg-negative CHB
+                                       ncol = 2, nrow = n_agecat)  # from HBeAg-negative CHB
     cc_to_hcc_transitions <- matrix(rep(0, 2* n_agecat),
-                                     ncol = 2, nrow = n_agecat)  # from compensated cirrhosis
+                                    ncol = 2, nrow = n_agecat)  # from compensated cirrhosis
     dcc_to_hcc_transitions <- matrix(rep(0, 2* n_agecat),
-                            ncol = 2, nrow = n_agecat)  # from decompensated cirrhosis
+                                     ncol = 2, nrow = n_agecat)  # from decompensated cirrhosis
 
     # Female and male transition from IR (HBeAg-positive) to CC
     ir_to_cc_transitions <- matrix(rep(0, 2* n_agecat),
-                             ncol = 2, nrow = n_agecat)
+                                   ncol = 2, nrow = n_agecat)
 
     # Female and male transition from ENCHB (HBeAg-negative) to CC
     enchb_to_cc_transitions <- matrix(rep(0, 2* n_agecat),
-                                ncol = 2, nrow = n_agecat)
+                                      ncol = 2, nrow = n_agecat)
 
 
 
@@ -320,7 +320,7 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
     # 0 in 0-year olds, different values for 1-5, 6-15 and 16-100 year olds
     foi_unique <- beta %*% infectious_vector
     # Repeat these values for every 1 year age group (assuming 0.5 year olds can't get horizontally infected)
-    foi <- c(rep(foi_unique[1], times = 2),
+    foi <- c(rep(foi_unique[1], times = length(which(ages == 0):which(ages == 1-da))),
              rep(foi_unique[2], times = length(i_1to4)),
              rep(foi_unique[3], times = length(i_5to14)),
              rep(foi_unique[4], times = length(i_15to100)))
@@ -389,7 +389,7 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
 
       # CC to HCC transitions = HCC incidence in compensated cirrhotics
       cc_to_hcc_transitions[index$ages_all,i] <-
-      hccr_cc * cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,CC,i]
+        hccr_cc * cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,CC,i]
 
       # DCC to HCC transitions = HCC incidence in decompensated cirrhotics
       dcc_to_hcc_transitions[index$ages_all,i] <-
@@ -487,10 +487,11 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
       dpop[1,IT,i] <- dpop[1,IT,i] + sex_ratio[i] * dcum_chronic_births
       #dpop[1,R,i] <- dpop[1,R,i] + sex_ratio[i] * (1-p_chronic_function[1]) * infected_births
 
-      # Vaccination: applied at 0.5 years of age (this only makes sense if
-      # age step is 0.5!)
-      dpop[2,S,i] <- dpop[2,S,i] - (vacc_cov * vacc_eff * pop[2,S,i])
-      dpop[2,R,i] <- dpop[2,R,i] + (vacc_cov * vacc_eff * pop[2,S,i])
+      # Vaccination: applied at 0.5 years of age
+      dpop[which(ages == 0.5),S,i] <- dpop[which(ages == 0.5),S,i] -
+        (vacc_cov * vacc_eff * pop[which(ages == 0.5),S,i])
+      dpop[which(ages == 0.5),R,i] <- dpop[which(ages == 0.5),R,i] +
+        (vacc_cov * vacc_eff * pop[which(ages == 0.5),S,i])
 
     }
 
@@ -581,6 +582,7 @@ generate_parameters <- function(..., default_parameter_list, parms_to_change = l
 
   # Final parameter set to use in model run: updated default parameter list
   final_parms <- modifyList(defaults, parms_to_change)
+
   # Turn age thresholds into integers:
   final_parms$cancer_age_threshold <- round(final_parms$cancer_age_threshold,0)
   final_parms$pr_ir_cc_age_threshold <- round(final_parms$pr_ir_cc_age_threshold,0)
