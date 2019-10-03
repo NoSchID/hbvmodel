@@ -3477,6 +3477,66 @@ run_on_cluster_parallel <- function(n_sims, data) {
 
 }
 
+# This function uses pre-specified Latin Hypercube samples instead of random samples from the prior
+load(here("output", "lhs_sampling", "lhs_samples_100000.Rdata"))
+run_on_cluster_lhs <- function(lhs_samples, data) {
+
+  # 2) Run n_sims simulations with these parameter sets and
+  # calculate the distance function to compare to data
+  out_mat <- parApply(cl = NULL, lhs_samples, 1,
+                      function(x) fit_model(default_parameter_list = parameter_list,
+                                            data_to_fit = data,
+                                            parms_to_change =
+                                              list(b1 = as.list(x)$b1,
+                                                   b2 = as.list(x)$b2,
+                                                   b3 = as.list(x)$b3,
+                                                   mtct_prob_s = as.list(x)$mtct_prob_s,
+                                                   mtct_prob_e = as.list(x)$mtct_prob_e,
+                                                   alpha = as.list(x)$alpha,
+                                                   p_chronic_in_mtct = as.list(x)$p_chronic_in_mtct,
+                                                   p_chronic_function_r = as.list(x)$p_chronic_function_r,
+                                                   p_chronic_function_s = as.list(x)$p_chronic_function_s,
+                                                   pr_it_ir = as.list(x)$pr_it_ir,
+                                                   pr_ir_ic = as.list(x)$pr_ir_ic,
+                                                   eag_prog_function_rate = as.list(x)$eag_prog_function_rate,
+                                                   pr_ir_enchb = as.list(x)$pr_ir_enchb,
+                                                   pr_ir_cc_female = as.list(x)$pr_ir_cc_female,
+                                                   pr_ir_cc_age_threshold = as.list(x)$pr_ir_cc_age_threshold,
+                                                   pr_ic_enchb = as.list(x)$pr_ic_enchb,
+                                                   sag_loss_slope = as.list(x)$sag_loss_slope,
+                                                   pr_enchb_cc_female = as.list(x)$pr_enchb_cc_female,
+                                                   cirrhosis_male_cofactor = as.list(x)$cirrhosis_male_cofactor,
+                                                   pr_cc_dcc = as.list(x)$pr_cc_dcc,
+                                                   cancer_prog_coefficient_female = as.list(x)$cancer_prog_coefficient_female,
+                                                   cancer_age_threshold = as.list(x)$cancer_age_threshold,
+                                                   cancer_male_cofactor = as.list(x)$cancer_male_cofactor,
+                                                   hccr_it = as.list(x)$hccr_it,
+                                                   hccr_ir = as.list(x)$hccr_ir,
+                                                   hccr_enchb = as.list(x)$hccr_enchb,
+                                                   hccr_cc = as.list(x)$hccr_cc,
+                                                   hccr_dcc = as.list(x)$hccr_dcc,
+                                                   mu_cc = as.list(x)$mu_cc,
+                                                   mu_dcc = as.list(x)$mu_dcc,
+                                                   mu_hcc = as.list(x)$mu_hcc,
+                                                   vacc_eff = as.list(x)$vacc_eff)))
+
+  # 3) Return matrix of parameter sets and matching error term
+  #out_mat_subset <- sapply(out_mat, "[[", "error_term")
+  #res_mat <- cbind(params_mat, error_term = out_mat_subset)
+
+  # TEST: only return full output if median rel diff is less than 0.5
+  #best_fit_ids <- which(sapply(out_mat, "[[", "error_term") < 0.5)
+  #res <- list(res_mat = res_mat,
+  #            out_mat = out_mat[best_fit_ids])
+
+  #return(res_mat)
+
+  #return(res)
+
+  return(out_mat)
+
+}
+
 
 ### Set up calibration ----
 
