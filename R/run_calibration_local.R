@@ -28,36 +28,39 @@ params_mat <- data.frame(b1 = 0.13, b2 = 0.04, mtct_prob_s = 0.05)
 time1 <- proc.time()
 out_mat <- apply(params_mat,1,
                  function(x)
-                   fit_model(default_parameter_list = parameter_list,
+                   fit_model_full_output(default_parameter_list = parameter_list,
                              data_to_fit = calibration_datasets_list,
                              parms_to_change =
                                list(b1 = as.list(x)$b1,
                                     b2 = as.list(x)$b2,
                                     mtct_prob_s = as.list(x)$mtct_prob_s,
-                                    mtct_prob_e = 0.6,  # decrease
-                                    alpha = 7,
-                                    b3 = 0.01,
+                                    mtct_prob_e = 0.6,
+                                    alpha = 7.07812500,
+                                    b3 = 0.01976563,
+                                    p_chronic_function_r = 0.65595093,
+                                    p_chronic_function_s = 0.46,
                                     eag_prog_function_rate = 0,
                                     pr_it_ir = 0.1,
-                                    pr_ir_ic = 0.8,
-                                    pr_ir_cc_female = 0.028,
-                                    pr_ir_cc_age_threshold = 15,
+                                    pr_ir_ic = 0.83906250,
+                                    pr_ir_cc_female = 0.01,
+                                    pr_ir_cc_age_threshold =0,
                                     pr_ir_enchb = 0.005,
                                     pr_ic_enchb = 0.01,
-                                    pr_enchb_cc_female = 0.005, # 0.005, 0.016
-                                    hccr_dcc = 0.07,  # 5 times increase
-                                    hccr_it = 5,
+                                    sag_loss_slope = 0.000451,
+                                    pr_enchb_cc_female =  0.01181470,
+                                    pr_cc_dcc = 0.04,
+                                    hccr_dcc = 0.08953125,
+                                    hccr_it = 6.25,
                                     hccr_ir = 15,
-                                    hccr_enchb = 10,
+                                    hccr_enchb = 11.25000000,
                                     hccr_cc = 25,
-                                    cirrhosis_male_cofactor = 5,  # increase, 20
-                                    cancer_prog_coefficient_female = 0.00022,  # doubled 0.0002
-                                    cancer_age_threshold = 10,
-                                    cancer_male_cofactor = 3,
-                                    mu_cc = 0.005, # decrease
-                                    mu_hcc = 1.5,  # increase
-                                    mu_dcc = 0.8  # 1
-                               )))
+                                    cirrhosis_male_cofactor = 5.15625000,
+                                    cancer_prog_coefficient_female = 0.00022,
+                                    cancer_age_threshold = 0,
+                                    cancer_male_cofactor = 3.625,
+                                    mu_cc = 0.005,
+                                    mu_hcc = 1.81250000,
+                                    mu_dcc = 0.8)))
 
 sim_duration = proc.time() - time1
 paste(sim_duration["elapsed"], "seconds")
@@ -101,7 +104,7 @@ params_mat <- data.frame(b1 = b1,
                          pr_ir_enchb = rgamma(n_sims, 1.22, 44.20),
                          pr_ir_cc_female = runif(n_sims, 0.005, 0.05),
                          pr_ir_cc_age_threshold = sample(0:15,n_sims,replace=TRUE),
-                         pr_ic_enchb = rgamma(n_sims, 3.49, 83.05),
+                         pr_ic_enchb = rgamma(n_sims, 2.18, 118.16),
                          sag_loss_slope = rnorm(n_sims, 0.0004106, 0.00005),
                          pr_enchb_cc_female = rgamma(n_sims, 1.23, 22.33),
                          cirrhosis_male_cofactor = rtruncnorm(n_sims, a = 1, mean = 3.5, sd = 4),
@@ -177,7 +180,7 @@ library(grid)
 library(ggplot2)
 library(gridExtra)
 # Loop to create plot set for every parameter combination
-pdf(file = here("output/random_fit_plots", "newdata_plots.pdf"), paper="a4r")
+pdf(file = here("output/fits/Frequentist fit", "sse_scale_max_start_at_manual_fit_test_horizontal.pdf"), paper="a4r")
 plot_list = list()
 for (i in 1:length(out_mat)) {
 #for (i in c(21,30,42,44,80,99)) {
@@ -16487,3 +16490,69 @@ plot_prior_posterior("mu_hcc")
 plot_prior_posterior("vacc_eff")
 
 
+
+### Analyse best manual fit to develop envelope
+mapped_output <- lapply(out_mat[[1]]$mapped_output, function(x) x[!is.na(x$data_value),])
+datapoints <- as.numeric(unlist(lapply(mapped_output, function(x) x$data_value)))
+model_prediction <- as.numeric(unlist(lapply(mapped_output, function(x) x$model_value)))
+
+data_model_ratio <- datapoints/model_prediction
+rel_diff <- abs(datapoints-model_prediction)/replace(datapoints, datapoints==0, 1)
+quantile(data_model_ratio, probs = c(0,0.05,0.25,0.5,0.75,0.95,1))
+round(quantile(rel_diff, probs = c(0,0.05,0.25,0.5,0.75,0.95,1))*100,2)
+rel_diff_mean <- abs(datapoints-model_prediction)/((datapoints+model_prediction)/2)
+quantile(rel_diff_mean, probs = c(0,0.05,0.25,0.5,0.75,0.95,1))*100
+rel_diff2 <- abs(datapoints-model_prediction)/pmax(datapoints, model_prediction)
+round(quantile(rel_diff2)*100,2)
+
+### Create 100,000 LHS samples ----
+library(lhs)
+library(truncnorm)
+
+lhs_mat <- randomLHS(100000, 32)
+
+b1 <- qunif(lhs_mat[,1], 0.03, 0.7)
+b2 <- qunif(lhs_mat[,2], 0, b1)
+b3 <- qunif(lhs_mat[,3], 0, b1)
+mtct_prob_s <- qbeta(lhs_mat[,4], 1.5,13.5)
+mtct_prob_e <- qunif(lhs_mat[,5], mtct_prob_s, 0.9)
+hccr_it <- qtruncnorm(lhs_mat[,6], a=1, b=Inf, mean=6, sd=3) # normal truncated at 1
+hccr_cc <- qunif(lhs_mat[,7], hccr_it, 100)
+hccr_enchb <- qunif(lhs_mat[,8], hccr_it, hccr_cc)
+hccr_ir <- runif(lhs_mat[,9], hccr_enchb, hccr_cc)
+
+params_mat <- data.frame(b1 = b1,
+                         b2 = b2,
+                         b3 = b3,
+                         mtct_prob_s = mtct_prob_s,
+                         mtct_prob_e = mtct_prob_e,
+                         alpha = qunif(lhs_mat[,10], 1.5,10),
+                         p_chronic_in_mtct = qbeta(lhs_mat[,11], 10.49,1.3),
+                         p_chronic_function_r = qnorm(lhs_mat[,12],0.65,0.1),
+                         p_chronic_function_s = qnorm(lhs_mat[,13],0.46,0.1),
+                         pr_it_ir = qgamma(lhs_mat[,14],3.63,26.27),
+                         pr_ir_ic = qunif(lhs_mat[,15], 0,1),
+                         eag_prog_function_rate = qunif(lhs_mat[,16],0,0.01),
+                         pr_ir_enchb = qgamma(lhs_mat[,17], 1.22, 44.20),
+                         pr_ir_cc_female = qunif(lhs_mat[,18], 0.005, 0.05),
+                         pr_ir_cc_age_threshold = floor(qunif(lhs_mat[,19],0,15)),
+                         pr_ic_enchb = qgamma(lhs_mat[,20], 2.18, 118.16),
+                         sag_loss_slope = qnorm(lhs_mat[,21], 0.0004106, 0.00005),
+                         pr_enchb_cc_female = qgamma(lhs_mat[,22], 1.23, 22.33),
+                         cirrhosis_male_cofactor = qtruncnorm(lhs_mat[,23], a = 1, mean = 3.5, sd = 4),
+                         pr_cc_dcc = qgamma(lhs_mat[,24],17.94,423.61),
+                         cancer_prog_coefficient_female = qunif(lhs_mat[,25], 0.0001, 0.0003),
+                         cancer_age_threshold = floor(qunif(lhs_mat[,26],0,15)),
+                         cancer_male_cofactor = qtruncnorm(lhs_mat[,27], a = 1, mean = 3.5, sd = 4),
+                         hccr_it = hccr_it,
+                         hccr_ir = hccr_ir,
+                         hccr_enchb = hccr_enchb,
+                         hccr_cc = hccr_cc,
+                         hccr_dcc = qgamma(lhs_mat[,28], 3.08, 29.76),
+                         mu_cc = qgamma(lhs_mat[,29], 4.25, 124.91),
+                         mu_dcc = qgamma(lhs_mat[,30], 2.18, 1.18),
+                         mu_hcc = qgamma(lhs_mat[,31], 2.18, 1.18),
+                         vacc_eff = qbeta(lhs_mat[,32], 7.07, 0.37))
+
+library(here)
+save(params_mat, file = here("output", "fits", "lhs_sampling", "lhs_samples_100000.Rdata"))
