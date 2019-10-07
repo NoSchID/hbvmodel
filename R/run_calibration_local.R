@@ -16505,11 +16505,11 @@ quantile(rel_diff_mean, probs = c(0,0.05,0.25,0.5,0.75,0.95,1))*100
 rel_diff2 <- abs(datapoints-model_prediction)/pmax(datapoints, model_prediction)
 round(quantile(rel_diff2)*100,2)
 
-### Create 100,000 LHS samples ----
+### Create 1,000,000 LHS samples ----
 library(lhs)
 library(truncnorm)
 
-lhs_mat <- randomLHS(100000, 32)
+lhs_mat <- randomLHS(1000000, 32)
 
 b1 <- qunif(lhs_mat[,1], 0.03, 0.7)
 b2 <- qunif(lhs_mat[,2], 0, b1)
@@ -16555,4 +16555,4 @@ params_mat <- data.frame(b1 = b1,
                          vacc_eff = qbeta(lhs_mat[,32], 7.07, 0.37))
 
 library(here)
-save(params_mat, file = here("output", "fits", "lhs_sampling", "lhs_samples_100000.Rdata"))
+#save(params_mat, file = here("calibration_input", "lhs_samples_1000000.Rdata"))
