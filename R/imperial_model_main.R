@@ -79,7 +79,7 @@ input_who_vaccine_coverage <- read.csv(here("data-raw", "infant_vaccine_coverage
 
 # Linearly interpolate coverage for missing years
 input_who_vaccine_coverage$coverage_interp <- approx(input_who_vaccine_coverage$year, input_who_vaccine_coverage$coverage_proportion,
-       xout = input_who_vaccine_coverage$year, method = "linear")$y
+       xout = input_who_vaccine_coverage$year, method = "linear", rule = 2)$y
 
 # Fill in a dataframe with 0.01 timesteps with constant yearly coverage values until 2100
 # Assuming last coverage from 2017 stays the same
