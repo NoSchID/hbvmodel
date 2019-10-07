@@ -1,5 +1,5 @@
 ###################################
-### Imperial HBV model 25/06/19 ###
+### Imperial HBV model 07/10/19 ###
 ###################################
 # Model described in Shevanthi's thesis and adapted by Margaret
 # New adaptations in this version:
@@ -270,8 +270,8 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
     # Alternative force of infection definition with WAIFW matrix
 
     # Define WAIFW matrix
-    # Age-dependent mixing between 4 age groups: 0 year olds, 1-5 years, 6-15 years, 16-100 years
-    # Assuming no effective contact between children (1-5 years) and adults (>15 years)
+    # Age-dependent mixing between 4 age groups: 0 year olds, 0.5-5 years, 6-15 years, 16-100 years
+    # Assuming no effective contact between children (0.5-5 years) and adults (>15 years)
     # Assuming no horizontal transmission from and to infants (0 years old)
     beta <- matrix(0, nrow = 4, ncol = 4)  # matrix of transmission parameters
     beta[2,2] <- b1                        # transmission among children 1-5 years
@@ -282,45 +282,45 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
     beta[3,4] <- b3                        # transmission from adults to juveniles
     beta[4,3] <- b3                        # = transmission from juveniles to adults
 
+    # Option for 0.5 year olds not to get infected:
     # Define a vector of the age-specific prevalence of infectious individuals:
     # Infectious compartments are IT, IR, IC, ENCHB, CC, DCC, HCC
     # HBeAg-positive individuals (IT, IR) are more infectious than HBeAg-negatives (multiply by alpha)
     # Sum prevalence in HBeAg-negatives and HBeAg-positives multiplied by alpha
     # Returns 1 number per transmission age group (4 total)
-    i_1to4 <- which(ages == 1):which(ages == (5-da))
-    i_5to14 <- which(ages == 5):which(ages == (15-da))
-    i_15to100 <- which(ages == 15):which(ages == (100-da))
-
-    infectious_vector <- c(sum(pop[index$ages_0to1,HBeAg_neg,1:2])/sum(pop[index$ages_0to1,index$infcat_all,1:2]) +
-                             (alpha * sum(pop[index$ages_0to1,HBeAg_pos,1:2])/sum(pop[index$ages_0to1,index$infcat_all,1:2])), # 0 year olds
-                           sum(pop[i_1to4,HBeAg_neg,1:2])/sum(pop[i_1to4,index$infcat_all,1:2]) +
-                             (alpha * sum(pop[i_1to4,HBeAg_pos,1:2])/sum(pop[i_1to4,index$infcat_all,1:2])), # 1-4 year olds
-                           sum(pop[i_5to14,HBeAg_neg,1:2])/sum(pop[i_5to14,index$infcat_all,1:2]) +
-                             (alpha * sum(pop[i_5to14,HBeAg_pos,1:2])/sum(pop[i_5to14,index$infcat_all,1:2])), # 5-14 year olds
-                           sum(pop[i_15to100,HBeAg_neg,1:2])/sum(pop[i_15to100,index$infcat_all,1:2]) +
-                             (alpha * sum(pop[i_15to100,HBeAg_pos,1:2])/sum(pop[i_15to100,index$infcat_all,1:2]))) # 15-100 year olds
-
-    # 0.5 year olds can get infected:
-    #i_1to4 <- which(ages == 0.5):which(ages == (5-da))
+    #i_1to4 <- which(ages == 1):which(ages == (5-da))
     #i_5to14 <- which(ages == 5):which(ages == (15-da))
     #i_15to100 <- which(ages == 15):which(ages == (100-da))
 
-    #infectious_vector <- c(sum(pop[1,HBeAg_neg,1:2])/sum(pop[1,index$infcat_all,1:2]) +
-    #                         (alpha * sum(pop[1,HBeAg_pos,1:2])/sum(pop[1,index$infcat_all,1:2])), # 0 year olds
+    #infectious_vector <- c(sum(pop[index$ages_0to1,HBeAg_neg,1:2])/sum(pop[index$ages_0to1,index$infcat_all,1:2]) +
+    #                         (alpha * sum(pop[index$ages_0to1,HBeAg_pos,1:2])/sum(pop[index$ages_0to1,index$infcat_all,1:2])), # 0 year olds
     #                       sum(pop[i_1to4,HBeAg_neg,1:2])/sum(pop[i_1to4,index$infcat_all,1:2]) +
-    #                         (alpha * sum(pop[i_1to4,HBeAg_pos,1:2])/sum(pop[i_1to4,index$infcat_all,1:2])), # 1-5 year olds
+    #                         (alpha * sum(pop[i_1to4,HBeAg_pos,1:2])/sum(pop[i_1to4,index$infcat_all,1:2])), # 1-4 year olds
     #                       sum(pop[i_5to14,HBeAg_neg,1:2])/sum(pop[i_5to14,index$infcat_all,1:2]) +
-    #                         (alpha * sum(pop[i_5to14,HBeAg_pos,1:2])/sum(pop[i_5to14,index$infcat_all,1:2])), # 6-15 year olds
+    #                         (alpha * sum(pop[i_5to14,HBeAg_pos,1:2])/sum(pop[i_5to14,index$infcat_all,1:2])), # 5-14 year olds
     #                       sum(pop[i_15to100,HBeAg_neg,1:2])/sum(pop[i_15to100,index$infcat_all,1:2]) +
-    #                         (alpha * sum(pop[i_15to100,HBeAg_pos,1:2])/sum(pop[i_15to100,index$infcat_all,1:2]))) # 16-100 year olds
+    #                         (alpha * sum(pop[i_15to100,HBeAg_pos,1:2])/sum(pop[i_15to100,index$infcat_all,1:2]))) # 15-100 year olds
 
+    # 0.5 year olds can get infected:
+    i_1to4 <- which(ages == 0.5):which(ages == (5-da))
+    i_5to14 <- which(ages == 5):which(ages == (15-da))
+    i_15to100 <- which(ages == 15):which(ages == (100-da))
+
+    infectious_vector <- c(sum(pop[1,HBeAg_neg,1:2])/sum(pop[1,index$infcat_all,1:2]) +
+                             (alpha * sum(pop[1,HBeAg_pos,1:2])/sum(pop[1,index$infcat_all,1:2])), # 0 year olds
+                           sum(pop[i_1to4,HBeAg_neg,1:2])/sum(pop[i_1to4,index$infcat_all,1:2]) +
+                             (alpha * sum(pop[i_1to4,HBeAg_pos,1:2])/sum(pop[i_1to4,index$infcat_all,1:2])), # 1-5 year olds
+                           sum(pop[i_5to14,HBeAg_neg,1:2])/sum(pop[i_5to14,index$infcat_all,1:2]) +
+                             (alpha * sum(pop[i_5to14,HBeAg_pos,1:2])/sum(pop[i_5to14,index$infcat_all,1:2])), # 6-15 year olds
+                           sum(pop[i_15to100,HBeAg_neg,1:2])/sum(pop[i_15to100,index$infcat_all,1:2]) +
+                             (alpha * sum(pop[i_15to100,HBeAg_pos,1:2])/sum(pop[i_15to100,index$infcat_all,1:2]))) # 16-100 year olds
 
     # Multiply WAIFW matrix by the age-specific proportion of infectious individuals
     # Returns a vector with force of infection for every age - 4 different values:
-    # 0 in 0-year olds, different values for 1-5, 6-15 and 16-100 year olds
+    # 0 in 0-year olds, different values for 0.5-5, 5-15 and 15-100 year olds
     foi_unique <- beta %*% infectious_vector
     # Repeat these values for every 1 year age group (assuming 0.5 year olds can't get horizontally infected)
-    foi <- c(rep(foi_unique[1], times = length(which(ages == 0):which(ages == 1-da))),
+    foi <- c(rep(foi_unique[1], times = length(which(ages == 0):which(ages == 0.5-da))),
              rep(foi_unique[2], times = length(i_1to4)),
              rep(foi_unique[3], times = length(i_5to14)),
              rep(foi_unique[4], times = length(i_15to100)))
