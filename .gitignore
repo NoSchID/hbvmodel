@@ -3,3 +3,7 @@
 .RData
 .Ruserdata
 example_output_mapping.xlsx
+*.pdf
+*.png
+*.docx
+R/cluster_test.R
