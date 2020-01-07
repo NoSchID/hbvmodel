@@ -3478,7 +3478,7 @@ run_on_cluster_parallel <- function(n_sims, data) {
 }
 
 # This function uses pre-specified Latin Hypercube samples instead of random samples from the prior
-load(here("calibration_input", "lhs_samples_1000000.Rdata"))
+load(here("calibration", "input", "lhs_samples_1000000.Rdata"))
 run_on_cluster_lhs <- function(lhs_samples, data) {
 
   # 2) Run n_sims simulations with these parameter sets and

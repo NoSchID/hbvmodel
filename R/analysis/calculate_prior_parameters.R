@@ -4,9 +4,9 @@ hist(rtruncnorm(100000, a=1, b=Inf, mean = 6, sd = 3))
 
 # Gamma distribution
 # check at https://homepage.divms.uiowa.edu/~mbognar/applets/gamma.html
-mode = 0.5
+mode = 0.01
 min = 0
-max = 5
+max = 0.1
 sd = (max - min)/4
 # Here are the corresponding rate and shape parameter values:
 ra = (mode + sqrt( mode^2 + 4*sd^2 ) ) / ( 2 * sd^2 )
