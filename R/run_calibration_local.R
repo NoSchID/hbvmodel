@@ -2533,3 +2533,87 @@ median(do.call("rbind", lapply(validation_out_mat, "[[", "number_cc_2019_m"))[,w
 median(do.call("rbind", lapply(validation_out_mat, "[[", "number_dcc_2019_m"))[,which(ages == 40)]/
          do.call("rbind", lapply(validation_out_mat, "[[", "number_carriers_2019_m"))[,which(ages == 40)])
 
+
+### Project into the future ----
+tic()
+sim <- apply(params_mat_targets5, 1,
+                    function(x)
+                      run_model(sim_duration = runtime, default_parameter_list = parameter_list,
+                                parms_to_change = list(b1 = as.list(x)$b1,
+                                                       b2 = as.list(x)$b2,
+                                                       b3 = as.list(x)$b3,
+                                                       mtct_prob_s = as.list(x)$mtct_prob_s,
+                                                       mtct_prob_e = as.list(x)$mtct_prob_e,
+                                                       alpha = as.list(x)$alpha,
+                                                       p_chronic_in_mtct = as.list(x)$p_chronic_in_mtct,
+                                                       p_chronic_function_r = as.list(x)$p_chronic_function_r,
+                                                       p_chronic_function_s = as.list(x)$p_chronic_function_s,
+                                                       pr_it_ir = as.list(x)$pr_it_ir,
+                                                       pr_ir_ic = as.list(x)$pr_ir_ic,
+                                                       eag_prog_function_rate = as.list(x)$eag_prog_function_rate,
+                                                       pr_ir_enchb = as.list(x)$pr_ir_enchb,
+                                                       pr_ir_cc_female = as.list(x)$pr_ir_cc_female,
+                                                       pr_ir_cc_age_threshold = as.list(x)$pr_ir_cc_age_threshold,
+                                                       pr_ic_enchb = as.list(x)$pr_ic_enchb,
+                                                       sag_loss_slope = as.list(x)$sag_loss_slope,
+                                                       pr_enchb_cc_female = as.list(x)$pr_enchb_cc_female,
+                                                       cirrhosis_male_cofactor = as.list(x)$cirrhosis_male_cofactor,
+                                                       pr_cc_dcc = as.list(x)$pr_cc_dcc,
+                                                       cancer_prog_coefficient_female = as.list(x)$cancer_prog_coefficient_female,
+                                                       cancer_age_threshold = as.list(x)$cancer_age_threshold,
+                                                       cancer_male_cofactor = as.list(x)$cancer_male_cofactor,
+                                                       hccr_it = as.list(x)$hccr_it,
+                                                       hccr_ir = as.list(x)$hccr_ir,
+                                                       hccr_enchb = as.list(x)$hccr_enchb,
+                                                       hccr_cc = as.list(x)$hccr_cc,
+                                                       hccr_dcc = as.list(x)$hccr_dcc,
+                                                       mu_cc = as.list(x)$mu_cc,
+                                                       mu_dcc = as.list(x)$mu_dcc,
+                                                       mu_hcc = as.list(x)$mu_hcc,
+                                                       vacc_eff = as.list(x)$vacc_eff),
+                                scenario = "vacc"))
+toc()
+
+out <- lapply(sim, code_model_output)
+
+# Extract HBsAg prevalence
+
+hbsag_prev <- data.frame(time = out[[1]]$time)
+hbsag_prev <- cbind(hbsag_prev,
+                    sapply(lapply(out, "[[", "infectioncat_total"), "[[", "carriers")/
+                      sapply(lapply(out, "[[", "pop_total"), "[[", "pop_total"))
+hbsag_prev$median <- apply(hbsag_prev, 1, median)
+hbsag_prev$lower <- apply(hbsag_prev, 1, quantile, prob = 0.025)
+hbsag_prev$upper <- apply(hbsag_prev, 1,quantile, prob = 0.975)
+hbsag_prev_long <-gather(hbsag_prev, key = "sim", value = "prev", -time)
+
+ggplot(hbsag_prev_long) +
+  geom_line(aes(x=time, y = prev*100, group = sim), colour = "grey80") +
+  geom_line(data = hbsag_prev, aes(x=time, y = median*100), col = "red") +
+  geom_line(data = hbsag_prev, aes(x=time, y = lower*100), col = "blue") +
+  geom_line(data = hbsag_prev, aes(x=time, y = upper*100), col = "blue") +
+  theme_bw() +
+  xlab("Year") +
+  ylab("HBsAg prevalence (%)") +
+  labs(title = "Status quo projection (maintaining 93% infant vaccine coverage)",
+       caption = "Red line = median projection, blue line = 95% credible interval") +
+  xlim(c(1980,2080))
+
+# Current prev (2019): 10.8 (6.7-15.7)
+# Pre-vaccination prev (1990):  15.6 (11.1-21.0)
+# 31% reduction
+# Prev in 2030: 9.3 (5.4-13.9)
+
+# WHO prev in 2016: 5.8 (4.7-7.1)
+# WHO pre-vacc: 11 (9-13.4)
+# 47% reduction
+
+# HBsAg prev in under 5 year olds
+hbsag_prev_u5 <- data.frame(time = out[[1]]$time)
+hbsag_prev <- cbind(hbsag_prev,
+                    sapply(lapply(out, "[[", "infectioncat_total"), "[[", "carriers")/
+                      sapply(lapply(out, "[[", "pop_total"), "[[", "pop_total"))
+hbsag_prev$median <- apply(hbsag_prev, 1, median)
+hbsag_prev$lower <- apply(hbsag_prev, 1, quantile, prob = 0.025)
+hbsag_prev$upper <- apply(hbsag_prev, 1,quantile, prob = 0.975)
+hbsag_prev_long <-gather(hbsag_prev, key = "sim", value = "prev", -time)
