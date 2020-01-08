@@ -111,7 +111,7 @@ gambia_eag <- rep(c(0.95, 0.95, 0.9, 0.9, 0.65, 0.65, 0.6, 0.6, 0.6, 0.6,
                     0.1, 0.1, rep(0.1, 20), rep (0.05, 60)), each = 1/da) # made up last value
 
 ### THE MODEL FUNCTION ----
-imperial_intervention_model <- function(timestep, pop, parameters, sim_starttime) {
+imperial_model <- function(timestep, pop, parameters, sim_starttime) {
 
   with(as.list(parameters), {
 
@@ -244,7 +244,18 @@ imperial_intervention_model <- function(timestep, pop, parameters, sim_starttime
     enchb_to_cc_transitions <- matrix(rep(0, 2* n_agecat),
                                       ncol = 2, nrow = n_agecat)
 
+    # Outcomes in the screened compartments
+    dcum_screened_infections <- matrix(rep(0, 2* n_agecat),
+                                ncol = 2, nrow = n_agecat)      # female and male incident infections after screening
+    dcum_screened_chronic_infections <- matrix(rep(0, 2* n_agecat),
+                                        ncol = 2, nrow = n_agecat)      # female and male incident chronic infections after screening
+    dcum_screened_hbv_deaths <- matrix(rep(0, 2* n_agecat),
+                              ncol = 2, nrow = n_agecat)  # female and male incident HBV-related deaths (CC+DCC+HCC deaths) after screening
 
+    # Outcomes in the treated compartments
+    dcum_treated_hbv_deaths <- matrix(rep(0, 2* n_agecat),
+                                       ncol = 2, nrow = n_agecat)  # female and male incident HBV-related deaths (CC+DCC+HCC deaths) after treatment
+    # No new infections in those treated, but could add incident recoveries
 
     # TRANSMISSION
 
@@ -319,13 +330,14 @@ imperial_intervention_model <- function(timestep, pop, parameters, sim_starttime
       # Applying same age-specific mortality rate to every infection compartment
       # Returns an array with indicent deaths and net migrants for every age (rows), infection state (columns) and sex (arrays)
 
+      # Natural history transitions (unscreened)
+
       # Infection: Incident infections (all) and incident chronic infections
       dcum_infections[index$ages_all,i] <- foi * pop[index$ages_all,S,i]
       dcum_chronic_infections[index$ages_all,i] <-
         p_chronic_function * dcum_infections[index$ages_all,i]
       # Returns a matrix with incident infections for every age (rows) and every sex (columns)
 
-      # Natural history transitions (unscreened)
       # Incident deaths due to HBV (from cirrhosis and HCC)
       dcum_hbv_deaths[index$ages_all,i] <-
         mu_cc * pop[index$ages_all,CC,i] +
@@ -390,6 +402,31 @@ imperial_intervention_model <- function(timestep, pop, parameters, sim_starttime
       enchb_to_cc_transitions[index$ages_all,i] <-
         pr_enchb_cc_rates[index$ages_all,i] * pop[index$ages_all,ENCHB,i]
 
+      # Post-screening transitions (untreated compartments)
+
+      # Infection: Incident infections (all) and incident chronic infections after screening (untreated)
+      dcum_screened_infections[index$ages_all,i] <- foi * pop[index$ages_all,S_S,i]
+      dcum_screened_chronic_infections[index$ages_all,i] <-
+        p_chronic_function * dcum_screened_infections[index$ages_all,i]
+      # Returns a matrix with incident infections for every age (rows) and every sex (columns)
+
+      # Incident deaths due to HBV (from cirrhosis and HCC) after screening (untreated)
+      dcum_screened_hbv_deaths[index$ages_all,i] <-
+        mu_cc * pop[index$ages_all,CC_S,i] +
+        mu_dcc * pop[index$ages_all,DCC_S,i] +
+        mu_hcc * pop[index$ages_all,HCC_S,i]
+      # Returns a matrix with incident HBV deaths for every age (rows) and every sex (columns)
+
+      # Post-treatment transitions
+
+      # Incident deaths due to HBV (from cirrhosis and HCC) after treatment
+      dcum_screened_hbv_deaths[index$ages_all,i] <-
+        tmu_dcc * pop[index$ages_all,DCC_T,i] +
+        tmu_hcc * pop[index$ages_all,HCC_T,i]
+      # Returns a matrix with incident HBV deaths for every age (rows) and every sex (columns)
+
+
+      # DIFFERENTIAL EQUATIONS
       # Transitions between natural history compartments (no screening):
 
       # Susceptibles
@@ -475,14 +512,14 @@ imperial_intervention_model <- function(timestep, pop, parameters, sim_starttime
 
       # Screened Susceptibles
       dpop[index$ages_all,S_S,i] <- -(diff(c(0,pop[index$ages_all,S_S,i]))/da) -
-        p_chronic_function * foi * pop[index$ages_all,S_S,i] -
-        (1-p_chronic_function) * foi * pop[index$ages_all,S_S,i] -
+        dcum_screened_chronic_infections[index$ages_all,i] -
+        (1-p_chronic_function) * dcum_screened_infections[index$ages_all,i] -
         deaths[index$ages_all,S_S,i] +
         migrants[index$ages_all,S_S,i]
 
       # Screened Immune tolerant
       dpop[index$ages_all,IT_S,i] <- -(diff(c(0,pop[index$ages_all,IT_S,i]))/da) +
-        p_chronic_function * foi * pop[index$ages_all,S_S,i] -
+        dcum_screened_chronic_infections[index$ages_all,i] -
         pr_it_ir * eag_prog_function * pop[index$ages_all,IT_S,i] -
         hccr_it * cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,IT_S,i] -
         deaths[index$ages_all,IT_S,i] + migrants[index$ages_all,IT_S,i]
@@ -545,7 +582,7 @@ imperial_intervention_model <- function(timestep, pop, parameters, sim_starttime
 
       # Screened Immunes
       dpop[index$ages_all,R_S,i] <- -(diff(c(0,pop[index$ages_all,R_S,i]))/da) +
-        (1-p_chronic_function) * foi * pop[index$ages_all,S_S,i] +
+        (1-p_chronic_function) * dcum_screened_infections[index$ages_all,i] +
         sag_loss * pop[index$ages_all,IC_S,i] -
         deaths[index$ages_all,R_S,i] + migrants[index$ages_all,R_S,i]
 
@@ -606,7 +643,9 @@ imperial_intervention_model <- function(timestep, pop, parameters, sim_starttime
              dcum_background_deaths_ld, dcum_dcc_deaths, ir_to_cc_transitions,
              enchb_to_cc_transitions, cc_to_hcc_transitions,
              it_to_hcc_transitions, ir_to_hcc_transitions, ic_to_hcc_transitions,
-             enchb_to_hcc_transitions)
+             enchb_to_hcc_transitions,
+             dcum_screened_infections, dcum_screened_chronic_infections,
+             dcum_screened_hbv_deaths, dcum_treated_hbv_deaths)
     list(res, p_chronic_function = p_chronic_function)
 
   })
@@ -614,16 +653,6 @@ imperial_intervention_model <- function(timestep, pop, parameters, sim_starttime
 }
 
 ### Model-related functions ----
-
-## Function to interpolate demographic parameters over time - specific to these datasets
-timevary_parameters_old <- function(timestep, dataset) {
-  # Input datasets are matrices of age-specific mortality rates, birth rate and migration rate for every 5-year period
-  res <- rep(0,ncol(dataset))
-  for (i in 2:ncol(dataset)) {
-    res[i] <- spline(x = dataset[,1], y = dataset[,i], xout = timestep)[[2]]
-  }
-  return(res[-1])
-} # for loop instead of apply: 69.36s minimally quicker
 
 ## Event function: reset population size to initial (1850) size in 1950
 reset_pop_1950 <- function(timestep, pop, parameters){
@@ -778,7 +807,7 @@ run_model <- function(..., sim_duration = runtime,
   parameters$sag_loss <- parameters$sag_loss_slope * ages
 
   # Update parameters for intervention scenario: vaccine (= default) or no vaccine (counterfactual)
-  if (scenario == "vacc") {
+  if (scenario == "vacc" | scenario == "vacc_screen") {
     parameters$apply_vacc <- 1
   } else if (scenario == "no_vacc") {
     parameters$apply_vacc <- 0
@@ -788,9 +817,21 @@ run_model <- function(..., sim_duration = runtime,
 
   ## Run model simulation
   timestep_vector <- round((0:((sim_duration-dt)/dt))*dt,2)
+
+  # Add screening event like this!
+  ##eventdata <- data.frame(var = c("Sv","Iv"), time = c(15,15),
+  #                        value = c(0.5,0.5), method = "multiply")
+
+  #events = list(data = eventdata)
+
   timestep_labels <- timestep_vector + parameters$sim_starttime
 
-  if (1950 %in% timestep_labels) {
+  if (1950 %in% timestep_labels & scenario == "vacc_screen") {    # add event here
+    timestep_1950 <- timestep_vector[which(timestep_labels == 1950)]
+    out <- as.data.frame(ode.1D(y = init_pop_vector, times = timestep_vector, func = imperial_model,
+                                parms = parameters, nspec = 1, method = "ode45",
+                                events = list(func = reset_pop_1950, time = timestep_1950)))
+  } else if (1950 %in% timestep_labels & scenario != "vacc_screen") {
     timestep_1950 <- timestep_vector[which(timestep_labels == 1950)]
     out <- as.data.frame(ode.1D(y = init_pop_vector, times = timestep_vector, func = imperial_model,
                                 parms = parameters, nspec = 1, method = "ode45",
@@ -830,6 +871,8 @@ run_scenarios <- function(..., default_parameter_list, parms_to_change = list(..
 
   return(outlist)
 }
+
+
 
 ### Output-related functions ----
 # Function to sum numbers from different compartments for each age and time step
@@ -896,6 +939,36 @@ code_model_output <- function(output) {
   out_hccm <- out[,grepl("^HCCm.",names(out))]
   out_rf <- out[,grepl("^Rf.",names(out))]
   out_rm <- out[,grepl("^Rm.",names(out))]
+  # Screened compartments
+  out_screen_sf <- out[,grepl("^S_Sf.",names(out))]
+  out_screen_sm <- out[,grepl("^S_Sm.",names(out))]
+  out_screen_itf <- out[,grepl("^S_ITf.",names(out))]
+  out_screen_itm <- out[,grepl("^S_ITm.",names(out))]
+  out_screen_irf <- out[,grepl("^S_IRf.",names(out))]
+  out_screen_irm <- out[,grepl("^S_IRm.",names(out))]
+  out_screen_icf <- out[,grepl("^S_ICf.",names(out))]
+  out_screen_icm <- out[,grepl("^S_ICm.",names(out))]
+  out_screen_enchbf <- out[,grepl("^S_ENCHBf.",names(out))]
+  out_screen_enchbm <- out[,grepl("^S_ENCHBm.",names(out))]
+  out_screen_ccf <- out[,grepl("^S_CCf.",names(out))]
+  out_screen_ccm <- out[,grepl("^S_CCm.",names(out))]
+  out_screen_dccf <- out[,grepl("^S_DCCf.",names(out))]
+  out_screen_dccm <- out[,grepl("^S_DCCm.",names(out))]
+  out_screen_hccf <- out[,grepl("^S_HCCf.",names(out))]
+  out_screen_hccm <- out[,grepl("^S_HCCm.",names(out))]
+  out_screen_rf <- out[,grepl("^S_Rf.",names(out))]
+  out_screen_rm <- out[,grepl("^S_Rm.",names(out))]
+  # Treated compartments
+  out_treat_chbf <- out[,grepl("^T_CHBf.",names(out))]
+  out_treat_chbm <- out[,grepl("^T_CHBm.",names(out))]
+  out_treat_ccf <- out[,grepl("^T_CCf.",names(out))]
+  out_treat_ccm <- out[,grepl("^T_CCm.",names(out))]
+  out_treat_dccf <- out[,grepl("^T_DCCf.",names(out))]
+  out_treat_dccm <- out[,grepl("^T_DCCm.",names(out))]
+  out_treat_hccf <- out[,grepl("^T_HCCf.",names(out))]
+  out_treat_hccm <- out[,grepl("^T_HCCm.",names(out))]
+  out_treat_rf <- out[,grepl("^T_Rf.",names(out))]
+  out_treat_rm <- out[,grepl("^T_Rm.",names(out))]
 
   # Total population
   out_popf <- select(out, contains("f"))
@@ -931,36 +1004,88 @@ code_model_output <- function(output) {
   out_cum_hccf <- output[,grepl("^cum_incident_hccf.",names(output))]
   out_cum_hccm <- output[,grepl("^cum_incident_hccm.",names(output))]
 
+  # Cumulative HBV incidence from horizontal transmission in the screened group
+  out_cum_screened_infectionsf <- output[,grepl("^cum_screened_infectionsf.",names(output))]
+  out_cum_screened_infectionsm <- output[,grepl("^cum_screened_infectionsm.",names(output))]
+
+  # Cumulative chronic infection incidence from horizontal transmission in the screened group
+  out_cum_screened_chronic_infectionsf <- output[,grepl("^cum_screened_chronic_infectionsf.",names(output))]
+  out_cum_screened_chronic_infectionsm <- output[,grepl("^cum_screened_chronic_infectionsm.",names(output))]
+
+  # Cumulative number of HBV-related deaths (from cirrhosis and HCC) in the screened group
+  out_cum_screened_hbv_deathsf <- output[,grepl("^cum_screened_hbv_deathsf.",names(output))]
+  out_cum_screened_hbv_deathsm <- output[,grepl("^cum_screened_hbv_deathsm.",names(output))]
+
+  # Cumulative number of HBV-related deaths (from cirrhosis and HCC) in the treated group
+  out_cum_treated_hbv_deathsf <- output[,grepl("^cum_treated_hbv_deathsf.",names(output))]
+  out_cum_treated_hbv_deathsm <- output[,grepl("^cum_treated_hbv_deathsm.",names(output))]
+
+
   ## Process infection outputs
   # Combine into data frames with outputs of interest for further analysis
 
   # Age-specific number in each infection compartment at each time step
-  sus <- data.frame(pop = out_sf + out_sm)   # need to change the column names
+  sus <- data.frame(pop = out_sf + out_sm + out_screen_sf + out_screen_sm)   # need to change the column names
   carriers <- data.frame(pop = (out_itf + out_itm +
                                   out_irf + out_irm +
                                   out_icf+out_icm+
                                   out_enchbf+out_enchbm+
                                   out_ccf+out_ccm+
                                   out_dccf+out_dccm+
-                                  out_hccf+out_hccm))
+                                  out_hccf+out_hccm+
+                                  out_screen_itf + out_screen_itm +
+                                  out_screen_irf + out_screen_irm +
+                                  out_screen_icf+out_screen_icm+
+                                  out_screen_enchbf+out_screen_enchbm+
+                                  out_screen_ccf+out_screen_ccm+
+                                  out_screen_dccf+out_screen_dccm+
+                                  out_screen_hccf+out_screen_hccm+
+                                  out_treat_chbf+out_treat_chbm+
+                                  out_treat_ccf+out_treat_ccm+
+                                  out_treat_dccf+out_treat_dccm+
+                                  out_treat_hccf+out_treat_hccm))
   carriers_female <- data.frame(pop = (out_itf+
                                          out_irf+
                                          out_icf+
                                          out_enchbf+
-                                         out_ccf+out_dccf+out_hccf))
+                                         out_ccf+out_dccf+out_hccf+
+                                         out_screen_itf +
+                                         out_screen_irf +
+                                         out_screen_icf+
+                                         out_screen_enchbf+
+                                         out_screen_ccf+
+                                         out_screen_dccf+
+                                         out_screen_hccf+
+                                         out_treat_chbf+
+                                         out_treat_ccf+
+                                         out_treat_dccf+
+                                         out_treat_hccf))
   carriers_male <- data.frame(pop = (out_itm+
                                        out_irm+
                                        out_icm+
                                        out_enchbm+
-                                       out_ccm+out_dccm+out_hccm))
-  immune <- data.frame(pop = out_rf + out_rm)
+                                       out_ccm+out_dccm+out_hccm+
+                                       out_screen_itm +
+                                       out_screen_irm +
+                                       out_screen_icm+
+                                       out_screen_enchbm+
+                                       out_screen_ccm+
+                                       out_screen_dccm+
+                                       out_screen_hccm+
+                                       out_treat_chbm+
+                                       out_treat_ccm+
+                                       out_treat_dccm+
+                                       out_treat_hccm))
+  immune <- data.frame(pop = out_rf + out_rm + out_screen_rf + out_screen_rm + out_treat_rf + out_treat_rm)
   ever_infected <- data.frame(pop = carriers + immune)
-  ever_infected_female <- data.frame(pop = carriers_female + out_rf)
-  ever_infected_male <- data.frame(pop = carriers_male + out_rm)
+  ever_infected_female <- data.frame(pop = carriers_female + out_rf + out_screen_rf + out_treat_rf)
+  ever_infected_male <- data.frame(pop = carriers_male + out_rm + out_screen_rm + out_treat_rm)
   eag_positive <- data.frame(pop = (out_itf + out_itm +
-                                      out_irf + out_irm))
-  eag_positive_female <- data.frame(pop = (out_itf + out_irf))
-  eag_positive_male <- data.frame(pop = (out_itm + out_irm))
+                                      out_irf + out_irm +
+                                       out_screen_itf + out_screen_itm +
+                                         out_screen_irf + out_screen_irm))
+  eag_positive_female <- data.frame(pop = (out_itf + out_irf + out_screen_itf + out_screen_irf))
+  eag_positive_male <- data.frame(pop = (out_itm + out_irm + out_screen_itm + out_screen_irm))
 
   # Total number in each infection compartment per time step
   infectioncat_total <- data.frame(time = output$time,
@@ -1026,6 +1151,60 @@ code_model_output <- function(output) {
   incident_hcc$incident_number_total <- incident_hcc$incident_number_female +
     incident_hcc$incident_number_male
 
+  # Screened compartents:
+
+  # Age-specific HBV incidence from horizontal transmission after screening - for women, men and both (total)
+  screened_horizontal_infections_female <- data.frame(incident_number = calculate_incident_numbers(out_cum_screened_infectionsf))
+  names(screened_horizontal_infections_female) <- sprintf("incident_number%g",ages)
+
+  screened_horizontal_infections_male <- data.frame(incident_number = calculate_incident_numbers(out_cum_screened_infectionsm))
+  names(screened_horizontal_infections_male) <- sprintf("incident_number%g",ages)
+
+  # Total number of incident infections after screening (only from horizontal transmission) per time step
+  screened_incident_infections <- data.frame(time = output$time,
+                                    screened_horizontal_infections = rowSums(screened_horizontal_infections_female) +
+                                      rowSums(screened_horizontal_infections_male))
+
+  # Age-specific chronic infection incidence from horizontal transmission after screening - for women, men and both (total)
+  screened_horizontal_chronic_infections_female <- data.frame(incident_number = calculate_incident_numbers(out_cum_screened_chronic_infectionsf))
+  names(screened_horizontal_chronic_infections_female) <- sprintf("incident_number%g",ages)
+
+  screened_horizontal_chronic_infections_male <- data.frame(incident_number = calculate_incident_numbers(out_cum_screened_chronic_infectionsm))
+  names(screened_horizontal_chronic_infections_male) <- sprintf("incident_number%g",ages)
+
+
+  # Total number of incident chronic infections after screening (from horizontal transmission only) per time step
+  screened_incident_chronic_infections <- data.frame(time = output$time,
+                                              screened_horizontal_chronic_infections = rowSums(screened_horizontal_chronic_infections_female) +
+                                              rowSums(screened_horizontal_chronic_infections_male))
+
+  # Age-specific number of HBV-related deaths after screening - for women and men
+  screened_hbv_deaths_female <- data.frame(incident_number = calculate_incident_numbers(out_cum_screened_hbv_deathsf))
+  names(screened_hbv_deaths_female) <- sprintf("incident_number%g",ages)
+
+  screened_hbv_deaths_male <- data.frame(incident_number = calculate_incident_numbers(out_cum_screened_hbv_deathsm))
+  names(screened_hbv_deaths_male) <- sprintf("incident_number%g",ages)
+
+  # Total number of HBV deaths per time step after screening
+  screened_hbv_deaths <- data.frame(time = output$time,
+                                    incident_number_female = rowSums(screened_hbv_deaths_female),
+                                    incident_number_male = rowSums(screened_hbv_deaths_male))
+  screened_hbv_deaths$incident_number_total <- screened_hbv_deaths$incident_number_female + screened_hbv_deaths$incident_number_male
+
+  # Treated compartments:
+
+  # Age-specific number of HBV-related deaths after treatment - for women and men
+  treated_hbv_deaths_female <- data.frame(incident_number = calculate_incident_numbers(out_cum_treated_hbv_deathsf))
+  names(treated_hbv_deaths_female) <- sprintf("incident_number%g",ages)
+
+  treated_hbv_deaths_male <- data.frame(incident_number = calculate_incident_numbers(out_cum_treated_hbv_deathsm))
+  names(treated_hbv_deaths_male) <- sprintf("incident_number%g",ages)
+
+  # Total number of HBV deaths per time step after treatment
+  treated_hbv_deaths <- data.frame(time = output$time,
+                                    incident_number_female = rowSums(treated_hbv_deaths_female),
+                                    incident_number_male = rowSums(treated_hbv_deaths_male))
+  treated_hbv_deaths$incident_number_total <- treated_hbv_deaths$incident_number_female + treated_hbv_deaths$incident_number_male
 
   ## Code demography outputs
 
@@ -1102,6 +1281,10 @@ code_model_output <- function(output) {
                    "incident_chronic_infections" = incident_chronic_infections,
                    "hbv_deaths" = hbv_deaths,
                    "incident_hcc" = incident_hcc,
+                   "screened_incident_infections" = screened_incident_infections,
+                   "screened_incident_chronic_infections" = screened_incident_chronic_infections,
+                   "screened_hbv_deaths" = screened_hbv_deaths,
+                   "treated_hbv_deaths" = treated_hbv_deaths,
                    "full_output" = output)
   return(toreturn)
 
@@ -1133,6 +1316,36 @@ code_model_output_summary <- function(output) {
   out_hccm <- out[,grepl("^HCCm.",names(out))]
   out_rf <- out[,grepl("^Rf.",names(out))]
   out_rm <- out[,grepl("^Rm.",names(out))]
+  # Screened compartments
+  out_screen_sf <- out[,grepl("^S_Sf.",names(out))]
+  out_screen_sm <- out[,grepl("^S_Sm.",names(out))]
+  out_screen_itf <- out[,grepl("^S_ITf.",names(out))]
+  out_screen_itm <- out[,grepl("^S_ITm.",names(out))]
+  out_screen_irf <- out[,grepl("^S_IRf.",names(out))]
+  out_screen_irm <- out[,grepl("^S_IRm.",names(out))]
+  out_screen_icf <- out[,grepl("^S_ICf.",names(out))]
+  out_screen_icm <- out[,grepl("^S_ICm.",names(out))]
+  out_screen_enchbf <- out[,grepl("^S_ENCHBf.",names(out))]
+  out_screen_enchbm <- out[,grepl("^S_ENCHBm.",names(out))]
+  out_screen_ccf <- out[,grepl("^S_CCf.",names(out))]
+  out_screen_ccm <- out[,grepl("^S_CCm.",names(out))]
+  out_screen_dccf <- out[,grepl("^S_DCCf.",names(out))]
+  out_screen_dccm <- out[,grepl("^S_DCCm.",names(out))]
+  out_screen_hccf <- out[,grepl("^S_HCCf.",names(out))]
+  out_screen_hccm <- out[,grepl("^S_HCCm.",names(out))]
+  out_screen_rf <- out[,grepl("^S_Rf.",names(out))]
+  out_screen_rm <- out[,grepl("^S_Rm.",names(out))]
+  # Treated compartments
+  out_treat_chbf <- out[,grepl("^T_CHBf.",names(out))]
+  out_treat_chbm <- out[,grepl("^T_CHBm.",names(out))]
+  out_treat_ccf <- out[,grepl("^T_CCf.",names(out))]
+  out_treat_ccm <- out[,grepl("^T_CCm.",names(out))]
+  out_treat_dccf <- out[,grepl("^T_DCCf.",names(out))]
+  out_treat_dccm <- out[,grepl("^T_DCCm.",names(out))]
+  out_treat_hccf <- out[,grepl("^T_HCCf.",names(out))]
+  out_treat_hccm <- out[,grepl("^T_HCCm.",names(out))]
+  out_treat_rf <- out[,grepl("^T_Rf.",names(out))]
+  out_treat_rm <- out[,grepl("^T_Rm.",names(out))]
 
   # Total population
   out_popf <- select(out, contains("f"))
@@ -1149,28 +1362,60 @@ code_model_output_summary <- function(output) {
                                   out_enchbf+out_enchbm+
                                   out_ccf+out_ccm+
                                   out_dccf+out_dccm+
-                                  out_hccf+out_hccm))
+                                  out_hccf+out_hccm+
+                                  out_screen_itf + out_screen_itm +
+                                  out_screen_irf + out_screen_irm +
+                                  out_screen_icf+out_screen_icm+
+                                  out_screen_enchbf+out_screen_enchbm+
+                                  out_screen_ccf+out_screen_ccm+
+                                  out_screen_dccf+out_screen_dccm+
+                                  out_screen_hccf+out_screen_hccm+
+                                  out_treat_chbf+out_treat_chbm+
+                                  out_treat_ccf+out_treat_ccm+
+                                  out_treat_dccf+out_treat_dccm+
+                                  out_treat_hccf+out_treat_hccm))
   carriers_female <- data.frame(pop = (out_itf+
                                          out_irf+
                                          out_icf+
                                          out_enchbf+
-                                         out_ccf+out_dccf+out_hccf))
+                                         out_ccf+out_dccf+out_hccf+
+                                         out_screen_itf +
+                                         out_screen_irf +
+                                         out_screen_icf+
+                                         out_screen_enchbf+
+                                         out_screen_ccf+
+                                         out_screen_dccf+
+                                         out_screen_hccf+
+                                         out_treat_chbf+
+                                         out_treat_ccf+
+                                         out_treat_dccf+
+                                         out_treat_hccf))
   carriers_male <- data.frame(pop = (out_itm+
                                        out_irm+
                                        out_icm+
                                        out_enchbm+
-                                       out_ccm+out_dccm+out_hccm))
-
-  immune <- data.frame(pop = out_rf + out_rm)
-
+                                       out_ccm+out_dccm+out_hccm+
+                                       out_screen_itm +
+                                       out_screen_irm +
+                                       out_screen_icm+
+                                       out_screen_enchbm+
+                                       out_screen_ccm+
+                                       out_screen_dccm+
+                                       out_screen_hccm+
+                                       out_treat_chbm+
+                                       out_treat_ccm+
+                                       out_treat_dccm+
+                                       out_treat_hccm))
+  immune <- data.frame(pop = out_rf + out_rm + out_screen_rf + out_screen_rm + out_treat_rf + out_treat_rm)
   ever_infected <- data.frame(pop = carriers + immune)
-  ever_infected_female <- data.frame(pop = carriers_female + out_rf)
-  ever_infected_male <- data.frame(pop = carriers_male + out_rm)
-
+  ever_infected_female <- data.frame(pop = carriers_female + out_rf + out_screen_rf + out_treat_rf)
+  ever_infected_male <- data.frame(pop = carriers_male + out_rm + out_screen_rm + out_treat_rm)
   eag_positive <- data.frame(pop = (out_itf + out_itm +
-                                      out_irf + out_irm))
-  eag_positive_female <- data.frame(pop = (out_itf + out_irf))
-  eag_positive_male <- data.frame(pop = (out_itm + out_irm))
+                                      out_irf + out_irm +
+                                      out_screen_itf + out_screen_itm +
+                                      out_screen_irf + out_screen_irm))
+  eag_positive_female <- data.frame(pop = (out_itf + out_irf + out_screen_itf + out_screen_irf))
+  eag_positive_male <- data.frame(pop = (out_itm + out_irm + out_screen_itm + out_screen_irm))
 
   ## Code demography outputs
 
@@ -1227,7 +1472,11 @@ output_storage <- c("cum_deathsf" = rep(0,n_agecat), "cum_deathsm" = rep(0,n_age
                     "cum_it_to_hccf" = rep(0,n_agecat), "cum_it_to_hccm" = rep(0,n_agecat),
                     "cum_ir_to_hccf" = rep(0,n_agecat), "cum_ir_to_hccm" = rep(0,n_agecat),
                     "cum_ic_to_hccf" = rep(0,n_agecat), "cum_ic_to_hccm" = rep(0,n_agecat),
-                    "cum_enchb_to_hccf" = rep(0,n_agecat), "cum_enchb_to_hccm" = rep(0,n_agecat))
+                    "cum_enchb_to_hccf" = rep(0,n_agecat), "cum_enchb_to_hccm" = rep(0,n_agecat),
+                    "cum_screened_infectionsf" = rep(0,n_agecat), "cum_screened_infectionsm" = rep(0,n_agecat),
+                    "cum_screened_chronic_infectionsf" = rep(0,n_agecat), "cum_screened_chronic_infectionsm" = rep(0,n_agecat),
+                    "cum_screened_hbv_deathsf" = rep(0,n_agecat), "cum_screened_hbv_deathsm" = rep(0,n_agecat),
+                    "cum_treated_hbv_deathsf" = rep(0,n_agecat), "cum_treated_hbv_deathsm" = rep(0,n_agecat))
 init_pop <- c("Sf" = popsize_1950$pop_female*(1-gambia_infected),
               "ITf" = popsize_1950$pop_female*gambia_infected*gambia_eag*0.5,
               "IRf" = popsize_1950$pop_female*gambia_infected*gambia_eag*0.5,
@@ -1327,14 +1576,14 @@ parameter_list <- list(
   vacc_eff = 0.95,                           # vaccine efficacy, S
   vacc_introtime = 1990,                     # year of vaccine introduction
   # TREATMENT PARAMETERS
-  treatment_initiation_prob = 0,             # probability of initiating treatment after diagnosis of treatment eligibility
-  tr_vir_supp = 0,                           # rate of achieveing virological suppression after treatment initiation
-  thccr_chb = 0,                             # hazard ratio for progression to HCC from CHB on treatment
-  thccr_cc = 0,                              # hazard ratio for progression to HCC from CC on treatment
-  thccr_dcc = 0,                             # hazard ratio for progression to HCC from DCC on treatment
-  tsag_loss_rate = 0,                        # rate of HBsAg loss on treatment
-  tmu_dcc = 0,                               # mortality rate from DCC after treatment
-  tmu_hcc = 0,                               # mortality rate from HCC after treatment
+  treatment_initiation_prob = 1,             # probability of initiating treatment after diagnosis of treatment eligibility
+  tr_vir_supp = 2,                           # rate of achieveing virological suppression after treatment initiation
+  thccr_chb = 0.27,                          # hazard ratio for progression to HCC from CHB on treatment
+  thccr_cc = 0.23,                           # hazard ratio for progression to HCC from CC on treatment
+  thccr_dcc = 0.23,                          # hazard ratio for progression to HCC from DCC on treatment
+  tsag_loss_rate = 0.02,                     # rate of HBsAg loss on treatment
+  tmu_dcc = 0.18,                            # mortality rate from DCC after treatment
+  tmu_hcc = 0.18,                            # mortality rate from HCC after treatment
   # SIMULATION PARAMETERS
   sim_starttime = starttime,
   # INTERVENTION ON/OFF SWITCH (1/0)
@@ -1347,3 +1596,108 @@ parameter_list <- list(
 # Store names of all parameters
 parameter_names <- names(parameter_list)
 
+
+
+# Test run ----
+
+load(here("calibration", "input", "target_threshold_parms_119_060120.Rdata")) # params_mat_targets5
+
+sim <- apply(params_mat_targets5[1,],1,
+                            function(x)
+                              run_model(sim_duration = runtime, default_parameter_list = parameter_list,
+                                                           parms_to_change =
+                                                             list(b1 = as.list(x)$b1,
+                                                                  b2 = as.list(x)$b2,
+                                                                  b3 = as.list(x)$b3,
+                                                                  mtct_prob_s = as.list(x)$mtct_prob_s,
+                                                                  mtct_prob_e = as.list(x)$mtct_prob_e,
+                                                                  alpha = as.list(x)$alpha,
+                                                                  p_chronic_in_mtct = as.list(x)$p_chronic_in_mtct,
+                                                                  p_chronic_function_r = as.list(x)$p_chronic_function_r,
+                                                                  p_chronic_function_s = as.list(x)$p_chronic_function_s,
+                                                                  pr_it_ir = as.list(x)$pr_it_ir,
+                                                                  pr_ir_ic = as.list(x)$pr_ir_ic,
+                                                                  eag_prog_function_rate = as.list(x)$eag_prog_function_rate,
+                                                                  pr_ir_enchb = as.list(x)$pr_ir_enchb,
+                                                                  pr_ir_cc_female = as.list(x)$pr_ir_cc_female,
+                                                                  pr_ir_cc_age_threshold = as.list(x)$pr_ir_cc_age_threshold,
+                                                                  pr_ic_enchb = as.list(x)$pr_ic_enchb,
+                                                                  sag_loss_slope = as.list(x)$sag_loss_slope,
+                                                                  pr_enchb_cc_female = as.list(x)$pr_enchb_cc_female,
+                                                                  cirrhosis_male_cofactor = as.list(x)$cirrhosis_male_cofactor,
+                                                                  pr_cc_dcc = as.list(x)$pr_cc_dcc,
+                                                                  cancer_prog_coefficient_female = as.list(x)$cancer_prog_coefficient_female,
+                                                                  cancer_age_threshold = as.list(x)$cancer_age_threshold,
+                                                                  cancer_male_cofactor = as.list(x)$cancer_male_cofactor,
+                                                                  hccr_it = as.list(x)$hccr_it,
+                                                                  hccr_ir = as.list(x)$hccr_ir,
+                                                                  hccr_enchb = as.list(x)$hccr_enchb,
+                                                                  hccr_cc = as.list(x)$hccr_cc,
+                                                                  hccr_dcc = as.list(x)$hccr_dcc,
+                                                                  mu_cc = as.list(x)$mu_cc,
+                                                                  mu_dcc = as.list(x)$mu_dcc,
+                                                                  mu_hcc = as.list(x)$mu_hcc,
+                                                                  vacc_eff = as.list(x)$vacc_eff
+                                                             ),
+                                        scenario = "vacc_screen"))
+
+out <- code_model_output(sim[[1]])
+
+outpath <- out
+
+# Total number in each infection compartment per timestep
+plot(outpath$time,outpath$infectioncat_total$carriers,type = "l", ylim = c(0,4000000))
+lines(outpath$time,outpath$infectioncat_total$sus,col= "red")
+lines(outpath$time,outpath$infectioncat_total$immune,col= "blue")
+
+# Proportion in each infection compartment per timestep
+plot(outpath$time,outpath$infectioncat_total$carriers/outpath$pop_total$pop_total,type = "l",
+     ylim = c(0,0.7), xlim = c(1880,2020))
+lines(outpath$time,outpath$infectioncat_total$sus/outpath$pop_total$pop_total,col= "red")
+lines(outpath$time,outpath$infectioncat_total$immune/outpath$pop_total$pop_total,col= "blue")
+
+# Number of new cases of chronic HBV carriage at each timestep
+plot(outpath$time,
+     (outpath$incident_chronic_infections$horizontal_chronic_infections+
+        outpath$incident_chronic_infections$chronic_births+
+        outpath$screened_incident_chronic_infections$screened_horizontal_chronic_infections),
+     type = "l", xlim = c(1960,2100), ylim = c(0, 5000),
+     xlab = "Time", ylab = "New cases of chronic HBV carriage per timestep")
+lines(outpath$time,
+      outpath$incident_chronic_infections$chronic_births,
+      lty = "dashed")
+lines(outpath$time,
+      outpath$screened_incident_chronic_infections$screened_horizontal_chronic_infections,
+      lty = "dashed", col = "red")
+
+# Number of HBV-related deaths at each timestep
+plot(outpath$time,
+     outpath$hbv_deaths$incident_number_total+outpath$screened_hbv_deaths$incident_number_total+
+       outpath$treated_hbv_deaths$incident_number_total,
+     type = "l", xlim = c(1960,2100), ylim = c(0, 600),
+     xlab = "Time", ylab = "HBV-related deaths per timestep")
+lines(outpath$time, outpath$hbv_deaths$incident_number_male,
+      lty = "dashed")
+lines(outpath$time, outpath$screened_hbv_deaths$incident_number_total,
+      lty = "dashed", col = "red")
+lines(outpath$time, outpath$treated_hbv_deaths$incident_number_total,
+      lty = "dashed", col = "pink")
+
+# Plot total population size over timesteps
+plot(outpath$time, outpath$pop_total$pop_total,
+     xlab = "Year", ylab = "Population size", type = "l", ylim = c(0,7000000))
+points(popsize_total$time, popsize_total$pop, col = "red")
+
+# Plot total number of births over time periods
+plot(outpath$births_group5$timegroup, outpath$births_group5$incident_number,
+     xlab = "5-year time periods", ylab = "Total number of births",
+     type = "l", ylim = c(0,600000))
+points(x = as.numeric(strtrim(input_births_clean$time, width = 4)),
+       y = input_births_clean$births, col = "red")
+
+# Plot total number of deaths over time periods
+plot(x = outpath$deaths_total_group5$timegroup,
+     y = outpath$deaths_total_group5$total,
+     ylim = c(0,400000), type = "l", xlab = "5-year time periods", ylab = "Total number of deaths")
+points(x = as.numeric(strtrim(deaths_total$time, width = 4)),
+       y = deaths_total$deaths, col = "red")

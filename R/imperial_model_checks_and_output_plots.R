@@ -95,7 +95,7 @@ plot(out$scenario_no_vacc$time,
      (out$scenario_no_vacc$incident_chronic_infections$horizontal_chronic_infections+
         out$scenario_no_vacc$incident_chronic_infections$chronic_births)*100000/
        apply(out$scenario_no_vacc$sus,1,sum),
-     type = "l", xlim = c(1960,2100), ylim = c(0, 700),
+     type = "l", xlim = c(1960,2100), ylim = c(0, 1000),
      xlab = "Time", ylab = "Incidence of chronic HBV carriage per 100000 per timestep",
      main = "No vaccine (black) vs infant vaccine (red), from MTCT = dashed")
 lines(out$scenario_no_vacc$time,
@@ -112,9 +112,11 @@ lines(out$scenario_vacc$time,
         apply(out$scenario_vacc$sus,1,sum),
       lty = "dashed", col = "red")
 
+
+
 # Number of HBV-related deaths at each timestep with/without infant vaccine
 plot(out$scenario_no_vacc$time, out$scenario_no_vacc$hbv_deaths$incident_number_total,
-     type = "l", xlim = c(1960,2100), ylim = c(0, 1600),
+     type = "l", xlim = c(1960,2100), ylim = c(0, 2000),
      xlab = "Time", ylab = "HBV-related deaths per timestep",
      main = "No vaccine (black) vs infant vaccine (red), deaths among males = dashed")
 lines(out$scenario_vacc$time, out$scenario_vacc$hbv_deaths$incident_number_total, col = "red")
@@ -219,6 +221,24 @@ plot(ages, outpath$carriers[which(outpath$time == 2020),]/
 # HBeAg prevalence in chronic carriers by age in 2015
 plot(ages, outpath$eag_positive[which(outpath$time == 2015),]/
        outpath$carriers[which(outpath$time == 2015),], type = "l", ylim = c(0,1))
+
+# Number of new cases of chronic HBV carriage at each timestep
+plot(outpath$time,
+     (outpath$incident_chronic_infections$horizontal_chronic_infections+
+        outpath$incident_chronic_infections$chronic_births),
+     type = "l", xlim = c(1960,2100), ylim = c(0, 5000),
+     xlab = "Time", ylab = "New cases of chronic HBV carriage per timestep")
+lines(outpath$time,
+      outpath$incident_chronic_infections$chronic_births,
+      lty = "dashed")
+
+# Number of HBV-related deaths at each timestep
+plot(outpath$time, outpath$hbv_deaths$incident_number_total,
+     type = "l", xlim = c(1960,2100), ylim = c(0, 400),
+     xlab = "Time", ylab = "HBV-related deaths per timestep")
+lines(outpath$time, outpath$hbv_deaths$incident_number_male,
+      lty = "dashed")
+
 
 ### Model checks: basics ----
 outpath <- out
