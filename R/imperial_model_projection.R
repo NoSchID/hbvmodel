@@ -44,7 +44,10 @@ n_agecat <- length(ages)               # number of age groups
 ages_wocba <- round(((15/da):((50-da)/da))*da,2)        # age groups 15-49 years (women of childbearing age)
 
 ## Infection compartments
-n_infectioncat <- 23
+n_nathistcat <- 9
+n_screencat <- 9
+n_treatcat <- 5
+n_infectioncat <- n_nathistcat+n_screencat+n_treatcat
 # Natural history (calibration) model has 9 infection compartments (S, IT, IR, IC, ENCHB, CC, DCC, HCC, R)
 # Now added 9 screened compartments + 5 ever treated compartments
 
@@ -420,7 +423,7 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
       # Post-treatment transitions
 
       # Incident deaths due to HBV (from cirrhosis and HCC) after treatment
-      dcum_screened_hbv_deaths[index$ages_all,i] <-
+      dcum_treated_hbv_deaths[index$ages_all,i] <-
         tmu_dcc * pop[index$ages_all,DCC_T,i] +
         tmu_hcc * pop[index$ages_all,HCC_T,i]
       # Returns a matrix with incident HBV deaths for every age (rows) and every sex (columns)
@@ -656,7 +659,8 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
 
 ## Event function: reset population size to initial (1850) size in 1950
 reset_pop_1950 <- function(timestep, pop, parameters){
-  with (as.list(pop),{
+  with (as.list(pop, parameters),{
+
     pop_to_reset <- array(unlist(pop[1:(2 * n_infectioncat * n_agecat)]),dim=c(n_agecat,n_infectioncat,2))
     initialpop <- array(unlist(init_pop[1:(2 * n_infectioncat * n_agecat)]),dim=c(n_agecat,n_infectioncat,2))
 
@@ -666,10 +670,56 @@ reset_pop_1950 <- function(timestep, pop, parameters){
                       rep(pop_increase[,2], n_infectioncat)), dim = c(n_agecat,n_infectioncat,2))
     pop_to_reset <- scaler * pop_to_reset
     return(c(pop_to_reset, unlist(init_pop[(2*n_infectioncat*n_agecat+1):length(init_pop)])))
-    #   return(c(pop_to_reset, rep(0,n_agecat), rep(0,n_agecat), rep(0,n_agecat),
-    #            rep(0,n_agecat), rep(0,n_agecat), rep(0,n_agecat),
-    #            0, 0, 0,
-    #            rep(0,n_agecat), rep(0,n_agecat)))
+
+  })
+}
+
+event_func <- function(timestep, pop, parameters){
+
+#    if(timestep >= 1950-parameters$sim_starttime & timestep <= 1950.5-parameters$sim_starttime) {
+  if(timestep == 1950-parameters$sim_starttime) {
+    reset_pop_1950(timestep, pop, parameters)
+  } else if(timestep == 2020-parameters$sim_starttime) {
+    screen_pop(timestep, pop, parameters)
+  } else {
+    return(c(unlist(pop)))
+  }
+
+}
+
+screen_pop <- function(timestep, pop, parameters){
+  with (as.list(pop),{
+
+    # Define indices
+    #nat_hist_f <- 1:(n_nathistcat*n_agecat)
+    #screened_f <- (max(nat_hist_f)+1):((n_nathistcat+n_screencat)*n_agecat)
+    #treated_f <- (max(screened_f)+1):(n_infectioncat*n_agecat)
+    #nat_hist_m <- (max(treated_f)+1):((n_infectioncat+n_nathistcat)*n_agecat)
+    #screened_m <- (max(nat_hist_m)+1):((n_infectioncat+n_nathistcat+n_screencat)*n_agecat)
+    #treated_m <- (max(screened_m)+1):(2*n_infectioncat*n_agecat)
+
+    # Select the compartments to screen: infection compartments 1-9 (S-R), women and men
+    #comps_to_screen <- array(unlist(pop[c(nat_hist_f, nat_hist_m)]),
+    #                         dim=c(n_agecat,n_nathistcat,2))
+    # Select the screened compartments: infection compartments 10-18 (S_S-R_S)
+    #comps_screened <- array(unlist(pop[c(screened_f, screened_m)]),
+    #                      dim=c(n_agecat,n_screencat,2))
+    #comps_treated <- array(unlist(pop[c(treated_f, treated_m)]),
+    #                       dim=c(n_agecat,n_treatcat,2))
+
+    # Define indices for age groupts to screen
+    age_groups_to_screen <- which(ages==parameters$min_age_to_screen):which(ages==parameters$max_age_to_screen)
+
+    # Select state variables array
+    total_pop <- array(unlist(pop[1:(2 * n_infectioncat * n_agecat)]),dim=c(n_agecat,n_infectioncat,2))
+    # Move the population to screen
+    pop_to_screen <- parameters$screening_coverage * parameters$link_to_care_prob *
+      total_pop[age_groups_to_screen,1:n_nathistcat,1:2]
+    total_pop[age_groups_to_screen,1:n_nathistcat,1:2] <- total_pop[age_groups_to_screen,1:n_nathistcat,1:2]-pop_to_screen
+    total_pop[age_groups_to_screen,(n_nathistcat+1):(n_nathistcat+n_screencat),1:2] <- total_pop[age_groups_to_screen,(n_nathistcat+1):(n_nathistcat+n_screencat),1:2]+
+      pop_to_screen
+
+    return(c(total_pop, unlist(init_pop[(2*n_infectioncat*n_agecat+1):length(init_pop)])))
   })
 }
 
@@ -817,28 +867,45 @@ run_model <- function(..., sim_duration = runtime,
 
   ## Run model simulation
   timestep_vector <- round((0:((sim_duration-dt)/dt))*dt,2)
-
-  # Add screening event like this!
-  ##eventdata <- data.frame(var = c("Sv","Iv"), time = c(15,15),
-  #                        value = c(0.5,0.5), method = "multiply")
-
-  #events = list(data = eventdata)
-
   timestep_labels <- timestep_vector + parameters$sim_starttime
 
-  if (1950 %in% timestep_labels & scenario == "vacc_screen") {    # add event here
-    timestep_1950 <- timestep_vector[which(timestep_labels == 1950)]
+#  if (1950 %in% timestep_labels) {
+#    timestep_1950 <- timestep_vector[which(timestep_labels == 1950)]
+#    out <- as.data.frame(ode.1D(y = init_pop_vector, times = timestep_vector, func = imperial_model,
+#                                parms = parameters, nspec = 1, method = "lsoda",
+#                                events = list(func = reset_pop_1950, time = timestep_1950)))
+#  } else {
+#    out <- as.data.frame(ode.1D(y = init_pop_vector, times = timestep_vector, func = imperial_model,
+#                                parms = parameters, nspec = 1, method = "lsoda"))
+#  }
+
+  timestep_1950 <- timestep_vector[which(timestep_labels == 1950)]
+  timestep_2020 <- timestep_vector[which(timestep_labels == 2020)]
+
+  if (1950 %in% timestep_labels & scenario == "vacc_screen") {
+
     out <- as.data.frame(ode.1D(y = init_pop_vector, times = timestep_vector, func = imperial_model,
                                 parms = parameters, nspec = 1, method = "ode45",
-                                events = list(func = reset_pop_1950, time = timestep_1950)))
+                                events = list(func = event_func,
+                                              time = c(timestep_1950, timestep_2020))))
+
   } else if (1950 %in% timestep_labels & scenario != "vacc_screen") {
-    timestep_1950 <- timestep_vector[which(timestep_labels == 1950)]
+
     out <- as.data.frame(ode.1D(y = init_pop_vector, times = timestep_vector, func = imperial_model,
                                 parms = parameters, nspec = 1, method = "ode45",
                                 events = list(func = reset_pop_1950, time = timestep_1950)))
-  } else {
+
+  } else if (!(1950 %in% timestep_labels) & scenario == "vacc_screen") {
+
+    out <- as.data.frame(ode.1D(y = init_pop_vector, times = timestep_vector, func = imperial_model,
+                                parms = parameters, nspec = 1, method = "ode45",
+                                events = list(func = screen_pop(), time = timestep_2020)))
+
+  } else if (!(1950 %in% timestep_labels) & scenario != "vacc_screen") {
+
     out <- as.data.frame(ode.1D(y = init_pop_vector, times = timestep_vector, func = imperial_model,
                                 parms = parameters, nspec = 1, method = "ode45"))
+
   }
 
   # Add year label to timestep
@@ -1285,7 +1352,14 @@ code_model_output <- function(output) {
                    "screened_incident_chronic_infections" = screened_incident_chronic_infections,
                    "screened_hbv_deaths" = screened_hbv_deaths,
                    "treated_hbv_deaths" = treated_hbv_deaths,
-                   "full_output" = output)
+                   "full_output" = output,
+                   "out_cum_hbv_deathsf" = out_cum_hbv_deathsf,
+                   "out_cum_hbv_deathsm" = out_cum_hbv_deathsm,
+                   "out_cum_screened_hbv_deathsf" = out_cum_screened_hbv_deathsf,
+                   "out_cum_screened_hbv_deathsm" = out_cum_screened_hbv_deathsm,
+                   "out_cum_treated_hbv_deathsf" = out_cum_treated_hbv_deathsf,
+                   "out_cum_treated_hbv_deathsm" = out_cum_treated_hbv_deathsm
+  )
   return(toreturn)
 
 }
@@ -1576,6 +1650,10 @@ parameter_list <- list(
   vacc_eff = 0.95,                           # vaccine efficacy, S
   vacc_introtime = 1990,                     # year of vaccine introduction
   # TREATMENT PARAMETERS
+  screening_coverage = 0.9,
+  link_to_care_prob = 1,
+  min_age_to_screen = 30,
+  max_age_to_screen = 70,
   treatment_initiation_prob = 1,             # probability of initiating treatment after diagnosis of treatment eligibility
   tr_vir_supp = 2,                           # rate of achieveing virological suppression after treatment initiation
   thccr_chb = 0.27,                          # hazard ratio for progression to HCC from CHB on treatment
@@ -1602,7 +1680,9 @@ parameter_names <- names(parameter_list)
 
 load(here("calibration", "input", "target_threshold_parms_119_060120.Rdata")) # params_mat_targets5
 
-sim <- apply(params_mat_targets5[1,],1,
+
+tic()
+sim <- apply(params_mat_targets5[3,],1,
                             function(x)
                               run_model(sim_duration = runtime, default_parameter_list = parameter_list,
                                                            parms_to_change =
@@ -1637,12 +1717,15 @@ sim <- apply(params_mat_targets5[1,],1,
                                                                   mu_cc = as.list(x)$mu_cc,
                                                                   mu_dcc = as.list(x)$mu_dcc,
                                                                   mu_hcc = as.list(x)$mu_hcc,
-                                                                  vacc_eff = as.list(x)$vacc_eff
-                                                             ),
+                                                                  vacc_eff = as.list(x)$vacc_eff),
                                         scenario = "vacc_screen"))
+toc()
+
+# Check for negative numbers
+o <- sim[[1]]
+any(o[,1:(2*n_agecat*n_infectioncat)]<0)
 
 out <- code_model_output(sim[[1]])
-
 outpath <- out
 
 # Total number in each infection compartment per timestep
@@ -1676,12 +1759,59 @@ plot(outpath$time,
        outpath$treated_hbv_deaths$incident_number_total,
      type = "l", xlim = c(1960,2100), ylim = c(0, 600),
      xlab = "Time", ylab = "HBV-related deaths per timestep")
-lines(outpath$time, outpath$hbv_deaths$incident_number_male,
-      lty = "dashed")
 lines(outpath$time, outpath$screened_hbv_deaths$incident_number_total,
       lty = "dashed", col = "red")
 lines(outpath$time, outpath$treated_hbv_deaths$incident_number_total,
       lty = "dashed", col = "pink")
+
+# Number of HBV-related deaths at each timestep per 100000 people
+plot(x=outpath$time,
+     y= (outpath$hbv_deaths$incident_number_total+outpath$screened_hbv_deaths$incident_number_total+
+       outpath$treated_hbv_deaths$incident_number_total)*100000/outpath$pop_total$pop_total,
+     type = "l", xlim = c(1960,2100), ylim = c(0, 20),
+     xlab = "Time", ylab = "HBV-related deaths per timestep per 100000 people")
+lines(outpath$time, outpath$screened_hbv_deaths$incident_number_total,
+      lty = "dashed", col = "red")
+lines(outpath$time, outpath$treated_hbv_deaths$incident_number_total,
+      lty = "dashed", col = "pink")
+
+outpath$hbv_deaths$incident_number_total[outpath$time>2015]
+
+unscreen_pop <- rowSums(sim[[1]][,c(2:1801, 4602:6401)])
+screen_pop <- rowSums(select(sim[[1]], starts_with("S_")))
+treat_pop <- rowSums(select(sim[[1]], starts_with("T_")))
+plot(x=outpath$time, y = unscreen_pop)
+plot(x=outpath$time, y = screen_pop)
+plot(x=outpath$time, y = treat_pop)
+
+deaths1 <- rowSums(outpath$out_cum_hbv_deathsf)+rowSums(outpath$out_cum_hbv_deathsm)
+deaths2 <- rowSums(outpath$out_cum_screened_hbv_deathsf)+rowSums(outpath$out_cum_screened_hbv_deathsm)
+deaths3 <- rowSums(outpath$out_cum_treated_hbv_deathsf)+rowSums(outpath$out_cum_treated_hbv_deathsm)
+
+diff(deaths1[1:which(out$time == 2020)], lag=1)
+diff(deaths1[which(out$time ==2020.5):which(out$time == 2099.5)], lag=1)
+round(diff(deaths2, lag=1),2)
+
+plot(x=outpath$time[outpath$time>2015], y = unscreen_pop_2015plus, ylim = c(0,7000000))
+plot(x=outpath$time[outpath$time>2015], y = screen_pop_2015plus, col = "red")
+plot(x=outpath$time[outpath$time>2015], y = treat_pop_2015plus, col = "red")
+plot(x=outpath$time[outpath$time>2015], y = treat_pop_2015plus/screen_pop_2015plus)
+
+plot(x=out$time, y=rowSums(outpath$out_cum_hbv_deathsf)+rowSums(outpath$out_cum_hbv_deathsm), type = "l")
+lines(x=out$time, y=rowSums(outpath$out_cum_screened_hbv_deathsf)+rowSums(outpath$out_cum_screened_hbv_deathsm), type = "l", col = "blue")
+plot(x=out$time, y=rowSums(outpath$out_cum_screened_hbv_deathsf)+rowSums(outpath$out_cum_screened_hbv_deathsm), type = "l")
+
+plot(x=outpath$time, y = outpath$hbv_deaths$incident_number_total*100000/
+       unscreen_pop,ylim=c(0,30))
+plot(x=outpath$time, y = outpath$screened_hbv_deaths$incident_number_total*100000/
+       screen_pop,ylim=c(0,12))
+plot(x=outpath$time[outpath$time>2015], y = outpath$treated_hbv_deaths$incident_number_total[outpath$time>2015]*100000/
+       treat_pop_2015plus,ylim=c(0,12))
+plot(x=outpath$time[outpath$time>2015],
+     y = (outpath$hbv_deaths$incident_number_total+outpath$screened_hbv_deaths$incident_number_total+
+           outpath$treated_hbv_deaths$incident_number_total)[outpath$time>2015]*100000/
+       (unscreen_pop_2015plus+screen_pop_2015plus+treat_pop_2015plus),ylim=c(0,12))
+
 
 # Plot total population size over timesteps
 plot(outpath$time, outpath$pop_total$pop_total,
