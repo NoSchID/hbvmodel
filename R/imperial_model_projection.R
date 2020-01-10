@@ -534,7 +534,7 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
         pr_ir_enchb * pop[index$ages_all,IR_S,i] -
         pr_ir_cc_function[index$ages_all,i] * pop[index$ages_all,IR_S,i] -
         hccr_ir * cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,IR_S,i] -
-        treatment_initiation_prob * tr_vir_supp * pop[index$ages_all,IR_S,i] -       # transition into treated CHB
+        link_to_care_prob * treatment_initiation_prob * tr_vir_supp * pop[index$ages_all,IR_S,i] -       # transition into treated CHB
         deaths[index$ages_all,IR_S,i] + migrants[index$ages_all,IR_S,i]
 
       # Screened Inactive carrier
@@ -551,7 +551,7 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
         pr_ic_enchb * pop[index$ages_all,IC_S,i] -
         pr_enchb_cc_rates[index$ages_all,i] * pop[index$ages_all,ENCHB_S,i] -
         hccr_enchb * cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,ENCHB_S,i] -
-        treatment_initiation_prob * tr_vir_supp * pop[index$ages_all,ENCHB_S,i] -       # transition into treated CHB
+        link_to_care_prob * treatment_initiation_prob * tr_vir_supp * pop[index$ages_all,ENCHB_S,i] -     # transition into treated CHB
         deaths[index$ages_all,ENCHB_S,i] + migrants[index$ages_all,ENCHB_S,i]
 
       # Screened Compensated cirrhosis
@@ -561,7 +561,7 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
         pr_cc_dcc * pop[index$ages_all,CC_S,i] -
         hccr_cc * cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,CC_S,i] -
         mu_cc * pop[index$ages_all,CC_S,i] -
-        treatment_initiation_prob * tr_vir_supp * pop[index$ages_all,CC_S,i] -       # transition into treated CC
+        link_to_care_prob * treatment_initiation_prob * tr_vir_supp * pop[index$ages_all,CC_S,i] -    # transition into treated CC
         deaths[index$ages_all,CC_S,i] + migrants[index$ages_all,CC_S,i]
 
       # Screened Decompensated cirrhosis
@@ -569,7 +569,7 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
         pr_cc_dcc * pop[index$ages_all,CC_S,i] -
         hccr_dcc * pop[index$ages_all,DCC_S,i] -
         mu_dcc * pop[index$ages_all,DCC_S,i] -
-        treatment_initiation_prob * tr_vir_supp * pop[index$ages_all,DCC_S,i] -       # transition into treated DCC
+        link_to_care_prob * treatment_initiation_prob * tr_vir_supp * pop[index$ages_all,DCC_S,i] -   # transition into treated DCC
         deaths[index$ages_all,DCC_S,i] + migrants[index$ages_all,DCC_S,i]
 
       # Screened HCC
@@ -593,8 +593,8 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
 
       # Ever treated CHB
       dpop[index$ages_all,CHB_T,i] <- -(diff(c(0,pop[index$ages_all,CHB_T,i]))/da) +
-        treatment_initiation_prob * tr_vir_supp * pop[index$ages_all,IR_S,i] +
-        treatment_initiation_prob * tr_vir_supp * pop[index$ages_all,ENCHB_S,i] -
+        link_to_care_prob * treatment_initiation_prob * tr_vir_supp * pop[index$ages_all,IR_S,i] +
+        link_to_care_prob * treatment_initiation_prob * tr_vir_supp * pop[index$ages_all,ENCHB_S,i] -
         tsag_loss_rate * pop[index$ages_all,CHB_T,i] -
         # NEED TO THINK ABOUT THIS:
         thccr_chb * (hccr_ir+hccr_enchb)/2 * cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,CHB_T,i] -
@@ -602,13 +602,13 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
 
       # Ever treated CC
       dpop[index$ages_all,CC_T,i] <- -(diff(c(0,pop[index$ages_all,CC_T,i]))/da) +
-        treatment_initiation_prob * tr_vir_supp * pop[index$ages_all,CC_S,i] -
+        link_to_care_prob * treatment_initiation_prob * tr_vir_supp * pop[index$ages_all,CC_S,i] -
         thccr_cc * hccr_cc * cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,CC_T,i] -
         deaths[index$ages_all,CC_T,i] + migrants[index$ages_all,CC_T,i]
 
       # Ever treated DCC
       dpop[index$ages_all,DCC_T,i] <- -(diff(c(0,pop[index$ages_all,DCC_T,i]))/da) +
-        treatment_initiation_prob * tr_vir_supp * pop[index$ages_all,DCC_S,i] -
+        link_to_care_prob * treatment_initiation_prob * tr_vir_supp * pop[index$ages_all,DCC_S,i] -
         thccr_dcc * hccr_dcc * pop[index$ages_all,DCC_T,i] -
         tmu_dcc * pop[index$ages_all,DCC_T,i] -
         deaths[index$ages_all,DCC_T,i] + migrants[index$ages_all,DCC_T,i]
@@ -674,19 +674,6 @@ reset_pop_1950 <- function(timestep, pop, parameters){
   })
 }
 
-event_func <- function(timestep, pop, parameters){
-
-#    if(timestep >= 1950-parameters$sim_starttime & timestep <= 1950.5-parameters$sim_starttime) {
-  if(timestep == 1950-parameters$sim_starttime) {
-    reset_pop_1950(timestep, pop, parameters)
-  } else if(timestep == 2020-parameters$sim_starttime) {
-    screen_pop(timestep, pop, parameters)
-  } else {
-    return(c(unlist(pop)))
-  }
-
-}
-
 screen_pop <- function(timestep, pop, parameters){
   with (as.list(pop),{
 
@@ -713,14 +700,26 @@ screen_pop <- function(timestep, pop, parameters){
     # Select state variables array
     total_pop <- array(unlist(pop[1:(2 * n_infectioncat * n_agecat)]),dim=c(n_agecat,n_infectioncat,2))
     # Move the population to screen
-    pop_to_screen <- parameters$screening_coverage * parameters$link_to_care_prob *
-      total_pop[age_groups_to_screen,1:n_nathistcat,1:2]
+    pop_to_screen <- parameters$screening_coverage * total_pop[age_groups_to_screen,1:n_nathistcat,1:2]
     total_pop[age_groups_to_screen,1:n_nathistcat,1:2] <- total_pop[age_groups_to_screen,1:n_nathistcat,1:2]-pop_to_screen
     total_pop[age_groups_to_screen,(n_nathistcat+1):(n_nathistcat+n_screencat),1:2] <- total_pop[age_groups_to_screen,(n_nathistcat+1):(n_nathistcat+n_screencat),1:2]+
       pop_to_screen
 
     return(c(total_pop, unlist(init_pop[(2*n_infectioncat*n_agecat+1):length(init_pop)])))
   })
+}
+
+event_func <- function(timestep, pop, parameters){
+
+#    if(timestep >= 1950-parameters$sim_starttime & timestep <= 1950.5-parameters$sim_starttime) {
+  if(timestep == 1950-parameters$sim_starttime) {
+    reset_pop_1950(timestep, pop, parameters)
+  } else if(timestep %in% (parameters$screening_years-parameters$sim_starttime)) {
+    screen_pop(timestep, pop, parameters)
+  } else {
+    return(c(unlist(pop)))
+  }
+
 }
 
 ## Functions to run the model
@@ -880,14 +879,14 @@ run_model <- function(..., sim_duration = runtime,
 #  }
 
   timestep_1950 <- timestep_vector[which(timestep_labels == 1950)]
-  timestep_2020 <- timestep_vector[which(timestep_labels == 2020)]
+  timesteps_for_screening <- timestep_vector[which(timestep_labels %in% parameters$screening_years)]
 
   if (1950 %in% timestep_labels & scenario == "vacc_screen") {
 
     out <- as.data.frame(ode.1D(y = init_pop_vector, times = timestep_vector, func = imperial_model,
                                 parms = parameters, nspec = 1, method = "ode45",
                                 events = list(func = event_func,
-                                              time = c(timestep_1950, timestep_2020))))
+                                              time = c(timestep_1950, timesteps_for_screening))))
 
   } else if (1950 %in% timestep_labels & scenario != "vacc_screen") {
 
@@ -899,7 +898,7 @@ run_model <- function(..., sim_duration = runtime,
 
     out <- as.data.frame(ode.1D(y = init_pop_vector, times = timestep_vector, func = imperial_model,
                                 parms = parameters, nspec = 1, method = "ode45",
-                                events = list(func = screen_pop(), time = timestep_2020)))
+                                events = list(func = screen_pop(), time = timesteps_for_screening)))
 
   } else if (!(1950 %in% timestep_labels) & scenario != "vacc_screen") {
 
@@ -968,18 +967,23 @@ calculate_incident_numbers <- function(cumulative_output) {
     incident_numbers <- c(cumulative_output[1],  # number at first timestep
                           diff(cumulative_output, lag = 1))
     # number at current timestep - number at previous timestep
+    # Replace negative numbers by the cumulative value at that timestep (since events reset count to 0)
+    incident_numbers[incident_numbers<0] <- cumulative_output[which(incident_numbers<0)]
 
   } else {  # if not use operation on whole data frame
 
     incident_numbers <- rbind(cumulative_output[1,],  # number at first timestep
                               apply(cumulative_output, 2, diff, lag = 1))
     # number at current timestep - number at previous timestep
+    # Replace negative numbers by the cumulative value at that timestep (since events reset count to 0)
+    incident_numbers[incident_numbers<0] <- cumulative_output[incident_numbers<0]
 
   }
 
   # Returns a vector/dataframe of new cases since the last timestep
   return(incident_numbers)
 }
+
 
 # Function to code relevant model output (stored in list)
 code_model_output <- function(output) {
@@ -1650,12 +1654,13 @@ parameter_list <- list(
   vacc_eff = 0.95,                           # vaccine efficacy, S
   vacc_introtime = 1990,                     # year of vaccine introduction
   # TREATMENT PARAMETERS
-  screening_coverage = 0.9,
-  link_to_care_prob = 1,
-  min_age_to_screen = 30,
-  max_age_to_screen = 70,
+  screening_years = c(2020),                 # vectors for years to implement the screening programme
+  screening_coverage = 0.8,                  # proportion of population in given age group to screen
+  min_age_to_screen = 30,                    # Minimum age group to screen
+  max_age_to_screen = 70,                    # Maximum age group to screen
+  link_to_care_prob = 0.81,                  # probability of linkage to care (liver disease assessment) after HBsAg test
   treatment_initiation_prob = 1,             # probability of initiating treatment after diagnosis of treatment eligibility
-  tr_vir_supp = 2,                           # rate of achieveing virological suppression after treatment initiation
+  tr_vir_supp = 1,                           # rate of achieveing virological suppression after treatment initiation
   thccr_chb = 0.27,                          # hazard ratio for progression to HCC from CHB on treatment
   thccr_cc = 0.23,                           # hazard ratio for progression to HCC from CC on treatment
   thccr_dcc = 0.23,                          # hazard ratio for progression to HCC from DCC on treatment
@@ -1680,9 +1685,7 @@ parameter_names <- names(parameter_list)
 
 load(here("calibration", "input", "target_threshold_parms_119_060120.Rdata")) # params_mat_targets5
 
-
-tic()
-sim <- apply(params_mat_targets5[3,],1,
+sim <- apply(params_mat_targets5[1,],1,
                             function(x)
                               run_model(sim_duration = runtime, default_parameter_list = parameter_list,
                                                            parms_to_change =
@@ -1719,7 +1722,7 @@ sim <- apply(params_mat_targets5[3,],1,
                                                                   mu_hcc = as.list(x)$mu_hcc,
                                                                   vacc_eff = as.list(x)$vacc_eff),
                                         scenario = "vacc_screen"))
-toc()
+
 
 # Check for negative numbers
 o <- sim[[1]]
@@ -1727,6 +1730,21 @@ any(o[,1:(2*n_agecat*n_infectioncat)]<0)
 
 out <- code_model_output(sim[[1]])
 outpath <- out
+
+# Try formatting output for multiple parameter sets
+out <- lapply(sim,code_model_output)
+proj <- cbind(out[[1]]$time,
+              (sapply(lapply(out,"[[", "hbv_deaths"), "[[", "incident_number_total")+
+                 sapply(lapply(out,"[[", "screened_hbv_deaths"), "[[", "incident_number_total")+
+                 sapply(lapply(out,"[[", "treated_hbv_deaths"), "[[", "incident_number_total"))*100000/
+                sapply(lapply(out,"[[", "pop_total"), "[[", "pop_total"))
+colnames(proj)[1] <- "time"
+proj <- gather(as.data.frame(proj), key = "it", value = "deaths_per_100000", -time)
+
+ggplot(proj) +
+  geom_line(aes(x=time, y = deaths_per_100000, group = it))+
+  xlim(1960,2100) +
+  ylim(0,20)
 
 # Total number in each infection compartment per timestep
 plot(outpath$time,outpath$infectioncat_total$carriers,type = "l", ylim = c(0,4000000))
@@ -1766,7 +1784,7 @@ lines(outpath$time, outpath$treated_hbv_deaths$incident_number_total,
 
 # Number of HBV-related deaths at each timestep per 100000 people
 plot(x=outpath$time,
-     y= (outpath$hbv_deaths$incident_number_total+outpath$screened_hbv_deaths$incident_number_total+
+     y=(outpath$hbv_deaths$incident_number_total+outpath$screened_hbv_deaths$incident_number_total+
        outpath$treated_hbv_deaths$incident_number_total)*100000/outpath$pop_total$pop_total,
      type = "l", xlim = c(1960,2100), ylim = c(0, 20),
      xlab = "Time", ylab = "HBV-related deaths per timestep per 100000 people")
@@ -1775,7 +1793,9 @@ lines(outpath$time, outpath$screened_hbv_deaths$incident_number_total,
 lines(outpath$time, outpath$treated_hbv_deaths$incident_number_total,
       lty = "dashed", col = "pink")
 
-outpath$hbv_deaths$incident_number_total[outpath$time>2015]
+lines(x=outpath$time,
+     y=(outpath$hbv_deaths$incident_number_total+outpath$screened_hbv_deaths$incident_number_total+
+          outpath$treated_hbv_deaths$incident_number_total)*100000/outpath$pop_total$pop_total, col = "pink")
 
 unscreen_pop <- rowSums(sim[[1]][,c(2:1801, 4602:6401)])
 screen_pop <- rowSums(select(sim[[1]], starts_with("S_")))
@@ -1787,15 +1807,22 @@ plot(x=outpath$time, y = treat_pop)
 deaths1 <- rowSums(outpath$out_cum_hbv_deathsf)+rowSums(outpath$out_cum_hbv_deathsm)
 deaths2 <- rowSums(outpath$out_cum_screened_hbv_deathsf)+rowSums(outpath$out_cum_screened_hbv_deathsm)
 deaths3 <- rowSums(outpath$out_cum_treated_hbv_deathsf)+rowSums(outpath$out_cum_treated_hbv_deathsm)
+plot(out$time,deaths1+deaths2+deaths3, type = "l", xlim=c(2015,2100))
+lines(out$time,deaths1+deaths2+deaths3, col = "blue")
+(deaths1+deaths2+deaths3)[which(out$time==2020.5)]
+(deaths1+deaths2+deaths3)[which(out$time==2030)]
+(deaths1+deaths2+deaths3)[which(out$time==2050)]
 
-diff(deaths1[1:which(out$time == 2020)], lag=1)
-diff(deaths1[which(out$time ==2020.5):which(out$time == 2099.5)], lag=1)
+plot(out$time[1:499], c(0, diff(deaths1[1:which(out$time == 2020)], lag=1),
+diff(deaths1[which(out$time ==2020.5):which(out$time == 2099.5)], lag=1)),
+ylim = c(0,1000))
+plot(out$time[1:499], c(0, diff(deaths2[1:which(out$time == 2020)], lag=1),
+                        diff(deaths2[which(out$time ==2020.5):which(out$time == 2099.5)], lag=1)),
+     ylim = c(0,100))
+diff(deaths2[1:which(out$time == 2020)], lag=1)
+diff(deaths2[which(out$time ==2020.5):which(out$time == 2099.5)], lag=1)
 round(diff(deaths2, lag=1),2)
-
-plot(x=outpath$time[outpath$time>2015], y = unscreen_pop_2015plus, ylim = c(0,7000000))
-plot(x=outpath$time[outpath$time>2015], y = screen_pop_2015plus, col = "red")
-plot(x=outpath$time[outpath$time>2015], y = treat_pop_2015plus, col = "red")
-plot(x=outpath$time[outpath$time>2015], y = treat_pop_2015plus/screen_pop_2015plus)
+head(deaths1)
 
 plot(x=out$time, y=rowSums(outpath$out_cum_hbv_deathsf)+rowSums(outpath$out_cum_hbv_deathsm), type = "l")
 lines(x=out$time, y=rowSums(outpath$out_cum_screened_hbv_deathsf)+rowSums(outpath$out_cum_screened_hbv_deathsm), type = "l", col = "blue")
