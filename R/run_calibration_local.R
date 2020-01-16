@@ -1234,7 +1234,7 @@ plot_prior_posterior <- function(parm) {
 
 prior <- as.data.frame(params_mat)
 posterior <- params_mat_targets5
-posterior2 <- params_mat_targets5_2
+posterior2 <- params_mat_targets5
 
 par(mfrow=c(1,3))
 plot_prior_posterior("b1")
