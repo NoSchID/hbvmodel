@@ -459,7 +459,7 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
       # Incident deaths due to HBV (from cirrhosis and HCC) after treatment
       dcum_treated_hbv_deaths[index$ages_all,i] <-
         tmu_dcc * pop[index$ages_all,DCC_T,i] +
-        tmu_hcc * pop[index$ages_all,HCC_T,i]
+        tmu_hcc_cofactor * mu_hcc * pop[index$ages_all,HCC_T,i]
       # Returns a matrix with incident HBV deaths for every age (rows) and every sex (columns)
 
 
@@ -629,7 +629,7 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
       dpop[index$ages_all,CHB_T,i] <- -(diff(c(0,pop[index$ages_all,CHB_T,i]))/da) +
         link_to_care_prob * treatment_initiation_prob * tr_vir_supp * pop[index$ages_all,IR_S,i] +
         link_to_care_prob * treatment_initiation_prob * tr_vir_supp * pop[index$ages_all,ENCHB_S,i] -
-        tsag_loss_rate * pop[index$ages_all,CHB_T,i] -
+        sag_loss * pop[index$ages_all,CHB_T,i] -
         thccr_chb * hccr_enchb * cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,CHB_T,i] -
         deaths[index$ages_all,CHB_T,i] + migrants[index$ages_all,CHB_T,i]
 
@@ -652,12 +652,12 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
         thccr_chb * (hccr_ir+hccr_enchb)/2 * cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,CHB_T,i] +
         thccr_cc * hccr_cc * cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,CC_T,i] +
         thccr_dcc * hccr_dcc * pop[index$ages_all,DCC_T,i] -
-        tmu_hcc * pop[index$ages_all,HCC_T,i] -
+        tmu_hcc_cofactor * mu_hcc * pop[index$ages_all,HCC_T,i] -
         deaths[index$ages_all,HCC_T,i] + migrants[index$ages_all,HCC_T,i]
 
      # Recovery after treatment
       dpop[index$ages_all,R_T,i] <- -(diff(c(0,pop[index$ages_all,R_T,i]))/da) +
-        tsag_loss_rate * pop[index$ages_all,CHB_T,i] -
+        sag_loss * pop[index$ages_all,CHB_T,i] -
         deaths[index$ages_all,R_T,i] + migrants[index$ages_all,R_T,i]
 
     }
@@ -1712,9 +1712,8 @@ parameter_list <- list(
   thccr_chb = 0.27,                          # hazard ratio for progression to HCC from CHB on treatment
   thccr_cc = 0.23,                           # hazard ratio for progression to HCC from CC on treatment
   thccr_dcc = 0.23,                          # hazard ratio for progression to HCC from DCC on treatment
-  tsag_loss_rate = 0.02,                     # rate of HBsAg loss on treatment
   tmu_dcc = 0.18,                            # mortality rate from DCC after treatment
-  tmu_hcc = 0.18,                            # mortality rate from HCC after treatment
+  tmu_hcc_cofactor = 1,                      # hazard ratio for reduction of HCC mortality after treatment compared to no treatment
   # SIMULATION PARAMETERS
   sim_starttime = starttime,
   # INTERVENTION ON/OFF SWITCH (1/0)
@@ -1733,6 +1732,34 @@ parameter_names <- names(parameter_list)
 # Simulate intervention model ----
 
 load(here("calibration", "input", "target_threshold_parms_119_060120.Rdata")) # params_mat_targets5
+
+# Calculate all cancer rates
+
+cancer_prog_function <- matrix(0, ncol = 119, nrow = 200)
+cancer_prog_female_ic <- matrix(0, ncol = 119, nrow = 200)
+cancer_prog_male_ic <- matrix(0, ncol = 119, nrow = 200)
+cancer_prog_female_enchb <- matrix(0, ncol = 119, nrow = 200)
+cancer_prog_male_enchb <- matrix(0, ncol = 119, nrow = 200)
+
+for (i in c(1:119)) {
+  cancer_prog_function[,i] <- (parameters$cancer_prog_coefficient_female[i] * (ages - parameters$cancer_age_threshold[i]))^2  # Rate in females
+  cancer_prog_function[,i] <- cancer_prog_function[,i] *
+    c(rep(0, times = parameters$cancer_age_threshold[i]/da),
+      rep(1, times = n_agecat - parameters$cancer_age_threshold[i]/da))  # Set transition to 0 in <10 year olds
+  cancer_prog_female_ic[,i] <- sapply(cancer_prog_function[,i], function(x) min(x,1)) # Set maximum annual rate is 1
+  cancer_prog_male_ic[,i] <- sapply(parameters$cancer_male_cofactor[i]*cancer_prog_female_ic[,i], function(x) min(x,1))  # Rate in males, cannot exceed 1
+  cancer_prog_female_enchb[,i] <- cancer_prog_female_ic[,i] * parameters$hccr_enchb[i]
+  cancer_prog_male_enchb[,i] <- cancer_prog_male_ic[,i] * parameters$hccr_enchb[i]
+}
+
+# Rate in 50 year olds
+quantile(cancer_prog_female_ic[which(ages == 50),], prob = c(0.025,0.5,0.975))
+quantile(cancer_prog_male_ic[which(ages == 50),], prob = c(0.025,0.5,0.975))
+quantile(parameter_list$thccr_chb * cancer_prog_female_enchb[which(ages == 50),], prob = c(0.025,0.5,0.975))
+quantile(parameter_list$thccr_chb * cancer_prog_male_enchb[which(ages == 50),], prob = c(0.025,0.5,0.975))
+quantile(params_mat_targets5$hccr_dcc, prob = c(0.025,0.5,0.975))
+
+
 
 sim <- apply(params_mat_targets5[1,],1,
                             function(x)
@@ -1771,12 +1798,12 @@ sim <- apply(params_mat_targets5[1,],1,
                                                                   mu_hcc = as.list(x)$mu_hcc,
                                                                   vacc_eff = as.list(x)$vacc_eff
                                                                   ),
-                                        scenario = "vacc_bdvacc"))
+                                        scenario = "vacc"))
 
 #sim_no_vacc <- sim
-sim_vacc_bdvacc_screen <- sim
+#sim_vacc_bdvacc_screen <- sim
 #save(sim_vacc_bdvacc_screen, file = here("output", "sims_scenario_vacc_bdvacc80_screenadults80_140120.RData"))
-out_vacc_bdvacc_screen <- lapply(sim_vacc_bdvacc_screen,code_model_output)
+#out_vacc_bdvacc_screen <- lapply(sim_vacc_bdvacc_screen,code_model_output)
 #save(out_vacc_bdvacc_screen, file = here("output", "sims_output_scenario_vacc_bdvacc_screen_140120.RData"))
 
 # Check for negative numbers => need to switch solver to lsoda!!
@@ -1874,6 +1901,15 @@ calculate_age_standardised_hbvdeaths_rate <- function(output_file) {
 out <- code_model_output(sim[[1]])
 outpath <- out
 
+out3 <- code_model_output(sim[[1]])
+outpath <- out3
+
+lines(outpath$time,
+     (outpath$incident_chronic_infections$horizontal_chronic_infections+
+        outpath$incident_chronic_infections$chronic_births+
+        outpath$screened_incident_chronic_infections$screened_horizontal_chronic_infections)/5,
+     col = "blue")
+
 # Total number in each infection compartment per timestep
 plot(outpath$time,outpath$infectioncat_total$carriers,type = "l", ylim = c(0,4000000))
 lines(outpath$time,outpath$infectioncat_total$sus,col= "red")
@@ -1881,7 +1917,7 @@ lines(outpath$time,outpath$infectioncat_total$immune,col= "blue")
 
 # Proportion in each infection compartment per timestep
 plot(outpath$time,outpath$infectioncat_total$carriers/outpath$pop_total$pop_total,type = "l",
-     ylim = c(0,0.7), xlim = c(1990,2100))
+     ylim = c(0,0.7), xlim = c(1960,2100))
 lines(outpath$time,outpath$infectioncat_total$sus/outpath$pop_total$pop_total,col= "red")
 lines(outpath$time,outpath$infectioncat_total$immune/outpath$pop_total$pop_total,col= "blue")
 
