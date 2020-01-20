@@ -6,8 +6,8 @@
 
 ### Load packages ----
 require(here)  # for setting working directory
-require(tidyr)  # for data processing
-require(dplyr)  # for data processing
+#require(tidyr)  # for data processing
+#require(dplyr)  # for data processing
 require(deSolve)  # ODE solver
 #require(lhs)  # Latin Hypercube sampling
 #require(parallel)  # for running code in parallel
