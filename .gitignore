@@ -1,4 +1,5 @@
 .Rproj.user
+backup .Rproj.user
 .Rhistory
 .RData
 .Ruserdata
@@ -7,3 +8,7 @@ example_output_mapping.xlsx
 *.png
 *.docx
 R/cluster_test.R
+calibration/output/
+documentation/old/
+calibration/input/lhs_samples_1000000.Rdata
+calibration/input/target_threshold_parms_328_060120.Rdata
