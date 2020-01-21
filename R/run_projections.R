@@ -43,14 +43,68 @@ sim <- apply(params_mat_targets5[1,],1,
                                 mu_cc = as.list(x)$mu_cc,
                                 mu_dcc = as.list(x)$mu_dcc,
                                 mu_hcc = as.list(x)$mu_hcc,
-                                vacc_eff = as.list(x)$vacc_eff,
-                                screening_years =  seq(2020,2100, by = 1)),
-                         scenario = "vacc_screen"))
+                                vacc_eff = as.list(x)$vacc_eff),
+                         scenario = "vacc"))
 
-sum(sapply(lapply(lapply(test, "[[", "screen_1year"), "[[", "hbv_deaths"), "[[", "incident_number_total")[341:362,])
-sum(sapply(lapply(lapply(test, "[[", "screen_0point5years"), "[[", "hbv_deaths"), "[[", "incident_number_total")[341:362,])
 
-sim_5years <- sim
+out_0point1_2 <- out
+
+out <- code_model_output(sim[[1]])
+outpath <- out
+
+# Proportion in each infection compartment per timestep
+plot(outpath$time,outpath$infectioncat_total$carriers/outpath$pop_total$pop_total,type = "l",
+     ylim = c(0,0.2), xlim = c(1960,2100))
+lines(outpath$time,outpath$infectioncat_total$carriers/outpath$pop_total$pop_total, col = "pink")
+
+outpath <- out_0point5
+plot(outpath$time,
+     (outpath$incident_chronic_infections$horizontal_chronic_infections+
+        outpath$incident_chronic_infections$chronic_births+
+        outpath$screened_incident_chronic_infections$screened_horizontal_chronic_infections),
+     type = "l", ylim = c(0, 4000),
+     xlab = "Time", ylab = "New cases of chronic HBV carriage per timestep")
+outpath <- out_0point1
+lines(outpath$time,
+     (outpath$incident_chronic_infections$horizontal_chronic_infections+
+        outpath$incident_chronic_infections$chronic_births+
+        outpath$screened_incident_chronic_infections$screened_horizontal_chronic_infections)*5, col = "red")
+outpath <- out_0point1_2
+lines(outpath$time,
+      (outpath$incident_chronic_infections$horizontal_chronic_infections+
+         outpath$incident_chronic_infections$chronic_births+
+         outpath$screened_incident_chronic_infections$screened_horizontal_chronic_infections)*5, col = "pink")
+
+outpath <- out_0point5
+plot(outpath$time,
+     (outpath$incident_chronic_infections$horizontal_chronic_infections+
+        outpath$incident_chronic_infections$chronic_births+
+        outpath$screened_incident_chronic_infections$screened_horizontal_chronic_infections)*100000/
+       outpath$pop_total$pop_total,
+     type = "l", ylim = c(0, 400),
+     xlab = "Time", ylab = "New cases of chronic HBV carriage per timestep")
+outpath <- out_0point1
+lines(outpath$time,
+     (outpath$incident_chronic_infections$horizontal_chronic_infections+
+        outpath$incident_chronic_infections$chronic_births+
+        outpath$screened_incident_chronic_infections$screened_horizontal_chronic_infections)*100000*5/
+       outpath$pop_total$pop_total, col = "red")
+outpath <- out_0point1_2
+lines(outpath$time,
+      (outpath$incident_chronic_infections$horizontal_chronic_infections+
+         outpath$incident_chronic_infections$chronic_births+
+         outpath$screened_incident_chronic_infections$screened_horizontal_chronic_infections)*100000*5/
+        outpath$pop_total$pop_total, col = "pink")
+
+outpath <- out_0point5
+plot(outpath$time, outpath$pop_total$pop_total,
+     xlab = "Year", ylab = "Population size", type = "l", xlim = c(2000, 2020))
+points(popsize_total$time, popsize_total$pop, col = "red")
+outpath <- out_0point1
+lines(outpath$time, outpath$pop_total$pop_total, col = "red")
+outpath <- out_0point_2
+lines(outpath$time, outpath$pop_total$pop_total, col = "pink")
+
 
 #sim_no_vacc <- sim
 #sim_vacc_bdvacc_screen <- sim

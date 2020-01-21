@@ -56,9 +56,9 @@ index <- list("infcat_all" = 1:n_infectioncat,            # index for all infect
               "ages_all" = 1:n_agecat,                    # index for all age groups
               "ages_wocba" = which(ages == min(ages_wocba)):which(ages == max(ages_wocba)), # index for age group 15-49 years (women of childbearing age)
               "ages_0to1" = which(ages == 0):(1/da),
-              "ages_1to5" = which(ages == 1):which(ages == 6-da),       # index for age groups 1-5 years
-              "ages_6to15" = which(ages == 6):which(ages == 16-da),     # index for age groups 6-15 years
-              "ages_16to100" = which(ages == 16):n_agecat)          # index for age groups 16-100 years
+              "ages_1to5" = which(ages == 1):which(ages == 6-da),       # index for age groups 1-5 years not in use
+              "ages_6to15" = which(ages == 6):which(ages == 16-da),     # index for age groups 6-15 years not in use
+              "ages_16to100" = which(ages == 16):n_agecat)              # index for age groups 16-100 years not in use
 
 ### Load and clean demographic data ----
 # Load inputs
@@ -544,6 +544,17 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
         (vacc_cov * vacc_eff * pop[which(ages == 0.5),S,i])
       dpop[which(ages == 0.5),R,i] <- dpop[which(ages == 0.5),R,i] +
         (vacc_cov * vacc_eff * pop[which(ages == 0.5),S,i])
+
+      # Explore effect of vaccination when changing to 0.1 step
+      #      dpop[which(ages == 0.5):which(ages==0.9),S,i] <- dpop[which(ages == 0.5):which(ages==0.9),S,i] -
+      #        (vacc_cov * vacc_eff * pop[which(ages == 0.5):which(ages==0.9),S,i])
+      #      dpop[which(ages == 0.5):which(ages==0.9),R,i] <- dpop[which(ages == 0.5):which(ages==0.9),R,i] +
+      #       (vacc_cov * vacc_eff * pop[which(ages == 0.5):which(ages==0.9),S,i])
+
+      #      dpop[which(ages == 0.5):which(ages==1),S,i] <- dpop[which(ages == 0.5):which(ages==1),S,i] -
+      #        (vacc_cov * vacc_eff * pop[which(ages == 0.5):which(ages==1),S,i])
+      #      dpop[which(ages == 0.5):which(ages==1),R,i] <- dpop[which(ages == 0.5):which(ages==1),R,i] +
+      #       (vacc_cov * vacc_eff * pop[which(ages == 0.5):which(ages==1),S,i])
 
       # Transitions between screened compartments (same as natural history but without births)
 
@@ -2026,6 +2037,48 @@ run_hbsag_screening_scenarios <- function(..., default_parameter_list, calibrate
                                           scenario = "vacc_screen"))
   out_30 <- lapply(sim_30,code_model_output)
 
+  # One off screen in 2020
+  sim_once <- parApply(cl = NULL, calibrated_parameter_sets, 1,
+                     function(x) run_model(sim_duration = runtime,
+                                           default_parameter_list = default_parameter_list,
+                                           parms_to_change =
+                                             list(b1 = as.list(x)$b1,
+                                                  b2 = as.list(x)$b2,
+                                                  b3 = as.list(x)$b3,
+                                                  mtct_prob_s = as.list(x)$mtct_prob_s,
+                                                  mtct_prob_e = as.list(x)$mtct_prob_e,
+                                                  alpha = as.list(x)$alpha,
+                                                  p_chronic_in_mtct = as.list(x)$p_chronic_in_mtct,
+                                                  p_chronic_function_r = as.list(x)$p_chronic_function_r,
+                                                  p_chronic_function_s = as.list(x)$p_chronic_function_s,
+                                                  pr_it_ir = as.list(x)$pr_it_ir,
+                                                  pr_ir_ic = as.list(x)$pr_ir_ic,
+                                                  eag_prog_function_rate = as.list(x)$eag_prog_function_rate,
+                                                  pr_ir_enchb = as.list(x)$pr_ir_enchb,
+                                                  pr_ir_cc_female = as.list(x)$pr_ir_cc_female,
+                                                  pr_ir_cc_age_threshold = as.list(x)$pr_ir_cc_age_threshold,
+                                                  pr_ic_enchb = as.list(x)$pr_ic_enchb,
+                                                  sag_loss_slope = as.list(x)$sag_loss_slope,
+                                                  pr_enchb_cc_female = as.list(x)$pr_enchb_cc_female,
+                                                  cirrhosis_male_cofactor = as.list(x)$cirrhosis_male_cofactor,
+                                                  pr_cc_dcc = as.list(x)$pr_cc_dcc,
+                                                  cancer_prog_coefficient_female = as.list(x)$cancer_prog_coefficient_female,
+                                                  cancer_age_threshold = as.list(x)$cancer_age_threshold,
+                                                  cancer_male_cofactor = as.list(x)$cancer_male_cofactor,
+                                                  hccr_it = as.list(x)$hccr_it,
+                                                  hccr_ir = as.list(x)$hccr_ir,
+                                                  hccr_enchb = as.list(x)$hccr_enchb,
+                                                  hccr_cc = as.list(x)$hccr_cc,
+                                                  hccr_dcc = as.list(x)$hccr_dcc,
+                                                  mu_cc = as.list(x)$mu_cc,
+                                                  mu_dcc = as.list(x)$mu_dcc,
+                                                  mu_hcc = as.list(x)$mu_hcc,
+                                                  vacc_eff = as.list(x)$vacc_eff,
+                                                  screening_years =  c(2020)),
+                                           scenario = "vacc_screen"))
+  out_once <- lapply(sim_once,code_model_output)
+
+
   # Status quo scenario: no screening
   sim_sq <- parApply(cl = NULL, calibrated_parameter_sets, 1,
                      function(x) run_model(sim_duration = runtime,
@@ -2076,6 +2129,7 @@ run_hbsag_screening_scenarios <- function(..., default_parameter_list, calibrate
                   "screen_20" = out_20,
                   "screen_25" = out_25,
                   "screen_30" = out_30,
+                  "screen_once" = out_once,
                   "status_quo" = out_sq)
 
   return(outlist)
