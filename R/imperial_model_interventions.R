@@ -819,6 +819,8 @@ run_model <- function(..., sim_duration = runtime,
   parameters <- generate_parameters(default_parameter_list = default_parameter_list,
                                     parms_to_change = parms_to_change)
 
+  input_parms <- parameters
+
   ## DEFINE FUNCTIONS FOR AGE-SPECIFIC NATURAL HISTORY PROGESSION
   # Using given parameters, and save in parameter list for input
 
@@ -961,7 +963,7 @@ run_model <- function(..., sim_duration = runtime,
   # Add year label to timestep
   out$time   <-  out$time + parameters$sim_starttime
 
-  return(out)
+  return(list(out=out, input_parameters = input_parms))
 
   #list(func = positive_fun, time = times)
   #events = list(func = reset_pop_1950, time = 100)
@@ -1037,6 +1039,9 @@ calculate_incident_numbers <- function(cumulative_output) {
 
 # Function to code relevant model output (stored in list)
 code_model_output <- function(output) {
+
+  input_parms <- output$input_parameters
+  output <- output$out
 
   ## Extract separate outputs: state variables (number at every timestep)
   out <- output[,2:(n_agecat*n_infectioncat*2+1)]
@@ -1412,7 +1417,8 @@ code_model_output <- function(output) {
                    "out_cum_screened_hbv_deathsf" = out_cum_screened_hbv_deathsf,
                    "out_cum_screened_hbv_deathsm" = out_cum_screened_hbv_deathsm,
                    "out_cum_treated_hbv_deathsf" = out_cum_treated_hbv_deathsf,
-                   "out_cum_treated_hbv_deathsm" = out_cum_treated_hbv_deathsm
+                   "out_cum_treated_hbv_deathsm" = out_cum_treated_hbv_deathsm,
+                   "input_parameters" = input_parms
   )
   return(toreturn)
 
@@ -1421,6 +1427,9 @@ code_model_output <- function(output) {
 # Shorter/quicker function to process model outputs:
 # calculates carriers, ever infected, eAg positives and total pop
 code_model_output_summary <- function(output) {
+
+  input_parms <- output$input_parameters
+  output <- output$out
 
   ## Extract separate outputs: state variables (number at every timestep)
   out <- output[,2:(n_agecat*n_infectioncat*2+1)]
@@ -1567,7 +1576,8 @@ code_model_output_summary <- function(output) {
                    "ever_infected_male" = ever_infected_male,
                    "pop_female" = pop_female,
                    "pop_male" = pop_male,
-                   "pop" = pop)
+                   "pop" = pop,
+                   "input_parameters" = input_parms)
   return(toreturn)
 
 }
@@ -1663,8 +1673,6 @@ calculate_age_standardised_hbvdeaths_rate <- function(output_file) {
 ### Function to run multiple scenarios on cluster ----
 run_hbsag_screening_scenarios <- function(..., default_parameter_list, calibrated_parameter_sets,
                                           parms_to_change = list(...)) {
-
-  parms_to_change_list <- parms_to_change
 
   # Screen every 6 months
   sim_0point5 <- parApply(cl = NULL, calibrated_parameter_sets, 1,
