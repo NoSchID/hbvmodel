@@ -1675,7 +1675,7 @@ run_hbsag_screening_scenarios <- function(..., default_parameter_list, calibrate
                                           parms_to_change = list(...)) {
 
   # Screen every 6 months
-  sim_0point5 <- parApply(cl = NULL, calibrated_parameter_sets, 1,
+  sim_0point5 <- apply(calibrated_parameter_sets, 1,
                           function(x) run_model(sim_duration = runtime,
                            default_parameter_list = default_parameter_list,
                            parms_to_change =
@@ -1716,7 +1716,7 @@ run_hbsag_screening_scenarios <- function(..., default_parameter_list, calibrate
   out_0point5 <- lapply(sim_0point5,code_model_output)
 
   # Screen every year
-  sim_1 <- parApply(cl = NULL, calibrated_parameter_sets, 1,
+  sim_1 <- apply(calibrated_parameter_sets, 1,
                        function(x) run_model(sim_duration = runtime,
                                              default_parameter_list = default_parameter_list,
                                              parms_to_change =
@@ -1757,7 +1757,7 @@ run_hbsag_screening_scenarios <- function(..., default_parameter_list, calibrate
   out_1 <- lapply(sim_1,code_model_output)
 
   # Screen every 2 years
-  sim_2 <- parApply(cl = NULL, calibrated_parameter_sets, 1,
+  sim_2 <- apply(calibrated_parameter_sets, 1,
                     function(x) run_model(sim_duration = runtime,
                                           default_parameter_list = default_parameter_list,
                                           parms_to_change =
@@ -1798,7 +1798,7 @@ run_hbsag_screening_scenarios <- function(..., default_parameter_list, calibrate
   out_2 <- lapply(sim_2,code_model_output)
 
   # Screen every 5 years
-  sim_5 <- parApply(cl = NULL, calibrated_parameter_sets, 1,
+  sim_5 <- apply(calibrated_parameter_sets, 1,
                     function(x) run_model(sim_duration = runtime,
                                           default_parameter_list = default_parameter_list,
                                           parms_to_change =
@@ -1839,7 +1839,7 @@ run_hbsag_screening_scenarios <- function(..., default_parameter_list, calibrate
   out_5 <- lapply(sim_5,code_model_output)
 
   # Screen every 10 years
-  sim_10 <- parApply(cl = NULL, calibrated_parameter_sets, 1,
+  sim_10 <- apply(calibrated_parameter_sets, 1,
                     function(x) run_model(sim_duration = runtime,
                                           default_parameter_list = default_parameter_list,
                                           parms_to_change =
@@ -1880,7 +1880,7 @@ run_hbsag_screening_scenarios <- function(..., default_parameter_list, calibrate
   out_10 <- lapply(sim_10,code_model_output)
 
   # Screen every 15 years
-  sim_15 <- parApply(cl = NULL, calibrated_parameter_sets, 1,
+  sim_15 <- apply(calibrated_parameter_sets, 1,
                     function(x) run_model(sim_duration = runtime,
                                           default_parameter_list = default_parameter_list,
                                           parms_to_change =
@@ -1922,7 +1922,7 @@ run_hbsag_screening_scenarios <- function(..., default_parameter_list, calibrate
 
 
   # Screen every 20 years
-  sim_20 <- parApply(cl = NULL, calibrated_parameter_sets, 1,
+  sim_20 <- apply(calibrated_parameter_sets, 1,
                     function(x) run_model(sim_duration = runtime,
                                           default_parameter_list = default_parameter_list,
                                           parms_to_change =
@@ -1963,7 +1963,7 @@ run_hbsag_screening_scenarios <- function(..., default_parameter_list, calibrate
   out_20 <- lapply(sim_20,code_model_output)
 
   # Screen every 25 years
-  sim_25 <- parApply(cl = NULL, calibrated_parameter_sets, 1,
+  sim_25 <- apply(calibrated_parameter_sets, 1,
                     function(x) run_model(sim_duration = runtime,
                                           default_parameter_list = default_parameter_list,
                                           parms_to_change =
@@ -2005,7 +2005,7 @@ run_hbsag_screening_scenarios <- function(..., default_parameter_list, calibrate
   out_25 <- lapply(sim_25,code_model_output)
 
   # Screen every 30 years
-  sim_30 <- parApply(cl = NULL, calibrated_parameter_sets, 1,
+  sim_30 <- apply(calibrated_parameter_sets, 1,
                     function(x) run_model(sim_duration = runtime,
                                           default_parameter_list = default_parameter_list,
                                           parms_to_change =
@@ -2046,7 +2046,7 @@ run_hbsag_screening_scenarios <- function(..., default_parameter_list, calibrate
   out_30 <- lapply(sim_30,code_model_output)
 
   # One off screen in 2020
-  sim_once <- parApply(cl = NULL, calibrated_parameter_sets, 1,
+  sim_once <- apply(calibrated_parameter_sets, 1,
                      function(x) run_model(sim_duration = runtime,
                                            default_parameter_list = default_parameter_list,
                                            parms_to_change =
@@ -2088,7 +2088,7 @@ run_hbsag_screening_scenarios <- function(..., default_parameter_list, calibrate
 
 
   # Status quo scenario: no screening
-  sim_sq <- parApply(cl = NULL, calibrated_parameter_sets, 1,
+  sim_sq <- apply(calibrated_parameter_sets, 1,
                      function(x) run_model(sim_duration = runtime,
                                            default_parameter_list = default_parameter_list,
                                            parms_to_change =
@@ -2139,6 +2139,55 @@ run_hbsag_screening_scenarios <- function(..., default_parameter_list, calibrate
                   "screen_30" = out_30,
                   "screen_once" = out_once,
                   "status_quo" = out_sq)
+
+  return(outlist)
+}
+
+run_one_hbsag_screening_scenario <- function(..., default_parameter_list, calibrated_parameter_sets,
+                                          parms_to_change = list(...), years_of_test, label) {
+
+  sim <- apply(calibrated_parameter_sets, 1,
+                       function(x) run_model(sim_duration = runtime,
+                                             default_parameter_list = default_parameter_list,
+                                             parms_to_change =
+                                               list(b1 = as.list(x)$b1,
+                                                    b2 = as.list(x)$b2,
+                                                    b3 = as.list(x)$b3,
+                                                    mtct_prob_s = as.list(x)$mtct_prob_s,
+                                                    mtct_prob_e = as.list(x)$mtct_prob_e,
+                                                    alpha = as.list(x)$alpha,
+                                                    p_chronic_in_mtct = as.list(x)$p_chronic_in_mtct,
+                                                    p_chronic_function_r = as.list(x)$p_chronic_function_r,
+                                                    p_chronic_function_s = as.list(x)$p_chronic_function_s,
+                                                    pr_it_ir = as.list(x)$pr_it_ir,
+                                                    pr_ir_ic = as.list(x)$pr_ir_ic,
+                                                    eag_prog_function_rate = as.list(x)$eag_prog_function_rate,
+                                                    pr_ir_enchb = as.list(x)$pr_ir_enchb,
+                                                    pr_ir_cc_female = as.list(x)$pr_ir_cc_female,
+                                                    pr_ir_cc_age_threshold = as.list(x)$pr_ir_cc_age_threshold,
+                                                    pr_ic_enchb = as.list(x)$pr_ic_enchb,
+                                                    sag_loss_slope = as.list(x)$sag_loss_slope,
+                                                    pr_enchb_cc_female = as.list(x)$pr_enchb_cc_female,
+                                                    cirrhosis_male_cofactor = as.list(x)$cirrhosis_male_cofactor,
+                                                    pr_cc_dcc = as.list(x)$pr_cc_dcc,
+                                                    cancer_prog_coefficient_female = as.list(x)$cancer_prog_coefficient_female,
+                                                    cancer_age_threshold = as.list(x)$cancer_age_threshold,
+                                                    cancer_male_cofactor = as.list(x)$cancer_male_cofactor,
+                                                    hccr_it = as.list(x)$hccr_it,
+                                                    hccr_ir = as.list(x)$hccr_ir,
+                                                    hccr_enchb = as.list(x)$hccr_enchb,
+                                                    hccr_cc = as.list(x)$hccr_cc,
+                                                    hccr_dcc = as.list(x)$hccr_dcc,
+                                                    mu_cc = as.list(x)$mu_cc,
+                                                    mu_dcc = as.list(x)$mu_dcc,
+                                                    mu_hcc = as.list(x)$mu_hcc,
+                                                    vacc_eff = as.list(x)$vacc_eff,
+                                                    screening_years = years_of_test),
+                                             scenario = "vacc_screen"))
+
+  out <- lapply(sim, code_model_output)
+
+  outlist <- list("label" = out)
 
   return(outlist)
 }

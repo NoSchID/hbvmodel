@@ -50,7 +50,7 @@ sim <- apply(params_mat_targets5[1,],1,
 out_0point1_2 <- out
 
 out <- code_model_output(sim[[1]])
-outpath <- out
+outpath <- ouy
 
 # Proportion in each infection compartment per timestep
 plot(outpath$time,outpath$infectioncat_total$carriers/outpath$pop_total$pop_total,type = "l",
@@ -771,5 +771,183 @@ ggplot(proj_deaths_standard_rate_total) +
   xlab("Year")+
   ylim(0,45) +
   theme_classic()
+
+
+
+# Analyse impact of infant vaccination compared to no historical intervention ----
+load(here("output", "sims_output_scenario_vacc_130120.RData"))  # out_vacc
+output_file <- out_vacc
+
+# Extract absolute number of new cases of chronic HBV carriage per timestep for each iteration
+proj_inc_vacc <- cbind(output_file[[1]]$time,
+                  (sapply(lapply(output_file,"[[", "incident_chronic_infections"), "[[", "horizontal_chronic_infections")+
+                     sapply(lapply(output_file, "[[", "incident_chronic_infections"), "[[", "chronic_births")+
+                     sapply(lapply(output_file,"[[", "screened_incident_chronic_infections"), "[[", "screened_horizontal_chronic_infections")))
+colnames(proj_inc_vacc)[1] <- "time"
+
+# Extract absolute incident HBV-related deaths per timestep
+proj_deaths_vacc <- cbind(output_file[[1]]$time,
+                     (sapply(lapply(output_file,"[[", "hbv_deaths"), "[[", "incident_number_total")+
+                        sapply(lapply(output_file,"[[", "screened_hbv_deaths"), "[[", "incident_number_total")+
+                        sapply(lapply(output_file,"[[", "treated_hbv_deaths"), "[[", "incident_number_total")))
+colnames(proj_deaths_vacc)[1] <- "time"
+
+# Extract population size per timestep
+proj_pop_vacc <- cbind(output_file[[1]]$time,
+                       (sapply(lapply(output_file,"[[", "pop_total"), "[[", "pop_total")))
+colnames(proj_pop_vacc)[1] <- "time"
+proj_pop_vacc <- as.data.frame(proj_pop_vacc)
+
+# Extract number living with HBV per timestep
+proj_prev_vacc <- cbind(output_file[[1]]$time,
+                   (sapply(lapply(output_file,"[[", "infectioncat_total"), "[[", "carriers")))
+colnames(proj_prev_vacc)[1] <- "time"
+proj_prev_vacc <- as.data.frame(proj_prev_vacc)
+
+rm(out_vacc)
+rm(output_file)
+gc()
+
+#load(here("output", "sims_output_scenario_no_vacc_130120.RData")) # out_no_vacc
+output_file <- out_no_vacc
+# Extract absolute number of new cases of chronic HBV carriage per timestep for each iteration
+proj_inc_no_vacc <- cbind(output_file[[1]]$time,
+                       (sapply(lapply(output_file,"[[", "incident_chronic_infections"), "[[", "horizontal_chronic_infections")+
+                          sapply(lapply(output_file, "[[", "incident_chronic_infections"), "[[", "chronic_births")+
+                          sapply(lapply(output_file,"[[", "screened_incident_chronic_infections"), "[[", "screened_horizontal_chronic_infections")))
+colnames(proj_inc_no_vacc)[1] <- "time"
+
+# Extract absolute incident HBV-related deaths per timestep
+proj_deaths_no_vacc <- cbind(output_file[[1]]$time,
+                          (sapply(lapply(output_file,"[[", "hbv_deaths"), "[[", "incident_number_total")+
+                             sapply(lapply(output_file,"[[", "screened_hbv_deaths"), "[[", "incident_number_total")+
+                             sapply(lapply(output_file,"[[", "treated_hbv_deaths"), "[[", "incident_number_total")))
+colnames(proj_deaths_no_vacc)[1] <- "time"
+
+# Extract population size per timestep
+proj_pop_no_vacc <- cbind(output_file[[1]]$time,
+                       (sapply(lapply(output_file,"[[", "pop_total"), "[[", "pop_total")))
+colnames(proj_pop_no_vacc)[1] <- "time"
+proj_pop_no_vacc <- as.data.frame(proj_pop_no_vacc)
+
+# Extract number living with HBV per timestep
+proj_prev_no_vacc <- cbind(output_file[[1]]$time,
+                        (sapply(lapply(output_file,"[[", "infectioncat_total"), "[[", "carriers")))
+colnames(proj_prev_no_vacc)[1] <- "time"
+proj_prev_no_vacc <- as.data.frame(proj_prev_no_vacc)
+
+rm(out_no_vacc)
+rm(output_file)
+gc()
+
+proj_inc_no_vacc <- as.data.frame(proj_inc_no_vacc)
+proj_inc_vacc <- as.data.frame(proj_inc_vacc)
+proj_deaths_no_vacc <- as.data.frame(proj_deaths_no_vacc)
+proj_deaths_vacc <- as.data.frame(proj_deaths_vacc)
+
+# Compare status quo scenario and counterfactual for each parameter set separately
+
+# Cumulative number of new chronic infections averted since 1990:
+# Cumulative number of new chronic infections between 1990 and 2020 without vaccine:
+
+cum_inc_no_vacc <- apply(proj_inc_no_vacc[which(proj_inc_no_vacc$time==1990.5):which(proj_inc_no_vacc$time==2020),-1],2,sum)
+cum_inc_vacc <- apply(proj_inc_vacc[which(proj_inc_vacc$time==1990.5):which(proj_inc_vacc$time==2020),-1],2,sum)
+cum_inc_averted <- cum_inc_no_vacc-cum_inc_vacc
+# Summarise the number of new chronic infections averted
+quantile(cum_inc_averted, prob = c(0.025,0.5,0.975))
+
+# Cumulative number of HBV-related deaths averted since 1990:
+
+cum_deaths_no_vacc <- apply(proj_deaths_no_vacc[which(proj_deaths_no_vacc$time==1990.5):which(proj_deaths_no_vacc$time==2020),-1],2,sum)
+cum_deaths_vacc <- apply(proj_deaths_vacc[which(proj_deaths_vacc$time==1990.5):which(proj_deaths_vacc$time==2020),-1],2,sum)
+cum_deaths_averted <- cum_deaths_no_vacc-cum_deaths_vacc
+# Summarise the number of HBV-related deaths averted
+quantile(cum_deaths_averted, prob = c(0.025,0.5,0.975))
+
+# How many incident cases of chronic infection and HBV-related deaths in 2019? Status quo scenario
+# Incidence was calculated as cases from t-1 to t
+inc_in_2019 <- apply(proj_inc_vacc[which(proj_inc_vacc$time==2019.5):which(proj_inc_vacc$time==2020),-1],2,sum)
+quantile(inc_in_2019, prob = c(0.025,0.5,0.975))
+# Deaths in 2019
+deaths_in_2019 <- apply(proj_deaths_vacc[which(proj_deaths_vacc$time==2019.5):which(proj_deaths_vacc$time==2020),-1],2,sum)
+quantile(deaths_in_2019, prob = c(0.025,0.5,0.975))
+# Number living with chronic HBV in 2019
+n_hbsag_in_2019 <- apply(proj_prev_vacc[which(proj_prev_vacc$time==2019):which(proj_prev_vacc$time==2019.5),-1],2,mean)
+quantile(n_hbsag_in_2019, prob = c(0.025,0.5,0.975))
+# % prevalence in 2019
+prev_hbsag_in_2019 <- apply(proj_prev_vacc[which(proj_prev_vacc$time==2019):which(proj_prev_vacc$time==2019.5),-1],2,mean)/
+  apply(proj_pop_vacc[which(proj_pop_vacc$time==2019):which(proj_pop_vacc$time==2019.5),-1],2,mean)
+quantile(prev_hbsag_in_2019, prob = c(0.025,0.5,0.975))
+
+# Reduction in new cases of chronic infection per 100,000 population in 2030 compared to 2015:
+# Cases in 2030: calculate cases from 2030-2030.5+cases from 2030.5-2031, divide by average of population in 2030 and 2030.5
+inc_per_100000_2030 <- apply(proj_inc_vacc[which(proj_inc_vacc$time==2030.5):which(proj_inc_vacc$time==2031),-1],2,sum)*100000/
+  apply(proj_pop_vacc[which(proj_pop_vacc$time==2030):which(proj_pop_vacc$time==2030.5),-1],2,mean)
+inc_per_100000_2015 <- apply(proj_inc_vacc[which(proj_inc_vacc$time==2015.5):which(proj_inc_vacc$time==2016),-1],2,sum)*100000/
+  apply(proj_pop_vacc[which(proj_pop_vacc$time==2015):which(proj_pop_vacc$time==2015.5),-1],2,mean)
+# reduction percentage:
+quantile((inc_per_100000_2015-inc_per_100000_2030)/inc_per_100000_2015, prob =c(0.025,0.5,0.975))
+
+# Reduction in HBV-related deaths per 100,000 population in 2030 compared to 2015:
+deaths_per_100000_2030 <- apply(proj_deaths_vacc[which(proj_deaths_vacc$time==2030.5):which(proj_deaths_vacc$time==2031),-1],2,sum)*100000/
+  apply(proj_pop_vacc[which(proj_pop_vacc$time==2030):which(proj_pop_vacc$time==2030.5),-1],2,mean)
+deaths_per_100000_2015 <- apply(proj_deaths_vacc[which(proj_deaths_vacc$time==2015.5):which(proj_deaths_vacc$time==2016),-1],2,sum)*100000/
+  apply(proj_pop_vacc[which(proj_pop_vacc$time==2015):which(proj_pop_vacc$time==2015.5),-1],2,mean)
+# reduction percentage:
+quantile((deaths_per_100000_2015-deaths_per_100000_2030)/deaths_per_100000_2015, prob =c(0.025,0.5,0.975))
+
+# Reduction in HBsAg prevalence % in 2030 compared to 2015:
+prev_2030 <- apply(proj_prev_vacc[which(proj_prev_vacc$time==2030):which(proj_prev_vacc$time==2030.5),-1],2,mean)/
+  apply(proj_pop_vacc[which(proj_pop_vacc$time==2030):which(proj_pop_vacc$time==2030.5),-1],2,mean)
+prev_2015 <- apply(proj_prev_vacc[which(proj_prev_vacc$time==2015):which(proj_prev_vacc$time==2015.5),-1],2,mean)/
+  apply(proj_pop_vacc[which(proj_pop_vacc$time==2015):which(proj_pop_vacc$time==2015.5),-1],2,mean)
+quantile((prev_2015-prev_2030)/prev_2015, prob = c(0.025,0.5,0.975))
+
+# Time to elimination:
+calculate_reduction_compared_to_2015 <- function(inc_data, pop_data, year) {
+  inc_per_100000_pred <- apply(inc_data[which(inc_data$time==year+0.5):which(inc_data$time==year+1),-1],2,sum)*100000/
+    apply(pop_data[which(pop_data$time==year):which(pop_data$time==year+0.5),-1],2,mean)
+  inc_per_100000_baseline <- apply(inc_data[which(inc_data$time==2015.5):which(inc_data$time==2016),-1],2,sum)*100000/
+    apply(pop_data[which(pop_data$time==2015):which(pop_data$time==2015.5),-1],2,mean)
+
+  # reduction percentage:
+  red <- quantile((inc_per_100000_baseline-inc_per_100000_pred)/inc_per_100000_baseline, prob =c(0.025,0.5,0.975))
+
+  return(red)
+}
+
+calculate_year_of_elimination <- function(inc_data, pop_data, years) {
+
+  inc_per_100000_pred <- list()
+
+  inc_per_100000_baseline <- apply(inc_data[which(inc_data$time==2015.5):which(inc_data$time==2016),-1],2,sum)*100000/
+    apply(pop_data[which(pop_data$time==2015):which(pop_data$time==2015.5),-1],2,mean)
+
+  for (i in years) {
+  inc_per_100000_pred[[i]] <- apply(inc_data[which(inc_data$time==i+0.5):which(inc_data$time==i+1),-1],2,sum)*100000/
+    apply(pop_data[which(pop_data$time==i):which(pop_data$time==i+0.5),-1],2,mean)
+  }
+
+  #names(inc_per_100000_pred) <- seq_along(inc_per_100000_pred)
+  inc_per_100000_pred[sapply(inc_per_100000_pred, is.null)] <- NULL
+
+  red <- list()
+  for (i in 1:length(years)) {
+    red[[i]] <- (inc_per_100000_baseline-inc_per_100000_pred[[i]])/inc_per_100000_baseline
+  }
+
+  red <- matrix(unlist(red), ncol = 119, byrow = TRUE)
+  rownames(red) <- years
+
+  # reduction percentage:
+  #red <- quantile((inc_per_100000_baseline-inc_per_100000_pred)/inc_per_100000_baseline, prob =c(0.025,0.5,0.975))
+
+  return(red)
+}
+test <- calculate_year_of_elimination(proj_deaths_vacc, proj_pop_vacc, c(2030,2050, 2060, 2090, 2098))
+apply(test,2,function(x){min(which(x>0.65))})
+
+# Very few parameter sets achieve elimination before 2100! Would have to run model for longer to calculate median
+# time to elimination!
 
 
