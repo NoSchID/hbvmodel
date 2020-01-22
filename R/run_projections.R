@@ -46,11 +46,13 @@ sim <- apply(params_mat_targets5[1,],1,
                                 vacc_eff = as.list(x)$vacc_eff),
                          scenario = "vacc"))
 
+out_sq <- run_one_scenario(default_parameter_list = parameter_list,
+                        calibrated_parameter_sets = params_mat_targets5,
+                        scenario = "vacc")
 
-out_0point1_2 <- out
 
 out <- code_model_output(sim[[1]])
-outpath <- ouy
+outpath <- out
 
 # Proportion in each infection compartment per timestep
 plot(outpath$time,outpath$infectioncat_total$carriers/outpath$pop_total$pop_total,type = "l",

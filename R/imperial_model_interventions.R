@@ -1787,7 +1787,8 @@ calculate_age_standardised_hbvdeaths_rate <- function(output_file) {
   return(age_stand_rate)
 }
 
-### Function to run multiple scenarios on cluster ----
+### Functions to run projection scenarios ----
+### These functions apply run_model and code_model_output to a collection of parameter sets
 run_hbsag_screening_scenarios <- function(..., default_parameter_list, calibrated_parameter_sets,
                                           parms_to_change = list(...)) {
 
@@ -2260,6 +2261,7 @@ run_hbsag_screening_scenarios <- function(..., default_parameter_list, calibrate
   return(outlist)
 }
 
+# Scenario run is a screening and treatment streategy - year of screening can be specified
 run_one_hbsag_screening_scenario <- function(..., default_parameter_list, calibrated_parameter_sets,
                                           parms_to_change = list(...), years_of_test, label) {
 
@@ -2305,6 +2307,58 @@ run_one_hbsag_screening_scenario <- function(..., default_parameter_list, calibr
   out <- lapply(sim, code_model_output)
 
   outlist <- list("screen" = out)
+  names(outlist) <- label
+
+  return(outlist)
+}
+
+# Scenario can be specified
+run_one_scenario <- function(..., default_parameter_list, calibrated_parameter_sets,
+                                             parms_to_change = list(...), scenario) {
+
+  # Status quo scenario: no screening
+  sim <- apply(calibrated_parameter_sets, 1,
+                  function(x) run_model(sim_duration = runtime,
+                                        default_parameter_list = default_parameter_list,
+                                        parms_to_change =
+                                          list(b1 = as.list(x)$b1,
+                                               b2 = as.list(x)$b2,
+                                               b3 = as.list(x)$b3,
+                                               mtct_prob_s = as.list(x)$mtct_prob_s,
+                                               mtct_prob_e = as.list(x)$mtct_prob_e,
+                                               alpha = as.list(x)$alpha,
+                                               p_chronic_in_mtct = as.list(x)$p_chronic_in_mtct,
+                                               p_chronic_function_r = as.list(x)$p_chronic_function_r,
+                                               p_chronic_function_s = as.list(x)$p_chronic_function_s,
+                                               pr_it_ir = as.list(x)$pr_it_ir,
+                                               pr_ir_ic = as.list(x)$pr_ir_ic,
+                                               eag_prog_function_rate = as.list(x)$eag_prog_function_rate,
+                                               pr_ir_enchb = as.list(x)$pr_ir_enchb,
+                                               pr_ir_cc_female = as.list(x)$pr_ir_cc_female,
+                                               pr_ir_cc_age_threshold = as.list(x)$pr_ir_cc_age_threshold,
+                                               pr_ic_enchb = as.list(x)$pr_ic_enchb,
+                                               sag_loss_slope = as.list(x)$sag_loss_slope,
+                                               pr_enchb_cc_female = as.list(x)$pr_enchb_cc_female,
+                                               cirrhosis_male_cofactor = as.list(x)$cirrhosis_male_cofactor,
+                                               pr_cc_dcc = as.list(x)$pr_cc_dcc,
+                                               cancer_prog_coefficient_female = as.list(x)$cancer_prog_coefficient_female,
+                                               cancer_age_threshold = as.list(x)$cancer_age_threshold,
+                                               cancer_male_cofactor = as.list(x)$cancer_male_cofactor,
+                                               hccr_it = as.list(x)$hccr_it,
+                                               hccr_ir = as.list(x)$hccr_ir,
+                                               hccr_enchb = as.list(x)$hccr_enchb,
+                                               hccr_cc = as.list(x)$hccr_cc,
+                                               hccr_dcc = as.list(x)$hccr_dcc,
+                                               mu_cc = as.list(x)$mu_cc,
+                                               mu_dcc = as.list(x)$mu_dcc,
+                                               mu_hcc = as.list(x)$mu_hcc,
+                                               vacc_eff = as.list(x)$vacc_eff),
+                                        scenario = scenario))
+  out <- lapply(sim, code_model_output)
+
+  label <- paste0("out_", scenario)
+
+  outlist <- list("out" = out)
   names(outlist) <- label
 
   return(outlist)

@@ -1,12 +1,25 @@
 # Code for plotting fit to the calibration targets
 
-# Need to load an out_mat with all the accepted simulations
+### Load packages and accepted simulations ----
 library(here)
 library(tidyr)
 library(dplyr)
-load(file = here("output", "fits", "best_fits_50_of_100000_wed_domain_weights_210819.Rdata"))
+library(ggplot2)
+#load(file = here("output", "fits", "best_fits_50_of_100000_wed_domain_weights_210819.Rdata"))  # this was from LSR
+load(here("calibration", "output", "model_fit_output_119_060120.Rdata")) # out_mat
+input_out_mat <- out_mat
 
-best_fits_out_mat <- out_mat_wed_domain_50
+### Calculate average model values ----
+
+#best_fits_out_mat <- out_mat_wed_domain_50
+best_fits_out_mat <- out_mat
+
+# Extract mapped output
+best_fits_mapped_output <- lapply(best_fits_out_mat, "[[", "mapped_output")
+
+#best_fits_out_mat <- out_mat_wed_domain_50
+best_fits_out_mat <- out_mat
+
 # Extract mapped output
 best_fits_mapped_output <- lapply(best_fits_out_mat, "[[", "mapped_output")
 # Extract model values from mapped output
@@ -18,15 +31,23 @@ best_fits_model_values_mat <- do.call("cbind", best_fits_model_values2)
 
 # Calculate the median and 95% percentile for each summary statistic
 median_model_values <- apply(best_fits_model_values_mat,1,median)
-ci_lower_model_values <- apply(best_fits_model_values_mat,1,quantile, probs = 0.05)
-ci_upper_model_values <- apply(best_fits_model_values_mat,1,quantile, probs = 0.95)
+ci_lower_model_values <- apply(best_fits_model_values_mat,1,quantile, probs = 0.025)
+ci_upper_model_values <- apply(best_fits_model_values_mat,1,quantile, probs = 0.975)
 
 # Prepare a mock out_mat to work on
 out_mat <- best_fits_out_mat[[1]]$mapped_output
 # Remove model_value column to avoid confusion
 #out_mat <- lapply(out_mat, function(x) {x$model_value <- NULL ; x})
 
-# Split into different datasets for plotting
+# Also average Keneba-Manduar force of infection:
+#mapped_output_for_error$progression_rates$data_value[mapped_output_for_error$progression_rates$outcome ==
+#                                                       "gmb6_1_a_foi" |
+#                                                       mapped_output_for_error$progression_rates$outcome ==
+#                                                       "gmb6_1_b_foi"] <- (0.115500*83+0.309500*31)/(83+31)
+# NOTE: weights on these are halved later, but left sample size as it is
+
+
+### Split into different datasets for plotting ----
 
 # Globocan rates
 # Remove data ci_lower and ci_upper to avoid confusion
@@ -46,6 +67,24 @@ seromarker_out_mat <- out_mat$seromarker_prevalence
 seromarker_out_mat$model_median <- median_model_values[grepl("^seromarker_prevalence.*",names(median_model_values))]
 seromarker_out_mat$model_ci_lower <- ci_lower_model_values[grepl("^seromarker_prevalence.*",names(ci_lower_model_values))]
 seromarker_out_mat$model_ci_upper <- ci_upper_model_values[grepl("^seromarker_prevalence.*",names(ci_upper_model_values))]
+
+# Average Keneba-Manduar values:
+seromarker_out_mat <- seromarker_out_mat %>%
+  group_by(outcome, id_paper, id_group, time, sex, age) %>%
+  mutate(weighted_mean = ifelse(test = (study_link == "KM vaccine cohort" & id_proc != "x"),
+                                yes = weighted.mean(data_value, sample_size),
+                                no = NA),
+         sample_size_sum = ifelse(test = (study_link == "KM vaccine cohort" & id_proc != "x"),
+                                  yes = sum(sample_size),
+                                  no = NA)) %>%
+  mutate(weighted_mean = coalesce(weighted_mean, data_value),
+         sample_size_sum = coalesce(sample_size_sum, sample_size))
+
+seromarker_out_mat$data_value <- seromarker_out_mat$weighted_mean
+seromarker_out_mat$weighted_mean <- NULL
+seromarker_out_mat$sample_size <- seromarker_out_mat$sample_size_sum
+seromarker_out_mat$sample_size_sum <- NULL
+seromarker_out_mat <- data.frame(seromarker_out_mat)
 
 # Risk of chronic carriage
 p_chronic_out_mat <- out_mat$risk_of_chronic_carriage
@@ -79,6 +118,82 @@ mort_curves_out_mat$ci_lower <- c(out_mat$mortality_curves$ci_lower,
 mort_curves_out_mat$ci_upper <- c(out_mat$mortality_curves$ci_upper,
                                   ci_upper_model_values[grepl("^mortality_curves.*",names(ci_upper_model_values))])
 
+### Recalculate 95% confidence intervals for all datasets ----
+# Except on mortality curves
+# Calculate 95% CIs for proportions using Wilson method (better for small samples)
+# For data points that don't have 95% CIs
+# For rate datasets, exclude datasets where rate = 0
+# Function:
+calculate_95_ci <- function(input_dataset, data_type) {
+
+  if(data_type == "proportion") {
+
+    input_dataset[is.na(data_value)==FALSE,] <-
+      filter(input_dataset,
+             is.na(ci_lower)) #%>%
+      mutate(ci_lower = replace(ci_lower,
+                                values = as.numeric(unlist(binom.confint(data_value*sample_size, sample_size,
+                                                                         methods = "wilson")["lower"])))) %>%
+      mutate(ci_upper = replace(ci_upper,
+                                values = as.numeric(unlist(binom.confint(data_value*sample_size, sample_size,
+                                                                         methods = "wilson")["upper"]))))
+
+    return(input_dataset)
+
+  } else if(data_type == "rate") {
+
+    if(is.null(input_dataset$events_number)) {
+
+      input_dataset[is.na(input_dataset$ci_lower) & input_dataset$data_value != 0,] <-
+        filter(input_dataset, is.na(ci_lower) & data_value != 0) %>%
+        mutate(ci_lower = replace(ci_lower,
+                                  values = data_value/(exp(1.96/sqrt(data_value*py_at_risk))))) %>%
+        mutate(ci_upper = replace(ci_upper,
+                                  values = data_value*(exp(1.96/sqrt(data_value*py_at_risk)))))
+      return(input_dataset)
+
+    } else if(is.null(input_dataset$events_number) == FALSE) {
+
+      input_dataset[is.na(input_dataset$ci_lower) & input_dataset$data_value != 0
+                    & is.na(input_dataset$data_value) == FALSE,] <-
+        filter(input_dataset, is.na(ci_lower) & data_value != 0 & is.na(data_value) == FALSE) %>%
+        mutate(ci_lower = replace(ci_lower,
+                                  values = data_value/(exp(1.96/sqrt(events_number))))) %>%
+        mutate(ci_upper = replace(ci_upper,
+                                  values = data_value*(exp(1.96/sqrt(events_number)))))
+      return(input_dataset)
+
+    }
+
+  } else {
+    print("data_type can be rate or proportion")
+  }
+
+}
+
+globocan_out_mat
+calculate_95_ci(seromarker_out_mat, "proportion")
+p_chronic_out_mat
+nat_hist_prev_out_mat
+mort_curves_out_mat
+
+#input_hbsag_dataset <- calculate_95_ci(input_hbsag_dataset, "proportion")
+#input_antihbc_dataset <- calculate_95_ci(input_antihbc_dataset, "proportion")
+#input_hbeag_dataset <- calculate_95_ci(input_hbeag_dataset, "proportion")
+#input_natural_history_prev_dataset <- calculate_95_ci(input_natural_history_prev_dataset,
+#                                                      "proportion")
+#input_mtct_risk_dataset <- calculate_95_ci(input_mtct_risk_dataset, "proportion")
+#input_risk_of_chronic_carriage <- calculate_95_ci(input_risk_of_chronic_carriage, "proportion")
+#input_liver_disease_demography[input_liver_disease_demography$outcome == "hcc_prop_male" |
+#                                 input_liver_disease_demography$outcome == "cirrhosis_prop_male",] <-
+#  calculate_95_ci(input_liver_disease_demography[input_liver_disease_demography$outcome == "hcc_prop_male" |
+#                                                   input_liver_disease_demography$outcome == "cirrhosis_prop_male",],
+#                  "proportion")
+
+# Apply to rates datasets
+#input_progression_rates <- calculate_95_ci(input_progression_rates, "rate")  # this doesn't add any CIs
+#input_globocan_incidence_data <- calculate_95_ci(input_globocan_incidence_data, "rate")
+
 
 # Plots
 # HBsAg prevalence by time, age and sex ----
@@ -103,25 +218,29 @@ hbsag_studies_unique$label <- paste(hbsag_studies_unique$paper_first_author, hbs
 hbsag_study_labels <- rbind(hbsag_studies_unique, hbsag_studies_double)
 
 # Make plot
-tiff(here("output", "fits", "lsr_plots", "hbsag_plot2.tiff"), height = 15, width =10, units = 'in', res=300)
+
+# Plots with ribbons for CIs
+#tiff(here("output", "fits", "lsr_plots", "hbsag_plot2.tiff"), height = 15, width =10, units = 'in', res=300)
 ggplot(data = subset(seromarker_out_mat, outcome == "HBsAg_prevalence")) +
-  geom_line(aes(x = age, y = model_median, linetype = "Model", colour = sex), size = 1) +
-  geom_point(aes(x = age, y = data_value, fill = "Data", colour = sex),
+  geom_line(aes(x = age, y = model_median, group = sex, linetype = "Model"), size = 1) +
+  geom_point(aes(x = age, y = data_value, fill = "Data"),
              shape = 4, stroke = 2) +
-  geom_line(aes(x = age, y = model_ci_lower, colour = sex), linetype = "dashed", size = 1) +
-  geom_line(aes(x = age, y = model_ci_upper, colour = sex), linetype = "dashed", size = 1) +
-#  geom_errorbar(aes(x = age, ymax = ci_upper, ymin = ci_lower, colour = sex)) +
+  geom_ribbon(aes(x=age, ymin=model_ci_lower, ymax=model_ci_upper, group = sex), alpha = 0.1) +
+  #  geom_line(aes(x = age, y = model_ci_lower, colour = sex), linetype = "dashed", size = 1) +
+  #  geom_line(aes(x = age, y = model_ci_upper, colour = sex), linetype = "dashed", size = 1) +
+  geom_errorbar(aes(x = age, ymax = ci_upper, ymin = ci_lower)) +
   scale_linetype_manual(name = NULL, values = c("Model" = "solid"), labels = "Model projection") +
-  scale_fill_manual(name = NULL, values = c("Data" = "black"), labels = "Observed data") +
-  scale_colour_manual(values = c("Mixed" = "gray35", "Male" = "navyblue", "Female" = "steelblue"),
-                      labels = c("Mixed" = "Both sexes", "Male" = "Male", "Female" = "Female")) +
-  facet_wrap(~ time, ncol = 2) +
+  #  scale_fill_manual(name = NULL, values = c("Data" = "black"), labels = "Observed data") +
+#  scale_colour_manual(values = c("Mixed" = "gray35", "Male" = "navyblue", "Female" = "steelblue"),
+#                      labels = c("Mixed" = "Both sexes", "Male" = "Male", "Female" = "Female")) +
+  facet_wrap(~ time, ncol = 4) +
   geom_text(size = 3.5, data = hbsag_study_labels,
             mapping = aes(x = Inf, y = Inf, label = label), hjust=1.05, vjust=1.5) +
   labs(title = "HBsAg prevalence in The Gambia",
        y = "HBsAg prevalence (proportion)", x = "Age (years)",
        colour = "Sex:") +
-  theme_bw() +
+  theme_classic() +
+  xlim(0,80) +
   guides(linetype = guide_legend(order = 1),
          fill = guide_legend(order = 2),
          colour = guide_legend(order = 3)) +
@@ -134,7 +253,42 @@ ggplot(data = subset(seromarker_out_mat, outcome == "HBsAg_prevalence")) +
         legend.text = element_text(size = 15),
         legend.title = element_text(size = 15),
         strip.text.x = element_text(size = 15))
-dev.off()
+#dev.off()
+
+
+# LSR plot:
+#tiff(here("output", "fits", "lsr_plots", "hbsag_plot2.tiff"), height = 15, width =10, units = 'in', res=300)
+ggplot(data = subset(seromarker_out_mat, outcome == "HBsAg_prevalence")) +
+  geom_line(aes(x = age, y = model_median, linetype = "Model", colour = sex), size = 1) +
+  geom_point(aes(x = age, y = data_value, fill = "Data", colour = sex),
+             shape = 4, stroke = 2) +
+  geom_line(aes(x = age, y = model_ci_lower, colour = sex), linetype = "dashed", size = 1) +
+  geom_line(aes(x = age, y = model_ci_upper, colour = sex), linetype = "dashed", size = 1) +
+  geom_errorbar(aes(x = age, ymax = ci_upper, ymin = ci_lower, group = sex, colour = sex)) +
+  scale_linetype_manual(name = NULL, values = c("Model" = "solid"), labels = "Model projection") +
+  scale_fill_manual(name = NULL, values = c("Data" = "black"), labels = "Observed data") +
+  scale_colour_manual(values = c("Mixed" = "gray35", "Male" = "navyblue", "Female" = "steelblue"),
+                      labels = c("Mixed" = "Both sexes", "Male" = "Male", "Female" = "Female")) +
+  facet_wrap(~ time, ncol = 2) +
+  geom_text(size = 3.5, data = hbsag_study_labels,
+            mapping = aes(x = Inf, y = Inf, label = label), hjust=1.05, vjust=1.5) +
+  labs(title = "HBsAg prevalence in The Gambia",
+       y = "HBsAg prevalence (proportion)", x = "Age (years)",
+       colour = "Sex:") +
+  theme_classic() +
+  guides(linetype = guide_legend(order = 1),
+         fill = guide_legend(order = 2),
+         colour = guide_legend(order = 3)) +
+  theme(plot.title = element_text(hjust = 0),
+        plot.caption = element_text(hjust = 0, size = 6),
+        legend.margin=margin(t = 0, unit="cm"),
+        legend.position = "bottom",
+        axis.title = element_text(size = 20),
+        axis.text = element_text(size = 15),
+        legend.text = element_text(size = 15),
+        legend.title = element_text(size = 15),
+        strip.text.x = element_text(size = 15))
+#dev.off()
 
 ggplot(data = subset(seromarker_out_mat, outcome == "HBsAg_prevalence" & time < 1990)) +
   geom_line(data = subset(seromarker_out_mat, outcome == "HBsAg_prevalence" & time == 1989),
