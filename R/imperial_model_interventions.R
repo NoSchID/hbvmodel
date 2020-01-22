@@ -225,6 +225,8 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
                               ncol = 2, nrow = n_agecat)  # female and male DCC-related deaths
     dcum_hcc_deaths <- matrix(rep(0, 2* n_agecat),
                               ncol = 2, nrow = n_agecat)  # female and male incident HCC-related deaths
+    dcum_cc_deaths <- matrix(rep(0, 2* n_agecat),
+                              ncol = 2, nrow = n_agecat)  # female and male incident CC-related deaths
     dcum_eag_loss <- matrix(rep(0, 2* n_agecat),
                             ncol = 2, nrow = n_agecat)  # female and male incident HBeAg loss
     dcum_sag_loss <- matrix(rep(0, 2* n_agecat),
@@ -263,11 +265,29 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
                                         ncol = 2, nrow = n_agecat)      # female and male incident chronic infections after screening
     dcum_screened_hbv_deaths <- matrix(rep(0, 2* n_agecat),
                               ncol = 2, nrow = n_agecat)  # female and male incident HBV-related deaths (CC+DCC+HCC deaths) after screening
+    dcum_screened_cc_deaths <- matrix(rep(0, 2* n_agecat),
+                                ncol = 2, nrow = n_agecat)  # female and male incident CC-related deaths after screening
+    dcum_screened_dcc_deaths <- matrix(rep(0, 2* n_agecat),
+                                      ncol = 2, nrow = n_agecat)  # female and male incident DCC-related deaths after screening
+    dcum_screened_hcc_deaths <- matrix(rep(0, 2* n_agecat),
+                                      ncol = 2, nrow = n_agecat)  # female and male incident HCC-related deaths after screening
+    dcum_screened_dcc <- matrix(rep(0, 2* n_agecat),
+                       ncol = 2, nrow = n_agecat)  # female and male incident DCC cases after screening
+    dcum_screened_hcc <- matrix(rep(0, 2* n_agecat),
+                       ncol = 2, nrow = n_agecat)  # female and male incident HCC cases after screening
 
     # Outcomes in the treated compartments
     dcum_treated_hbv_deaths <- matrix(rep(0, 2* n_agecat),
                                        ncol = 2, nrow = n_agecat)  # female and male incident HBV-related deaths (CC+DCC+HCC deaths) after treatment
-    # No new infections in those treated, but could add incident recoveries
+    # No new infections in those treated
+    dcum_treated_dcc_deaths <- matrix(rep(0, 2* n_agecat),
+                                      ncol = 2, nrow = n_agecat)  # female and male incident DCC-related deaths after treatment
+    dcum_treated_hcc_deaths <- matrix(rep(0, 2* n_agecat),
+                                      ncol = 2, nrow = n_agecat)  # female and male incident HCC-related deaths after treatment
+    dcum_treated_hcc <- matrix(rep(0, 2* n_agecat),
+                                ncol = 2, nrow = n_agecat)  # female and male incident HCC cases after treatment
+    dcum_treated_sag_loss <- matrix(rep(0, 2* n_agecat),
+                            ncol = 2, nrow = n_agecat)  # female and male incident HBsAg loss after treatment
 
     # TRANSMISSION
 
@@ -390,6 +410,10 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
       dcum_dcc_deaths[index$ages_all,i] <- mu_dcc * pop[index$ages_all,DCC,i]
       # Returns a matrix with incident DCC deaths for every age (rows) and every sex (columns)
 
+      # Incident deaths due to CC only
+      dcum_cc_deaths[index$ages_all,i] <- mu_cc * pop[index$ages_all,CC,i]
+      # Returns a matrix with incident DCC deaths for every age (rows) and every sex (columns)
+
       # Incidence of HBeAg loss: transition from IR to IC and IR to ENCHB
       dcum_eag_loss[index$ages_all,i] <-
         pr_ir_ic * eag_prog_function * pop[index$ages_all,IR,i] +
@@ -397,9 +421,6 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
 
       # Transition from IC to R (sAg loss)
       dcum_sag_loss[index$ages_all,i] <- sag_loss * pop[index$ages_all,IC,i]
-
-      # DCC incidence
-      dcum_dcc[index$ages_all,i] <- pr_cc_dcc * pop[index$ages_all,CC,i]
 
       # Transitions to HCC
       ic_to_hcc_transitions[index$ages_all,i] <-
@@ -421,6 +442,9 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
       # DCC to HCC transitions = HCC incidence in decompensated cirrhotics
       dcc_to_hcc_transitions[index$ages_all,i] <-
         hccr_dcc * pop[index$ages_all,DCC,i]
+
+      # DCC incidence
+      dcum_dcc[index$ages_all,i] <- pr_cc_dcc * pop[index$ages_all,CC,i]
 
       # Total HCC incidence
       dcum_hcc[index$ages_all,i] <-
@@ -454,6 +478,30 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
         mu_hcc * pop[index$ages_all,HCC_S,i]
       # Returns a matrix with incident HBV deaths for every age (rows) and every sex (columns)
 
+      # Incident deaths due to HCC only after screening (untreated)
+      dcum_screened_hcc_deaths[index$ages_all,i] <- mu_hcc * pop[index$ages_all,HCC_S,i]
+      # Returns a matrix with incident HCC deaths for every age (rows) and every sex (columns)
+
+      # Incident deaths due to DCC only after screening (untreated)
+      dcum_screened_dcc_deaths[index$ages_all,i] <- mu_dcc * pop[index$ages_all,DCC_S,i]
+      # Returns a matrix with incident DCC deaths for every age (rows) and every sex (columns)
+
+      # Incident deaths due to CC only after screening (untreated)
+      dcum_screened_cc_deaths[index$ages_all,i] <- mu_cc * pop[index$ages_all,CC_S,i]
+      # Returns a matrix with incident DCC deaths for every age (rows) and every sex (columns)
+
+      # DCC incidence after screening (untreated)
+      dcum_screened_dcc[index$ages_all,i] <- pr_cc_dcc * pop[index$ages_all,CC_S,i]
+
+      # Total HCC incidence after screening (untreated)
+      dcum_screened_hcc[index$ages_all,i] <-
+        hccr_it * cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,IT_S,i] +
+        hccr_ir * cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,IR_S,i] +
+        cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,IC_S,i] +
+        hccr_enchb * cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,ENCHB_S,i] +
+        hccr_cc * cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,CC_S,i] +
+        hccr_dcc * pop[index$ages_all,DCC_S,i]
+
       # Post-treatment transitions
 
       # Incident deaths due to HBV (from cirrhosis and HCC) after treatment
@@ -462,6 +510,22 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
         tmu_hcc_cofactor * mu_hcc * pop[index$ages_all,HCC_T,i]
       # Returns a matrix with incident HBV deaths for every age (rows) and every sex (columns)
 
+      # Incident deaths due to HCC only after treatment
+      dcum_treated_hcc_deaths[index$ages_all,i] <- tmu_hcc_cofactor * mu_hcc * pop[index$ages_all,HCC_T,i]
+      # Returns a matrix with incident HCC deaths for every age (rows) and every sex (columns)
+
+      # Incident deaths due to DCC only after treatment
+      dcum_treated_dcc_deaths[index$ages_all,i] <- tmu_dcc * pop[index$ages_all,DCC_T,i]
+      # Returns a matrix with incident DCC deaths for every age (rows) and every sex (columns)
+
+      # Total HCC incidence after treatment
+      dcum_treated_hcc[index$ages_all,i] <-
+        thccr_chb * hccr_enchb * cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,CHB_T,i] +
+        thccr_cc * hccr_cc * cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,CC_T,i] +
+        thccr_dcc * hccr_dcc * pop[index$ages_all,DCC_T,i]
+
+      # Incident HBsAg loss after treatment
+      dcum_treated_sag_loss[index$ages_all,i] <- sag_loss * pop[index$ages_all,CHB_T,i]
 
       # DIFFERENTIAL EQUATIONS
       # Transitions between natural history compartments (no screening):
@@ -511,7 +575,7 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
         ir_to_cc_transitions[index$ages_all,i] -
         dcum_dcc[index$ages_all,i] -
         cc_to_hcc_transitions[index$ages_all,i] -
-        mu_cc * pop[index$ages_all,CC,i] -
+        dcum_cc_deaths[index$ages_all,i] -
         deaths[index$ages_all,CC,i] + migrants[index$ages_all,CC,i]
 
       # Decompensated cirrhosis
@@ -603,29 +667,24 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
       dpop[index$ages_all,CC_S,i] <- -(diff(c(0,pop[index$ages_all,CC_S,i]))/da) +
         pr_enchb_cc_rates[index$ages_all,i] * pop[index$ages_all,ENCHB_S,i] +
         pr_ir_cc_function[index$ages_all,i] * pop[index$ages_all,IR_S,i] -
-        pr_cc_dcc * pop[index$ages_all,CC_S,i] -
+        dcum_screened_dcc[index$ages_all,i] -
         hccr_cc * cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,CC_S,i] -
-        mu_cc * pop[index$ages_all,CC_S,i] -
+        dcum_screened_cc_deaths[index$ages_all,i] -
         link_to_care_prob * treatment_initiation_prob * tr_vir_supp * pop[index$ages_all,CC_S,i] -    # transition into treated CC
         deaths[index$ages_all,CC_S,i] + migrants[index$ages_all,CC_S,i]
 
       # Screened Decompensated cirrhosis
       dpop[index$ages_all,DCC_S,i] <- -(diff(c(0,pop[index$ages_all,DCC_S,i]))/da) +
-        pr_cc_dcc * pop[index$ages_all,CC_S,i] -
+        dcum_screened_dcc[index$ages_all,i] -
         hccr_dcc * pop[index$ages_all,DCC_S,i] -
-        mu_dcc * pop[index$ages_all,DCC_S,i] -
+        dcum_screened_dcc_deaths[index$ages_all,i] -
         link_to_care_prob * treatment_initiation_prob * tr_vir_supp * pop[index$ages_all,DCC_S,i] -   # transition into treated DCC
         deaths[index$ages_all,DCC_S,i] + migrants[index$ages_all,DCC_S,i]
 
       # Screened HCC
       dpop[index$ages_all,HCC_S,i] <- -(diff(c(0,pop[index$ages_all,HCC_S,i]))/da) +
-        hccr_it * cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,IT_S,i] +
-        hccr_ir * cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,IR_S,i] +
-        cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,IC_S,i] +
-        hccr_enchb * cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,ENCHB_S,i] +
-        hccr_cc * cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,CC_S,i] +
-        hccr_dcc * pop[index$ages_all,DCC_S,i] -
-        mu_hcc * pop[index$ages_all,HCC_S,i] -
+        dcum_screened_hcc[index$ages_all,i] -
+        dcum_screened_hcc_deaths[index$ages_all,i] -
         deaths[index$ages_all,HCC_S,i] + migrants[index$ages_all,HCC_S,i]
 
       # Screened Immunes
@@ -654,21 +713,18 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
       dpop[index$ages_all,DCC_T,i] <- -(diff(c(0,pop[index$ages_all,DCC_T,i]))/da) +
         link_to_care_prob * treatment_initiation_prob * tr_vir_supp * pop[index$ages_all,DCC_S,i] -
         thccr_dcc * hccr_dcc * pop[index$ages_all,DCC_T,i] -
-        tmu_dcc * pop[index$ages_all,DCC_T,i] -
+        dcum_treated_dcc_deaths[index$ages_all,i]-
         deaths[index$ages_all,DCC_T,i] + migrants[index$ages_all,DCC_T,i]
 
       # HCC after treatment
       dpop[index$ages_all,HCC_T,i] <- -(diff(c(0,pop[index$ages_all,HCC_T,i]))/da) +
-        # THINK ABOUT THIS:
-        thccr_chb * (hccr_ir+hccr_enchb)/2 * cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,CHB_T,i] +
-        thccr_cc * hccr_cc * cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,CC_T,i] +
-        thccr_dcc * hccr_dcc * pop[index$ages_all,DCC_T,i] -
-        tmu_hcc_cofactor * mu_hcc * pop[index$ages_all,HCC_T,i] -
+        dcum_treated_hcc[index$ages_all,i] -
+        dcum_treated_hcc_deaths[index$ages_all,i] -
         deaths[index$ages_all,HCC_T,i] + migrants[index$ages_all,HCC_T,i]
 
      # Recovery after treatment
       dpop[index$ages_all,R_T,i] <- -(diff(c(0,pop[index$ages_all,R_T,i]))/da) +
-        sag_loss * pop[index$ages_all,CHB_T,i] -
+        dcum_treated_sag_loss[index$ages_all,i] -
         deaths[index$ages_all,R_T,i] + migrants[index$ages_all,R_T,i]
 
     }
@@ -683,16 +739,44 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
                                        rowSums(deaths[index$ages_all,CC:HCC,2]))
 
     # Return results
-    res <- c(dpop, dcum_deaths, dcum_infections, dcum_chronic_infections,
-             dcum_births, dcum_infected_births, dcum_chronic_births,
-             dcum_hbv_deaths, dcum_hcc_deaths, dcum_eag_loss,
-             dcum_sag_loss, dcum_dcc, dcum_hcc, dcc_to_hcc_transitions,
-             dcum_background_deaths_ld, dcum_dcc_deaths, ir_to_cc_transitions,
-             enchb_to_cc_transitions, cc_to_hcc_transitions,
-             it_to_hcc_transitions, ir_to_hcc_transitions, ic_to_hcc_transitions,
+    res <- c(dpop,
+             dcum_deaths,
+             dcum_infections,
+             dcum_chronic_infections,
+             dcum_births,
+             dcum_infected_births,
+             dcum_chronic_births,
+             dcum_hbv_deaths,
+             dcum_hcc_deaths,
+             dcum_eag_loss,
+             dcum_sag_loss,
+             dcum_dcc,
+             dcum_hcc,
+             dcc_to_hcc_transitions,
+             dcum_background_deaths_ld,
+             dcum_dcc_deaths,
+             dcum_cc_deaths,
+             ir_to_cc_transitions,
+             enchb_to_cc_transitions,
+             cc_to_hcc_transitions,
+             it_to_hcc_transitions,
+             ir_to_hcc_transitions,
+             ic_to_hcc_transitions,
              enchb_to_hcc_transitions,
-             dcum_screened_infections, dcum_screened_chronic_infections,
-             dcum_screened_hbv_deaths, dcum_treated_hbv_deaths)
+             dcum_screened_infections,
+             dcum_screened_chronic_infections,
+             dcum_screened_hbv_deaths,
+             dcum_screened_cc_deaths,
+             dcum_screened_dcc_deaths,
+             dcum_screened_hcc_deaths,
+             dcum_screened_dcc,
+             dcum_screened_hcc,
+             dcum_treated_hbv_deaths,
+             dcum_treated_dcc_deaths,
+             dcum_treated_hcc_deaths,
+             dcum_treated_hcc,
+             dcum_treated_sag_loss)
+
     list(res, p_chronic_function = p_chronic_function)
 
   })
@@ -1142,10 +1226,17 @@ code_model_output <- function(output) {
   out_cum_screened_hbv_deathsf <- output[,grepl("^cum_screened_hbv_deathsf.",names(output))]
   out_cum_screened_hbv_deathsm <- output[,grepl("^cum_screened_hbv_deathsm.",names(output))]
 
+  # Cumulative number of HCC cases (from all possible compartments) in the screened group
+  out_cum_screened_hccf <- output[,grepl("^cum_screened_incident_hccf.",names(output))]
+  out_cum_screened_hccm <- output[,grepl("^cum_screened_incident_hccm.",names(output))]
+
   # Cumulative number of HBV-related deaths (from cirrhosis and HCC) in the treated group
   out_cum_treated_hbv_deathsf <- output[,grepl("^cum_treated_hbv_deathsf.",names(output))]
   out_cum_treated_hbv_deathsm <- output[,grepl("^cum_treated_hbv_deathsm.",names(output))]
 
+  # Cumulative number of HCC cases (from all possible compartments) in the treated group
+  out_cum_treated_hccf <- output[,grepl("^cum_treated_incident_hccf.",names(output))]
+  out_cum_treated_hccm <- output[,grepl("^cum_treated_incident_hccm.",names(output))]
 
   ## Process infection outputs
   # Combine into data frames with outputs of interest for further analysis
@@ -1317,6 +1408,21 @@ code_model_output <- function(output) {
                                     incident_number_male = rowSums(screened_hbv_deaths_male))
   screened_hbv_deaths$incident_number_total <- screened_hbv_deaths$incident_number_female + screened_hbv_deaths$incident_number_male
 
+  # Age-specific number of total HCC cases after screening - for women and men
+  screened_incident_hcc_female <- data.frame(incident_number = calculate_incident_numbers(out_cum_screened_hccf))
+  names(screened_incident_hcc_female) <- sprintf("incident_number%g",ages)
+
+  screened_incident_hcc_male <- data.frame(incident_number = calculate_incident_numbers(out_cum_screened_hccm))
+  names(screened_incident_hcc_male) <- sprintf("incident_number%g",ages)
+
+  # Total number of total HCC cases per time step
+  screened_incident_hcc <- data.frame(time = output$time,
+                             incident_number_female = rowSums(screened_incident_hcc_female),
+                             incident_number_male = rowSums(screened_incident_hcc_male))
+  screened_incident_hcc$incident_number_total <- screened_incident_hcc$incident_number_female +
+    screened_incident_hcc$incident_number_male
+
+
   # Treated compartments:
 
   # Age-specific number of HBV-related deaths after treatment - for women and men
@@ -1331,6 +1437,21 @@ code_model_output <- function(output) {
                                     incident_number_female = rowSums(treated_hbv_deaths_female),
                                     incident_number_male = rowSums(treated_hbv_deaths_male))
   treated_hbv_deaths$incident_number_total <- treated_hbv_deaths$incident_number_female + treated_hbv_deaths$incident_number_male
+
+  # Age-specific number of total HCC cases after treatment - for women and men
+  treated_incident_hcc_female <- data.frame(incident_number = calculate_incident_numbers(out_cum_treated_hccf))
+  names(treated_incident_hcc_female) <- sprintf("incident_number%g",ages)
+
+  treated_incident_hcc_male <- data.frame(incident_number = calculate_incident_numbers(out_cum_treated_hccm))
+  names(treated_incident_hcc_male) <- sprintf("incident_number%g",ages)
+
+  # Total number of total HCC cases per time step
+  treated_incident_hcc <- data.frame(time = output$time,
+                                      incident_number_female = rowSums(treated_incident_hcc_female),
+                                      incident_number_male = rowSums(treated_incident_hcc_male))
+  treated_incident_hcc$incident_number_total <- treated_incident_hcc$incident_number_female +
+    treated_incident_hcc$incident_number_male
+
 
   ## Code demography outputs
 
@@ -1403,21 +1524,17 @@ code_model_output <- function(output) {
                    "pop_total" = pop_total,
                    "deaths_total_group5" = deaths_total_group5,
                    "births_group5" =  births_group5,
-                   "incident_infections" = incident_infections,
-                   "incident_chronic_infections" = incident_chronic_infections,
-                   "hbv_deaths" = hbv_deaths,
-                   "incident_hcc" = incident_hcc,
+                   "incident_infections" = incident_infections,                   # only without screening/treatment
+                   "incident_chronic_infections" = incident_chronic_infections,   # only without screening/treatment
+                   "hbv_deaths" = hbv_deaths,                                     # only without screening/treatment
+                   "incident_hcc" = incident_hcc,                                 # only without screening/treatment
                    "screened_incident_infections" = screened_incident_infections,
                    "screened_incident_chronic_infections" = screened_incident_chronic_infections,
                    "screened_hbv_deaths" = screened_hbv_deaths,
+                   "screened_incident_hcc" = screened_incident_hcc,
                    "treated_hbv_deaths" = treated_hbv_deaths,
+                   "treated_incident_hcc" = treated_incident_hcc,
                    "full_output" = output,
-                   "out_cum_hbv_deathsf" = out_cum_hbv_deathsf,
-                   "out_cum_hbv_deathsm" = out_cum_hbv_deathsm,
-                   "out_cum_screened_hbv_deathsf" = out_cum_screened_hbv_deathsf,
-                   "out_cum_screened_hbv_deathsm" = out_cum_screened_hbv_deathsm,
-                   "out_cum_treated_hbv_deathsf" = out_cum_treated_hbv_deathsf,
-                   "out_cum_treated_hbv_deathsm" = out_cum_treated_hbv_deathsm,
                    "input_parameters" = input_parms
   )
   return(toreturn)
@@ -2187,7 +2304,8 @@ run_one_hbsag_screening_scenario <- function(..., default_parameter_list, calibr
 
   out <- lapply(sim, code_model_output)
 
-  outlist <- list("label" = out)
+  outlist <- list("screen" = out)
+  names(outlist) <- label
 
   return(outlist)
 }
@@ -2200,6 +2318,7 @@ run_one_hbsag_screening_scenario <- function(..., default_parameter_list, calibr
 # Set up initial population: age- and sex-specific population size in 1950
 # Note: names in initial population vector is reproduced in output
 # guessed proportion in each compartment
+
 output_storage <- c("cum_deathsf" = rep(0,n_agecat), "cum_deathsm" = rep(0,n_agecat),
                     "cum_infectionsf" = rep(0,n_agecat), "cum_infectionsm" = rep(0,n_agecat),
                     "cum_chronic_infectionsf" = rep(0,n_agecat), "cum_chronic_infectionsm" = rep(0,n_agecat),
@@ -2214,6 +2333,7 @@ output_storage <- c("cum_deathsf" = rep(0,n_agecat), "cum_deathsm" = rep(0,n_age
                     "cum_background_deaths_ldf" =  rep(0,n_agecat),
                     "cum_background_deaths_ldm" =  rep(0,n_agecat),
                     "cum_dcc_deathsf" = rep(0,n_agecat), "cum_dcc_deathsm" = rep(0,n_agecat),
+                    "cum_cc_deathsf" = rep(0,n_agecat), "cum_cc_deathsm" = rep(0,n_agecat),
                     "cum_ir_to_ccf" = rep(0,n_agecat), "cum_ir_to_ccm" = rep(0,n_agecat),
                     "cum_enchb_to_ccf" = rep(0,n_agecat), "cum_enchb_to_ccm" = rep(0,n_agecat),
                     "cum_cc_to_hccf" = rep(0,n_agecat), "cum_cc_to_hccm" = rep(0,n_agecat),
@@ -2224,7 +2344,17 @@ output_storage <- c("cum_deathsf" = rep(0,n_agecat), "cum_deathsm" = rep(0,n_age
                     "cum_screened_infectionsf" = rep(0,n_agecat), "cum_screened_infectionsm" = rep(0,n_agecat),
                     "cum_screened_chronic_infectionsf" = rep(0,n_agecat), "cum_screened_chronic_infectionsm" = rep(0,n_agecat),
                     "cum_screened_hbv_deathsf" = rep(0,n_agecat), "cum_screened_hbv_deathsm" = rep(0,n_agecat),
-                    "cum_treated_hbv_deathsf" = rep(0,n_agecat), "cum_treated_hbv_deathsm" = rep(0,n_agecat))
+                    "cum_screened_cc_deathsf" = rep(0,n_agecat), "cum_screened_cc_deathsm" = rep(0,n_agecat),
+                    "cum_screened_dcc_deathsf" = rep(0,n_agecat), "cum_screened_dcc_deathsm" = rep(0,n_agecat),
+                    "cum_screened_hcc_deathsf" = rep(0,n_agecat), "cum_screened_hcc_deathsm" = rep(0,n_agecat),
+                    "cum_screened_incident_dccf" = rep(0,n_agecat), "cum_screened_incident_dccm" = rep(0,n_agecat),
+                    "cum_screened_incident_hccf" = rep(0,n_agecat), "cum_screened_incident_hccm" = rep(0,n_agecat),
+                    "cum_treated_hbv_deathsf" = rep(0,n_agecat), "cum_treated_hbv_deathsm" = rep(0,n_agecat),
+                    "cum_treated_dcc_deathsf" = rep(0,n_agecat), "cum_treated_dcc_deathsm" = rep(0,n_agecat),
+                    "cum_treated_hcc_deathsf" = rep(0,n_agecat), "cum_treated_hcc_deathsm" = rep(0,n_agecat),
+                    "cum_treated_incident_hccf" = rep(0,n_agecat), "cum_treated_incident_hccm" = rep(0,n_agecat),
+                    "cum_treated_sag_lossf" = rep(0,n_agecat), "cum_treated_sag_lossm" = rep(0,n_agecat))
+
 init_pop <- c("Sf" = popsize_1950$pop_female*(1-gambia_infected),
               "ITf" = popsize_1950$pop_female*gambia_infected*gambia_eag*0.5,
               "IRf" = popsize_1950$pop_female*gambia_infected*gambia_eag*0.5,
