@@ -1035,7 +1035,7 @@ run_model <- function(..., sim_duration = runtime,
 
     out <- as.data.frame(ode.1D(y = init_pop_vector, times = timestep_vector, func = imperial_model,
                                 parms = parameters, nspec = 1, method = "ode45",
-                                events = list(func = screen_pop(), time = timesteps_for_screening)))
+                                events = list(func = screen_pop, time = timesteps_for_screening)))
 
   } else if (!(1950 %in% timestep_labels) & !(scenario %in% c("vacc_screen", "vacc_bdvacc_screen"))) {
 
@@ -1721,6 +1721,7 @@ extract_outcomes <- function(output_file, scenario_label) {
                        sapply(lapply(output_file, "[[", "incident_chronic_infections"), "[[", "chronic_births")+
                        sapply(lapply(output_file,"[[", "screened_incident_chronic_infections"), "[[", "screened_horizontal_chronic_infections")))
   colnames(proj_inc)[1] <- "time"
+
   proj_inc_summary <- data.frame(time = output_file[[1]]$time)
   proj_inc_summary$median <- apply(proj_inc[,-1],1,median)
   proj_inc_summary$lower <- apply(proj_inc[,-1],1,quantile, prob = 0.025)
