@@ -1727,6 +1727,19 @@ extract_outcomes <- function(output_file, scenario_label) {
   proj_inc_summary$upper <- apply(proj_inc[,-1],1,quantile, prob = 0.975)
   proj_inc_long <- gather(as.data.frame(proj_inc), key = "iteration", value = "chronic_cases", -time)
 
+  # Incidence rate of chronic HBV carriage per timestep
+  proj_inc_rate <- cbind(output_file[[1]]$time,
+                    (sapply(lapply(output_file,"[[", "incident_chronic_infections"), "[[", "horizontal_chronic_infections")+
+                       sapply(lapply(output_file, "[[", "incident_chronic_infections"), "[[", "chronic_births")+
+                       sapply(lapply(output_file,"[[", "screened_incident_chronic_infections"), "[[", "screened_horizontal_chronic_infections"))/
+                       sapply(lapply(output_file,"[[", "pop_total"), "[[", "pop_total"))
+  colnames(proj_inc_rate)[1] <- "time"
+  proj_inc_rate_summary <- data.frame(time = output_file[[1]]$time)
+  proj_inc_rate_summary$median <- apply(proj_inc_rate[,-1],1,median)
+  proj_inc_rate_summary$lower <- apply(proj_inc_rate[,-1],1,quantile, prob = 0.025)
+  proj_inc_rate_summary$upper <- apply(proj_inc_rate[,-1],1,quantile, prob = 0.975)
+  proj_inc_rate_long <- gather(as.data.frame(proj_inc_rate), key = "iteration", value = "chronic_cases_rate", -time)
+
   # Absolute incident HBV-related deaths per timestep
   proj_deaths <- cbind(output_file[[1]]$time,
                        (sapply(lapply(output_file,"[[", "hbv_deaths"), "[[", "incident_number_total")+
@@ -1738,6 +1751,19 @@ extract_outcomes <- function(output_file, scenario_label) {
   proj_deaths_summary$lower <- apply(proj_deaths[,-1],1,quantile, prob = 0.025)
   proj_deaths_summary$upper <- apply(proj_deaths[,-1],1,quantile, prob = 0.975)
   proj_deaths_long <- gather(as.data.frame(proj_deaths), key = "iteration", value = "deaths", -time)
+
+  # Incidence rate of  HBV-related deaths per timestep
+  proj_deaths_rate <- cbind(output_file[[1]]$time,
+                       (sapply(lapply(output_file,"[[", "hbv_deaths"), "[[", "incident_number_total")+
+                          sapply(lapply(output_file,"[[", "screened_hbv_deaths"), "[[", "incident_number_total")+
+                          sapply(lapply(output_file,"[[", "treated_hbv_deaths"), "[[", "incident_number_total"))/
+                         sapply(lapply(output_file,"[[", "pop_total"), "[[", "pop_total"))
+  colnames(proj_deaths_rate)[1] <- "time"
+  proj_deaths_rate_summary <- data.frame(time = output_file[[1]]$time)
+  proj_deaths_rate_summary$median <- apply(proj_deaths_rate[,-1],1,median)
+  proj_deaths_rate_summary$lower <- apply(proj_deaths_rate[,-1],1,quantile, prob = 0.025)
+  proj_deaths_rate_summary$upper <- apply(proj_deaths_rate[,-1],1,quantile, prob = 0.975)
+  proj_deaths_rate_long <- gather(as.data.frame(proj_deaths_rate), key = "iteration", value = "deaths_rate", -time)
 
   # Age-standardised chronic infection incidence per 100000 per timestep!!
 
@@ -1752,12 +1778,16 @@ extract_outcomes <- function(output_file, scenario_label) {
   # Label dataframes with scenario:
   proj_prev_summary$scenario <- scenario_label
   proj_inc_summary$scenario <- scenario_label
+  proj_inc_rate_summary$scenario <- scenario_label
   proj_deaths_summary$scenario <- scenario_label
+  proj_deaths_rate_summary$scenario <- scenario_label
   proj_deaths_standardised_summary$scenario <- scenario_label
 
   return(list(hbsag_prev_summary = proj_prev_summary,
               chronic_incidence_summary = proj_inc_summary,
+              chronic_incidence_rate_summary = proj_inc_rate_summary,
               hbv_deaths_summary = proj_deaths_summary,
+              hbv_deaths_rate_summary = proj_deaths_rate_summary,
               proj_deaths_standardised_summary = proj_deaths_standardised_summary))
 }
 
