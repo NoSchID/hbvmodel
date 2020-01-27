@@ -45,14 +45,16 @@ sim <- apply(params_mat_targets5, 1,
                                           mu_dcc = as.list(x)$mu_dcc,
                                           mu_hcc = as.list(x)$mu_hcc,
                                           vacc_eff = as.list(x)$vacc_eff,
-                                          screening_years = seq(2020,2100,1)),
+                                          screening_years = c(2020)),
                                    scenario = "vacc_screen"))
-screen_1 <- lapply(sim, code_model_output)
+screen_once <- lapply(sim, code_model_output)
 sim_duration = proc.time() - time1
 sim_duration["elapsed"]/60
 
+#saveRDS(screen_20, here("output", "screening_freq_20_260120.Rds"))
+#df_co2_rds = readRDS("data/co2.Rds")
 
-#save(screen_1, file = here("output", "screening_freq_1_240120.Rdata"))
+#save(screen_once, file = here("output", "screening_freq_once_270120.Rdata"))
 
 # Simulate intervention model ----
 
@@ -97,9 +99,61 @@ sim <- apply(params_mat_targets5[1,],1,
                                 tr_vir_supp = 1),
                          scenario = "vacc_screen"))
 
-out_sq <- run_one_scenario(default_parameter_list = parameter_list,
-                        calibrated_parameter_sets = params_mat_targets5,
-                        scenario = "vacc")
+# Try to save population output in 1955
+#model_pop1955 <- sim[which(sim$time==1955),1:(2*n_infectioncat*n_agecat)+1]
+#save(here("output/simulated_inits_1955.RData"))
+# Load initial population saved from previous model run
+# Check numbers in screened and treatment comps are really 0
+# Check if output storage needs to be taken over too
+#load(here("data/simulated_inits_1880.RData"))  # this is saved from previous model run
+#init_pop_sim <- c("Sf" = select(model_pop1955, starts_with("Sf")),
+#                  "ITf" = select(model_pop1955, starts_with("ITf")),
+#                  "IRf" = select(model_pop1955, starts_with("IRf")),
+#                  "ICf" = select(model_pop1955, starts_with("ICf")),
+#                  "ENCHBf" = select(model_pop1955, starts_with("ENCHBf")),
+#                  "CCf" = select(model_pop1955, starts_with("CCf")),
+#                  "DCCf" = select(model_pop1955, starts_with("DCCf")),
+#                  "HCCf" = select(model_pop1955, starts_with("HCCf")),
+#                  "Rf" = select(model_pop1955, starts_with("Rf")),
+#                  "S_Sf" = rep(0,n_agecat),
+#                  "S_ITf" = rep(0,n_agecat),
+#                  "S_IRf" = rep(0,n_agecat),
+#                  "S_ICf" = rep(0,n_agecat),
+#                  "S_ENCHBf" = rep(0,n_agecat),
+#                  "S_CCf" = rep(0,n_agecat),
+#                  "S_DCCf" = rep(0,n_agecat),
+#                  "S_HCCf" = rep(0,n_agecat),
+#                  "S_Rf" = rep(0,n_agecat),
+#                  "T_CHBf" = rep(0,n_agecat),
+#                  "T_CCf" = rep(0,n_agecat),
+#                  "T_DCCf" = rep(0,n_agecat),
+#                  "T_HCCf" = rep(0,n_agecat),
+#                  "T_Rf" = rep(0,n_agecat),
+#                  "Sm" = select(model_pop1955, starts_with("Sm")),
+#                  "ITm" = select(model_pop1955, starts_with("ITm")),
+#                  "IRm" = select(model_pop1955, starts_with("IRm")),
+#                  "ICm" = select(model_pop1955, starts_with("ICm")),
+#                  "ENCHBm" = select(model_pop1955, starts_with("ENCHBm")),
+#                  "CCm" = select(model_pop1955, starts_with("CCm")),
+#                  "DCCm" = select(model_pop1955, starts_with("DCCm")),
+#                  "HCCm" = select(model_pop1955, starts_with("HCCm")),
+#                  "Rm" = select(model_pop1955, starts_with("Rm")),
+#                  "S_Sm" = rep(0,n_agecat),
+#                  "S_ITm" = rep(0,n_agecat),
+#                  "S_IRm" = rep(0,n_agecat),
+#                  "S_ICm" = rep(0,n_agecat),
+#                  "S_ENCHBm" = rep(0,n_agecat),
+#                  "S_CCm" = rep(0,n_agecat),
+#                  "S_DCCm" = rep(0,n_agecat),
+#                  "S_HCCm" = rep(0,n_agecat),
+#                  "S_Rm" = rep(0,n_agecat),
+#                  "T_CHBm" = rep(0,n_agecat),
+#                  "T_CCm" = rep(0,n_agecat),
+#                  "T_DCCm" = rep(0,n_agecat),
+#                  "T_HCCm" = rep(0,n_agecat),
+#                  "T_Rm" =rep(0,n_agecat),
+#                  output_storage)
+#init_pop_sim <- unlist(init_pop_sim)
 
 
 out <- code_model_output(sim[[1]])
