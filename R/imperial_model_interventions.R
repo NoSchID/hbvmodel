@@ -32,7 +32,7 @@ dt <- 0.5                              # timestep (years)
 # dt/da can only be 0.5 to match the WAIFW matrix at the moment
 # For demography, it can be up to 1, or multiple of 5 thereafter (because of women of childbearing age)
 starttime <- 1850
-runtime <- 250                     # number of years to run the model for
+runtime <- 251                     # number of years to run the model for
 #times <- round((0:(runtime/dt))*dt,2) # vector of timesteps
 #times_labels <- times+starttime       # year labels for timestep vector
 
