@@ -1212,8 +1212,8 @@ library(here)
 ### Run with LHS calibration best parameters----
 # Run simulations with the best-fit parameter sets
 
-load(here("calibration", "input", "target_threshold_parms_119_060120.Rdata")) # params_mat_targets5
-load(here("calibration", "input", "target_threshold_parms_328_060120.Rdata")) # params_mat_targets5_2
+load(here("calibration", "input", "accepted_parmsets_119_060120.Rdata")) # params_mat_targets5
+#load(here("calibration", "input", "target_threshold_parms_328_060120.Rdata")) # params_mat_targets5_2
 
 # params_mat_targets5: chosen so that 100% of accepted sets fall within targets
 # params_mat_targets5_2: chosen so that 99% of accepted sets fall within targets
@@ -1319,6 +1319,89 @@ ggplot(comp_prior_post2[comp_prior_post2$parm == "alpha",]) +
 # In mixed female cohort assuming 90% IC, 5% IR and 5% ENCHB: 0.00036
 # In mixed male cohort: 0.0064
 
+# Not in parallel
+out_mat <- apply(params_mat_targets5[1,], 1,
+                    function(x)
+                      fit_model_full_output(default_parameter_list = parameter_list,
+                                            data_to_fit = calibration_datasets_list,
+                                            parms_to_change =
+                                              list(b1 = as.list(x)$b1,
+                                                   b2 = as.list(x)$b2,
+                                                   b3 = as.list(x)$b3,
+                                                   mtct_prob_s = as.list(x)$mtct_prob_s,
+                                                   mtct_prob_e = as.list(x)$mtct_prob_e,
+                                                   alpha = as.list(x)$alpha,
+                                                   p_chronic_in_mtct = as.list(x)$p_chronic_in_mtct,
+                                                   p_chronic_function_r = as.list(x)$p_chronic_function_r,
+                                                   p_chronic_function_s = as.list(x)$p_chronic_function_s,
+                                                   pr_it_ir = as.list(x)$pr_it_ir,
+                                                   pr_ir_ic = as.list(x)$pr_ir_ic,
+                                                   eag_prog_function_rate = as.list(x)$eag_prog_function_rate,
+                                                   pr_ir_enchb = as.list(x)$pr_ir_enchb,
+                                                   pr_ir_cc_female = as.list(x)$pr_ir_cc_female,
+                                                   pr_ir_cc_age_threshold = as.list(x)$pr_ir_cc_age_threshold,
+                                                   pr_ic_enchb = as.list(x)$pr_ic_enchb,
+                                                   sag_loss_slope = as.list(x)$sag_loss_slope,
+                                                   pr_enchb_cc_female = as.list(x)$pr_enchb_cc_female,
+                                                   cirrhosis_male_cofactor = as.list(x)$cirrhosis_male_cofactor,
+                                                   pr_cc_dcc = as.list(x)$pr_cc_dcc,
+                                                   cancer_prog_coefficient_female = as.list(x)$cancer_prog_coefficient_female,
+                                                   cancer_age_threshold = as.list(x)$cancer_age_threshold,
+                                                   cancer_male_cofactor = as.list(x)$cancer_male_cofactor,
+                                                   hccr_it = as.list(x)$hccr_it,
+                                                   hccr_ir = as.list(x)$hccr_ir,
+                                                   hccr_enchb = as.list(x)$hccr_enchb,
+                                                   hccr_cc = as.list(x)$hccr_cc,
+                                                   hccr_dcc = as.list(x)$hccr_dcc,
+                                                   mu_cc = as.list(x)$mu_cc,
+                                                   mu_dcc = as.list(x)$mu_dcc,
+                                                   mu_hcc = as.list(x)$mu_hcc,
+                                                   vacc_eff = as.list(x)$vacc_eff)))
+
+new_vacc_meth <- out_mat
+
+output1 <- new_vacc_meth2
+output2 <- new_vacc_meth
+
+new_vacc_meth <- output2
+
+# CHECK VACCINE COVERAGE IN MODEL
+# For vaccine coverage, have to substract earlier recovery % (ca 4 %)
+vacc_cov_2020 <- 119L
+vacc_cov_1997 <- 119L
+vacc_cov_2010 <- 119L
+rec_1990 <- 119L
+
+for (i in 1:119) {
+rec_1990[i] <- (new_vacc_meth[[i]]$full_output$ever_infected[221,which(ages==1)]-
+                  new_vacc_meth[[i]]$full_output$carriers[221,which(ages==1)])/
+  new_vacc_meth[[i]]$full_output$pop[221,which(ages==1)]
+
+vacc_cov_1997[i] <- ((new_vacc_meth[[i]]$full_output$ever_infected[235,which(ages==1)]-
+                        new_vacc_meth[[i]]$full_output$carriers[235,which(ages==1)])/
+                       new_vacc_meth[[i]]$full_output$pop[235,which(ages==1)])-rec_1990[i]
+
+vacc_cov_2010[i] <- ((new_vacc_meth[[i]]$full_output$ever_infected[261,which(ages==1)]-
+                  new_vacc_meth[[i]]$full_output$carriers[261,which(ages==1)])/
+  new_vacc_meth[[i]]$full_output$pop[261,which(ages==1)])-rec_1990[i]
+
+vacc_cov_2020[i] <- ((new_vacc_meth[[i]]$full_output$ever_infected[280,which(ages==1)]-
+                        new_vacc_meth[[i]]$full_output$carriers[280,which(ages==1)])/
+                       new_vacc_meth[[i]]$full_output$pop[280,which(ages==1)])-rec_1990[i]
+}
+
+test <- as.data.frame(cbind(vacc_cov_2020,unlist(params_mat_targets5$vacc_eff)))
+test$high_eff <- 1
+test$high_eff[test$V2<0.97] <- 0
+
+plot(x=1:119, y = vacc_cov_1997, ylim = c(0,1))
+points(x=1:119, y = vacc_cov_2010, col = "blue")
+points(x=1:119, y = vacc_cov_2020, col = "red")
+points(x=1:119, y = params_mat_targets5$vacc_eff, col = "green")
+
+boxplot(vacc_cov_2020~high_eff, test, ylim = c(0.7,1))
+
+# In parallel
 library(parallel)
 cl <- makeCluster(4)
 clusterEvalQ(cl, {library(dplyr); library(tidyr); library(deSolve); library(binom)})
@@ -1366,6 +1449,8 @@ stopCluster(cl)
 #save(out_mat, file = here("calibration", "output", "model_fit_output_328_070120.Rdata"))
 
 my_output <- out_mat
+
+out_mat <- output2
 
 #Extract mapped output
 best_fits_mapped_output <- lapply(out_mat, "[[", "mapped_output")
@@ -1494,7 +1579,7 @@ out_mat <- out_mat_median
 
 library(ggplot2)
 library(gridExtra)
-pdf(file = here("calibration", "output", "median_95ci_fit_targets5_328_070120.pdf"), paper="a4r")
+pdf(file = here("calibration", "output", "median_95ci_fit_targets5_119_new_vaccine_method2_100220.pdf"), paper="a4r")
 plot_list = list()
 for (i in 1:length(out_mat)) {
 
