@@ -775,7 +775,8 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
              dcum_treated_dcc_deaths,
              dcum_treated_hcc_deaths,
              dcum_treated_hcc,
-             dcum_treated_sag_loss)
+             dcum_treated_sag_loss,
+             total_screened_pop = 0)
 
     list(res, p_chronic_function = p_chronic_function)
 
@@ -827,13 +828,16 @@ screen_pop <- function(timestep, pop, parameters){
 
     # Select state variables array
     total_pop <- array(unlist(pop[1:(2 * n_infectioncat * n_agecat)]),dim=c(n_agecat,n_infectioncat,2))
+
     # Move the population to screen
     pop_to_screen <- parameters$screening_coverage * total_pop[age_groups_to_screen,1:n_nathistcat,1:2]
     total_pop[age_groups_to_screen,1:n_nathistcat,1:2] <- total_pop[age_groups_to_screen,1:n_nathistcat,1:2]-pop_to_screen
     total_pop[age_groups_to_screen,(n_nathistcat+1):(n_nathistcat+n_screencat),1:2] <- total_pop[age_groups_to_screen,(n_nathistcat+1):(n_nathistcat+n_screencat),1:2]+
       pop_to_screen
 
-    return(c(total_pop, unlist(init_pop[(2*n_infectioncat*n_agecat+1):length(init_pop)])))
+    total_screened_pop <- sum(pop_to_screen)
+
+    return(c(total_pop, unlist(init_pop[(2*n_infectioncat*n_agecat+1):(length(init_pop)-1)]), total_screened_pop))
   })
 }
 
@@ -2438,7 +2442,8 @@ output_storage <- c("cum_deathsf" = rep(0,n_agecat), "cum_deathsm" = rep(0,n_age
                     "cum_treated_dcc_deathsf" = rep(0,n_agecat), "cum_treated_dcc_deathsm" = rep(0,n_agecat),
                     "cum_treated_hcc_deathsf" = rep(0,n_agecat), "cum_treated_hcc_deathsm" = rep(0,n_agecat),
                     "cum_treated_incident_hccf" = rep(0,n_agecat), "cum_treated_incident_hccm" = rep(0,n_agecat),
-                    "cum_treated_sag_lossf" = rep(0,n_agecat), "cum_treated_sag_lossm" = rep(0,n_agecat))
+                    "cum_treated_sag_lossf" = rep(0,n_agecat), "cum_treated_sag_lossm" = rep(0,n_agecat),
+                    "total_screened_pop" = 0)
 
 init_pop <- c("Sf" = popsize_1950$pop_female*(1-gambia_infected),
               "ITf" = popsize_1950$pop_female*gambia_infected*gambia_eag*0.5,
