@@ -595,16 +595,13 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
 
       # Immunes
       dpop[index$ages_all,R,i] <- -(diff(c(0,pop[index$ages_all,R,i]))/da) +
-        # vacc_cov * vacc_eff * pop[index$ages_all,S,i] +
         (1-p_chronic_function) * dcum_infections[index$ages_all,i] +
         dcum_sag_loss[index$ages_all,i] -
         deaths[index$ages_all,R,i] + migrants[index$ages_all,R,i]
 
-      # Babies are born susceptible or infected (age group 1)
+      # Babies are born susceptible or infected (age group 1 = age 0)
       dpop[1,S,i] <- dpop[1,S,i] + sex_ratio[i] * dcum_nonchronic_births
       dpop[1,IT,i] <- dpop[1,IT,i] + sex_ratio[i] * dcum_chronic_births
-      #dpop[1,R,i] <- dpop[1,R,i] + sex_ratio[i] * (1-p_chronic_function[1]) * infected_births
-
 
       # New vaccination approach:
        dpop[which(ages == 0):which(ages == 1-da),S,i] <- dpop[which(ages == 0):which(ages == 1-da),S,i] -
@@ -641,7 +638,7 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
         pr_ir_enchb * pop[index$ages_all,IR_S,i] -
         pr_ir_cc_function[index$ages_all,i] * pop[index$ages_all,IR_S,i] -
         hccr_ir * cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,IR_S,i] -
-        link_to_care_prob * treatment_initiation_prob * tr_vir_supp * pop[index$ages_all,IR_S,i] -       # transition into treated CHB
+        monitoring_rate * monitoring_prob * treatment_initiation_prob * pop[index$ages_all,IR_S,i] -       # transition into treated CHB
         deaths[index$ages_all,IR_S,i] + migrants[index$ages_all,IR_S,i]
 
       # Screened Inactive carrier
@@ -658,7 +655,7 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
         pr_ic_enchb * pop[index$ages_all,IC_S,i] -
         pr_enchb_cc_rates[index$ages_all,i] * pop[index$ages_all,ENCHB_S,i] -
         hccr_enchb * cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,ENCHB_S,i] -
-        link_to_care_prob * treatment_initiation_prob * tr_vir_supp * pop[index$ages_all,ENCHB_S,i] -     # transition into treated CHB
+        monitoring_rate * monitoring_prob * treatment_initiation_prob * pop[index$ages_all,ENCHB_S,i] -     # transition into treated CHB
         deaths[index$ages_all,ENCHB_S,i] + migrants[index$ages_all,ENCHB_S,i]
 
       # Screened Compensated cirrhosis
@@ -668,7 +665,7 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
         dcum_screened_dcc[index$ages_all,i] -
         hccr_cc * cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,CC_S,i] -
         dcum_screened_cc_deaths[index$ages_all,i] -
-        link_to_care_prob * treatment_initiation_prob * tr_vir_supp * pop[index$ages_all,CC_S,i] -    # transition into treated CC
+        monitoring_rate * monitoring_prob * treatment_initiation_prob * pop[index$ages_all,CC_S,i] -    # transition into treated CC
         deaths[index$ages_all,CC_S,i] + migrants[index$ages_all,CC_S,i]
 
       # Screened Decompensated cirrhosis
@@ -676,7 +673,7 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
         dcum_screened_dcc[index$ages_all,i] -
         hccr_dcc * pop[index$ages_all,DCC_S,i] -
         dcum_screened_dcc_deaths[index$ages_all,i] -
-        link_to_care_prob * treatment_initiation_prob * tr_vir_supp * pop[index$ages_all,DCC_S,i] -   # transition into treated DCC
+        monitoring_rate * monitoring_prob * treatment_initiation_prob  * pop[index$ages_all,DCC_S,i] -   # transition into treated DCC
         deaths[index$ages_all,DCC_S,i] + migrants[index$ages_all,DCC_S,i]
 
       # Screened HCC
@@ -695,21 +692,21 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
 
       # Ever treated CHB
       dpop[index$ages_all,CHB_T,i] <- -(diff(c(0,pop[index$ages_all,CHB_T,i]))/da) +
-        link_to_care_prob * treatment_initiation_prob * tr_vir_supp * pop[index$ages_all,IR_S,i] +
-        link_to_care_prob * treatment_initiation_prob * tr_vir_supp * pop[index$ages_all,ENCHB_S,i] -
+        monitoring_rate * monitoring_prob * treatment_initiation_prob  * pop[index$ages_all,IR_S,i] +
+        monitoring_rate * monitoring_prob * treatment_initiation_prob * pop[index$ages_all,ENCHB_S,i] -
         sag_loss * pop[index$ages_all,CHB_T,i] -
         thccr_chb * hccr_enchb * cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,CHB_T,i] -
         deaths[index$ages_all,CHB_T,i] + migrants[index$ages_all,CHB_T,i]
 
       # Ever treated CC
       dpop[index$ages_all,CC_T,i] <- -(diff(c(0,pop[index$ages_all,CC_T,i]))/da) +
-        link_to_care_prob * treatment_initiation_prob * tr_vir_supp * pop[index$ages_all,CC_S,i] -
+        monitoring_rate * monitoring_prob * treatment_initiation_prob * pop[index$ages_all,CC_S,i] -
         thccr_cc * hccr_cc * cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,CC_T,i] -
         deaths[index$ages_all,CC_T,i] + migrants[index$ages_all,CC_T,i]
 
       # Ever treated DCC
       dpop[index$ages_all,DCC_T,i] <- -(diff(c(0,pop[index$ages_all,DCC_T,i]))/da) +
-        link_to_care_prob * treatment_initiation_prob * tr_vir_supp * pop[index$ages_all,DCC_S,i] -
+        monitoring_rate * monitoring_prob * treatment_initiation_prob * pop[index$ages_all,DCC_S,i] -
         thccr_dcc * hccr_dcc * pop[index$ages_all,DCC_T,i] -
         dcum_treated_dcc_deaths[index$ages_all,i]-
         deaths[index$ages_all,DCC_T,i] + migrants[index$ages_all,DCC_T,i]
@@ -774,7 +771,10 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
              dcum_treated_hcc_deaths,
              dcum_treated_hcc,
              dcum_treated_sag_loss,
-             total_screened_pop = 0)
+             total_screened_uninfected = 0,
+             total_screened_chb = 0,
+             total_screened_cirrhosis = 0,
+             total_screened_ineligible = 0)
 
     list(res, p_chronic_function = p_chronic_function)
 
@@ -827,18 +827,72 @@ screen_pop <- function(timestep, pop, parameters){
     # Select state variables array
     total_pop <- array(unlist(pop[1:(2 * n_infectioncat * n_agecat)]),dim=c(n_agecat,n_infectioncat,2))
 
-    # Move the population to screen
-    pop_to_screen <- parameters$screening_coverage * total_pop[age_groups_to_screen,1:n_nathistcat,1:2]
-    total_pop[age_groups_to_screen,1:n_nathistcat,1:2] <- total_pop[age_groups_to_screen,1:n_nathistcat,1:2]-pop_to_screen
-    total_pop[age_groups_to_screen,(n_nathistcat+1):(n_nathistcat+n_screencat),1:2] <- total_pop[age_groups_to_screen,(n_nathistcat+1):(n_nathistcat+n_screencat),1:2]+
-      pop_to_screen
-
     # Record the total number of people screened at each screening event
     # Note this is not a cumulative output in the model and stays the same for years where there
     # is no screening programme (sum unique values to calculate total HBsAg tests)
-    total_screened_pop <- sum(pop_to_screen)
+    pop_to_screen_uninfected <- parameters$screening_coverage * total_pop[age_groups_to_screen,c(1,9),1:2]
+    pop_to_screen_chb <- parameters$screening_coverage * total_pop[age_groups_to_screen,c(3,5),1:2]
+    pop_to_screen_cirrhosis <- parameters$screening_coverage * total_pop[age_groups_to_screen,c(6,7),1:2]
+    pop_to_screen_ineligible <- parameters$screening_coverage * total_pop[age_groups_to_screen,c(2,4,8),1:2]
 
-    return(c(total_pop, unlist(init_pop[(2*n_infectioncat*n_agecat+1):(length(init_pop)-1)]), total_screened_pop))
+    total_screened_uninfected <- sum(pop_to_screen_uninfected)
+    total_screened_chb <- sum(pop_to_screen_chb)
+    total_screened_cirrhosis <- sum(pop_to_screen_cirrhosis)
+    total_screened_ineligible <- sum(pop_to_screen_ineligible)
+
+    # Calculate the population to screen then treat in the treatment eligible compartments:
+    # IR (3), ENCHB (5), CC (6), DCC (7)
+    pop_to_treat_ir <- parameters$screening_coverage * parameters$link_to_care_prob *
+      parameters$treatment_initiation_prob * total_pop[age_groups_to_screen,3,1:2]
+
+    pop_to_treat_enchb <- parameters$screening_coverage * parameters$link_to_care_prob *
+      parameters$treatment_initiation_prob * total_pop[age_groups_to_screen,5,1:2]
+
+    pop_to_treat_cc <- parameters$screening_coverage * parameters$link_to_care_prob *
+      parameters$treatment_initiation_prob * total_pop[age_groups_to_screen,6,1:2]
+
+    pop_to_treat_dcc <- parameters$screening_coverage * parameters$link_to_care_prob *
+      parameters$treatment_initiation_prob * total_pop[age_groups_to_screen,7,1:2]
+
+    # Calculate the population identified as treatment-ineligible (eligible for monitoring):
+    # IT (2), IC (4)
+    pop_to_monitor <- parameters$screening_coverage * parameters$link_to_care_prob *
+      total_pop[age_groups_to_screen,c(2,4),1:2]
+
+    # Explore treating IT>30 years
+    # Currently susceptibles are screened but remain in susceptible compartment: explore vaccinating
+
+    # Move the screened population
+#    total_pop[age_groups_to_screen,1:n_nathistcat,1:2] <- total_pop[age_groups_to_screen,1:n_nathistcat,1:2]-pop_to_screen
+#    total_pop[age_groups_to_screen,(n_nathistcat+1):(n_nathistcat+n_screencat),1:2] <-
+#    total_pop[age_groups_to_screen,(n_nathistcat+1):(n_nathistcat+n_screencat),1:2]+
+#    pop_to_screen
+
+    # Remove the population to treat from undiagnosed compartments
+    total_pop[age_groups_to_screen,3,1:2] <- total_pop[age_groups_to_screen,3,1:2] -
+      pop_to_treat_ir
+    total_pop[age_groups_to_screen,5,1:2] <- total_pop[age_groups_to_screen,5,1:2] -
+      pop_to_treat_enchb
+    total_pop[age_groups_to_screen,6,1:2] <- total_pop[age_groups_to_screen,6,1:2] -
+      pop_to_treat_cc
+    total_pop[age_groups_to_screen,7,1:2] <- total_pop[age_groups_to_screen,7,1:2] -
+      pop_to_treat_dcc
+
+    # Add the population to treat to treated compartments
+    # CHB_T (19), CC_T (20), DCC_T (21)
+    total_pop[age_groups_to_screen,19,1:2] <- total_pop[age_groups_to_screen,19,1:2] + pop_to_treat_ir +
+      pop_to_treat_enchb
+    total_pop[age_groups_to_screen,20,1:2] <- total_pop[age_groups_to_screen,20,1:2] + pop_to_treat_cc
+    total_pop[age_groups_to_screen,21,1:2] <- total_pop[age_groups_to_screen,21,1:2] + pop_to_treat_dcc
+
+    # Move the population from undiagnosed to treatment-ineligible (to monitor) compartments
+    # IT_S (11) and IC_S (13)
+    total_pop[age_groups_to_screen,c(2,4),1:2] <- total_pop[age_groups_to_screen,c(2,4),1:2] - pop_to_monitor
+    total_pop[age_groups_to_screen,c(11,13),1:2] <- total_pop[age_groups_to_screen,c(11,13),1:2] + pop_to_monitor
+
+    return(c(total_pop, unlist(init_pop[(2*n_infectioncat*n_agecat+1):(length(init_pop)-4)]),
+             total_screened_uninfected, total_screened_chb,
+             total_screened_cirrhosis, total_screened_ineligible))
   })
 }
 
@@ -2444,7 +2498,8 @@ output_storage <- c("cum_deathsf" = rep(0,n_agecat), "cum_deathsm" = rep(0,n_age
                     "cum_treated_hcc_deathsf" = rep(0,n_agecat), "cum_treated_hcc_deathsm" = rep(0,n_agecat),
                     "cum_treated_incident_hccf" = rep(0,n_agecat), "cum_treated_incident_hccm" = rep(0,n_agecat),
                     "cum_treated_sag_lossf" = rep(0,n_agecat), "cum_treated_sag_lossm" = rep(0,n_agecat),
-                    "total_screened_pop" = 0)
+                    "total_screened_uninfected" = 0, "total_screened_chb" = 0,
+                    "total_screened_cirrhosis" = 0, "total_screened_ineligible" = 0)
 
 init_pop <- c("Sf" = popsize_1950$pop_female*(1-gambia_infected),
               "ITf" = popsize_1950$pop_female*gambia_infected*gambia_eag*0.5,
@@ -2557,9 +2612,11 @@ parameter_list <- list(
   max_age_to_screen = 70,                    # Maximum age group to screen
   link_to_care_prob = 0.81,                  # probability of linkage to care (liver disease assessment) after HBsAg test
   treatment_initiation_prob = 1,             # probability of initiating treatment after diagnosis of treatment eligibility
+  monitoring_rate = 1/5,                     # annual rate of monitoring for treatment eligibility
+  monitoring_prob = 1,                       # probability of being monitored (1-proportion lost to follow-up)
   alpha2 = 1,                                # relative infectiousness with treatment compared to HBeAg-negatives
   mtct_prob_treat_cofactor = 1,              # relative infectiousness of mother-to-child transmission risk from treated mother (NOT peripartum therapy) compared to HBeAg-negative mother
-  tr_vir_supp = 2,                           # rate of achieveing virological suppression after treatment initiation
+#  tr_vir_supp = 2,                           # rate of achieveing virological suppression after treatment initiation
   thccr_chb = 0.27,                          # hazard ratio for progression to HCC from CHB on treatment
   thccr_cc = 0.23,                           # hazard ratio for progression to HCC from CC on treatment
   thccr_dcc = 0.23,                          # hazard ratio for progression to HCC from DCC on treatment
