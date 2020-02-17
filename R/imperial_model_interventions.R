@@ -114,6 +114,8 @@ gambia_eag <- rep(c(0.95, 0.95, 0.9, 0.9, 0.65, 0.65, 0.6, 0.6, 0.6, 0.6,
                     0.1, 0.1, rep(0.1, 20), rep (0.05, 60)), each = 1/da) # made up last value
 
 ### THE MODEL FUNCTION ----
+
+# NOTE: I have changed the infant vaccine application from what it was in the calibrated model
 imperial_model <- function(timestep, pop, parameters, sim_starttime) {
 
   with(as.list(parameters), {
@@ -603,22 +605,18 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
       dpop[1,IT,i] <- dpop[1,IT,i] + sex_ratio[i] * dcum_chronic_births
       #dpop[1,R,i] <- dpop[1,R,i] + sex_ratio[i] * (1-p_chronic_function[1]) * infected_births
 
-      # Vaccination: applied at 0.5 years of age
-      dpop[which(ages == 0.5),S,i] <- dpop[which(ages == 0.5),S,i] -
-        (vacc_cov * vacc_eff * pop[which(ages == 0.5),S,i])
-      dpop[which(ages == 0.5),R,i] <- dpop[which(ages == 0.5),R,i] +
-        (vacc_cov * vacc_eff * pop[which(ages == 0.5),S,i])
 
-      # Explore effect of vaccination when changing to 0.1 step
-      #      dpop[which(ages == 0.5):which(ages==0.9),S,i] <- dpop[which(ages == 0.5):which(ages==0.9),S,i] -
-      #        (vacc_cov * vacc_eff * pop[which(ages == 0.5):which(ages==0.9),S,i])
-      #      dpop[which(ages == 0.5):which(ages==0.9),R,i] <- dpop[which(ages == 0.5):which(ages==0.9),R,i] +
-      #       (vacc_cov * vacc_eff * pop[which(ages == 0.5):which(ages==0.9),S,i])
+      # New vaccination approach:
+       dpop[which(ages == 0):which(ages == 1-da),S,i] <- dpop[which(ages == 0):which(ages == 1-da),S,i] -
+        (-log(1-(vacc_cov * vacc_eff))/0.5 * pop[which(ages == 0):which(ages == 1-da),S,i])
+       dpop[which(ages == 0):which(ages == 1-da),R,i] <- dpop[which(ages == 0):which(ages == 1-da),R,i] +
+        (-log(1-(vacc_cov * vacc_eff))/0.5 * pop[which(ages == 0):which(ages == 1-da),S,i])
 
-      #      dpop[which(ages == 0.5):which(ages==1),S,i] <- dpop[which(ages == 0.5):which(ages==1),S,i] -
-      #        (vacc_cov * vacc_eff * pop[which(ages == 0.5):which(ages==1),S,i])
-      #      dpop[which(ages == 0.5):which(ages==1),R,i] <- dpop[which(ages == 0.5):which(ages==1),R,i] +
-      #       (vacc_cov * vacc_eff * pop[which(ages == 0.5):which(ages==1),S,i])
+       # Previous vaccination approach: applied at 0.5 years of age
+      # dpop[which(ages == 0.5),S,i] <- dpop[which(ages == 0.5),S,i] -
+      #  (vacc_cov * vacc_eff * pop[which(ages == 0.5),S,i])
+      # dpop[which(ages == 0.5),R,i] <- dpop[which(ages == 0.5),R,i] +
+      #  (vacc_cov * vacc_eff * pop[which(ages == 0.5),S,i])
 
       # Transitions between screened compartments (same as natural history but without births)
 
@@ -835,6 +833,9 @@ screen_pop <- function(timestep, pop, parameters){
     total_pop[age_groups_to_screen,(n_nathistcat+1):(n_nathistcat+n_screencat),1:2] <- total_pop[age_groups_to_screen,(n_nathistcat+1):(n_nathistcat+n_screencat),1:2]+
       pop_to_screen
 
+    # Record the total number of people screened at each screening event
+    # Note this is not a cumulative output in the model and stays the same for years where there
+    # is no screening programme (sum unique values to calculate total HBsAg tests)
     total_screened_pop <- sum(pop_to_screen)
 
     return(c(total_pop, unlist(init_pop[(2*n_infectioncat*n_agecat+1):(length(init_pop)-1)]), total_screened_pop))
