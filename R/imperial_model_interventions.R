@@ -2659,7 +2659,6 @@ parameter_list <- list(
   monitoring_prob = 1,                       # probability of being monitored (1-proportion lost to follow-up)
   alpha2 = 1,                                # relative infectiousness with treatment compared to HBeAg-negatives
   mtct_prob_treat_cofactor = 1,              # relative infectiousness of mother-to-child transmission risk from treated mother (NOT peripartum therapy) compared to HBeAg-negative mother
-#  tr_vir_supp = 2,                          # rate of achieveing virological suppression after treatment initiation
   thccr_it = 0.19,                           # hazard ratio for progression to HCC from IT on treatment
   thccr_chb = 0.27,                          # hazard ratio for progression to HCC from CHB on treatment
   thccr_cc = 0.23,                           # hazard ratio for progression to HCC from CC on treatment
@@ -2671,7 +2670,7 @@ parameter_list <- list(
   # INTERVENTION ON/OFF SWITCH (1/0)
   apply_vacc = 1,
   apply_bdvacc = 0,
-  apply_treat_it = 0,
+  apply_treat_it = 0,                        # Switch for IT >30 year olds being eligible for treatment (default = off)
   # DEMOGRAPHY ON/OFF SWITCH (1/0)
   births_on = 1,
   migration_on = 1,
