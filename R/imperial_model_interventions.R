@@ -1311,8 +1311,8 @@ code_model_output <- function(output) {
   ## Extract separate outputs: incident variables (transitions between states)
 
   # Demographic transitions per timestep (cumulative number of births and deaths)
-  out_cum_deathsf <- output[,grepl("^cum_deathsf.",names(output))]
-  out_cum_deathsm <- output[,grepl("^cum_deathsm.",names(output))]
+  out_cum_deathsf <- output[,grepl("^cum_all_deathsf.",names(output))]
+  out_cum_deathsm <- output[,grepl("^cum_all_deathsm.",names(output))]
   out_cum_births <- unlist(select(output, contains("cum_births")))
 
   # Cumulative HBV incidence from horizontal transmission
@@ -1886,32 +1886,6 @@ extract_outcomes <- function(output_file, scenario_label) {
               hbv_deaths_summary = proj_deaths_summary,
               hbv_deaths_rate_summary = proj_deaths_rate_summary,
               proj_deaths_standardised_summary = proj_deaths_standardised_summary))
-}
-
-# Function to calculate age-standardised rate of HBV-related deaths (called by extract_outcomes)
-calculate_age_standardised_hbvdeaths_rate <- function(output_file) {
-  # Age-standardised incidence of HBV-related deaths per 100000 per timestep
-  # a) Calculate crude age-specific rates per person-year: need age-specific number of deaths and age-specific population size
-  deaths_by_age <- output_file$out_cum_hbv_deathsf+
-    output_file$out_cum_hbv_deathsm+
-    output_file$out_cum_screened_hbv_deathsf+
-    output_file$out_cum_screened_hbv_deathsm+
-    output_file$out_cum_treated_hbv_deathsf+
-    output_file$out_cum_treated_hbv_deathsm
-  deaths_by_age <- calculate_incident_numbers(deaths_by_age)
-
-  # Crude rate
-  deaths_rate <- deaths_by_age/output_file$pop
-  deaths_rate[is.na(deaths_rate)==TRUE] <- 0
-
-  # b) Multiply by reference population (Gambian pop in 2020)
-  ref_pop <- output_file$pop[output_file$time==2020,]
-  deaths_rate_ref_pop <- sweep(as.matrix(deaths_rate), MARGIN=2, as.matrix(ref_pop), "*")
-
-  # c) Calculate total expected deaths (sum of age-specific numbers) and divide by total Gambian popsize in 2020
-  age_stand_rate <- rowSums(deaths_rate_ref_pop)/rowSums(ref_pop)
-
-  return(age_stand_rate)
 }
 
 ### Functions to run projection scenarios ----
