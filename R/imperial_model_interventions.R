@@ -32,7 +32,7 @@ dt <- 0.5                              # timestep (years)
 # dt/da can only be 0.5 to match the WAIFW matrix at the moment
 # For demography, it can be up to 1, or multiple of 5 thereafter (because of women of childbearing age)
 starttime <- 1850
-runtime <- 251                     # number of years to run the model for
+runtime <- 271                         # number of years to run the model for
 #times <- round((0:(runtime/dt))*dt,2) # vector of timesteps
 #times_labels <- times+starttime       # year labels for timestep vector
 
@@ -753,7 +753,9 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
 
 
     # Sum age-specific number of incident background deaths across infection compartments for output
-    dcum_deaths <- cbind(rowSums(deaths[,,1]), rowSums(deaths[,,2]))
+    dcum_all_deaths <- cbind(rowSums(deaths[,,1]), rowSums(deaths[,,2]))
+    dcum_screened_deaths <- cbind(rowSums(deaths[,V_S:R_S,1]), rowSums(deaths[,V_S:R_S,2]))
+    dcum_treated_deaths <- cbind(rowSums(deaths[,IT_T:R_T,1]), rowSums(deaths[,IT_T:R_T,2]))
     # Age-specific number of incident background deaths among unscreened untreated
     # liver disease patients (CC, DCC and HCC)
     dcum_background_deaths_ld <- cbind(rowSums(deaths[index$ages_all,CC:HCC,1]),
@@ -761,7 +763,9 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
 
     # Return results
     res <- c(dpop,
-             dcum_deaths,
+             dcum_all_deaths,
+             dcum_screened_deaths,
+             dcum_treated_deaths,
              dcum_infections,
              dcum_chronic_infections,
              dcum_births,
@@ -2496,7 +2500,9 @@ run_one_scenario <- function(..., default_parameter_list, calibrated_parameter_s
 # Note: names in initial population vector is reproduced in output
 # guessed proportion in each compartment
 
-output_storage <- c("cum_deathsf" = rep(0,n_agecat), "cum_deathsm" = rep(0,n_agecat),
+output_storage <- c("cum_all_deathsf" = rep(0,n_agecat), "cum_all_deathsm" = rep(0,n_agecat),
+                    "cum_screened_deathsf" = rep(0,n_agecat), "cum_screened_deathsm" = rep(0,n_agecat),
+                    "cum_treated_deathsf" = rep(0,n_agecat), "cum_treated_deathsm" = rep(0,n_agecat),
                     "cum_infectionsf" = rep(0,n_agecat), "cum_infectionsm" = rep(0,n_agecat),
                     "cum_chronic_infectionsf" = rep(0,n_agecat), "cum_chronic_infectionsm" = rep(0,n_agecat),
                     "cum_births" = 0, "cum_infected_births" = 0, "cum_chronic_births" = 0,
