@@ -1,137 +1,226 @@
 # Functions to calculate analysis outcomes
 
-# Calculate healthcare interactions (note IT interactions are recorded separately)
-# Function can be applied to run_model_output (single simulation)
-# Need to add record of vaccination of susceptibles!
-calculate_healthcare_interactions <- function(sim, from_year_vector, by_year_vector, scenario_label) {
+# These are all applied to the output from code_model_output
+# If the argument is output_file, it is applied to 1 parmset,
+# if if the argument is output_files, it is applied to a list of parmsets
+
+# Calculate healthcare interactions (note IT interactions are recorded separately):
+# 2 separate functions for the interactions that occur on screening vs. monitoring
+calculate_screening_interactions <- function(output_file, scenario_label) {
 
   # Timing of screening programme
-  time_of_screening <- sim$input_parameters$screening_years
+  time_of_screening <- output_file$input_parameters$screening_years
 
   # Number of HBsAg tests
-  total_sag_tests <- unique(sim$out$total_screened_susceptible +
-                              sim$out$total_screened_immune +
-                              sim$out$total_screened_it +
-                              sim$out$total_screened_chb +
-                              sim$out$total_screened_cirrhosis +
-                              sim$out$total_screened_ineligible)
+  total_sag_tests <- unique(output_file$full_output$total_screened_susceptible +
+                              output_file$full_output$total_screened_immune +
+                              output_file$full_output$total_screened_it +
+                              output_file$full_output$total_screened_chb +
+                              output_file$full_output$total_screened_cirrhosis +
+                              output_file$full_output$total_screened_ineligible)
 
   # Number of liver disease assessments if IT is NOT treated
-  if(sim$input_parameters$apply_treat_it == 0) {
+  if(output_file$input_parameters$apply_treat_it == 0) {
 
-    total_identified_as_ineligible <- unique(sim$out$total_screened_ineligible + sim$out$total_screened_it) *
-      sim$input_parameters$link_to_care_prob
+    total_identified_as_ineligible <- unique(output_file$full_output$total_screened_ineligible +
+                                               output_file$full_output$total_screened_it) *
+      output_file$input_parameters$link_to_care_prob
 
     total_identified_as_eligible <-
-      unique(sim$out$total_screened_chb +
-               sim$out$total_screened_cirrhosis) * sim$input_parameters$link_to_care_prob
+      unique(output_file$full_output$total_screened_chb +
+               output_file$full_output$total_screened_cirrhosis) * output_file$input_parameters$link_to_care_prob
 
     # Number of liver disease assessments if IT is treated
 
-  } else if(sim$input_parameters$apply_treat_it == 1) {
-    total_identified_as_ineligible <- unique(sim$out$total_screened_ineligible) *
-      sim$input_parameters$link_to_care_prob
+  } else if(output_file$input_parameters$apply_treat_it == 1) {
+    total_identified_as_ineligible <- unique(output_file$full_output$total_screened_ineligible) *
+      output_file$input_parameters$link_to_care_prob
 
     total_identified_as_eligible <-
-      unique(sim$out$total_screened_it + sim$out$total_screened_chb +
-               sim$out$total_screened_cirrhosis) * sim$input_parameters$link_to_care_prob
+      unique(output_file$full_output$total_screened_it + output_file$full_output$total_screened_chb +
+               output_file$full_output$total_screened_cirrhosis) * output_file$input_parameters$link_to_care_prob
 
   }
 
 
   # Number of people immediately starting treatment
   total_immediate_treatment_initiations <- total_identified_as_eligible *
-    sim$input_parameters$treatment_initiation_prob
+    output_file$input_parameters$treatment_initiation_prob
 
   # Combine into dataframe
-  res1 <- data.frame(screening_years = time_of_screening,
-                    total_screened = total_sag_tests[total_sag_tests != 0],
-                    total_identified_as_ineligible = total_identified_as_ineligible[total_identified_as_ineligible != 0],
-                    total_identified_as_eligible = total_identified_as_eligible[total_identified_as_eligible != 0],
-                    total_immediate_treatment_initiations = total_immediate_treatment_initiations[total_immediate_treatment_initiations != 0],
-                    scenario = scenario_label)
+  res1 <- data.frame(scenario = scenario_label,
+                     screening_years = time_of_screening,
+                     total_screened = total_sag_tests[total_sag_tests != 0],
+                     total_identified_as_ineligible = total_identified_as_ineligible[total_identified_as_ineligible != 0],
+                     total_identified_as_eligible = total_identified_as_eligible[total_identified_as_eligible != 0],
+                     total_immediate_treatment_initiations = total_immediate_treatment_initiations[total_immediate_treatment_initiations != 0])
+
+
+  return(res1)
+
+}
+
+# For monitoring, need to add record of vaccination of susceptibles!
+calculate_monitoring_interactions <- function(output_file, from_year, by_year, scenario_label) {
 
   # Monitoring and treatment
 
   # Number of monitoring events after screening by compartment
   # Need to change ineligible depending on whether IT is included
-  monitored_ineligible <- sim$out[,grepl("^cum_monitored_icf", colnames(sim$out))] +
-    sim$out[,grepl("^cum_monitored_icm", colnames(sim$out))] +
-    sim$out[,grepl("^cum_monitored_hccf", colnames(sim$out))] +
-    sim$out[,grepl("^cum_monitored_hccm", colnames(sim$out))] +
-    sim$out[,grepl("^cum_monitored_rf", colnames(sim$out))] +
-    sim$out[,grepl("^cum_monitored_rm", colnames(sim$out))]
+  monitored_ineligible <- output_file$full_output[,grepl("^cum_monitored_icf", colnames(output_file$full_output))] +
+    output_file$full_output[,grepl("^cum_monitored_icm", colnames(output_file$full_output))] +
+    output_file$full_output[,grepl("^cum_monitored_hccf", colnames(output_file$full_output))] +
+    output_file$full_output[,grepl("^cum_monitored_hccm", colnames(output_file$full_output))] +
+    output_file$full_output[,grepl("^cum_monitored_rf", colnames(output_file$full_output))] +
+    output_file$full_output[,grepl("^cum_monitored_rm", colnames(output_file$full_output))]
 
-  monitored_it <- sim$out[,grepl("^cum_monitored_itf", colnames(sim$out))] +
-    sim$out[,grepl("^cum_monitored_itm", colnames(sim$out))]
-  monitored_ir <- sim$out[,grepl("^cum_monitored_irf", colnames(sim$out))] +
-    sim$out[,grepl("^cum_monitored_irm", colnames(sim$out))]
-  monitored_enchb <- sim$out[,grepl("^cum_monitored_enchbf", colnames(sim$out))] +
-    sim$out[,grepl("^cum_monitored_enchbm", colnames(sim$out))]
-  monitored_cc <- sim$out[,grepl("^cum_monitored_ccf", colnames(sim$out))] +
-    sim$out[,grepl("^cum_monitored_ccm", colnames(sim$out))]
-  monitored_dcc <- sim$out[,grepl("^cum_monitored_dccf", colnames(sim$out))] +
-    sim$out[,grepl("^cum_monitored_dccm", colnames(sim$out))]
+  monitored_it <- output_file$full_output[,grepl("^cum_monitored_itf", colnames(output_file$full_output))] +
+    output_file$full_output[,grepl("^cum_monitored_itm", colnames(output_file$full_output))]
+  monitored_ir <- output_file$full_output[,grepl("^cum_monitored_irf", colnames(output_file$full_output))] +
+    output_file$full_output[,grepl("^cum_monitored_irm", colnames(output_file$full_output))]
+  monitored_enchb <- output_file$full_output[,grepl("^cum_monitored_enchbf", colnames(output_file$full_output))] +
+    output_file$full_output[,grepl("^cum_monitored_enchbm", colnames(output_file$full_output))]
+  monitored_cc <- output_file$full_output[,grepl("^cum_monitored_ccf", colnames(output_file$full_output))] +
+    output_file$full_output[,grepl("^cum_monitored_ccm", colnames(output_file$full_output))]
+  monitored_dcc <- output_file$full_output[,grepl("^cum_monitored_dccf", colnames(output_file$full_output))] +
+    output_file$full_output[,grepl("^cum_monitored_dccm", colnames(output_file$full_output))]
 
   # Number of treatment initiations as a result of monitoring
   # Sum those monitoring events in treatment eligible compartments and multiply by treatment initiation probability
   cum_monitoring_treatment_initiations <-
-    ((apply(monitored_ir[which(sim$out$time %in% by_year_vector),],1,sum)-
-    apply(monitored_ir[which(sim$out$time %in% from_year_vector),],1,sum)) +
-    (apply(monitored_enchb[which(sim$out$time %in% by_year_vector),],1,sum)-
-       apply(monitored_enchb[which(sim$out$time %in% from_year_vector),],1,sum)) +
-    (apply(monitored_cc[which(sim$out$time %in% by_year_vector),],1,sum)-
-       apply(monitored_cc[which(sim$out$time %in% from_year_vector),],1,sum)) +
-    (apply(monitored_dcc[which(sim$out$time %in% by_year_vector),],1,sum)-
-       apply(monitored_dcc[which(sim$out$time %in% from_year_vector),],1,sum))) *
-    sim$input_parameters$treatment_initiation_prob
+    ((apply(monitored_ir[which(output_file$time == by_year),],1,sum)-
+        apply(monitored_ir[which(output_file$time == from_year),],1,sum)) +
+       (apply(monitored_enchb[which(output_file$time == by_year),],1,sum)-
+          apply(monitored_enchb[which(output_file$time == from_year),],1,sum)) +
+       (apply(monitored_cc[which(output_file$time == by_year),],1,sum)-
+          apply(monitored_cc[which(output_file$time == from_year),],1,sum)) +
+       (apply(monitored_dcc[which(output_file$time == by_year),],1,sum)-
+          apply(monitored_dcc[which(output_file$time == from_year),],1,sum))) *
+    output_file$input_parameters$treatment_initiation_prob
 
-  if (sim$input_parameters$apply_treat_it == 1) {
+  if (output_file$input_parameters$apply_treat_it == 1) {
     cum_monitoring_treatment_initiations_it <-
-      (apply(monitored_it[which(sim$out$time %in% by_year_vector),],1,sum)-
-         apply(monitored_it[which(sim$out$time %in% from_year_vector),],1,sum)) *
-      sim$input_parameters$treatment_initiation_prob
-  } else if (sim$input_parameters$apply_treat_it == 0) {
+      (apply(monitored_it[which(output_file$time == by_year),],1,sum)-
+         apply(monitored_it[which(output_file$time == from_year),],1,sum)) *
+      output_file$input_parameters$treatment_initiation_prob
+  } else if (output_file$input_parameters$apply_treat_it == 0) {
     cum_monitoring_treatment_initiations_it <- 0
   }
 
 
   # Combine into dataframe
-  res2 <- data.frame(from_year = from_year_vector,
-                     by_year = by_year_vector,
+  res <- data.frame(scenario = scenario_label,
+                    from_year = from_year,
+                     by_year = by_year,
                      cum_monitoring_events_it =
-                       apply(monitored_it[which(sim$out$time %in% by_year_vector),],1,sum)-
-                       apply(monitored_it[which(sim$out$time %in% from_year_vector),],1,sum),
+                       apply(monitored_it[which(output_file$time == by_year),],1,sum)-
+                       apply(monitored_it[which(output_file$time == from_year),],1,sum),
                      cum_monitoring_events_ir =
-                       apply(monitored_ir[which(sim$out$time %in% by_year_vector),],1,sum)-
-                       apply(monitored_ir[which(sim$out$time %in% from_year_vector),],1,sum),
+                       apply(monitored_ir[which(output_file$time == by_year),],1,sum)-
+                       apply(monitored_ir[which(output_file$time == from_year),],1,sum),
                      cum_monitoring_events_enchb =
-                       apply(monitored_enchb[which(sim$out$time %in% by_year_vector),],1,sum)-
-                       apply(monitored_enchb[which(sim$out$time %in% from_year_vector),],1,sum),
+                       apply(monitored_enchb[which(output_file$time == by_year),],1,sum)-
+                       apply(monitored_enchb[which(output_file$time == from_year),],1,sum),
                      cum_monitoring_events_cc =
-                       apply(monitored_cc[which(sim$out$time %in% by_year_vector),],1,sum)-
-                       apply(monitored_cc[which(sim$out$time %in% from_year_vector),],1,sum),
+                       apply(monitored_cc[which(output_file$time == by_year),],1,sum)-
+                       apply(monitored_cc[which(output_file$time == from_year),],1,sum),
                      cum_monitoring_events_dcc =
-                       apply(monitored_dcc[which(sim$out$time %in% by_year_vector),],1,sum)-
-                       apply(monitored_dcc[which(sim$out$time %in% from_year_vector),],1,sum),
+                       apply(monitored_dcc[which(output_file$time == by_year),],1,sum)-
+                       apply(monitored_dcc[which(output_file$time == from_year),],1,sum),
                      cum_monitoring_events_ineligible =
-                       apply(monitored_ineligible[which(sim$out$time %in% by_year_vector),],1,sum)-
-                       apply(monitored_ineligible[which(sim$out$time %in% from_year_vector),],1,sum),
+                       apply(monitored_ineligible[which(output_file$time == by_year),],1,sum)-
+                       apply(monitored_ineligible[which(output_file$time == from_year),],1,sum),
                      cum_monitoring_treatment_initiations,
-                     cum_monitoring_treatment_initiations_it,
-                     scenario = scenario_label)
+                     cum_monitoring_treatment_initiations_it)
 
-  res3 <- ifelse(sim$input_parameters$apply_treat_it == 1, "IT >30 treated", "IT not treated")
-
-  return(list(res1,res2, res3))
+  return(res)
 
 }
 
-calculate_healthcare_interactions(sim[[1]], from_year_vector = 2020, by_year_vector = c(2030,2050),
-                                  scenario_label = "test")
+# Function to summarise healthcare interactions
+# Total number of healthcare interactions = HBsAg tests+liver assessments+treatment initiations,
+# initially + through monitoring
+summarise_healthcare_interactions <- function(output_files, from_year, by_year, scenario_label) {
+  # Immediate interactions upon screening
+  screening_interactions <- lapply(output_files, calculate_screening_interactions, scenario_label)
 
-# WORK ON THIS:
-# Function to calculate age-standardised rate of HBV-related deaths (called by extract_outcomes)
+  total_screened <- data.frame(screening_years = screening_interactions[[1]]$screening_years,
+                               sapply(screening_interactions, "[[", "total_screened"))
+
+  total_assessed_immediately <- data.frame(screening_years = screening_interactions[[1]]$screening_years,
+                                           sapply(screening_interactions, "[[", "total_identified_as_ineligible")+
+                                             sapply(screening_interactions, "[[", "total_identified_as_eligible"))
+
+  total_treated_immediately <- data.frame(screening_years = screening_interactions[[1]]$screening_years,
+                                          sapply(screening_interactions, "[[", "total_immediate_treatment_initiations"))
+
+  # Add interactions together for all years >= from_year and < by_year
+  total_screened <- apply(total_screened[total_screened$screening_years>=from_year &
+                                           total_screened$screening_years<by_year,-1],2,sum)
+
+  total_assessed_immediately <- apply(total_assessed_immediately[
+    total_assessed_immediately$screening_years>=from_year &
+      total_assessed_immediately$screening_years<by_year,-1],2,sum)
+
+  total_treated_immediately <- apply(total_treated_immediately[
+    total_treated_immediately$screening_years >= from_year &
+      total_treated_immediately$screening_years<by_year,-1],2,sum)
+
+  # Interactions during and after monitoring
+  monitoring_interactions <- data.frame(sapply(output_files, calculate_monitoring_interactions, from_year, by_year, scenario_label))
+  monitoring_interactions <- as.data.frame(apply(monitoring_interactions,2,unlist))
+
+  total_monitored <- monitoring_interactions["cum_monitoring_events_it",]+
+    monitoring_interactions["cum_monitoring_events_ir",]+
+    monitoring_interactions["cum_monitoring_events_enchb",]+
+    monitoring_interactions["cum_monitoring_events_cc",]+
+    monitoring_interactions["cum_monitoring_events_dcc",]+
+    monitoring_interactions["cum_monitoring_events_ineligible",]   # ignore rowname
+
+  total_treated_after_monitoring <- monitoring_interactions["cum_monitoring_treatment_initiations",]+
+    monitoring_interactions["cum_monitoring_treatment_initiations_it",]
+
+  total_assessed <- total_assessed_immediately+total_monitored
+  rownames(total_assessed) <- NULL
+  total_treated <- total_treated_immediately+total_treated_after_monitoring
+  rownames(total_treated) <- NULL
+
+
+  total_screened_res <- cbind(data.frame(from_year = from_year,
+                                     by_year = by_year,
+                                     scenario = scenario_label),
+                          t(as.data.frame(total_screened)))
+  total_assessed_res <- cbind(data.frame(from_year = from_year,
+                                         by_year = by_year,
+                                         scenario = scenario_label),
+                          as.data.frame(total_assessed))
+  total_treated_res <- cbind(data.frame(from_year = from_year,
+                                        by_year = by_year,
+                                        scenario = scenario_label),
+                         as.data.frame(total_treated))
+
+
+  total_interactions_res <- cbind(data.frame(from_year = from_year,
+                                             by_year = by_year,
+                                             scenario = scenario_label),
+                                  t(as.data.frame(total_screened))+total_assessed+total_treated)
+
+
+  res <- list(total_interactions = total_interactions_res,
+              total_screened = total_screened_res,
+              total_assessed = total_assessed_res,
+              total_treated = total_treated_res)
+
+  return(res)
+
+
+}
+
+# Outcomes: total screened (HBsAg)
+# Total liver disease assessments
+# Total treatment initiations
+
+# Function to calculate age-standardised rate of HBV-related deaths
 calculate_age_standardised_hbv_deaths_rate <- function(output_file) {
   # Age-standardised incidence of HBV-related deaths per 100000 per timestep
 
@@ -145,27 +234,21 @@ calculate_age_standardised_hbv_deaths_rate <- function(output_file) {
 
   deaths_by_age <- calculate_incident_numbers(deaths_by_age)
 
-  pop <- output_file$full_output[,2:(n_agecat*n_infectioncat*2+1)]
-  out_popf <- select(pop, contains("f"))
-  out_popm <- select(pop, contains("m"))
-  pop_by_age <- sum_pop_by_age(time = output_file$time, pop_output_file = out_popf+out_popm)
+  pop_by_age <- output_file$pop
 
   # Crude rate
   deaths_rate <- deaths_by_age[-1,]/pop_by_age[-nrow(pop_by_age),]
-  deaths_rate[is.na(deaths_rate)==TRUE] <- 0
+  deaths_rate[is.na(deaths_rate)|deaths_rate == Inf] <- 0   # where pop was 0
 
   # b) Multiply by reference population (Gambian pop in 2020)
   ref_pop <- pop_by_age[output_file$time==2020,]
   deaths_rate_ref_pop <- sweep(as.matrix(deaths_rate), MARGIN=2, as.matrix(ref_pop), "*")
 
   # c) Calculate total expected deaths (sum of age-specific numbers) and divide by total Gambian popsize in 2020
-  age_stand_rate <- rowSums(deaths_rate_ref_pop)/rowSums(ref_pop)
+  age_standardised_rate <- rowSums(deaths_rate_ref_pop)/rowSums(ref_pop)
 
-  return(age_stand_rate)
+  return(age_standardised_rate)
 }
-
-rate <- calculate_age_standardised_hbv_deaths_rate(out)
-# get Inf right now and also check definition
 
 # Extract time series
 # Function can be applied to run_model_output+code_model_output (single simulation)
@@ -200,6 +283,8 @@ extract_time_series <- function(output_file, scenario_label) {
                                                 head(output_file$pop_total$pop_total,-1)
   total_hbv_deaths$hbv_deaths_rate_male <-  total_hbv_deaths$hbv_deaths_male/
     head(output_file$pop_total$pop_male,-1)
+  total_hbv_deaths$total_hbv_deaths_age_standardised_rate <-
+    calculate_age_standardised_hbv_deaths_rate(output_file)
 
   outcome_df <- cbind(time = head(output_file$time, -1),
                       scenario = scenario_label,
@@ -261,10 +346,6 @@ summarise_time_series <- function(output_files, scenario_label, summarise_percen
   }
 }
 
-# Using my preset median, lower and upper mock set:
-t <- summarise_time_series(out, "test", summarise_percentiles = FALSE)
-t <- lapply(t, setNames, c("time", "scenario", "median", "lower", "upper"))
-
 # Extract cumulative HBV-related deaths (for all simulations)
 # Function automatically uses correct time step to match period starting at from up until (excluding) by.
 # Only works for 1 time period, but can use rbind to combine results for several periods
@@ -310,6 +391,7 @@ extract_cumulative_chronic_infections <- function(output_files, scenario_label, 
   return(res)
 }
 
+# Extract life years lived (for all simulations)
 extract_life_years_lived <- function(output_files, scenario_label, from_year, by_year, sex_to_return = "both") {
 
   # Extract male and female population size per timestep
@@ -422,32 +504,26 @@ calculate_number_averted <- function(counterfactual_metric, scenario_metric, sum
 
 }
 
-monit <- extract_life_years_lived(out, scenario_label="with_monitoring", from_year=2020, by_year=2050)
-no_monit <- extract_life_years_lived(out2, scenario_label="no_monitoring", from_year=2020, by_year=2050)
-# Using my preset median, lower and upper mock set:
-avert <- calculate_number_averted(no_monit, monit, summarise = FALSE)
-colnames(avert) <- c("from_year", "by_year", "counterfactual", "scenario", "type", "median", "lower", "upper")
-
 # Function to calculate average age at death for one simulation
 # This function is applied to sim
-calculate_average_age_at_death <- function(sim) {
+calculate_average_age_at_death <- function(output_file) {
 
   # This function calculates the median age at death of a screened+treated cohort
   # only valid if there is only one screening event
 
   # Extract total cumulative deaths at the last 2 timesteps
-  last_timesteps <- c(length(sim$out$time)-1, length(sim$out$time))
+  last_timesteps <- c(length(output_file$time)-1, length(output_file$time))
 
   # Add all background deaths and HBV-related deaths by age occurring after screening and treatment
   # Note this also includes deaths of those who were susceptible at test and received catch-up vaccine
-  total_deaths_by_age <- sim$out[last_timesteps,grepl("^cum_screened_deathsf.",names(sim$out))]+
-    sim$out[last_timesteps,grepl("^cum_screened_deathsm.",names(sim$out))]+
-    sim$out[last_timesteps,grepl("^cum_treated_deathsf.",names(sim$out))]+
-    sim$out[last_timesteps,grepl("^cum_treated_deathsm.",names(sim$out))]+
-    sim$out[last_timesteps,grepl("^cum_screened_hbv_deathsf.",names(sim$out))]+
-    sim$out[last_timesteps,grepl("^cum_screened_hbv_deathsm.",names(sim$out))]+
-    sim$out[last_timesteps,grepl("^cum_treated_hbv_deathsf.",names(sim$out))]+
-    sim$out[last_timesteps,grepl("^cum_treated_hbv_deathsm.",names(sim$out))]
+  total_deaths_by_age <- output_file$full_output[last_timesteps,grepl("^cum_screened_deathsf.",names(output_file$full_output))]+
+    output_file$full_output[last_timesteps,grepl("^cum_screened_deathsm.",names(output_file$full_output))]+
+    output_file$full_output[last_timesteps,grepl("^cum_treated_deathsf.",names(output_file$full_output))]+
+    output_file$full_output[last_timesteps,grepl("^cum_treated_deathsm.",names(output_file$full_output))]+
+    output_file$full_output[last_timesteps,grepl("^cum_screened_hbv_deathsf.",names(output_file$full_output))]+
+    output_file$full_output[last_timesteps,grepl("^cum_screened_hbv_deathsm.",names(output_file$full_output))]+
+    output_file$full_output[last_timesteps,grepl("^cum_treated_hbv_deathsf.",names(output_file$full_output))]+
+    output_file$full_output[last_timesteps,grepl("^cum_treated_hbv_deathsm.",names(output_file$full_output))]
 
   # Check that by the end of the simulation everyone in the cohort has died
   # (new deaths at last timestep <0.5)
@@ -459,7 +535,7 @@ calculate_average_age_at_death <- function(sim) {
     print(paste(total_deaths_sum[2]-total_deaths_sum[1], "new deaths"))
 
   # Confirm there is only 1 screening event
-  } else if (length(sim$input_parameters$screening_years)>1L) {
+  } else if (length(output_file$input_parameters$screening_years)>1L) {
 
     print("More than one screened cohort.")
 
@@ -477,9 +553,9 @@ calculate_average_age_at_death <- function(sim) {
 
 }
 # Function to apply to multiple sims
-summarise_average_age_at_death <- function(sims, scenario_label) {
+summarise_average_age_at_death <- function(output_files, scenario_label) {
 
-  median_age_at_death <- as.data.frame(t(sapply(sims, calculate_average_age_at_death)))
+  median_age_at_death <- as.data.frame(t(sapply(output_files, calculate_average_age_at_death)))
 
   res <- cbind(data.frame(scenario = scenario_label),
                median_age_at_death)
@@ -488,4 +564,14 @@ summarise_average_age_at_death <- function(sims, scenario_label) {
 
 }
 
-# Add age-standardised rates to timeseries
+# Examples of running the function
+
+# Using my preset median, lower and upper mock set:
+#t <- summarise_time_series(out, "test", summarise_percentiles = FALSE)
+#t <- lapply(t, setNames, c("time", "scenario", "median", "lower", "upper"))
+
+#monit <- extract_life_years_lived(out, scenario_label="with_monitoring", from_year=2020, by_year=2050)
+#no_monit <- extract_life_years_lived(out2, scenario_label="no_monitoring", from_year=2020, by_year=2050)
+# Using my preset median, lower and upper mock set:
+#avert <- calculate_number_averted(no_monit, monit, summarise = FALSE)
+#colnames(avert) <- c("from_year", "by_year", "counterfactual", "scenario", "type", "median", "lower", "upper")
