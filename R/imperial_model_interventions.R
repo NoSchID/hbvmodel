@@ -1304,8 +1304,8 @@ code_model_output <- function(output) {
   out_treat_rm <- out[,grepl("^T_Rm.",names(out))]
 
   # Total population
-  out_popf <- select(out, contains("f"))
-  out_popm <- select(out, contains("m"))
+  out_popf <- out[grepl("f{1}",colnames(out))]
+  out_popm <- out[grepl("m{1}",colnames(out))]
   out_pop <- cbind(out_popf, out_popm)
 
   ## Extract separate outputs: incident variables (transitions between states)
@@ -1422,12 +1422,62 @@ code_model_output <- function(output) {
   eag_positive_female <- data.frame(pop = (out_itf + out_irf + out_screen_itf + out_screen_irf))
   eag_positive_male <- data.frame(pop = (out_itm + out_irm + out_screen_itm + out_screen_irm))
 
+  # Screened compartments
+  screened_pop_female <- data.frame(pop = (out_screen_vf +
+                                         out_screen_itf +
+                                         out_screen_irf +
+                                         out_screen_icf+
+                                         out_screen_enchbf+
+                                         out_screen_ccf+
+                                         out_screen_dccf+
+                                         out_screen_hccf+
+                                         out_screen_rf))
+  screened_pop_male <- data.frame(pop = (out_screen_vm+
+                                       out_screen_itm+
+                                       out_screen_irm+
+                                       out_screen_icm+
+                                       out_screen_enchbm+
+                                       out_screen_ccm+
+                                       out_screen_dccm+
+                                       out_screen_hccm+
+                                       out_screen_rm))
+
+  treated_carriers_female <- data.frame(pop = (out_treat_itf+
+                                            out_treat_chbf+
+                                            out_treat_ccf+
+                                            out_treat_dccf+
+                                            out_treat_hccf))
+
+  treated_carriers_male <- data.frame(pop = (out_treat_itm+
+                                                 out_treat_chbm+
+                                                 out_treat_ccm+
+                                                 out_treat_dccm+
+                                                 out_treat_hccm))
+
+  treated_pop_female <- data.frame(pop = (out_treat_itf+
+                                                 out_treat_chbf+
+                                                 out_treat_ccf+
+                                                 out_treat_dccf+
+                                                 out_treat_hccf+
+                                                 out_treat_rf))
+
+  treated_pop_male <- data.frame(pop = (out_treat_itm+
+                                            out_treat_chbm+
+                                            out_treat_ccm+
+                                            out_treat_dccm+
+                                            out_treat_hccm+
+                                            out_treat_rm))
+
+
   # Total number in each infection compartment per time step
   infectioncat_total <- data.frame(time = output$time,
                                    sus = rowSums(sus),
                                    carriers = rowSums(carriers),
                                    immune = rowSums(immune),
-                                   ever_infected = rowSums(ever_infected))
+                                   ever_infected = rowSums(ever_infected),
+                                   screened_pop = rowSums(screened_pop_female+screened_pop_male),
+                                   treated_pop = rowSums(treated_pop_female+treated_pop_male),
+                                   treated_carriers = rowSums(treated_carriers_female+treated_carriers_male))
 
 
   # Calculate number of new cases per timestep from cumulative number output
@@ -1599,17 +1649,21 @@ code_model_output <- function(output) {
     select(-time)
 
   toreturn <- list("time" = output$time,
-                   "sus" = sus,
-                   "carriers_female" = carriers_female,                         # carriers includes those treated
-                   "carriers_male" = carriers_male,                             # carriers includes those treated
-                   "carriers" = carriers,                                       # carriers includes those treated
-                   "eag_positive_female" = eag_positive_female,
-                   "eag_positive_male" = eag_positive_male,
-                   "eag_positive" = eag_positive,
-                   "immune" = immune,
-                   "ever_infected" = ever_infected,
+                  # "sus" = sus,
+                   "carriers_female" = carriers_female,              # carriers includes those screened and treated
+                   "carriers_male" = carriers_male,                  # carriers includes those screened and treated
+                   "carriers" = carriers,                            # carriers includes those screened and treated
+                  # "eag_positive_female" = eag_positive_female,
+                  # "eag_positive_male" = eag_positive_male,
+                  # "eag_positive" = eag_positive,
+                  # "immune" = immune,
+                  # "ever_infected" = ever_infected,
                    "ever_infected_female" = ever_infected_female,
                    "ever_infected_male" = ever_infected_male,
+                   "screened_pop_female" = screened_pop_female,
+                   "screened_pop_male" = screened_pop_male,
+                   "treated_pop_female" = treated_pop_female,
+                   "treated_pop_male" = treated_pop_male,
                    "infectioncat_total" = infectioncat_total,
                    "pop_female" = pop_female,
                    "pop_male" = pop_male,
@@ -1617,8 +1671,8 @@ code_model_output <- function(output) {
                    "pop_total" = pop_total,
                    "deaths_total_group5" = deaths_total_group5,
                    "births_group5" =  births_group5,
-                   "incident_infections" = incident_infections,                   # only without screening/treatment
-                   "incident_chronic_infections" = incident_chronic_infections,   # only without screening/treatment
+                  # "incident_infections" = incident_infections,                  # all infections
+                   "incident_chronic_infections" = incident_chronic_infections,   # all chronic infections
                    "hbv_deaths" = hbv_deaths,                                     # only without screening/treatment
                    "incident_hcc" = incident_hcc,                                 # only without screening/treatment
                    "screened_hbv_deaths" = screened_hbv_deaths,
@@ -2363,8 +2417,8 @@ run_hbsag_screening_scenarios <- function(..., default_parameter_list, calibrate
 }
 
 # Scenario run is a screening and treatment streategy - year of screening can be specified
-run_one_hbsag_screening_scenario <- function(..., default_parameter_list, calibrated_parameter_sets,
-                                          parms_to_change = list(...), years_of_test, label) {
+run_one_screening_scenario <- function(..., default_parameter_list, calibrated_parameter_sets,
+                                          parms_to_change = list(...), years_of_test, monitoring_rate, label) {
 
   sim <- apply(calibrated_parameter_sets, 1,
                        function(x) run_model(sim_duration = runtime,
@@ -2402,7 +2456,8 @@ run_one_hbsag_screening_scenario <- function(..., default_parameter_list, calibr
                                                     mu_dcc = as.list(x)$mu_dcc,
                                                     mu_hcc = as.list(x)$mu_hcc,
                                                     vacc_eff = as.list(x)$vacc_eff,
-                                                    screening_years = years_of_test),
+                                                    screening_years = years_of_test,
+                                                    monitoring_rate = monitoring_rate),
                                              scenario = "vacc_screen"))
 
   out <- lapply(sim, code_model_output)
@@ -2623,7 +2678,7 @@ parameter_list <- list(
   vacc_introtime = 1990,                     # year of vaccine introduction
   # BIRTH DOSE VACCINATION PARAMETERS
   bdvacc_introtime = 2020,                   # year of birth dose vaccine introduction
-  bdvacc_cov = 0.05,                          # birth dose vaccine coverage
+  bdvacc_cov = 0.05,                            # birth dose vaccine coverage
   mtct_prob_ebd = 0.32,                      # MTCT risk from eAg-positive mother with birth dose (95% CI from Keane = 0.1-0.58)
   mtct_prob_sbd = 0,                         # MTCT risk from eAg-negative mother with birth dose (Keane)
   mtct_prob_treatbd = 0,                     # MTCT risk from treated carrier mother with birth dose (assumption, not peripartum therapy)
@@ -2635,7 +2690,7 @@ parameter_list <- list(
   prop_to_vaccinate = 0,                     # Proportion of screened susceptibles to vaccinate - set to 0 to switch off transition
   link_to_care_prob = 0.81,                  # probability of linkage to care (liver disease assessment) after HBsAg test
   treatment_initiation_prob = 1,             # probability of initiating treatment after diagnosis of treatment eligibility
-  monitoring_rate = 1/5,                     # annual rate of monitoring for treatment eligibility
+  monitoring_rate = 0,                     # annual rate of monitoring for treatment eligibility
   monitoring_prob = 1,                       # probability of being monitored (1-proportion lost to follow-up)
   alpha2 = 1,                                # relative infectiousness with treatment compared to HBeAg-negatives
   mtct_prob_treat_cofactor = 1,              # relative infectiousness of mother-to-child transmission risk from treated mother (NOT peripartum therapy) compared to HBeAg-negative mother
