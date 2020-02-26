@@ -4,63 +4,12 @@
 require(here)  # for setting working directory
 source(here("R/imperial_model_interventions.R"))
 
-# Simulate HBsAg screening scenarios ----
-
-load(here("calibration", "input", "accepted_parmsets_119_060120.Rdata")) # params_mat_targets5
-
-time1 <- proc.time()
-sim <- apply(params_mat_targets5, 1,
-             function(x) run_model(sim_duration = runtime,
-                                   default_parameter_list = parameter_list,
-                                   parms_to_change =
-                                     list(b1 = as.list(x)$b1,
-                                          b2 = as.list(x)$b2,
-                                          b3 = as.list(x)$b3,
-                                          mtct_prob_s = as.list(x)$mtct_prob_s,
-                                          mtct_prob_e = as.list(x)$mtct_prob_e,
-                                          alpha = as.list(x)$alpha,
-                                          p_chronic_in_mtct = as.list(x)$p_chronic_in_mtct,
-                                          p_chronic_function_r = as.list(x)$p_chronic_function_r,
-                                          p_chronic_function_s = as.list(x)$p_chronic_function_s,
-                                          pr_it_ir = as.list(x)$pr_it_ir,
-                                          pr_ir_ic = as.list(x)$pr_ir_ic,
-                                          eag_prog_function_rate = as.list(x)$eag_prog_function_rate,
-                                          pr_ir_enchb = as.list(x)$pr_ir_enchb,
-                                          pr_ir_cc_female = as.list(x)$pr_ir_cc_female,
-                                          pr_ir_cc_age_threshold = as.list(x)$pr_ir_cc_age_threshold,
-                                          pr_ic_enchb = as.list(x)$pr_ic_enchb,
-                                          sag_loss_slope = as.list(x)$sag_loss_slope,
-                                          pr_enchb_cc_female = as.list(x)$pr_enchb_cc_female,
-                                          cirrhosis_male_cofactor = as.list(x)$cirrhosis_male_cofactor,
-                                          pr_cc_dcc = as.list(x)$pr_cc_dcc,
-                                          cancer_prog_coefficient_female = as.list(x)$cancer_prog_coefficient_female,
-                                          cancer_age_threshold = as.list(x)$cancer_age_threshold,
-                                          cancer_male_cofactor = as.list(x)$cancer_male_cofactor,
-                                          hccr_it = as.list(x)$hccr_it,
-                                          hccr_ir = as.list(x)$hccr_ir,
-                                          hccr_enchb = as.list(x)$hccr_enchb,
-                                          hccr_cc = as.list(x)$hccr_cc,
-                                          hccr_dcc = as.list(x)$hccr_dcc,
-                                          mu_cc = as.list(x)$mu_cc,
-                                          mu_dcc = as.list(x)$mu_dcc,
-                                          mu_hcc = as.list(x)$mu_hcc,
-                                          vacc_eff = as.list(x)$vacc_eff,
-                                          screening_years = c(2020)),
-                                   scenario = "vacc_screen"))
-screen_once <- lapply(sim, code_model_output)
-sim_duration = proc.time() - time1
-sim_duration["elapsed"]/60
-
-#saveRDS(screen_20, here("output", "screening_freq_20_260120.Rds"))
-#df_co2_rds = readRDS("data/co2.Rds")
-
-#save(screen_once, file = here("output", "screening_freq_once_270120.Rdata"))
-
 # Simulate intervention model ----
 
-load(here("calibration", "input", "accepted_parmsets_119_060120.Rdata")) # params_mat_targets5
+#load(here("calibration", "input", "accepted_parmsets_119_060120.Rdata")) # params_mat_targets5
+load(here("calibration", "input", "mock_parmsets_210220.Rdata"))  # params_mat_mock
 
-sim <- apply(params_mat_targets5[1,],1,
+sim <- apply(params_mat_mock,1,
              function(x)
                run_model(sim_duration = runtime, default_parameter_list = parameter_list,
                          parms_to_change =
@@ -96,68 +45,104 @@ sim <- apply(params_mat_targets5[1,],1,
                                 mu_dcc = as.list(x)$mu_dcc,
                                 mu_hcc = as.list(x)$mu_hcc,
                                 vacc_eff = as.list(x)$vacc_eff,
-                                tr_vir_supp = 1),
+                                screening_years = c(2020,2050),
+                                apply_treat_it = 0,
+                                monitoring_rate = 0),
                          scenario = "vacc_screen"))
 
+out <- code_model_output(sim[[1]])
+outpath <- out
+
+out <- lapply(sim, code_model_output)
+
+
 # Try to save population output in 1955
-#model_pop1955 <- sim[which(sim$time==1955),1:(2*n_infectioncat*n_agecat)+1]
+sim <- sim[[1]]$out
+model_pop1955 <- sim[which(sim$time==1955),1:(2*n_infectioncat*n_agecat)+1]
 #save(here("output/simulated_inits_1955.RData"))
 # Load initial population saved from previous model run
 # Check numbers in screened and treatment comps are really 0
 # Check if output storage needs to be taken over too
 #load(here("data/simulated_inits_1880.RData"))  # this is saved from previous model run
-#init_pop_sim <- c("Sf" = select(model_pop1955, starts_with("Sf")),
-#                  "ITf" = select(model_pop1955, starts_with("ITf")),
-#                  "IRf" = select(model_pop1955, starts_with("IRf")),
-#                  "ICf" = select(model_pop1955, starts_with("ICf")),
-#                  "ENCHBf" = select(model_pop1955, starts_with("ENCHBf")),
-#                  "CCf" = select(model_pop1955, starts_with("CCf")),
-#                  "DCCf" = select(model_pop1955, starts_with("DCCf")),
-#                  "HCCf" = select(model_pop1955, starts_with("HCCf")),
-#                  "Rf" = select(model_pop1955, starts_with("Rf")),
-#                  "S_Sf" = rep(0,n_agecat),
-#                  "S_ITf" = rep(0,n_agecat),
-#                  "S_IRf" = rep(0,n_agecat),
-#                  "S_ICf" = rep(0,n_agecat),
-#                  "S_ENCHBf" = rep(0,n_agecat),
-#                  "S_CCf" = rep(0,n_agecat),
-#                  "S_DCCf" = rep(0,n_agecat),
-#                  "S_HCCf" = rep(0,n_agecat),
-#                  "S_Rf" = rep(0,n_agecat),
-#                  "T_CHBf" = rep(0,n_agecat),
-#                  "T_CCf" = rep(0,n_agecat),
-#                  "T_DCCf" = rep(0,n_agecat),
-#                  "T_HCCf" = rep(0,n_agecat),
-#                  "T_Rf" = rep(0,n_agecat),
-#                  "Sm" = select(model_pop1955, starts_with("Sm")),
-#                  "ITm" = select(model_pop1955, starts_with("ITm")),
-#                  "IRm" = select(model_pop1955, starts_with("IRm")),
-#                  "ICm" = select(model_pop1955, starts_with("ICm")),
-#                  "ENCHBm" = select(model_pop1955, starts_with("ENCHBm")),
-#                  "CCm" = select(model_pop1955, starts_with("CCm")),
-#                  "DCCm" = select(model_pop1955, starts_with("DCCm")),
-#                  "HCCm" = select(model_pop1955, starts_with("HCCm")),
-#                  "Rm" = select(model_pop1955, starts_with("Rm")),
-#                  "S_Sm" = rep(0,n_agecat),
-#                  "S_ITm" = rep(0,n_agecat),
-#                  "S_IRm" = rep(0,n_agecat),
-#                  "S_ICm" = rep(0,n_agecat),
-#                  "S_ENCHBm" = rep(0,n_agecat),
-#                  "S_CCm" = rep(0,n_agecat),
-#                  "S_DCCm" = rep(0,n_agecat),
-#                  "S_HCCm" = rep(0,n_agecat),
-#                  "S_Rm" = rep(0,n_agecat),
-#                  "T_CHBm" = rep(0,n_agecat),
-#                  "T_CCm" = rep(0,n_agecat),
-#                  "T_DCCm" = rep(0,n_agecat),
-#                  "T_HCCm" = rep(0,n_agecat),
-#                  "T_Rm" =rep(0,n_agecat),
-#                  output_storage)
-#init_pop_sim <- unlist(init_pop_sim)
+init_pop_sim <- c("Sf" = select(model_pop1955, starts_with("Sf")),
+                  "ITf" = select(model_pop1955, starts_with("ITf")),
+                  "IRf" = select(model_pop1955, starts_with("IRf")),
+                  "ICf" = select(model_pop1955, starts_with("ICf")),
+                  "ENCHBf" = select(model_pop1955, starts_with("ENCHBf")),
+                  "CCf" = select(model_pop1955, starts_with("CCf")),
+                  "DCCf" = select(model_pop1955, starts_with("DCCf")),
+                  "HCCf" = select(model_pop1955, starts_with("HCCf")),
+                  "Rf" = select(model_pop1955, starts_with("Rf")),
+                  "S_Sf" = rep(0,n_agecat),
+                  "S_ITf" = rep(0,n_agecat),
+                  "S_IRf" = rep(0,n_agecat),
+                  "S_ICf" = rep(0,n_agecat),
+                  "S_ENCHBf" = rep(0,n_agecat),
+                  "S_CCf" = rep(0,n_agecat),
+                  "S_DCCf" = rep(0,n_agecat),
+                  "S_HCCf" = rep(0,n_agecat),
+                  "S_Rf" = rep(0,n_agecat),
+                  "T_CHBf" = rep(0,n_agecat),
+                  "T_CCf" = rep(0,n_agecat),
+                  "T_DCCf" = rep(0,n_agecat),
+                  "T_HCCf" = rep(0,n_agecat),
+                  "T_Rf" = rep(0,n_agecat),
+                  "Sm" = select(model_pop1955, starts_with("Sm")),
+                  "ITm" = select(model_pop1955, starts_with("ITm")),
+                  "IRm" = select(model_pop1955, starts_with("IRm")),
+                  "ICm" = select(model_pop1955, starts_with("ICm")),
+                  "ENCHBm" = select(model_pop1955, starts_with("ENCHBm")),
+                  "CCm" = select(model_pop1955, starts_with("CCm")),
+                  "DCCm" = select(model_pop1955, starts_with("DCCm")),
+                  "HCCm" = select(model_pop1955, starts_with("HCCm")),
+                  "Rm" = select(model_pop1955, starts_with("Rm")),
+                  "S_Sm" = rep(0,n_agecat),
+                  "S_ITm" = rep(0,n_agecat),
+                  "S_IRm" = rep(0,n_agecat),
+                  "S_ICm" = rep(0,n_agecat),
+                  "S_ENCHBm" = rep(0,n_agecat),
+                  "S_CCm" = rep(0,n_agecat),
+                  "S_DCCm" = rep(0,n_agecat),
+                  "S_HCCm" = rep(0,n_agecat),
+                  "S_Rm" = rep(0,n_agecat),
+                  "T_CHBm" = rep(0,n_agecat),
+                  "T_CCm" = rep(0,n_agecat),
+                  "T_DCCm" = rep(0,n_agecat),
+                  "T_HCCm" = rep(0,n_agecat),
+                  "T_Rm" =rep(0,n_agecat),
+                  output_storage)
+init_pop_sim <- unlist(init_pop_sim)
+
+from_1850 <- out
+from_1955 <- out
+sim2_1850 <- out
+sim2_1955 <- out
 
 
-out <- code_model_output(sim[[1]])
-outpath <- out
+plot(outpath$time,
+     (outpath$incident_chronic_infections$horizontal_chronic_infections+
+        outpath$incident_chronic_infections$chronic_births+
+        outpath$screened_incident_chronic_infections$screened_horizontal_chronic_infections),
+     type = "l", xlim = c(1955,2100), ylim = c(0, 4000),
+     xlab = "Time", ylab = "New cases of chronic HBV carriage per timestep")
+lines(outpath$time,
+     (outpath$incident_chronic_infections$horizontal_chronic_infections+
+        outpath$incident_chronic_infections$chronic_births+
+        outpath$screened_incident_chronic_infections$screened_horizontal_chronic_infections), col = "pink")
+
+outpath <- sim2_1850
+outpath <- sim2_1955
+
+plot(outpath$time,outpath$infectioncat_total$carriers,type = "l", ylim = c(0,400000), xlim = c(1955,2100))
+lines(outpath$time,outpath$infectioncat_total$carriers,col = "pink")
+
+# Plot total population size over timesteps
+plot(outpath$time, outpath$pop_total$pop_total,
+     xlab = "Year", ylab = "Population size", type = "l", ylim = c(0,7000000))
+points(popsize_total$time, popsize_total$pop, col = "red")
+lines(outpath$time, outpath$pop_total$pop_total, col = "pink")
+
+
 
 # Proportion in each infection compartment per timestep
 plot(outpath$time,outpath$infectioncat_total$carriers/outpath$pop_total$pop_total,type = "l",
@@ -220,35 +205,8 @@ lines(outpath$time, outpath$pop_total$pop_total, col = "pink")
 #save(out_vacc_bdvacc_screen, file = here("output", "sims_output_scenario_vacc_bdvacc_screen_140120.RData"))
 
 # Check for negative numbers => need to switch solver to lsoda!!
-o <- sim[[1]]
+o <- sim[[1]]$out
 any(o[,1:(2*n_agecat*n_infectioncat)]<0)
-
-# Test: Calculate all cancer rates
-
-cancer_prog_function <- matrix(0, ncol = 119, nrow = 200)
-cancer_prog_female_ic <- matrix(0, ncol = 119, nrow = 200)
-cancer_prog_male_ic <- matrix(0, ncol = 119, nrow = 200)
-cancer_prog_female_enchb <- matrix(0, ncol = 119, nrow = 200)
-cancer_prog_male_enchb <- matrix(0, ncol = 119, nrow = 200)
-
-for (i in c(1:119)) {
-  cancer_prog_function[,i] <- (parameters$cancer_prog_coefficient_female[i] * (ages - parameters$cancer_age_threshold[i]))^2  # Rate in females
-  cancer_prog_function[,i] <- cancer_prog_function[,i] *
-    c(rep(0, times = parameters$cancer_age_threshold[i]/da),
-      rep(1, times = n_agecat - parameters$cancer_age_threshold[i]/da))  # Set transition to 0 in <10 year olds
-  cancer_prog_female_ic[,i] <- sapply(cancer_prog_function[,i], function(x) min(x,1)) # Set maximum annual rate is 1
-  cancer_prog_male_ic[,i] <- sapply(parameters$cancer_male_cofactor[i]*cancer_prog_female_ic[,i], function(x) min(x,1))  # Rate in males, cannot exceed 1
-  cancer_prog_female_enchb[,i] <- cancer_prog_female_ic[,i] * parameters$hccr_enchb[i]
-  cancer_prog_male_enchb[,i] <- cancer_prog_male_ic[,i] * parameters$hccr_enchb[i]
-}
-
-# Rate in 50 year olds
-quantile(cancer_prog_female_ic[which(ages == 50),], prob = c(0.025,0.5,0.975))
-quantile(cancer_prog_male_ic[which(ages == 50),], prob = c(0.025,0.5,0.975))
-quantile(parameter_list$thccr_chb * cancer_prog_female_enchb[which(ages == 50),], prob = c(0.025,0.5,0.975))
-quantile(parameter_list$thccr_chb * cancer_prog_male_enchb[which(ages == 50),], prob = c(0.025,0.5,0.975))
-quantile(params_mat_targets5$hccr_dcc, prob = c(0.025,0.5,0.975))
-
 
 # 1) Plots for single iteration  ----
 out <- code_model_output(sim[[1]])
@@ -270,16 +228,15 @@ lines(outpath$time,outpath$infectioncat_total$immune,col= "blue")
 
 # Proportion in each infection compartment per timestep
 plot(outpath$time,outpath$infectioncat_total$carriers/outpath$pop_total$pop_total,type = "l",
-     ylim = c(0,0.7), xlim = c(1960,2100))
+     ylim = c(0,1), xlim = c(1960,2100))
 lines(outpath$time,outpath$infectioncat_total$sus/outpath$pop_total$pop_total,col= "red")
 lines(outpath$time,outpath$infectioncat_total$immune/outpath$pop_total$pop_total,col= "blue")
 
 # Number of new cases of chronic HBV carriage at each timestep
 plot(outpath$time,
      (outpath$incident_chronic_infections$horizontal_chronic_infections+
-        outpath$incident_chronic_infections$chronic_births+
-        outpath$screened_incident_chronic_infections$screened_horizontal_chronic_infections),
-     type = "l", xlim = c(1960,2100), ylim = c(0, 3000),
+        outpath$incident_chronic_infections$chronic_births),
+     type = "l", xlim = c(1955,2100), ylim = c(0, 3000),
      xlab = "Time", ylab = "New cases of chronic HBV carriage per timestep")
 lines(outpath$time,
       outpath$incident_chronic_infections$chronic_births,
@@ -642,17 +599,18 @@ ggplot(proj_hcc_long) +
 # 2b) PLOTS FOR NO HISTORICAL INTERVENTION/STATUS QUO ----
 
 # Prepare output data to plot
-#load(here("output", "sims_output_scenario_vacc_130120.RData"))  # out_vacc
+load(here("output", "sims_output_scenario_vacc_130120.RData"))  # out_vacc
 out_plot_vacc <- extract_outcomes(output_file = out_vacc, scenario_label = "vacc")
 rm(out_vacc)
 gc()
-#load(here("output", "sims_output_scenario_no_vacc_130120.RData")) # out_no_vacc
+load(here("output", "sims_output_scenario_no_vacc_130120.RData")) # out_no_vacc
 out_plot_no_vacc <- extract_outcomes(output_file = out_no_vacc, scenario_label = "no_vacc")
 rm(out_no_vacc)
 gc()
 
 # Combine projection summaries from different scenarios
 proj_prev_total <- rbind(out_plot_vacc$hbsag_prev_summary, out_plot_no_vacc$hbsag_prev_summary)
+proj_number_inf_total <- rbind(out_plot_vacc$number_infected_summary, out_plot_no_vacc$number_infected_summary)
 proj_inc_total <- rbind(out_plot_vacc$chronic_incidence_summary, out_plot_no_vacc$chronic_incidence_summary)
 proj_inc_rate_total <- rbind(out_plot_vacc$chronic_incidence_rate_summary,
                              out_plot_no_vacc$chronic_incidence_rate_summary)
@@ -662,7 +620,6 @@ proj_deaths_standard_rate_total <- rbind(out_plot_vacc$proj_deaths_standardised_
                                          out_plot_no_vacc$proj_deaths_standardised_summary)
 
 #proj_hcc_total <- rbind(proj_hcc_summary, proj_hcc_summary_no_vacc_no_vacc)
-
 
 # Prevalence
 ggplot(proj_prev_total) +
@@ -681,15 +638,29 @@ ggplot(proj_prev_total) +
   ylim(0,25) +
   theme_classic()
 
-length(colSums(matrix(proj_inc_total$median[proj_inc_total$time != c(1850,2099.5) & proj_inc_total$scenario == "vacc"],
-                      nrow=2)))
+# Number of people living with chronic HBV
+ggplot(proj_number_inf_total) +
+  geom_line(aes(x=time, y = median, group = scenario, colour = scenario))+
+  geom_ribbon(aes(x=time, ymin=lower, ymax=upper, group = scenario, fill = scenario), alpha = 0.1)+
+  #  geom_vline(aes(xintercept = 2030), col = "grey80", linetype = "dashed") +
+  #  xlim(1960,2100) +
+  labs(title = "Effect of infant vaccination on the number of people living with chronic HBV infection",
+       colour = "Modelled scenario", fill = "Modelled scenario",
+       caption = "*Status quo scenario reflects historical vaccine coverage since 1990 and maintains 93% coverage after 2018") +
+  scale_color_manual(labels = c("No vaccine", "Status quo with vaccine*"), values = c("steelblue", "deeppink")) +
+  scale_fill_manual(labels = c("No vaccine", "Status quo with vaccine*"), values = c("steelblue", "deeppink")) +
+  scale_x_continuous(breaks=seq(1960, 2100, by = 10), limits = c(1960,2100)) +
+  ylab("Number living with chronic HBV infection")+
+  xlab("Year")+
+#  ylim(0,25) +
+  theme_classic()
+
 
 # Chronic HBV incidence (absolute)
-ggplot(proj_inc_total[proj_inc_total$time != c(1850,2099.5) & proj_inc_total$scenario == "vacc",]) +
-  geom_line(aes(x=time, y = colSums(matrix(proj_inc_total$median[proj_inc_total$time != c(1850,2099.5) & proj_inc_total$scenario == "vacc"],
-                                                     nrow=2)), group = scenario, colour = scenario))+
+ggplot(proj_inc_total) +
+  geom_line(aes(x=time, y = median/da, group = scenario, colour = scenario))+
   #  geom_line(aes(x=time, y = median/da, group = scenario, colour = scenario))+
-  #  geom_ribbon(aes(x=time, ymin=lower/da, ymax=upper/da, group = scenario, fill = scenario), alpha = 0.1)+
+    geom_ribbon(aes(x=time, ymin=lower/da, ymax=upper/da, group = scenario, fill = scenario), alpha = 0.1)+
   #  geom_vline(aes(xintercept = 2030), col = "grey80", linetype = "dashed") +
   #  xlim(1960,2100) +
   labs(title = "Effect of infant vaccination on number of new chronic HBV infections",
@@ -698,7 +669,7 @@ ggplot(proj_inc_total[proj_inc_total$time != c(1850,2099.5) & proj_inc_total$sce
   scale_color_manual(labels = c("No vaccine", "Status quo with vaccine*"), values = c("steelblue", "deeppink")) +
   scale_fill_manual(labels = c("No vaccine", "Status quo with vaccine*"), values = c("steelblue", "deeppink")) +
   scale_x_continuous(breaks=seq(1960, 2100, by = 10), limits = c(1960,2100)) +
-  ylab("Incident cases of chronic HBV infection per 6 months")+
+  ylab("Annual incident cases of chronic HBV infection")+
   xlab("Year")+
   #  ylim(0,25) +
   theme_classic()
@@ -722,8 +693,8 @@ ggplot(proj_inc_rate_total) +
 
 # HBV-related deaths (absolute)
 ggplot(proj_deaths_total) +
-  geom_line(aes(x=time, y = median, group = scenario, colour = scenario))+
-  geom_ribbon(aes(x=time, ymin=lower, ymax=upper, group = scenario, fill = scenario), alpha = 0.1)+
+  geom_line(aes(x=time, y = median/da, group = scenario, colour = scenario))+
+  geom_ribbon(aes(x=time, ymin=lower/da, ymax=upper/da, group = scenario, fill = scenario), alpha = 0.1)+
   # geom_vline(aes(xintercept = 2030), col = "grey80", linetype = "dashed") +
   #  xlim(1960,2100) +
   labs(title = "Effect of infant vaccination on number of HBV-related deaths",
@@ -732,9 +703,9 @@ ggplot(proj_deaths_total) +
   scale_color_manual(labels = c("No vaccine", "Status quo with vaccine*"), values = c("steelblue", "deeppink")) +
   scale_fill_manual(labels = c("No vaccine", "Status quo with vaccine*"), values = c("steelblue", "deeppink")) +
   scale_x_continuous(breaks=seq(1960, 2100, by = 10), limits = c(1960,2100)) +
-  ylab("Deaths per 6 months")+
+  ylab("Annual number of HBV-related deaths")+
   xlab("Year")+
-  ylim(0,3000) +
+  ylim(0,6000) +
   theme_classic()
 
 # Annual HBV-related deaths per 100000 persons
@@ -1132,3 +1103,161 @@ apply(test,2,function(x){min(which(x>0.65))})
 # time to elimination!
 
 
+
+# Test ----
+#Calculate vaccine coverage
+# Extract for 1 year olds:
+ever_infected <- as.data.frame(sapply(lapply(out, "[[", "ever_infected"), "[", 3))
+carriers <- as.data.frame(sapply(lapply(out, "[[", "carriers"), "[", 3))
+pop <- as.data.frame(sapply(lapply(out, "[[", "pop"), "[", 3))
+
+ever_infected_1990 <- ever_infected[which(out$`9035`$time==1990):nrow(ever_infected),]
+carriers_1990 <- carriers[which(out$`9035`$time==1990):nrow(carriers),]
+pop_1990 <- pop[which(out$`9035`$time==1990):nrow(pop),]
+
+# Calculate proportion recovered:
+prop_rec_1989 <- unlist(ever_infected[which(out$`9035`$time==1990),]/pop[which(out$`9035`$time==1990),])
+prop_in_r <- ((ever_infected_1990-carriers_1990)/pop_1990)
+prop_vacc <- sweep(prop_in_r, 2, prop_rec_1989, "-")
+prop_vacc$time <- seq(1990, 2100.5, by = 0.5)
+prop_vacc <- as.data.frame(prop_vacc)
+prop_vacc <- gather(prop_vacc,key = "sim", value = "prop", -time)
+
+ggplot(data = prop_vacc) +
+  geom_line(aes(x = time, y = prop, group = sim, col = "Simulated effective coverage")) +
+  geom_point(data = vaccine_coverage, aes(x = year, y = coverage, col = "Input coverage")) +
+  scale_colour_manual(values = c("Simulated effective coverage" = "grey", "Input coverage" = "red")) +
+  labs(colour = "") +
+  ylab("Proportion immunised among 1-year olds") +
+  theme_classic()
+
+
+
+# Prepare output data to plot
+load(here("output", "sims_output_scenario_vacc_new_method_110220.RData"))
+out_vacc <- out_vacc_new_method
+out_plot_vacc <- extract_outcomes(output_file = out_vacc, scenario_label = "vacc")
+rm(out_vacc)
+gc()
+
+# New method:
+# proj_inc_summary, proj_inc_rate_summary, proj_deaths_summary, proj_deaths_rate
+output_file <- out_vacc
+
+proj_inc <- cbind(output_file[[1]]$time,
+                  (sapply(lapply(output_file,"[[", "incident_chronic_infections"), "[[", "horizontal_chronic_infections")+
+                     sapply(lapply(output_file, "[[", "incident_chronic_infections"), "[[", "chronic_births")))
+colnames(proj_inc)[1] <- "time"
+
+proj_inc_summary <- data.frame(time = output_file[[1]]$time)
+proj_inc_summary$median <- apply(proj_inc[,-1],1,median)
+proj_inc_summary$lower <- apply(proj_inc[,-1],1,quantile, prob = 0.025)
+proj_inc_summary$upper <- apply(proj_inc[,-1],1,quantile, prob = 0.975)
+proj_inc_long <- gather(as.data.frame(proj_inc), key = "iteration", value = "chronic_cases", -time)
+
+
+# Absolute incident HBV-related deaths per timestep
+proj_deaths <- cbind(output_file[[1]]$time,
+                     (sapply(lapply(output_file,"[[", "hbv_deaths"), "[[", "incident_number_total")+
+                        sapply(lapply(output_file,"[[", "screened_hbv_deaths"), "[[", "incident_number_total")+
+                        sapply(lapply(output_file,"[[", "treated_hbv_deaths"), "[[", "incident_number_total")))
+colnames(proj_deaths)[1] <- "time"
+proj_deaths_summary <- data.frame(time = output_file[[1]]$time)
+proj_deaths_summary$median <- apply(proj_deaths[,-1],1,median)
+proj_deaths_summary$lower <- apply(proj_deaths[,-1],1,quantile, prob = 0.025)
+proj_deaths_summary$upper <- apply(proj_deaths[,-1],1,quantile, prob = 0.975)
+proj_deaths_long <- gather(as.data.frame(proj_deaths), key = "iteration", value = "deaths", -time)
+
+ggplot(proj_inc_summary) +
+  geom_line(aes(x=time, y = median), col = "red")+
+  geom_ribbon(aes(x=time, ymin=lower, ymax=upper), alpha = 0, col = "blue")+
+  #  geom_vline(aes(xintercept = 2030), col = "grey80", linetype = "dashed") +
+  #  xlim(1960,2100) +
+  scale_x_continuous(breaks=seq(1960, 2100, by = 10), limits = c(1960,2100)) +
+  ylab("Annual incident cases of chronic HBV infection")+
+  xlab("Year")+
+  ylim(0,5000) +
+  theme_classic()
+
+ggplot() +
+  geom_line(data= proj_inc_long, aes(x=time, y = chronic_cases, group = iteration), col = "grey")+
+  geom_line(data= proj_inc_summary, aes(x=time, y = median), col = "red", size = 2) +
+  geom_ribbon(data= proj_inc_summary, aes(x=time, ymin=lower, ymax=upper), alpha = 0, col = "blue")+
+  #  geom_vline(aes(xintercept = 2030), col = "grey80", linetype = "dashed") +
+  #  xlim(1960,2100) +
+  scale_x_continuous(breaks=seq(1960, 2100, by = 10), limits = c(1960,2100)) +
+  ylab("Annual incident cases of chronic HBV infection")+
+  xlab("Year")+
+    ylim(0,5000) +
+  theme_classic()
+
+# Plots for mock parms (to test) ----
+# Absolute number of new cases of chronic HBV carriage per timestep
+output_file <- out
+()
+proj_inc <- cbind(output_file[[1]]$time,
+                  (sapply(lapply(output_file,"[[", "incident_chronic_infections"), "[[", "horizontal_chronic_infections")+
+                     sapply(lapply(output_file, "[[", "incident_chronic_infections"), "[[", "chronic_births")))
+colnames(proj_inc) <- c("time", "median", "lower", "upper")
+
+# Incidence rate of chronic HBV carriage per timestep
+proj_inc_rate <- cbind(output_file[[1]]$time,
+                       (sapply(lapply(output_file,"[[", "incident_chronic_infections"), "[[", "horizontal_chronic_infections")+
+                          sapply(lapply(output_file, "[[", "incident_chronic_infections"), "[[", "chronic_births"))/
+                         sapply(lapply(output_file,"[[", "pop_total"), "[[", "pop_total"))
+colnames(proj_inc_rate) <- c("time", "median", "lower", "upper")
+
+# Absolute incident HBV-related deaths per timestep
+proj_deaths <- cbind(output_file[[1]]$time,
+                     (sapply(lapply(output_file,"[[", "hbv_deaths"), "[[", "incident_number_total")+
+                        sapply(lapply(output_file,"[[", "screened_hbv_deaths"), "[[", "incident_number_total")+
+                        sapply(lapply(output_file,"[[", "treated_hbv_deaths"), "[[", "incident_number_total")))
+colnames(proj_deaths) <- c("time", "median", "lower", "upper")
+
+# Incidence rate of  HBV-related deaths per timestep
+proj_deaths_rate <- cbind(output_file[[1]]$time,
+                          (sapply(lapply(output_file,"[[", "hbv_deaths"), "[[", "incident_number_total")+
+                             sapply(lapply(output_file,"[[", "screened_hbv_deaths"), "[[", "incident_number_total")+
+                             sapply(lapply(output_file,"[[", "treated_hbv_deaths"), "[[", "incident_number_total"))/
+                            sapply(lapply(output_file,"[[", "pop_total"), "[[", "pop_total"))
+colnames(proj_deaths_rate) <- c("time", "median", "lower", "upper")
+
+# Chronic HBV incidence (absolute number)
+ggplot(as.data.frame(proj_inc)) +
+  geom_line(aes(x=time, y = median))+
+  geom_ribbon(aes(x=time, ymin=lower, ymax=upper), alpha = 0.1)+
+  scale_x_continuous(breaks=seq(1960, 2100, by = 10), limits = c(1960,2100)) +
+  ylab("Incident cases of chronic HBV infection per 6 months")+
+  xlab("Year")+
+  ylim(0,5000) +
+  theme_classic()
+
+# Chronic HBV incidence rate
+ggplot(as.data.frame(proj_inc_rate)) +
+  geom_line(aes(x=time, y = median*100000))+
+  geom_ribbon(aes(x=time, ymin=lower*100000, ymax=upper*100000), alpha = 0.1)+
+  scale_x_continuous(breaks=seq(1960, 2100, by = 10), limits = c(1960,2100)) +
+  ylab("Chronic infection incidence per 100,000 per 6 months")+
+  xlab("Year")+
+  ylim(0,500) +
+  theme_classic()
+
+# HBV deaths (absolute number)
+ggplot(as.data.frame(proj_deaths)) +
+  geom_line(aes(x=time, y = median))+
+  geom_ribbon(aes(x=time, ymin=lower, ymax=upper), alpha = 0.1)+
+  scale_x_continuous(breaks=seq(1960, 2100, by = 10), limits = c(1960,2100)) +
+  ylab("HBV deaths per 6 months")+
+  xlab("Year")+
+  ylim(0,500) +
+  theme_classic()
+
+# HBV death rate
+ggplot(as.data.frame(proj_deaths_rate)) +
+  geom_line(aes(x=time, y = median*100000))+
+  geom_ribbon(aes(x=time, ymin=lower*100000, ymax=upper*100000), alpha = 0.1)+
+  scale_x_continuous(breaks=seq(1960, 2100, by = 10), limits = c(1960,2100)) +
+  ylab("HBV deaths per 100,000 per 6 months")+
+  xlab("Year")+
+  ylim(0,30) +
+  theme_classic()

@@ -446,9 +446,9 @@ extract_life_years_lived <- function(output_files, scenario_label, from_year, by
 # For life years, take absolute value to get the life years GAINED in the scenario
 calculate_number_averted <- function(counterfactual_metric, scenario_metric, summarise = TRUE) {
 
-  # Check that time period matches between the 2 scenarios
+  # Check that time period matches between the 2 scenarios (if it is a population-level metric)
   if (counterfactual_metric$from_year == scenario_metric$from_year &
-      counterfactual_metric$by_year == scenario_metric$by_year) {
+       counterfactual_metric$by_year == scenario_metric$by_year) {
 
     # Calculate number averted during time period by scenario compared to counterfactual
     n_averted <- counterfactual_metric[,-c(1:3)]-scenario_metric[,-c(1:3)]
@@ -504,9 +504,9 @@ calculate_number_averted <- function(counterfactual_metric, scenario_metric, sum
 
 }
 
-# Function to calculate average age at death for one simulation
+# Function to calculate average age at death of cohort for one simulation
 # This function is applied to sim
-calculate_average_age_at_death <- function(output_file) {
+calculate_cohort_average_age_at_death <- function(output_file) {
 
   # This function calculates the median age at death of a screened+treated cohort
   # only valid if there is only one screening event
@@ -553,7 +553,7 @@ calculate_average_age_at_death <- function(output_file) {
 
 }
 # Function to apply to multiple sims
-summarise_average_age_at_death <- function(output_files, scenario_label) {
+summarise_cohort_average_age_at_death <- function(output_files, scenario_label) {
 
   median_age_at_death <- as.data.frame(t(sapply(output_files, calculate_average_age_at_death)))
 
@@ -563,6 +563,146 @@ summarise_average_age_at_death <- function(output_files, scenario_label) {
   return(res)
 
 }
+
+# Function to calculate cumulative HBV deaths averted in a screened+treated cohort
+extract_cohort_cumulative_hbv_deaths <- function(output_files, scenario_label) {
+
+  # Check that by the end of the simulation everyone in the cohort has died
+  # (population size in screened+treated compartments <0.5)
+
+  cohort_pop <- sapply(lapply(output_files, "[[", "infectioncat_total"), "[[", "treated_pop")+
+    sapply(lapply(output_files, "[[", "infectioncat_total"), "[[", "screened_pop")
+
+  if (!(all(tail(cohort_pop,1)<0.5))) {
+
+    print("Not everyone has died.")
+
+    # Confirm there is only 1 screening event
+  } else if (length(output_files[[1]]$input_parameters$screening_years)>1L) {
+
+    print("More than one screened cohort.")
+
+  } else {
+
+  # Extract absolute incident HBV-related deaths per timestep
+  incident_hbv_deaths <- data.frame(time = head(output_files[[1]]$time,-1),
+                                    deaths = tail(sapply(lapply(output_files,"[[", "screened_hbv_deaths"), "[[", "incident_number_total")+
+                                                    sapply(lapply(output_files,"[[", "treated_hbv_deaths"), "[[", "incident_number_total"),-1))
+  colnames(incident_hbv_deaths)[1] <- "time"
+
+  cum_hbv_deaths <- as.data.frame(t(apply(incident_hbv_deaths[,-1],2,sum)))
+
+  res <- data.frame(scenario = scenario_label,
+                    cum_hbv_deaths = cum_hbv_deaths)
+
+  return(res)
+
+  }
+}
+
+# Function to calculate life-years lived in a screened+treated cohort
+extract_cohort_life_years_lived <- function(output_files, scenario_label, sex_to_return = "both") {
+
+  # Check that by the end of the simulation everyone in the cohort has died
+  # (population size in screened+treated compartments <0.5)
+
+  cohort_pop_male <- sapply(lapply(output_files, "[[", "treated_pop_male"),rowSums)+
+    sapply(lapply(output_files, "[[", "screened_pop_male"),rowSums)
+
+  cohort_pop_female <- sapply(lapply(output_files, "[[", "treated_pop_female"),rowSums)+
+    sapply(lapply(output_files, "[[", "screened_pop_female"),rowSums)
+
+  cohort_pop <- cohort_pop_male+cohort_pop_female
+
+  if (!(all(tail(cohort_pop,1)<0.5))) {
+
+    print("Not everyone has died.")
+
+    # Confirm there is only 1 screening event
+  } else if (length(output_files[[1]]$input_parameters$screening_years)>1L) {
+
+    print("More than one screened cohort.")
+
+  } else {
+
+    # Life years lived in given period = sum of population size at each timestep * da
+    # Calculating life years lived up until (excluding) the defined by_year
+    life_years_male <- as.data.frame(t(apply(cohort_pop_male,2,sum)))*da
+    life_years_female <- as.data.frame(t(apply(cohort_pop_female,2,sum)))*da
+
+    life_years_total <- life_years_male+life_years_female
+
+    if (sex_to_return == "both") {
+      res_total <- data.frame(scenario = scenario_label,
+                              life_years_total = life_years_total)
+
+      return(res_total)
+    } else if (sex_to_return == "male") {
+      res_male <- data.frame(scenario = scenario_label,
+                             life_years_male = life_years_male)
+
+      return(res_male)
+    } else if (sex_to_return == "female") {
+      res_female <- data.frame(scenario = scenario_label,
+                               life_years_female = life_years_female)
+      return(res_female)
+    } else {
+      print("sex_to_return has to be male, female or both")
+    }
+
+  }
+
+
+}
+
+# Compare scenarios for cohort
+calculate_cohort_number_averted <- function(counterfactual_metric, scenario_metric, summarise = TRUE) {
+
+  # Calculate number averted during time period by scenario compared to counterfactual
+  n_averted <- counterfactual_metric[,which(colnames(counterfactual_metric)!="scenario")]-
+    scenario_metric[,which(colnames(scenario_metric)!="scenario")]
+  # Calculate number averted during time period by scenario compared to counterfactual proportional to counterfactual
+  prop_averted <- (counterfactual_metric[,which(colnames(counterfactual_metric)!="scenario")]-
+                     scenario_metric[,which(colnames(scenario_metric)!="scenario")])/
+    counterfactual_metric[,which(colnames(counterfactual_metric)!="scenario")]
+
+  if (summarise == TRUE) {
+
+    n_averted_res <- data.frame(counterfactual = counterfactual_metric$scenario,
+                                scenario = scenario_metric$scenario,
+                                type = "number_averted",
+                                median = apply(n_averted,1,median),
+                                lower = apply(n_averted,1,quantile, prob = 0.025),
+                                upper = apply(n_averted,1,quantile, prob = 0.975))
+
+    prop_averted_res <- data.frame(counterfactual = counterfactual_metric$scenario,
+                                   scenario = scenario_metric$scenario,
+                                   type = "proportion_averted",
+                                   median = apply(prop_averted,1,median),
+                                   lower = apply(prop_averted,1,quantile, prob = 0.025),
+                                   upper = apply(prop_averted,1,quantile, prob = 0.975))
+
+    return(rbind(n_averted_res, prop_averted_res))
+
+  } else if (summarise == FALSE) {
+
+    n_averted_res <- cbind(data.frame(counterfactual = counterfactual_metric$scenario,
+                                      scenario = scenario_metric$scenario,
+                                      type = "number_averted"),
+                           n_averted)
+
+
+    prop_averted_res <- cbind(data.frame(counterfactual = counterfactual_metric$scenario,
+                                         scenario = scenario_metric$scenario,
+                                         type = "proportion_averted"),
+                              prop_averted)
+
+    return(rbind(n_averted_res, prop_averted_res))
+
+  }
+
+}
+
 
 # Examples of running the function
 

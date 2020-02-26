@@ -11,16 +11,17 @@ params_mat <- params_mat_mock  # change to what is read in
 # ASSUMPTION A SIMULATIONS
 
 # Prepare the parameter sets that don't change
-scen_a <- parameter_list
-scen_a$screening_coverage <- 0.9
-scen_a$min_age_to_screen <- 30
-scen_a$max_age_to_screen <- 70
-scen_a$prop_to_vaccinate <- 0
-scen_a$link_to_care_prob <- 0.8
-scen_a$treatment_initiation_prob <- 1
-scen_a$monitoring_prob <- 0.8
-scen_a$apply_bdvacc <- 0
-scen_a$apply_treat_it <- 0
+scenario_a_parms <- parameter_list
+scenario_a_parms$screening_coverage <- 0.9
+scenario_a_parms$min_age_to_screen <- 30
+scenario_a_parms$max_age_to_screen <- 70
+scenario_a_parms$prop_to_vaccinate <- 0
+scenario_a_parms$link_to_care_prob <- 0.8
+scenario_a_parms$treatment_initiation_prob <- 1
+scenario_a_parms$monitoring_prob <- 0.8
+scenario_a_parms$apply_bdvacc <- 0
+scenario_a_parms$apply_treat_it <- 0
+#save(scenario_a_parms, file= here("analysis_input", "scenario_a_parms.Rdata"))
 
 # Simulate
 
@@ -186,22 +187,18 @@ cum_hbv_deaths5 <- extract_cumulative_hbv_deaths(out5, scenario_label = "screen1
 cum_hbv_deaths6 <- extract_cumulative_hbv_deaths(out6, scenario_label = "screen1_monitor1",
                                                  from_year = 2020, by_year = 2050)
 
-hbv_deaths_averted <- rbind(calculate_number_averted(counterfactual_metric = cum_hbv_deaths1,
-                                                     scenario_metric = cum_hbv_deaths3, summarise = FALSE),
-                            calculate_number_averted(counterfactual_metric = cum_hbv_deaths1,
-                                                     scenario_metric = cum_hbv_deaths4, summarise = FALSE),
-                            calculate_number_averted(counterfactual_metric = cum_hbv_deaths1,
-                                                     scenario_metric = cum_hbv_deaths5, summarise = FALSE),
-                            calculate_number_averted(counterfactual_metric = cum_hbv_deaths1,
-                                                     scenario_metric = cum_hbv_deaths6, summarise = FALSE),
-                            calculate_number_averted(counterfactual_metric = cum_hbv_deaths3,
-                                                     scenario_metric = cum_hbv_deaths4, summarise = FALSE),
-                            calculate_number_averted(counterfactual_metric = cum_hbv_deaths3,
-                                                     scenario_metric = cum_hbv_deaths5, summarise = FALSE),
-                            calculate_number_averted(counterfactual_metric = cum_hbv_deaths3,
-                                                     scenario_metric = cum_hbv_deaths6, summarise = FALSE))
+ly3_c <- extract_cohort_life_years_lived(out3, "3")
+ly4_c <- extract_cohort_life_years_lived(out4, "4")
 
+calculate_cohort_number_averted(counterfactual_metric = ly3_c,
+                         scenario_metric = ly4_c, summarise = FALSE)
 
+lyl3 <- extract_life_years_lived(out3, scenario_label = "3",
+                                 from_year = 2020, by_year = 2120)
+lyl4 <- extract_life_years_lived(out4, scenario_label = "4",
+                                 from_year = 2020, by_year = 2120)
+calculate_number_averted(counterfactual_metric = lyl3,
+                         scenario_metric = lyl4, summarise = FALSE)
 
 cum_chronic_inf1 <- extract_cumulative_chronic_infections(out1, scenario_label = "status_quo",
                                                            from_year = 2020, by_year = 2050)
