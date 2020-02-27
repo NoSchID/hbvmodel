@@ -1006,9 +1006,12 @@ generate_parameters <- function(..., default_parameter_list, parms_to_change = l
 
 # Function to run the model once for a given scenario
 # This includes calculation of age-specific progression functions
+# If using drop_timesteps_before (given year) and then code_model_output,
+# the first incident numbers will not be correct
 run_model <- function(..., sim_duration = runtime,
                       init_pop_vector = init_pop,
                       default_parameter_list, parms_to_change = list(...),
+                      drop_timesteps_before = NULL,
                       scenario = "vacc") {
 
   ## Define parameter values for model run:
@@ -1170,6 +1173,10 @@ run_model <- function(..., sim_duration = runtime,
 
   # Add year label to timestep
   out$time   <-  out$time + parameters$sim_starttime
+
+  if (is.null(drop_timesteps_before) == FALSE) {
+    out <- out[out$time>=drop_timesteps_before,]
+  }
 
   return(list(out=out, input_parameters = input_parms))
 
@@ -1669,8 +1676,8 @@ code_model_output <- function(output) {
                    "pop_male" = pop_male,
                    "pop" = pop,
                    "pop_total" = pop_total,
-                   "deaths_total_group5" = deaths_total_group5,
-                   "births_group5" =  births_group5,
+                   #"deaths_total_group5" = deaths_total_group5,
+                   #"births_group5" =  births_group5,
                   # "incident_infections" = incident_infections,                  # all infections
                    "incident_chronic_infections" = incident_chronic_infections,   # all chronic infections
                    "hbv_deaths" = hbv_deaths,                                     # only without screening/treatment
