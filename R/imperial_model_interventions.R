@@ -2425,7 +2425,9 @@ run_hbsag_screening_scenarios <- function(..., default_parameter_list, calibrate
 
 # Scenario run is a screening and treatment streategy - year of screening can be specified
 run_one_screening_scenario <- function(..., default_parameter_list, calibrated_parameter_sets,
-                                          parms_to_change = list(...), years_of_test, monitoring_rate, label) {
+                                          parms_to_change = list(...), years_of_test, monitoring_rate,
+                                       drop_timesteps_before = NULL,
+                                       label) {
 
   sim <- apply(calibrated_parameter_sets, 1,
                        function(x) run_model(sim_duration = runtime,
@@ -2465,6 +2467,7 @@ run_one_screening_scenario <- function(..., default_parameter_list, calibrated_p
                                                     vacc_eff = as.list(x)$vacc_eff,
                                                     screening_years = years_of_test,
                                                     monitoring_rate = monitoring_rate),
+                                             drop_timesteps_before = drop_timesteps_before,
                                              scenario = "vacc_screen"))
 
   out <- lapply(sim, code_model_output)
