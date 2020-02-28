@@ -2480,7 +2480,9 @@ run_one_screening_scenario <- function(..., default_parameter_list, calibrated_p
 
 # Scenario can be specified
 run_one_scenario <- function(..., default_parameter_list, calibrated_parameter_sets,
-                                             parms_to_change = list(...), scenario) {
+                                             parms_to_change = list(...),
+                             drop_timesteps_before = NULL,
+                             scenario) {
 
   # Status quo scenario: no screening
   sim <- apply(calibrated_parameter_sets, 1,
@@ -2519,6 +2521,7 @@ run_one_scenario <- function(..., default_parameter_list, calibrated_parameter_s
                                                mu_dcc = as.list(x)$mu_dcc,
                                                mu_hcc = as.list(x)$mu_hcc,
                                                vacc_eff = as.list(x)$vacc_eff),
+                                        drop_timesteps_before = drop_timesteps_before,
                                         scenario = scenario))
   out <- lapply(sim, code_model_output)
 
