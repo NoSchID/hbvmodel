@@ -113,6 +113,8 @@ gambia_eag <- rep(c(0.95, 0.95, 0.9, 0.9, 0.65, 0.65, 0.6, 0.6, 0.6, 0.6,
                     0.1, 0.1, rep(0.1, 20), rep (0.05, 60)), each = 1/da) # made up last value
 
 ### THE MODEL FUNCTION ----
+
+# NOTE 03/03/20: I have changed the infant vaccine application from what it was in the first calibration
 imperial_model <- function(timestep, pop, parameters, sim_starttime) {
 
   with(as.list(parameters), {
@@ -487,11 +489,17 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
       dpop[1,IT,i] <- dpop[1,IT,i] + sex_ratio[i] * dcum_chronic_births
       #dpop[1,R,i] <- dpop[1,R,i] + sex_ratio[i] * (1-p_chronic_function[1]) * infected_births
 
+      # New vaccination approach:
+      dpop[which(ages == 0):which(ages == 1-da),S,i] <- dpop[which(ages == 0):which(ages == 1-da),S,i] -
+        (-log(1-(vacc_cov * vacc_eff))/0.5 * pop[which(ages == 0):which(ages == 1-da),S,i])
+      dpop[which(ages == 0):which(ages == 1-da),R,i] <- dpop[which(ages == 0):which(ages == 1-da),R,i] +
+        (-log(1-(vacc_cov * vacc_eff))/0.5 * pop[which(ages == 0):which(ages == 1-da),S,i])
+
       # Vaccination: applied at 0.5 years of age
-      dpop[which(ages == 0.5),S,i] <- dpop[which(ages == 0.5),S,i] -
-        (vacc_cov * vacc_eff * pop[which(ages == 0.5),S,i])
-      dpop[which(ages == 0.5),R,i] <- dpop[which(ages == 0.5),R,i] +
-        (vacc_cov * vacc_eff * pop[which(ages == 0.5),S,i])
+      #dpop[which(ages == 0.5),S,i] <- dpop[which(ages == 0.5),S,i] -
+      #  (vacc_cov * vacc_eff * pop[which(ages == 0.5),S,i])
+      #dpop[which(ages == 0.5),R,i] <- dpop[which(ages == 0.5),R,i] +
+      #  (vacc_cov * vacc_eff * pop[which(ages == 0.5),S,i])
 
     }
 
