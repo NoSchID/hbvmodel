@@ -641,21 +641,32 @@ extract_cohort_size <- function(output_files, scenario_label, sex_to_return = "b
 
   } else {
 
+    first_timestep <- output_files[[1]]$input_parameters$screening_years+da
 
+    cohort_size_total <- screened_pop_female[output_files[[1]]$time == first_timestep]+
+      screened_pop_male[output_files[[1]]$time == first_timestep]+
+      treated_pop_female[output_files[[1]]$time == first_timestep]+
+      treated_pop_male[output_files[[1]]$time == first_timestep]
+
+    cohort_size_male <- screened_pop_male[output_files[[1]]$time == first_timestep]+
+      treated_pop_male[output_files[[1]]$time == first_timestep]
+
+    cohort_size_female <- screened_pop_female[output_files[[1]]$time == first_timestep]+
+      treated_pop_female[output_files[[1]]$time == first_timestep]
 
     if (sex_to_return == "both") {
       res_total <- data.frame(scenario = scenario_label,
-                              life_years_total = life_years_total)
+                              cohort_size_total = data.frame(t(cohort_size_total)))
 
       return(res_total)
     } else if (sex_to_return == "male") {
       res_male <- data.frame(scenario = scenario_label,
-                             life_years_male = life_years_male)
+                             cohort_size_male = data.frame(t(cohort_size_male)))
 
       return(res_male)
     } else if (sex_to_return == "female") {
       res_female <- data.frame(scenario = scenario_label,
-                               life_years_female = life_years_female)
+                               cohort_size_female = data.frame(t(cohort_size_female)))
       return(res_female)
     } else {
       print("sex_to_return has to be male, female or both")
