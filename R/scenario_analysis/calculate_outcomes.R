@@ -144,17 +144,20 @@ summarise_healthcare_interactions <- function(output_files, from_year, by_year, 
   # Immediate interactions upon screening
   screening_interactions <- lapply(output_files, calculate_screening_interactions, scenario_label)
 
+  # Add interactions together for all years >= from_year and < by_year
+
+  if (length(unique(screening_interactions[[1]]$screening_years))>1) {
+
   total_screened <- data.frame(screening_years = screening_interactions[[1]]$screening_years,
-                               sapply(screening_interactions, "[[", "total_screened"))
+                                 sapply(screening_interactions, "[[", "total_screened"))
 
   total_assessed_immediately <- data.frame(screening_years = screening_interactions[[1]]$screening_years,
-                                           sapply(screening_interactions, "[[", "total_identified_as_ineligible")+
-                                             sapply(screening_interactions, "[[", "total_identified_as_eligible"))
+                                             sapply(screening_interactions, "[[", "total_identified_as_ineligible")+
+                                                 sapply(screening_interactions, "[[", "total_identified_as_eligible"))
 
   total_treated_immediately <- data.frame(screening_years = screening_interactions[[1]]$screening_years,
-                                          sapply(screening_interactions, "[[", "total_immediate_treatment_initiations"))
+                                            sapply(screening_interactions, "[[", "total_immediate_treatment_initiations"))
 
-  # Add interactions together for all years >= from_year and < by_year
   total_screened <- apply(total_screened[total_screened$screening_years>=from_year &
                                            total_screened$screening_years<by_year,-1],2,sum)
 
@@ -165,6 +168,34 @@ summarise_healthcare_interactions <- function(output_files, from_year, by_year, 
   total_treated_immediately <- apply(total_treated_immediately[
     total_treated_immediately$screening_years >= from_year &
       total_treated_immediately$screening_years<by_year,-1],2,sum)
+
+  total_screened_res <- cbind(data.frame(from_year = from_year,
+                                         by_year = by_year,
+                                         scenario = scenario_label),
+                              t(total_screened))
+
+  } else {
+
+    total_screened <- data.frame(screening_years = screening_interactions[[1]]$screening_years,
+                                 t(sapply(screening_interactions, "[[", "total_screened")))
+
+    total_assessed_immediately <- data.frame(screening_years = screening_interactions[[1]]$screening_years,
+                                             t(sapply(screening_interactions, "[[", "total_identified_as_ineligible")+
+                                                 sapply(screening_interactions, "[[", "total_identified_as_eligible")))
+
+    total_treated_immediately <- data.frame(screening_years = screening_interactions[[1]]$screening_years,
+                                            t(sapply(screening_interactions, "[[", "total_immediate_treatment_initiations")))
+
+
+    total_screened <- total_screened[,-1]
+    total_assessed_immediately <- total_assessed_immediately[,-1]
+    total_treated_immediately <- total_treated_immediately [,-1]
+
+    total_screened_res <- cbind(data.frame(from_year = from_year,
+                                           by_year = by_year,
+                                           scenario = scenario_label),
+                                total_screened)
+  }
 
   # Interactions during and after monitoring
   monitoring_interactions <- data.frame(sapply(output_files, calculate_monitoring_interactions, from_year, by_year, scenario_label))
@@ -185,11 +216,6 @@ summarise_healthcare_interactions <- function(output_files, from_year, by_year, 
   total_treated <- total_treated_immediately+total_treated_after_monitoring
   rownames(total_treated) <- NULL
 
-
-  total_screened_res <- cbind(data.frame(from_year = from_year,
-                                     by_year = by_year,
-                                     scenario = scenario_label),
-                          t(as.data.frame(total_screened)))
   total_assessed_res <- cbind(data.frame(from_year = from_year,
                                          by_year = by_year,
                                          scenario = scenario_label),
@@ -203,7 +229,7 @@ summarise_healthcare_interactions <- function(output_files, from_year, by_year, 
   total_interactions_res <- cbind(data.frame(from_year = from_year,
                                              by_year = by_year,
                                              scenario = scenario_label),
-                                  t(as.data.frame(total_screened))+total_assessed+total_treated)
+                                  total_screened+total_assessed+total_treated)
 
 
   res <- list(total_interactions = total_interactions_res,
@@ -307,15 +333,15 @@ summarise_time_series <- function(output_files, scenario_label, summarise_percen
   # Extract timeseries outcomes for each simulation individually
   timeseries <- lapply(output_files, extract_time_series, scenario_label)
 
-  time <- lapply(timeseries, "[[", "time")
-  scenario <- lapply(timeseries, "[[", "scenario")
-
   outcome_list <- list()
 
   # Except for first 2 columns (time and scenario), extract each outcome into a separate list element
   for (i in 3:ncol(timeseries[[1]])) {
     outcome_list[[i-2]] <- as.data.frame(sapply(timeseries, "[[", i))
   }
+
+  time <- lapply(timeseries, "[[", "time")[1:length(outcome_list)]
+  scenario <- lapply(timeseries, "[[", "scenario")[1:length(outcome_list)]
 
   outcome_list <- Map(cbind,time, scenario, outcome_list)
   outcome_list <- lapply(outcome_list, setNames, c("time", "scenario", colnames(outcome_list[[1]])[-c(1,2)]))
@@ -555,7 +581,7 @@ calculate_cohort_average_age_at_death <- function(output_file) {
 # Function to apply to multiple sims
 summarise_cohort_average_age_at_death <- function(output_files, scenario_label) {
 
-  median_age_at_death <- as.data.frame(t(sapply(output_files, calculate_average_age_at_death)))
+  median_age_at_death <- as.data.frame(t(sapply(output_files, calculate_cohort_average_age_at_death)))
 
   res <- cbind(data.frame(scenario = scenario_label),
                median_age_at_death)
@@ -598,6 +624,46 @@ extract_cohort_cumulative_hbv_deaths <- function(output_files, scenario_label) {
   return(res)
 
   }
+}
+
+# Function to extract cohort population size
+extract_cohort_size <- function(output_files, scenario_label, sex_to_return = "both") {
+
+   screened_pop_female <- sapply(lapply(output_files, "[[", "screened_pop_female"), rowSums)
+   screened_pop_male <- sapply(lapply(output_files, "[[", "screened_pop_male"), rowSums)
+   treated_pop_female <- sapply(lapply(output_files, "[[", "treated_pop_female"), rowSums)
+   treated_pop_male <- sapply(lapply(output_files, "[[", "treated_pop_male"), rowSums)
+
+    # Confirm there is only 1 screening event
+   if (length(output_files[[1]]$input_parameters$screening_years)>1L) {
+
+    print("More than one screened cohort.")
+
+  } else {
+
+
+
+    if (sex_to_return == "both") {
+      res_total <- data.frame(scenario = scenario_label,
+                              life_years_total = life_years_total)
+
+      return(res_total)
+    } else if (sex_to_return == "male") {
+      res_male <- data.frame(scenario = scenario_label,
+                             life_years_male = life_years_male)
+
+      return(res_male)
+    } else if (sex_to_return == "female") {
+      res_female <- data.frame(scenario = scenario_label,
+                               life_years_female = life_years_female)
+      return(res_female)
+    } else {
+      print("sex_to_return has to be male, female or both")
+    }
+
+  }
+
+
 }
 
 # Function to calculate life-years lived in a screened+treated cohort
