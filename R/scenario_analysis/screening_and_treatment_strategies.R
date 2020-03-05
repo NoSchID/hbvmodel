@@ -27,6 +27,18 @@ scenario_a_parms$apply_treat_it <- 0
 # Simulate ----
 
 # Run status quo scenario in parallel
+
+# Sim0: counterfactual - status quo, but with cohort
+cohort_scenario_a_parms <- scenario_a_parms
+cohort_scenario_a_parms$apply_screen_not_treat <- 1
+sim0 <- run_one_screening_scenario(default_parameter_list = cohort_scenario_a_parms,
+                                   calibrated_parameter_sets = params_mat_targets5,
+                                   years_of_test = c(2020), monitoring_rate = 0,
+                                   drop_timesteps_before = 1960,
+                                   label = "status_quo_cohort")
+#saveRDS(sim0, here("a_sim0_status_quo_040320.rds"))
+
+
 # Sim1: counterfactual - status quo
 
 #tic()
@@ -123,8 +135,9 @@ summarise_average_age_at_death(out3,scenario_label = "screen1_monitor0")
 ### Extract outcomes (generic)----
 out_path <- "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/screen_and_treat_strategies/Scenario A/"
 
-label <- "screen_2020_monit_1"
+label <- "screen_2020_monit_10"
 
+#out <- readRDS(paste0(out_path, "a_sim0_status_quo_040320.rds"))
 #out <- readRDS(paste0(out_path, "a_sim1_status_quo_290220.rds"))
 #out <- readRDS(paste0(out_path, "a_sim3_screen_2020_monit_0_280220.rds"))
 #out <- readRDS(paste0(out_path, "a_sim4_screen_2020_monit_10_030320.rds"))
@@ -160,7 +173,7 @@ interactions_2100 <- summarise_healthcare_interactions(out, from_year = 2020,
                                                             by_year = 2100, scenario_label = label)
 
 # Change object names
-out6 <- list(cohort_age_at_death = cohort_age_at_death,
+out4 <- list(cohort_age_at_death = cohort_age_at_death,
              cohort_cum_hbv_deaths = cohort_cum_hbv_deaths,
              cohort_ly = cohort_ly,
              cohort_size = cohort_size,
@@ -174,12 +187,31 @@ out6 <- list(cohort_age_at_death = cohort_age_at_death,
              interactions_2050 = interactions_2050,  # NA for no treatment
              interactions_2100 = interactions_2100)  # NA for no treatment
 
-out6_ts <- summarise_time_series(out, scenario_label = label, summarise_percentiles = FALSE)
+out4_ts <- summarise_time_series(out, scenario_label = label, summarise_percentiles = FALSE)
 
 rm(out)
 gc()
 
-### Cohort comparison ----
+out0to6 <- list(out0_cohort = out0_cohort,
+                out1 = out1,
+                out3 = out3,
+                out4 = out4,
+                out5 = out5,
+                out6 = out6,
+                out0_cohort_timeseries = out0_cohort_ts,
+                out1_timeseries = out1_ts,
+                out3_timeseries = out3_ts,
+                out4_timeseries = out4_ts,
+                out5_timeseries = out5_ts,
+                out6_timeseries = out6_ts)
+
+#saveRDS(out0to6, here("a_extracted_output_0to6_050320.rds"))
+
+
+### Cohort outcomes ----
+
+# Note that, for out3, all cohorts have died by 2102 (cohort size < 1)
+# The cohort we are following are those screened individuals who immediately engage with care
 
 # COUNTERFACTUAL = No monitoring (out3)
 
@@ -195,7 +227,8 @@ age_at_death_ext <- data.frame(cbind(age_at_death[,2]-age_at_death[,1],
                                      age_at_death[,3]-age_at_death[,1],
                                      age_at_death[,4]-age_at_death[,1]))
 colnames(age_at_death_ext) <- c("Every 10 years", "Every 5 years", "Every year")
-boxplot(age_at_death_ext, ylab = "Extension in mean age at death (years) compared to no monitoring",
+boxplot(age_at_death_ext, ylab = "Extension in mean age at death (years)",
+        main = "Compared to no monitoring",
         xlab = "Monitoring frequency", ylim = c(0,1.4))
 
 # Compare cohort number of HBV deaths averted compared to no monitoring
@@ -229,145 +262,384 @@ cohort_ly_gained_long <- gather(cohort_ly_gained, key = "sim", value = "value",
 
 ggplot(cohort_ly_gained_long[cohort_ly_gained_long$type == "number_averted",]) +
   geom_boxplot(aes(counterfactual, value)) +
-  ylab("Life years saved by monitoring") +
-  labs(title = "Cohort") +
+  scale_x_discrete(labels = c("10 years", "5 years", "1 year")) +
+  ylab("Life years saved compared to one-off treatment") +
+  labs(title = "Cohort: life years saved by monitoring (number)") +
   xlab("Monitoring frequency")
 
 ggplot(cohort_ly_gained_long[cohort_ly_gained_long$type == "proportion_averted",]) +
   geom_boxplot(aes(counterfactual, value)) +
-  ylab("Fraction of life years saved by monitoring") +
+  scale_x_discrete(labels = c("10 years", "5 years", "1 year")) +
+  ylab("Fraction of life years saved compared to one-off treatment") +
   xlab("Monitoring frequency") +
-  labs(title = "Cohort")
+  labs(title = "Cohort: life years saved by monitoring (proportion)")
 
-### Compare population outcomes ----
+# COUNTERFACTUAL = No treatment - status quo (out0)
 
-# Compare population level number of HBV deaths averted
-# Counterfactual = status quo
-deaths_averted_sq <- rbind(calculate_number_averted(out1$cum_hbv_deaths_2030, out3$cum_hbv_deaths_2030),
-                        calculate_number_averted(out1$cum_hbv_deaths_2050, out3$cum_hbv_deaths_2050),
-                        calculate_number_averted(out1$cum_hbv_deaths_2100, out3$cum_hbv_deaths_2100),
-                        calculate_number_averted(out1$cum_hbv_deaths_2030, out5$cum_hbv_deaths_2030),
-                        calculate_number_averted(out1$cum_hbv_deaths_2050, out5$cum_hbv_deaths_2050),
-                        calculate_number_averted(out1$cum_hbv_deaths_2100, out5$cum_hbv_deaths_2100))
+# Compare median age at death
+age_at_death_sq <- data.frame(rbind(out0_cohort$cohort_age_at_death,
+                                 out3$cohort_age_at_death,
+                                 out4$cohort_age_at_death,
+                                 out5$cohort_age_at_death,
+                                 out6$cohort_age_at_death))
+age_at_death_sq <- t(age_at_death_sq[,-1])
+colnames(age_at_death_sq) <- c("No treatment", "No monitoring", "Every 10 years", "Every 5 years", "Every year")
+boxplot(age_at_death_sq, ylim =c(68,73), ylab = "Mean age at death (years)", main = "Assessed cohort")
 
-ggplot(deaths_averted_sq[deaths_averted_sq$type == "number_averted",]) +
-  geom_point(aes(x = as.factor(by_year), y = median, group = scenario, colour = scenario),
-             position=position_dodge(width = 1)) +
-  geom_errorbar(aes(x = as.factor(by_year), ymin = lower, ymax = upper,
-                    group = scenario, colour = scenario), position=position_dodge(width = 1)) +
-  ylim(0,8000) +
-  ylab("Cumulative number of HBV-related deaths averted compared to status quo")
+# Extension in age at death compared to no treatment (status quo)
+age_at_death_ext_sq <- data.frame(cbind(age_at_death_sq[,2]-age_at_death_sq[,1],
+                                     age_at_death_sq[,3]-age_at_death_sq[,1],
+                                     age_at_death_sq[,4]-age_at_death_sq[,1],
+                                     age_at_death_sq[,5]-age_at_death_sq[,1]))
+colnames(age_at_death_ext_sq) <- c("No monitoring", "Every 10 years", "Every 5 years", "Every year")
+boxplot(age_at_death_ext_sq, ylab = "Extension in mean age at death (years)",
+        main = "Compared to no treatment (infant vaccine only)",
+        xlab = "Monitoring frequency", ylim = c(0,5))
 
-ggplot(deaths_averted_sq[deaths_averted_sq$type == "proportion_averted",]) +
-  geom_point(aes(x = as.factor(by_year), y = median, group = scenario, colour = scenario),
-             position=position_dodge(width = 1)) +
-  geom_errorbar(aes(x = as.factor(by_year), ymin = lower, ymax = upper,
-                    group = scenario, colour = scenario), position=position_dodge(width = 1)) +
-  ylim(0,1) +
-  ylab("Proportion of cumulative HBV-related deaths averted compared to status quo")
-#  geom_point(data = cohort_deaths_averted[deaths_averted$type == "proportion_averted",],
-#             aes(x = "cohort", y = median)) +
-#  geom_errorbar(data = cohort_deaths_averted[deaths_averted$type == "proportion_averted",],
-#                aes(x = "cohort",ymin = lower, ymax = upper))
+# Compare cohort number of HBV deaths averted compared to no treatment (status quo)
+cohort_deaths_averted_sq <- rbind(
+  calculate_cohort_number_averted(out0_cohort$cohort_cum_hbv_deaths, out3$cohort_cum_hbv_deaths, summarise = FALSE),
+  calculate_cohort_number_averted(out0_cohort$cohort_cum_hbv_deaths, out4$cohort_cum_hbv_deaths, summarise = FALSE),
+  calculate_cohort_number_averted(out0_cohort$cohort_cum_hbv_deaths, out5$cohort_cum_hbv_deaths, summarise = FALSE),
+  calculate_cohort_number_averted(out0_cohort$cohort_cum_hbv_deaths, out6$cohort_cum_hbv_deaths, summarise = FALSE))
+cohort_deaths_averted_sq_long <- gather(cohort_deaths_averted_sq, key = "sim", value = "value",
+                                     -counterfactual, -scenario, -type)
+
+ggplot(cohort_deaths_averted_sq_long[cohort_deaths_averted_sq_long$type == "number_averted",]) +
+  geom_boxplot(aes(scenario, value)) +
+  scale_x_discrete(labels = c("No monitoring", "10 years", "5 years", "1 year")) +
+  ylab("Cumulative number of HBV-related deaths averted by treatment") +
+  labs(title = "Cohort") +
+  ylim(0,11000) +
+  xlab("Monitoring frequency")
+
+ggplot(cohort_deaths_averted_sq_long[cohort_deaths_averted_sq_long$type == "proportion_averted",]) +
+  geom_boxplot(aes(scenario, value)) +
+  scale_x_discrete(labels = c("No monitoring", "10 years", "5 years", "1 year")) +
+  ylab("Fraction of HBV-related deaths averted by treatment") +
+  xlab("Monitoring frequency") +
+  labs(title = "Cohort") +
+  ylim(0,1)
+
+# Compare cohort number of life years gained compared to no monitoring
+cohort_ly_gained_sq <- rbind(
+  calculate_cohort_number_averted(out3$cohort_ly, out0_cohort$cohort_ly, summarise = FALSE),
+  calculate_cohort_number_averted(out4$cohort_ly, out0_cohort$cohort_ly, summarise = FALSE),
+  calculate_cohort_number_averted(out5$cohort_ly, out0_cohort$cohort_ly, summarise = FALSE),
+  calculate_cohort_number_averted(out6$cohort_ly, out0_cohort$cohort_ly, summarise = FALSE))
+cohort_ly_gained_sq_long <- gather(cohort_ly_gained_sq, key = "sim", value = "value",
+                                -counterfactual, -scenario, -type)
+
+ggplot(cohort_ly_gained_sq_long[cohort_ly_gained_sq_long$type == "number_averted",]) +
+  geom_boxplot(aes(counterfactual, value)) +
+  scale_x_discrete(labels = c("No monitoring", "10 years", "5 years", "1 year")) +
+  ylab("Life years saved compared to no treatment") +
+  labs(title = "Cohort: life years saved by treatment (number)") +
+  ylim(0,225000) +
+  xlab("Monitoring frequency")
+
+ggplot(cohort_ly_gained_sq_long[cohort_ly_gained_sq_long$type == "proportion_averted",]) +
+  geom_boxplot(aes(counterfactual, value)) +
+  ylab("Fraction of life years saved compared to no treatment") +
+  scale_x_discrete(labels = c("No monitoring", "10 years", "5 years", "1 year")) +
+  xlab("Monitoring frequency") +
+  ylim(0,0.15) +
+  labs(title = "Cohort: life years saved by treatment (proportion)")
+
+### Population outcomes ----
+
+# HBV DEATHS AVERTED
+
+# COUNTERFACTUAL = STATUS QUO
+
+deaths_averted_sq <- rbind(calculate_number_averted(out1$cum_hbv_deaths_2030, out3$cum_hbv_deaths_2030,
+                                                    summarise = FALSE),
+                          calculate_number_averted(out1$cum_hbv_deaths_2050, out3$cum_hbv_deaths_2050,
+                                                   summarise = FALSE),
+                          calculate_number_averted(out1$cum_hbv_deaths_2100, out3$cum_hbv_deaths_2100,
+                                                   summarise = FALSE),
+                          calculate_number_averted(out1$cum_hbv_deaths_2030, out4$cum_hbv_deaths_2030,
+                                                   summarise = FALSE),
+                          calculate_number_averted(out1$cum_hbv_deaths_2050, out4$cum_hbv_deaths_2050,
+                                                   summarise = FALSE),
+                          calculate_number_averted(out1$cum_hbv_deaths_2100, out4$cum_hbv_deaths_2100,
+                                                   summarise = FALSE),
+                          calculate_number_averted(out1$cum_hbv_deaths_2030, out5$cum_hbv_deaths_2030,
+                                                   summarise = FALSE),
+                          calculate_number_averted(out1$cum_hbv_deaths_2050, out5$cum_hbv_deaths_2050,
+                                                   summarise = FALSE),
+                          calculate_number_averted(out1$cum_hbv_deaths_2100, out5$cum_hbv_deaths_2100,
+                                                   summarise = FALSE),
+                          calculate_number_averted(out1$cum_hbv_deaths_2030, out6$cum_hbv_deaths_2030,
+                                                   summarise = FALSE),
+                          calculate_number_averted(out1$cum_hbv_deaths_2050, out6$cum_hbv_deaths_2050,
+                                                   summarise = FALSE),
+                          calculate_number_averted(out1$cum_hbv_deaths_2100, out6$cum_hbv_deaths_2100,
+                                                   summarise = FALSE))
+
+deaths_averted_sq_long <- gather(deaths_averted_sq, key = "sim", value = "value", -from_year,
+                                 -by_year, -counterfactual, -scenario, - type)
+
+# Population-level effect of screening/treatment/monitoring in the short and long term
+ggplot(deaths_averted_sq_long[deaths_averted_sq_long$type == "number_averted",]) +
+  geom_boxplot(aes(x = scenario, y = value)) +
+  facet_wrap(~ as.factor(by_year), ncol = 3) +
+  scale_x_discrete(labels = c("No monitoring", "10 years", "5 years", "1 year")) +
+  xlab("Monitoring frequency") +
+  ylab("Cumulative number of HBV-related deaths averted by treatment") +
+  labs(title= "Population: HBV deaths averted by treatment (number)") +
+  ylim(0,11000)
+
+ggplot(deaths_averted_sq_long[deaths_averted_sq_long$type == "proportion_averted",]) +
+  geom_boxplot(aes(x = scenario, y = value)) +
+  facet_wrap(~ as.factor(by_year), ncol = 3) +
+  scale_x_discrete(labels = c("No monitoring", "10 years", "5 years", "1 year")) +
+  xlab("Monitoring frequency") +
+  ylab("Fraction of HBV-related deaths averted by treatment") +
+  labs(title= "Population: HBV deaths averted by treatment (proportion)") +
+  ylim(0,0.55)
+# This plot suggests that maximum monitoring (yearly) has little additional effect in preventing deaths by 2030,
+# but there is a bigger difference between yearly vs. no monitoring by 2050, and a medium difference by 2100
+# In other words the immediate gains from treatment come from the initial treatment, in the medium term
+# monitoring can prevent some deaths, but in the long term this additional gain diminishes because
+# there is lack of further screening
 
 
-# Compare population level number of HBV deaths averted
-# Counterfactual = one-off screening but no monitoring
-deaths_averted <- rbind(calculate_number_averted(out3$cum_hbv_deaths_2030, out5$cum_hbv_deaths_2030),
-                           calculate_number_averted(out3$cum_hbv_deaths_2050, out5$cum_hbv_deaths_2050),
-                           calculate_number_averted(out3$cum_hbv_deaths_2100, out5$cum_hbv_deaths_2100))
+# COUNTERFACTUAL = ONE-OFF SCREENING BUT NO MONITORING (out3)
+deaths_averted <- rbind(calculate_number_averted(out3$cum_hbv_deaths_2030, out4$cum_hbv_deaths_2030, summarise = FALSE),
+                        calculate_number_averted(out3$cum_hbv_deaths_2050, out4$cum_hbv_deaths_2050, summarise = FALSE),
+                        calculate_number_averted(out3$cum_hbv_deaths_2100, out4$cum_hbv_deaths_2100, summarise = FALSE),
+                        calculate_number_averted(out3$cum_hbv_deaths_2030, out5$cum_hbv_deaths_2030, summarise = FALSE),
+                        calculate_number_averted(out3$cum_hbv_deaths_2050, out5$cum_hbv_deaths_2050, summarise = FALSE),
+                        calculate_number_averted(out3$cum_hbv_deaths_2100, out5$cum_hbv_deaths_2100, summarise = FALSE),
+                        calculate_number_averted(out3$cum_hbv_deaths_2030, out6$cum_hbv_deaths_2030, summarise = FALSE),
+                        calculate_number_averted(out3$cum_hbv_deaths_2050, out6$cum_hbv_deaths_2050, summarise = FALSE),
+                        calculate_number_averted(out3$cum_hbv_deaths_2100, out6$cum_hbv_deaths_2100, summarise = FALSE))
 
-ggplot(deaths_averted[deaths_averted$type == "number_averted",]) +
-  geom_point(aes(x = as.factor(by_year), y = median)) +
-  geom_errorbar(aes(x = as.factor(by_year), ymin = lower, ymax = upper)) +
+deaths_averted_long <- gather(deaths_averted, key = "sim", value = "value", -from_year,
+                                 -by_year, -counterfactual, -scenario, - type)
+
+# Population-level effect of monitoring in the short and long term
+ggplot(deaths_averted_long[deaths_averted_long$type == "number_averted",]) +
+  geom_boxplot(aes(x = scenario, y = value)) +
+  facet_wrap(~ as.factor(by_year), ncol = 3) +
+  scale_x_discrete(labels = c("10 years", "5 years", "1 year")) +
+  xlab("Monitoring frequency") +
   ylab("Cumulative number of HBV-related deaths averted by monitoring") +
-  geom_point(data = cohort_deaths_averted[deaths_averted$type == "number_averted",],
-             aes(x = "cohort", y = median)) +
-  geom_errorbar(data = cohort_deaths_averted[deaths_averted$type == "number_averted",],
-               aes(x = "cohort",ymin = lower, ymax = upper))
+  labs(title= "Population: HBV deaths averted compared to no monitoring (number)")
 
-ggplot(deaths_averted[deaths_averted$type == "proportion_averted",]) +
-  geom_point(aes(x = as.factor(by_year), y = median)) +
-  geom_errorbar(aes(x = as.factor(by_year), ymin = lower, ymax = upper)) +
-  ylim(0,1) +
-  ylab("Proportion of cumulative HBV-related deaths averted by monitoring") +
-  geom_point(data = cohort_deaths_averted[deaths_averted$type == "proportion_averted",],
-             aes(x = "cohort", y = median)) +
-  geom_errorbar(data = cohort_deaths_averted[deaths_averted$type == "proportion_averted",],
-                aes(x = "cohort",ymin = lower, ymax = upper))
+ggplot(deaths_averted_long[deaths_averted_long$type == "proportion_averted",]) +
+  geom_boxplot(aes(x = scenario, y = value)) +
+  facet_wrap(~ as.factor(by_year), ncol = 3) +
+  scale_x_discrete(labels = c("10 years", "5 years", "1 year")) +
+  xlab("Monitoring frequency") +
+  ylab("Fraction of HBV-related deaths averted by monitoring") +
+  labs(title= "Population: HBV deaths averted compared to no monitoring (proportion)") +
+  ylim(0,0.25)
+# Gain from monitoring is most visible in the medium term (2050)
 
+# LIFE YEARS GAINED
 
-# need to somehow record number of people in the cohort! E.g. deaths per population!
-
-# Compare population level number of  life years gained
-# Counterfactual = status_quo
+# COUNTERFACTUAL = STATUS QUO
 ly_gained_sq <- rbind(calculate_number_averted(out3$ly_2030, out1$ly_2030),
                       calculate_number_averted(out3$ly_2050, out1$ly_2050),
                       calculate_number_averted(out3$ly_2100, out1$ly_2100),
+                      calculate_number_averted(out4$ly_2030, out1$ly_2030),
+                      calculate_number_averted(out4$ly_2050, out1$ly_2050),
+                      calculate_number_averted(out4$ly_2100, out1$ly_2100),
                       calculate_number_averted(out5$ly_2030, out1$ly_2030),
                       calculate_number_averted(out5$ly_2050, out1$ly_2050),
-                      calculate_number_averted(out5$ly_2100, out1$ly_2100))
+                      calculate_number_averted(out5$ly_2100, out1$ly_2100),
+                      calculate_number_averted(out6$ly_2030, out1$ly_2030),
+                      calculate_number_averted(out6$ly_2050, out1$ly_2050),
+                      calculate_number_averted(out6$ly_2100, out1$ly_2100))
 
-ggplot(ly_gained_sq[ly_gained_sq$type == "number_averted",]) +
-  geom_point(aes(x = as.factor(by_year), y = median, group = counterfactual, colour = counterfactual),
-             position=position_dodge(width = 1)) +
-  geom_errorbar(aes(x = as.factor(by_year), ymin = lower, ymax = upper,
-                    group = counterfactual, colour = counterfactual), position=position_dodge(width = 1)) +
-  ylab("Life years gained compared to status quo")
+ly_gained_sq_long <- gather(ly_gained_sq, key = "sim", value = "value", -from_year,
+                                 -by_year, -counterfactual, -scenario, - type)
 
-ggplot(ly_gained_sq[ly_gained_sq$type == "proportion_averted",]) +
-  geom_point(aes(x = as.factor(by_year), y = median, group =counterfactual, colour = counterfactual),
-             position=position_dodge(width = 1)) +
-  geom_errorbar(aes(x = as.factor(by_year), ymin = lower, ymax = upper,
-                    group = counterfactual, colour = counterfactual), position=position_dodge(width = 1)) +
-  ylab("Fraction of life years gained compared to status quo")
+# Population-level effect of screening/treatment/monitoring in the short and long term
+ggplot(ly_gained_sq_long[ly_gained_sq_long$type == "number_averted",]) +
+  geom_boxplot(aes(x = counterfactual, y = value)) +
+  facet_wrap(~ as.factor(by_year), ncol = 3) +
+  scale_x_discrete(labels = c("No monitoring", "10 years", "5 years", "1 year")) +
+  xlab("Monitoring frequency") +
+  ylab("Life-years saved compared to status quo") +
+  labs(title= "Population: Life-years saved by treatment (number)")
 
+ggplot(ly_gained_sq_long[ly_gained_sq_long$type == "proportion_averted",]) +
+  geom_boxplot(aes(x = counterfactual, y = value)) +
+  facet_wrap(~ as.factor(by_year), ncol = 3) +
+  scale_x_discrete(labels = c("No monitoring", "10 years", "5 years", "1 year")) +
+  xlab("Monitoring frequency") +
+  ylab("Fraction of life-years saved compared to status quo") +
+  labs(title= "Population: Life-years saved by treatment (proportion)") +
+  ylim(0,0.00125)
+# Again shows that the one-off treatment programme in general is more effective in the medium
+# than in the short or long-term
 
-# Compare population level number of  life years gained
-# Counterfactual = one-off screening but no monitoring
-ly_gained <- rbind(calculate_number_averted(out5$ly_2030, out3$ly_2030),
+# COUNTERFACTUAL = ONE-OFF SCREENING BUT NO MONITORING (out3)
+
+ly_gained <- rbind(calculate_number_averted(out4$ly_2030, out3$ly_2030),
+                   calculate_number_averted(out4$ly_2050, out3$ly_2050),
+                   calculate_number_averted(out4$ly_2100, out3$ly_2100),
+                   calculate_number_averted(out5$ly_2030, out3$ly_2030),
                    calculate_number_averted(out5$ly_2050, out3$ly_2050),
-                   calculate_number_averted(out5$ly_2100, out3$ly_2100))
+                   calculate_number_averted(out5$ly_2100, out3$ly_2100),
+                   calculate_number_averted(out6$ly_2030, out3$ly_2030),
+                   calculate_number_averted(out6$ly_2050, out3$ly_2050),
+                   calculate_number_averted(out6$ly_2100, out3$ly_2100))
 
-ggplot(ly_gained[ly_gained$type == "number_averted",]) +
-  geom_point(aes(x = as.factor(by_year), y = median)) +
-  geom_errorbar(aes(x = as.factor(by_year), ymin = lower, ymax = upper)) +
-  geom_point(data = cohort_ly_gained[cohort_ly_gained$type == "number_averted",],
-             aes(x = "cohort", y = median)) +
-  geom_errorbar(data = cohort_ly_gained[cohort_ly_gained$type == "number_averted",],
-                aes(x = "cohort",ymin = lower, ymax = upper)) +
-  ylab("Number of life-years gained by monitoring")
+ly_gained_long <- gather(ly_gained, key = "sim", value = "value", -from_year,
+                              -by_year, -counterfactual, -scenario, - type)
 
-ggplot(ly_gained[ly_gained$type == "proportion_averted",]) +
-  geom_point(aes(x = as.factor(by_year), y = median)) +
-  geom_errorbar(aes(x = as.factor(by_year), ymin = lower, ymax = upper)) +
-  geom_point(data = cohort_ly_gained[cohort_ly_gained$type == "proportion_averted",],
-             aes(x = "cohort", y = median)) +
-  geom_errorbar(data = cohort_ly_gained[cohort_ly_gained$type == "proportion_averted",],
-                aes(x = "cohort",ymin = lower, ymax = upper)) +
-  ylab("Fraction of life-years gained by monitoring")
+# Population-level effect of monitoring in the short and long term
+ggplot(ly_gained_long[ly_gained_long$type == "number_averted",]) +
+  geom_boxplot(aes(x = counterfactual, y = value)) +
+  facet_wrap(~ as.factor(by_year), ncol = 3) +
+  scale_x_discrete(labels = c("10 years", "5 years", "1 year")) +
+  xlab("Monitoring frequency") +
+  ylab("Life-years saved compared to no monitoring") +
+  labs(title= "Population: Life-years saved by monitoring (number)")
 
-# Calculate outcomes per healthcare interaction
+ggplot(ly_gained_long[ly_gained_long$type == "proportion_averted",]) +
+  geom_boxplot(aes(x = counterfactual, y = value)) +
+  facet_wrap(~ as.factor(by_year), ncol = 3) +
+  scale_x_discrete(labels = c("10 years", "5 years", "1 year")) +
+  xlab("Monitoring frequency") +
+  ylab("Fraction of life-years saved compared to no monitoring") +
+  labs(title= "Population: Life-years saved by monitoring (proportion)")
+# Gain from monitoring is most visible in the medium term (2050) (pattern (ratio) seems to be
+# slightly stronger than for HBV deaths)
 
-# HBV deaths averted per incremental treatment initiations - compared to status quo
-# Number of HBV deaths averted compared to status quo
-quantile(calculate_number_averted(out1$cum_hbv_deaths_2030, out3$cum_hbv_deaths_2030, summarise = FALSE)[1,-c(1:5)],
-         prob = c(0.025,0.5,0.975))
-quantile(calculate_number_averted(out1$cum_hbv_deaths_2030, out5$cum_hbv_deaths_2030, summarise = FALSE)[1,],
-         prob = c(0.025,0.5,0.975))
+### Cohort-population level comparison ----
 
-# Number of HBV deaths averted per incremental treatment initiations compared to status quo
-deaths_averted_per_int3 <- data.frame(rbind(
+# 1) COUNTERFACTUAL = STATUS QUO
+# This shows more in general the impact of this screening and treatment programme
+# Rather than effect of monitoring specifically
+
+# OUTCOME = HBV DEATHS AVERTED
+
+# Combine cohort and population outcome by 2100 into the same dataframe to plot
+deaths_averted_sq_pop <- deaths_averted_sq_long[deaths_averted_sq_long$by_year == 2100,-c(1,2)]
+deaths_averted_sq_pop$level <- "pop"
+deaths_averted_sq_cohort <- cohort_deaths_averted_sq_long
+deaths_averted_sq_cohort$level <- "cohort"
+deaths_averted_sq_pop_and_cohort <- rbind(deaths_averted_sq_pop, deaths_averted_sq_cohort)
+
+# Compare population vs cohort-level effect of treatment
+ggplot(deaths_averted_sq_pop_and_cohort[deaths_averted_sq_pop_and_cohort$type == "proportion_averted",]) +
+  geom_boxplot(aes(x = scenario, y = value, fill = level)) +
+  scale_x_discrete(labels = c("No monitoring", "10 years", "5 years", "1 year")) +
+  xlab("Monitoring frequency") +
+  ylab("Fraction of HBV-related deaths averted by treatment") +
+  labs(title= "HBV deaths averted by treatment by 2100 (proportion)") +
+  ylim(0,1)
+
+# Number of deaths averted in the cohort is the same as in the entire population by 2100:
+# (when the whole cohort has died)
+ggplot(deaths_averted_sq_pop_and_cohort[deaths_averted_sq_pop_and_cohort$type == "number_averted",]) +
+  geom_boxplot(aes(x = scenario, y = value, fill = level)) +
+  scale_x_discrete(labels = c("No monitoring", "10 years", "5 years", "1 year")) +
+  xlab("Monitoring frequency") +
+  ylab("Cumulative number of HBV-related deaths averted by treatment") +
+  labs(title= "HBV deaths averted by treatment by 2100 (number)") +
+  ylim(0,11000)
+
+# OUTCOME = LIFE YEARS SAVED
+
+# Combine cohort and population outcome by 2100 into the same dataframe to plot
+ly_gained_sq_pop <- ly_gained_sq_long[ly_gained_sq_long$by_year == 2100,-c(1,2)]
+ly_gained_sq_pop$level <- "pop"
+ly_gained_sq_cohort <- cohort_ly_gained_sq_long
+ly_gained_sq_cohort$level <- "cohort"
+ly_gained_sq_pop_and_cohort <- rbind(ly_gained_sq_pop, ly_gained_sq_cohort)
+
+ggplot(ly_gained_sq_pop_and_cohort[ly_gained_sq_pop_and_cohort$type == "proportion_averted",]) +
+  geom_boxplot(aes(x = counterfactual, y = value, fill = level)) +
+  scale_x_discrete(labels = c("No monitoring", "10 years", "5 years", "1 year")) +
+  xlab("Monitoring frequency") +
+  ylab("Fraction of life-years saved compared to status quo") +
+  labs(title= "Life-years saved by treatment by 2100 (proportion)")
+
+ggplot(ly_gained_sq_pop_and_cohort[ly_gained_sq_pop_and_cohort$type == "number_averted",]) +
+  geom_boxplot(aes(x = counterfactual, y = value, fill = level)) +
+  scale_x_discrete(labels = c("No monitoring", "10 years", "5 years", "1 year")) +
+  xlab("Monitoring frequency") +
+  ylab("Life-years saved compared to status quo") +
+  labs(title= "Life-years saved by treatment by 2100 (number)") +
+  ylim(0,300000)
+
+# 2) COUNTERFACTUAL = ONE-OFF SCREENING BUT NO MONITORING (out3)
+# Shows the effect of monitoring vs no monitoring of treatment-ineligibles
+
+# OUTCOME = HBV DEATHS AVERTED
+
+# Combine cohort and population outcome by 2100 into the same dataframe to plot
+deaths_averted_pop <- deaths_averted_long[deaths_averted_long$by_year == 2100,-c(1,2)]
+deaths_averted_pop$level <- "pop"
+deaths_averted_cohort <- cohort_deaths_averted_long
+deaths_averted_cohort$level <- "cohort"
+deaths_averted_pop_and_cohort <- rbind(deaths_averted_pop, deaths_averted_cohort)
+
+# Compare population vs cohort-level effect of monitoring
+ggplot(deaths_averted_pop_and_cohort[deaths_averted_pop_and_cohort$type == "proportion_averted",]) +
+  geom_boxplot(aes(x = scenario, y = value, fill = level)) +
+  scale_x_discrete(labels = c("10 years", "5 years", "1 year")) +
+  xlab("Monitoring frequency") +
+  ylab("Fraction of HBV-related deaths averted by monitoring") +
+  labs(title= "HBV deaths averted compared to no monitoring by 2100 (proportion)") +
+  ylim(0,1)
+# Monitoring is beneficial in the cohort but has less population-level benefit
+
+# OUTCOME = LIFE YEARS SAVED
+
+# Combine cohort and population outcome by 2100 into the same dataframe to plot
+ly_gained_pop <- ly_gained_long[ly_gained_long$by_year == 2100,-c(1,2)]
+ly_gained_pop$level <- "pop"
+ly_gained_cohort <- cohort_ly_gained_long
+ly_gained_cohort$level <- "cohort"
+ly_gained_pop_and_cohort <- rbind(ly_gained_pop, ly_gained_cohort)
+
+# Compare population vs cohort-level effect of monitoring
+ggplot(ly_gained_pop_and_cohort[ly_gained_pop_and_cohort$type == "proportion_averted",]) +
+  geom_boxplot(aes(x = counterfactual, y = value, fill = level)) +
+  scale_x_discrete(labels = c("10 years", "5 years", "1 year")) +
+  xlab("Monitoring frequency") +
+  ylab("Fraction of life-years saved compared to no monitoring") +
+  labs(title= "Life-years saved by monitoring by 2100 (proportion)")
+# Monitoring is beneficial in the cohort but has less population-level benefit
+
+### Population outcomes per healthcare interaction ----
+
+# COUNTERFACTUAL = STATUS QUO
+
+# OUTCOME = HBV DEATHS AVERTED PER INCREMENTAL TREATMENT INITIATION
+# compared to status quo, any healthcare interactions are incremental
+
+# One-off screen without monitoring
+deaths_averted_per_treat_3 <- data.frame(rbind(
   c(by_year = 2030, unlist(calculate_number_averted(out1$cum_hbv_deaths_2030, out3$cum_hbv_deaths_2030, summarise = FALSE)[1,-c(1:5)]/
-  out3$interactions_2030$total_treated[,-c(1:3)])),
+                             out3$interactions_2030$total_treated[,-c(1:3)])),
   c(by_year = 2050, unlist(calculate_number_averted(out1$cum_hbv_deaths_2050, out3$cum_hbv_deaths_2050, summarise = FALSE)[1,-c(1:5)]/
                              out3$interactions_2050$total_treated[,-c(1:3)])),
   c(by_year = 2100, unlist(calculate_number_averted(out1$cum_hbv_deaths_2100, out3$cum_hbv_deaths_2100, summarise = FALSE)[1,-c(1:5)]/
                              out3$interactions_2100$total_treated[,-c(1:3)]))
-  ))
-deaths_averted_per_int3$scenario <- "screen1_monit0"
+))
+deaths_averted_per_treat_3$scenario <- "No monitoring"
 
-deaths_averted_per_int5 <- data.frame(rbind(
+# One-off screen monitoring every 10 years
+deaths_averted_per_treat_4 <- data.frame(rbind(
+  c(by_year = 2030, unlist(calculate_number_averted(out1$cum_hbv_deaths_2030, out4$cum_hbv_deaths_2030, summarise = FALSE)[1,-c(1:5)]/
+                             out4$interactions_2030$total_treated[,-c(1:3)])),
+  c(by_year = 2050, unlist(calculate_number_averted(out1$cum_hbv_deaths_2050, out4$cum_hbv_deaths_2050, summarise = FALSE)[1,-c(1:5)]/
+                             out4$interactions_2050$total_treated[,-c(1:3)])),
+  c(by_year = 2100, unlist(calculate_number_averted(out1$cum_hbv_deaths_2100, out4$cum_hbv_deaths_2100, summarise = FALSE)[1,-c(1:5)]/
+                             out4$interactions_2100$total_treated[,-c(1:3)]))
+))
+deaths_averted_per_treat_4$scenario <- "10 years"
+
+# One-off screen monitoring every 5 years
+deaths_averted_per_treat_5 <- data.frame(rbind(
   c(by_year = 2030, unlist(calculate_number_averted(out1$cum_hbv_deaths_2030, out5$cum_hbv_deaths_2030, summarise = FALSE)[1,-c(1:5)]/
                              out5$interactions_2030$total_treated[,-c(1:3)])),
   c(by_year = 2050, unlist(calculate_number_averted(out1$cum_hbv_deaths_2050, out5$cum_hbv_deaths_2050, summarise = FALSE)[1,-c(1:5)]/
@@ -375,25 +647,39 @@ deaths_averted_per_int5 <- data.frame(rbind(
   c(by_year = 2100, unlist(calculate_number_averted(out1$cum_hbv_deaths_2100, out5$cum_hbv_deaths_2100, summarise = FALSE)[1,-c(1:5)]/
                              out5$interactions_2100$total_treated[,-c(1:3)]))
 ))
-deaths_averted_per_int5$scenario <- "screen1_monit5"
+deaths_averted_per_treat_5$scenario <- "5 years"
 
-deaths_averted_per_int <- rbind(
-  gather(deaths_averted_per_int3, key = "sim", value = "value", -scenario, -by_year),
-  gather(deaths_averted_per_int5, key = "sim", value = "value", -scenario, -by_year))
+# One-off screen monitoring every year
+deaths_averted_per_treat_6 <- data.frame(rbind(
+  c(by_year = 2030, unlist(calculate_number_averted(out1$cum_hbv_deaths_2030, out6$cum_hbv_deaths_2030, summarise = FALSE)[1,-c(1:5)]/
+                             out6$interactions_2030$total_treated[,-c(1:3)])),
+  c(by_year = 2050, unlist(calculate_number_averted(out1$cum_hbv_deaths_2050, out6$cum_hbv_deaths_2050, summarise = FALSE)[1,-c(1:5)]/
+                             out6$interactions_2050$total_treated[,-c(1:3)])),
+  c(by_year = 2100, unlist(calculate_number_averted(out1$cum_hbv_deaths_2100, out6$cum_hbv_deaths_2100, summarise = FALSE)[1,-c(1:5)]/
+                             out6$interactions_2100$total_treated[,-c(1:3)]))
+))
+deaths_averted_per_treat_6$scenario <- "1 year"
 
-ggplot(data = deaths_averted_per_int, aes(as.factor(by_year), value)) +
-  geom_boxplot(aes(fill = scenario)) +
-  ylab("Cumulative HBV-related deaths averted per incremental treatment initiations")
+deaths_averted_per_treat <- rbind(
+  gather(deaths_averted_per_treat_3, key = "sim", value = "value", -scenario, -by_year),
+  gather(deaths_averted_per_treat_4, key = "sim", value = "value", -scenario, -by_year),
+  gather(deaths_averted_per_treat_5, key = "sim", value = "value", -scenario, -by_year),
+  gather(deaths_averted_per_treat_6, key = "sim", value = "value", -scenario, -by_year))
 
-# HBV deaths averted per incremental healthcare interactions - compared to status quo
-# Number of HBV deaths averted compared to status quo
-quantile(calculate_number_averted(out1$cum_hbv_deaths_2030, out3$cum_hbv_deaths_2030, summarise = FALSE)[1,-c(1:5)],
-         prob = c(0.025,0.5,0.975))
-quantile(calculate_number_averted(out1$cum_hbv_deaths_2030, out5$cum_hbv_deaths_2030, summarise = FALSE)[1,],
-         prob = c(0.025,0.5,0.975))
+deaths_averted_per_treat$scenario <- factor(deaths_averted_per_treat$scenario, levels =
+                                              c("No monitoring", "10 years", "5 years", "1 year"))
 
-# Number of HBV deaths averted per incremental assessment compared to status quo
-deaths_averted_per_int3_2 <- data.frame(rbind(
+ggplot(data = deaths_averted_per_treat, aes(scenario, value)) +
+  geom_boxplot() +
+  facet_wrap(~as.factor(by_year)) +
+  #scale_x_discrete(labels = c("No monitoring", "10 years", "5 years", "1 year")) +
+  ylab("Cumulative HBV-related deaths averted per incremental treatment initiations") +
+  ylim(0,1)
+
+# Per interaction
+
+# One-off screen without monitoring
+deaths_averted_per_int_3 <- data.frame(rbind(
   c(by_year = 2030, unlist(calculate_number_averted(out1$cum_hbv_deaths_2030, out3$cum_hbv_deaths_2030, summarise = FALSE)[1,-c(1:5)]/
                              out3$interactions_2030$total_interactions[,-c(1:3)])),
   c(by_year = 2050, unlist(calculate_number_averted(out1$cum_hbv_deaths_2050, out3$cum_hbv_deaths_2050, summarise = FALSE)[1,-c(1:5)]/
@@ -401,9 +687,21 @@ deaths_averted_per_int3_2 <- data.frame(rbind(
   c(by_year = 2100, unlist(calculate_number_averted(out1$cum_hbv_deaths_2100, out3$cum_hbv_deaths_2100, summarise = FALSE)[1,-c(1:5)]/
                              out3$interactions_2100$total_interactions[,-c(1:3)]))
 ))
-deaths_averted_per_int3_2$scenario <- "screen1_monit0"
+deaths_averted_per_int_3$scenario <- "No monitoring"
 
-deaths_averted_per_int5_2 <- data.frame(rbind(
+# One-off screen monitoring every 10 years
+deaths_averted_per_int_4 <- data.frame(rbind(
+  c(by_year = 2030, unlist(calculate_number_averted(out1$cum_hbv_deaths_2030, out4$cum_hbv_deaths_2030, summarise = FALSE)[1,-c(1:5)]/
+                             out4$interactions_2030$total_interactions[,-c(1:3)])),
+  c(by_year = 2050, unlist(calculate_number_averted(out1$cum_hbv_deaths_2050, out4$cum_hbv_deaths_2050, summarise = FALSE)[1,-c(1:5)]/
+                             out4$interactions_2050$total_interactions[,-c(1:3)])),
+  c(by_year = 2100, unlist(calculate_number_averted(out1$cum_hbv_deaths_2100, out4$cum_hbv_deaths_2100, summarise = FALSE)[1,-c(1:5)]/
+                             out4$interactions_2100$total_interactions[,-c(1:3)]))
+))
+deaths_averted_per_int_4$scenario <- "10 years"
+
+# One-off screen monitoring every 5 years
+deaths_averted_per_int_5 <- data.frame(rbind(
   c(by_year = 2030, unlist(calculate_number_averted(out1$cum_hbv_deaths_2030, out5$cum_hbv_deaths_2030, summarise = FALSE)[1,-c(1:5)]/
                              out5$interactions_2030$total_interactions[,-c(1:3)])),
   c(by_year = 2050, unlist(calculate_number_averted(out1$cum_hbv_deaths_2050, out5$cum_hbv_deaths_2050, summarise = FALSE)[1,-c(1:5)]/
@@ -411,20 +709,143 @@ deaths_averted_per_int5_2 <- data.frame(rbind(
   c(by_year = 2100, unlist(calculate_number_averted(out1$cum_hbv_deaths_2100, out5$cum_hbv_deaths_2100, summarise = FALSE)[1,-c(1:5)]/
                              out5$interactions_2100$total_interactions[,-c(1:3)]))
 ))
-deaths_averted_per_int5_2$scenario <- "screen1_monit5"
+deaths_averted_per_int_5$scenario <- "5 years"
 
-deaths_averted_per_int_2 <- rbind(
-  gather(deaths_averted_per_int3_2, key = "sim", value = "value", -scenario, -by_year),
-  gather(deaths_averted_per_int5_2, key = "sim", value = "value", -scenario, -by_year))
+# One-off screen monitoring every year
+deaths_averted_per_int_6 <- data.frame(rbind(
+  c(by_year = 2030, unlist(calculate_number_averted(out1$cum_hbv_deaths_2030, out6$cum_hbv_deaths_2030, summarise = FALSE)[1,-c(1:5)]/
+                             out6$interactions_2030$total_interactions[,-c(1:3)])),
+  c(by_year = 2050, unlist(calculate_number_averted(out1$cum_hbv_deaths_2050, out6$cum_hbv_deaths_2050, summarise = FALSE)[1,-c(1:5)]/
+                             out6$interactions_2050$total_interactions[,-c(1:3)])),
+  c(by_year = 2100, unlist(calculate_number_averted(out1$cum_hbv_deaths_2100, out6$cum_hbv_deaths_2100, summarise = FALSE)[1,-c(1:5)]/
+                             out6$interactions_2100$total_interactions[,-c(1:3)]))
+))
+deaths_averted_per_int_6$scenario <- "1 year"
 
-ggplot(data = deaths_averted_per_int_2, aes(as.factor(by_year), value)) +
-  geom_boxplot(aes(fill = scenario)) +
-  ylab("Cumulative HBV-related deaths averted per incremental healthcare interactions")
+deaths_averted_per_int <- rbind(
+  gather(deaths_averted_per_int_3, key = "sim", value = "value", -scenario, -by_year),
+  gather(deaths_averted_per_int_4, key = "sim", value = "value", -scenario, -by_year),
+  gather(deaths_averted_per_int_5, key = "sim", value = "value", -scenario, -by_year),
+  gather(deaths_averted_per_int_6, key = "sim", value = "value", -scenario, -by_year))
+
+deaths_averted_per_int$scenario <- factor(deaths_averted_per_int$scenario, levels =
+                                              c("No monitoring", "10 years", "5 years", "1 year"))
+
+ggplot(data = deaths_averted_per_int, aes(scenario, value)) +
+  geom_boxplot() +
+  facet_wrap(~as.factor(by_year)) +
+  #scale_x_discrete(labels = c("No monitoring", "10 years", "5 years", "1 year")) +
+  ylab("Cumulative HBV-related deaths averted per incremental healthcare interaction")
 
 # Need to think about what I would like to represent:
-# compared to monitoring, not monitoring averts more deaths per incremental clinical assessments and treatment initiations,
+# compared to monitoring, not monitoring averts more deaths per incremental clinical assessments and
+# treatment initiations,
 # and averts a similar number of deaths per incremental healthcare interaction
 # but Maud has said than screening people is relatively easy whereas the clinical assessment is difficult
+
+# Plot median deaths averted against median number of healthcare interactions
+# By 2030
+median_outcomes_sq_2030 <- data.frame(scenario = c("No monitoring", "10 years", "5 years", "1 year"),
+                              deaths_averted = c(median(unlist(calculate_number_averted(out1$cum_hbv_deaths_2030, out3$cum_hbv_deaths_2030,
+                                                                                        summarise = FALSE)[1,-c(1:5)])),
+                                                 median(unlist(calculate_number_averted(out1$cum_hbv_deaths_2030, out4$cum_hbv_deaths_2030,
+                                                                                        summarise = FALSE)[1,-c(1:5)])),
+                                                 median(unlist(calculate_number_averted(out1$cum_hbv_deaths_2030, out5$cum_hbv_deaths_2030,
+                                                                                        summarise = FALSE)[1,-c(1:5)])),
+                                                 median(unlist(calculate_number_averted(out1$cum_hbv_deaths_2030, out6$cum_hbv_deaths_2030,
+                                                                                        summarise = FALSE)[1,-c(1:5)]))),
+                              treatments = c(median(unlist(out3$interactions_2030$total_treated[,-c(1:3)])),
+                                             median(unlist(out4$interactions_2030$total_treated[,-c(1:3)])),
+                                             median(unlist(out5$interactions_2030$total_treated[,-c(1:3)])),
+                                             median(unlist(out6$interactions_2030$total_treated[,-c(1:3)]))),
+                              assessments = c(median(unlist(out3$interactions_2030$total_assessed[,-c(1:3)])),
+                                              median(unlist(out4$interactions_2030$total_assessed[,-c(1:3)])),
+                                              median(unlist(out5$interactions_2030$total_assessed[,-c(1:3)])),
+                                              median(unlist(out6$interactions_2030$total_assessed[,-c(1:3)]))),
+                              interactions = c(median(unlist(out3$interactions_2030$total_interactions[,-c(1:3)])),
+                                               median(unlist(out4$interactions_2030$total_interactions[,-c(1:3)])),
+                                               median(unlist(out5$interactions_2030$total_interactions[,-c(1:3)])),
+                                               median(unlist(out6$interactions_2030$total_interactions[,-c(1:3)]))))
+
+
+# By 2050
+median_outcomes_sq_2050 <- data.frame(
+  scenario = c("No monitoring", "10 years", "5 years", "1 year"),
+  deaths_averted = c(median(unlist(calculate_number_averted(out1$cum_hbv_deaths_2050, out3$cum_hbv_deaths_2050,
+                                                            summarise = FALSE)[1,-c(1:5)])),
+                     median(unlist(calculate_number_averted(out1$cum_hbv_deaths_2050, out4$cum_hbv_deaths_2050,
+                                                            summarise = FALSE)[1,-c(1:5)])),
+                     median(unlist(calculate_number_averted(out1$cum_hbv_deaths_2050, out5$cum_hbv_deaths_2050,
+                                                            summarise = FALSE)[1,-c(1:5)])),
+                     median(unlist(calculate_number_averted(out1$cum_hbv_deaths_2050, out6$cum_hbv_deaths_2050,
+                                                            summarise = FALSE)[1,-c(1:5)]))),
+  treatments = c(median(unlist(out3$interactions_2050$total_treated[,-c(1:3)])),
+                 median(unlist(out4$interactions_2050$total_treated[,-c(1:3)])),
+                 median(unlist(out5$interactions_2050$total_treated[,-c(1:3)])),
+                 median(unlist(out6$interactions_2050$total_treated[,-c(1:3)]))),
+  assessments = c(median(unlist(out3$interactions_2050$total_assessed[,-c(1:3)])),
+                  median(unlist(out4$interactions_2050$total_assessed[,-c(1:3)])),
+                  median(unlist(out5$interactions_2050$total_assessed[,-c(1:3)])),
+                  median(unlist(out6$interactions_2050$total_assessed[,-c(1:3)]))),
+  interactions = c(median(unlist(out3$interactions_2050$total_interactions[,-c(1:3)])),
+                   median(unlist(out4$interactions_2050$total_interactions[,-c(1:3)])),
+                   median(unlist(out5$interactions_2050$total_interactions[,-c(1:3)])),
+                   median(unlist(out6$interactions_2050$total_interactions[,-c(1:3)]))))
+
+# Plots
+
+# Healthcare interactions
+ggplot(median_outcomes_sq_2030) +
+  geom_point(aes(x = deaths_averted/1000, y = interactions/1000, colour = scenario), size = 5) +
+  xlab("Median HBV-related deaths averted/1000") +
+  ylab("Median incremental healthcare interactions/1000") +
+  labs(title = "By 2030, compared to status quo (no treatment)") +
+  xlim(0,2) +
+  ylim(0,1000)
+
+ggplot(median_outcomes_sq_2050) +
+  geom_point(aes(x = deaths_averted/1000, y = interactions/1000, colour = scenario), size = 5) +
+  xlab("Median HBV-related deaths averted/1000") +
+  ylab("Median incremental healthcare interactions/1000") +
+  labs(title = "By 2050, compared to status quo (no treatment)") +
+  xlim(0,4) +
+  ylim(0,1400)
+
+# Treatment initiations
+ggplot(median_outcomes_sq_2030) +
+  geom_point(aes(x = deaths_averted/1000, y = treatments/1000, colour = scenario), size = 5) +
+  xlab("Median HBV-related deaths averted/1000") +
+  ylab("Median incremental treatment initiations/1000") +
+  labs(title = "By 2030, compared to status quo (no treatment)") +
+  xlim(0,2) +
+  ylim(0,10)
+
+ggplot(median_outcomes_sq_2050) +
+  geom_point(aes(x = deaths_averted/1000, y = treatments/1000, colour = scenario), size = 5) +
+  xlab("Median HBV-related deaths averted/1000") +
+  ylab("Median incremental treatment initiations/1000") +
+  labs(title = "By 2050, compared to status quo (no treatment)") +
+  xlim(0,4) +
+  ylim(0,10)
+
+# Clinical assessments
+ggplot(median_outcomes_sq_2030) +
+  geom_point(aes(x = deaths_averted/1000, y = assessments/1000, colour = scenario), size = 5) +
+  xlab("Median HBV-related deaths averted/1000") +
+  ylab("Median incremental clinical assessments/1000") +
+  labs(title = "By 2030, compared to status quo (no treatment)") +
+  xlim(0,2) +
+  ylim(0,400)
+
+ggplot(median_outcomes_sq_2050) +
+  geom_point(aes(x = deaths_averted/1000, y = assessments/1000, colour = scenario), size = 5) +
+  xlab("Median HBV-related deaths averted/1000") +
+  ylab("Median incremental clinical assessments/1000") +
+  labs(title = "By 2050, compared to status quo (no treatment)") +
+  xlim(0,4) +
+  ylim(0,900)
+
+### STOPPED HERE, need to add uncertainty
 
 # Life years gained per incremental healthcare interactions - compared to status quo
 # Number of HBV deaths averted compared to status quo
@@ -460,18 +881,3 @@ ly_gained_per_int_2 <- rbind(
 ggplot(data = ly_gained_per_int_2, aes(as.factor(by_year), value)) +
   geom_boxplot(aes(fill = scenario)) +
   ylab("Life-years gained per incremental healthcare interactions")
-
-# Another way of showing this is deaths averted on the y axis and median number of healthcare interactions
-
-# Median values for no monitoring, monitoring every 5 years
-test <- data.frame(deaths_averted_by_2050 = c(2597.0421888, 3277.3994132),
-                   incremental_interactions_by_2050 = c(576298, 644428),
-                   incremental_assessments_by_2050 = c(52498, 216173))
-
-plot(x = test$incremental_interactions_by_2050, y = test$deaths_averted_by_2050, ylim = c(0,3300), xlim = c(50000,650000))
-points(x = test$incremental_assessments_by_2050, y = test$deaths_averted_by_2050, ylim = c(0,3300), xlim = c(50000,650000), col = "red")
-
-###
-
-# Notes on cohort:
-# The cohort we are following are those screened individuals who immediately engage with care
