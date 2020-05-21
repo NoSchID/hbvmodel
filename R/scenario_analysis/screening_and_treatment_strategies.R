@@ -6,8 +6,8 @@ source(here("R/imperial_model_interventions.R"))
 source(here("R/scenario_analysis/calculate_outcomes.R"))
 
 # Load the calibrated parmsets
-load(here("calibration", "input", "mock_parmsets_210220.Rdata"))  # params_mat_mock
-load(here("calibration", "input", "accepted_parmsets_119_060120.Rdata")) # params_mat_targets5
+#load(here("calibration", "input", "mock_parmsets_210220.Rdata"))  # params_mat_mock
+#load(here("calibration", "input", "accepted_parmsets_119_060120.Rdata")) # params_mat_targets5
 #params_mat <- params_mat_mock  # change to what is read in
 
 # ASSUMPTION A SIMULATIONS
@@ -22,7 +22,7 @@ scenario_a_parms$link_to_care_prob <- 0.8
 scenario_a_parms$treatment_initiation_prob <- 1
 scenario_a_parms$monitoring_prob <- 0.8
 scenario_a_parms$apply_bdvacc <- 0
-scenario_a_parms$apply_treat_it <- 0
+scenario_a_parms$apply_treat_it <- 1
 #save(scenario_a_parms, file= here("analysis_input", "scenario_a_parms.Rdata"))
 
 # Simulate ----
@@ -156,6 +156,7 @@ label <- "screen_2020_monit_10"
 #out <- readRDS(paste0(out_path, "a_sim4_screen_2020_monit_10_030320.rds"))
 #out <- readRDS(paste0(out_path, "a_sim5_screen_2020_monit_5_020320.rds"))
 #out <- readRDS(paste0(out_path, "a_sim6_screen_2020_monit_1_020320.rds"))
+#out_lsoda <- readRDS(paste0(out_path, "sim6_lsoda.rds"))
 
 out <- out[[1]]
 
@@ -200,7 +201,7 @@ out4 <- list(cohort_age_at_death = cohort_age_at_death,
              interactions_2050 = interactions_2050,  # NA for no treatment
              interactions_2100 = interactions_2100)  # NA for no treatment
 
-out4_ts <- summarise_time_series(out, scenario_label = label, summarise_percentiles = FALSE)
+out4 <- summarise_time_series(out, scenario_label = label, summarise_percentiles = FALSE)
 
 rm(out)
 gc()
@@ -220,6 +221,20 @@ out0to6 <- list(out0_cohort = out0_cohort,
 
 #saveRDS(out0to6, here("a_extracted_output_0to6_050320.rds"))
 
+# Compare with lsoda
+range(out6$cohort_age_at_death[-1]-out6_lsoda$cohort_age_at_death[-1])
+range(out6$cohort_cum_hbv_deaths[-1]-out6_lsoda$cohort_cum_hbv_deaths[-1])
+range(out6$cohort_ly[-1]-out6_lsoda$cohort_ly[-1])
+range(out6$cohort_size[-1]/out6_lsoda$cohort_size[-1])
+range(out6$cum_hbv_deaths_2030[-c(1:3)]-out6_lsoda$cum_hbv_deaths_2030[-c(1:3)])
+range(out6$cum_hbv_deaths_2050[-c(1:3)]-out6_lsoda$cum_hbv_deaths_2050[-c(1:3)])
+range(out6$cum_hbv_deaths_2100[-c(1:3)]-out6_lsoda$cum_hbv_deaths_2100[-c(1:3)])
+range(out6$ly_2030[-c(1:3)]-out6_lsoda$ly_2030[-c(1:3)])
+range(out6$ly_2050[-c(1:3)]-out6_lsoda$ly_2050[-c(1:3)])
+range(out6$ly_2100[-c(1:3)]-out6_lsoda$ly_2100[-c(1:3)])
+range(out6$interactions_2030$total_interactions[-c(1:3)]-out6_lsoda$interactions_2030$total_interactions[-c(1:3)])
+range(out6$interactions_2050$total_interactions[-c(1:3)]-out6_lsoda$interactions_2050$total_interactions[-c(1:3)])
+range(out6$interactions_2100$total_interactions[-c(1:3)]-out6_lsoda$interactions_2100$total_interactions[-c(1:3)])
 
 ### Cohort outcomes ----
 
