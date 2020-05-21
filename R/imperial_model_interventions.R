@@ -1243,26 +1243,26 @@ run_model <- function(..., sim_duration = runtime,
   if (1950 %in% timestep_labels & scenario %in% c("vacc_screen", "vacc_bdvacc_screen")) {
 
     out <- as.data.frame(ode.1D(y = init_pop_vector, times = timestep_vector, func = imperial_model,
-                                parms = parameters, nspec = 1, method = "ode45",
+                                parms = parameters, nspec = 1, method = "lsoda",
                                 events = list(func = event_func,
                                               time = c(timestep_1950, timesteps_for_screening))))
 
   } else if (1950 %in% timestep_labels & !(scenario %in% c("vacc_screen", "vacc_bdvacc_screen"))) {
 
     out <- as.data.frame(ode.1D(y = init_pop_vector, times = timestep_vector, func = imperial_model,
-                                parms = parameters, nspec = 1, method = "ode45",
+                                parms = parameters, nspec = 1, method = "lsoda",
                                 events = list(func = reset_pop_1950, time = timestep_1950)))
 
   } else if (!(1950 %in% timestep_labels) & scenario %in% c("vacc_screen", "vacc_bdvacc_screen")) {
 
     out <- as.data.frame(ode.1D(y = init_pop_vector, times = timestep_vector, func = imperial_model,
-                                parms = parameters, nspec = 1, method = "ode45",
+                                parms = parameters, nspec = 1, method = "lsoda",
                                 events = list(func = screen_pop, time = timesteps_for_screening)))
 
   } else if (!(1950 %in% timestep_labels) & !(scenario %in% c("vacc_screen", "vacc_bdvacc_screen"))) {
 
     out <- as.data.frame(ode.1D(y = init_pop_vector, times = timestep_vector, func = imperial_model,
-                                parms = parameters, nspec = 1, method = "ode45"))
+                                parms = parameters, nspec = 1, method = "lsoda"))
 
   }
 
