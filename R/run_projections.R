@@ -7,9 +7,10 @@ source(here("R/imperial_model_interventions.R"))
 # Simulate intervention model ----
 
 #load(here("calibration", "input", "accepted_parmsets_119_060120.Rdata")) # params_mat_targets5
-load(here("calibration", "input", "mock_parmsets_210220.Rdata"))  # params_mat_mock
+load(here("calibration", "input", "accepted_parmsets_123_180520.Rdata")) # params_mat_targets5
+#load(here("calibration", "input", "mock_parmsets_210220.Rdata"))  # params_mat_mock
 
-sim <- apply(params_mat_mock,1,
+sim <- apply(params_mat_accepted[1,],1,
              function(x)
                run_model(sim_duration = runtime, default_parameter_list = parameter_list,
                          parms_to_change =
@@ -48,12 +49,42 @@ sim <- apply(params_mat_mock,1,
                                 screening_years = c(2020,2050),
                                 apply_treat_it = 0,
                                 monitoring_rate = 0),
+                         drop_timesteps_before = 1960,
                          scenario = "vacc_screen"))
 
 out <- code_model_output(sim[[1]])
 outpath <- out
 
 out <- lapply(sim, code_model_output)
+
+sim2 <- lapply(sim, function(x) {x$out <- x$out[-c(1:220),] ; x})
+out2 <- code_model_output(sim2[[1]])
+
+out$incident_chronic_infections[out$time %in% c(1960:1965),]
+out2$incident_chronic_infections[out2$time %in% c(1960:1965),]
+
+load(here("output", "sims_output_scenario_vacc_130120.RData"))
+out <- out_vacc
+rm(out_vacc)
+gc()
+
+out <- lapply(out, function(x) x[!(names(x) %in% c("births_group5", "deaths_total_group5"))])
+
+format(object.size(out), units = "Gb")
+# First turn time into dataframe object
+out_sub <- lapply(out, function(x) {x$time <- as.data.frame(x$time) ; x})
+out_sub <- lapply(out_sub, function(x) x[-c(length(x))])
+
+tic()
+for (i in 1:length(out_sub)) {
+  out_sub[[i]] <- lapply(out_sub[[i]], function(x) x[-c(1:221),])
+}
+toc()
+
+out_sub <- lapply(out_sub, function(x) lapply(x, function(y) y[-c(1:221),]))
+out_sub <- lapply(out_sub, function(x) {x$time <- as.numeric(x$time) ; x})
+final_list <- Map(c, out_sub, inparms)
+format(object.size(final_list), units = "Mb")
 
 
 # Try to save population output in 1955

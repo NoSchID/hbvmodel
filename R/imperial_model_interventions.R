@@ -1273,6 +1273,8 @@ run_model <- function(..., sim_duration = runtime,
     out <- out[out$time>=drop_timesteps_before,]
   }
 
+  gc()
+
   return(list(out=out, input_parameters = input_parms))
 
 
