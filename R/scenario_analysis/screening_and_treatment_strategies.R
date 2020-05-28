@@ -201,7 +201,7 @@ out4 <- list(cohort_age_at_death = cohort_age_at_death,
              interactions_2050 = interactions_2050,  # NA for no treatment
              interactions_2100 = interactions_2100)  # NA for no treatment
 
-out4 <- summarise_time_series(out, scenario_label = label, summarise_percentiles = FALSE)
+out4_ts <- summarise_time_series(out, scenario_label = label, summarise_percentiles = FALSE)
 
 rm(out)
 gc()

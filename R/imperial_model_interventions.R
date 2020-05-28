@@ -22,6 +22,8 @@ require(deSolve)  # ODE solver
 #library(profvis)  # for profiling
 #library(efficient)  # for profiling
 
+# To run scenarios on cluster
+source(here("R/scenario_analysis/calculate_outcomes.R"))
 
 ### Define simulation parameters ----
 ## Country
@@ -2574,6 +2576,109 @@ run_one_screening_scenario <- function(..., default_parameter_list, calibrated_p
 
   return(outlist)
 }
+
+# Scenario run is a screening and treatment streategy - year of screening can be specified
+run_one_screening_scenario_on_cluster <- function(..., default_parameter_list, calibrated_parameter_sets,
+                                       parms_to_change = list(...), years_of_test, monitoring_rate,
+                                       drop_timesteps_before = NULL,
+                                       label) {
+
+  sim <- apply(calibrated_parameter_sets, 1,
+               function(x) run_model(sim_duration = runtime,
+                                     default_parameter_list = default_parameter_list,
+                                     parms_to_change =
+                                       list(b1 = as.list(x)$b1,
+                                            b2 = as.list(x)$b2,
+                                            b3 = as.list(x)$b3,
+                                            mtct_prob_s = as.list(x)$mtct_prob_s,
+                                            mtct_prob_e = as.list(x)$mtct_prob_e,
+                                            alpha = as.list(x)$alpha,
+                                            p_chronic_in_mtct = as.list(x)$p_chronic_in_mtct,
+                                            p_chronic_function_r = as.list(x)$p_chronic_function_r,
+                                            p_chronic_function_s = as.list(x)$p_chronic_function_s,
+                                            pr_it_ir = as.list(x)$pr_it_ir,
+                                            pr_ir_ic = as.list(x)$pr_ir_ic,
+                                            eag_prog_function_rate = as.list(x)$eag_prog_function_rate,
+                                            pr_ir_enchb = as.list(x)$pr_ir_enchb,
+                                            pr_ir_cc_female = as.list(x)$pr_ir_cc_female,
+                                            pr_ir_cc_age_threshold = as.list(x)$pr_ir_cc_age_threshold,
+                                            pr_ic_enchb = as.list(x)$pr_ic_enchb,
+                                            sag_loss_slope = as.list(x)$sag_loss_slope,
+                                            pr_enchb_cc_female = as.list(x)$pr_enchb_cc_female,
+                                            cirrhosis_male_cofactor = as.list(x)$cirrhosis_male_cofactor,
+                                            pr_cc_dcc = as.list(x)$pr_cc_dcc,
+                                            cancer_prog_coefficient_female = as.list(x)$cancer_prog_coefficient_female,
+                                            cancer_age_threshold = as.list(x)$cancer_age_threshold,
+                                            cancer_male_cofactor = as.list(x)$cancer_male_cofactor,
+                                            hccr_it = as.list(x)$hccr_it,
+                                            hccr_ir = as.list(x)$hccr_ir,
+                                            hccr_enchb = as.list(x)$hccr_enchb,
+                                            hccr_cc = as.list(x)$hccr_cc,
+                                            hccr_dcc = as.list(x)$hccr_dcc,
+                                            mu_cc = as.list(x)$mu_cc,
+                                            mu_dcc = as.list(x)$mu_dcc,
+                                            mu_hcc = as.list(x)$mu_hcc,
+                                            vacc_eff = as.list(x)$vacc_eff,
+                                            screening_years = years_of_test,
+                                            monitoring_rate = monitoring_rate),
+                                     drop_timesteps_before = drop_timesteps_before,
+                                     scenario = "vacc_screen"))
+
+  out <- lapply(sim, code_model_output)
+
+  # Exract outcomes for analysis
+
+  # Cohort outcomes
+  cohort_age_at_death <- summarise_cohort_average_age_at_death(out,scenario_label = label)
+  cohort_cum_hbv_deaths <- extract_cohort_cumulative_hbv_deaths(out, label)
+  cohort_ly <- extract_cohort_life_years_lived(out,label)
+  cohort_size <- extract_cohort_size(out, label)
+
+  # Population outcomes
+  cum_hbv_deaths_2030 <- extract_cumulative_hbv_deaths(out, scenario_label = label,
+                                                       from_year = 2020, by_year = 2030)
+  cum_hbv_deaths_2050 <- extract_cumulative_hbv_deaths(out, scenario_label = label,
+                                                       from_year = 2020, by_year = 2050)
+  cum_hbv_deaths_2100 <- extract_cumulative_hbv_deaths(out, scenario_label = label,
+                                                       from_year = 2020, by_year = 2100)
+  ly_2030 <- extract_life_years_lived(out, scenario_label = label,
+                                      from_year = 2020, by_year = 2030)
+  ly_2050 <- extract_life_years_lived(out, scenario_label = label,
+                                      from_year = 2020, by_year = 2050)
+  ly_2100 <- extract_life_years_lived(out, scenario_label = label,
+                                      from_year = 2020, by_year = 2100)
+  interactions_2030 <- summarise_healthcare_interactions(out, from_year = 2020,
+                                                         by_year = 2030, scenario_label = label)
+  interactions_2050 <- summarise_healthcare_interactions(out, from_year = 2020,
+                                                         by_year = 2050, scenario_label = label)
+  interactions_2100 <- summarise_healthcare_interactions(out, from_year = 2020,
+                                                         by_year = 2100, scenario_label = label)
+
+  # Timeseries
+  timeseries <- summarise_time_series(out, scenario_label = label, summarise_percentiles = FALSE)
+
+  # Change object names
+  extracted_outcomes <- list(cohort_age_at_death = cohort_age_at_death,
+               cohort_cum_hbv_deaths = cohort_cum_hbv_deaths,
+               cohort_ly = cohort_ly,
+               cohort_size = cohort_size,
+               cum_hbv_deaths_2030 = cum_hbv_deaths_2030,
+               cum_hbv_deaths_2050 = cum_hbv_deaths_2050,
+               cum_hbv_deaths_2100 = cum_hbv_deaths_2100,
+               ly_2030 = ly_2030,
+               ly_2050 = ly_2050,
+               ly_2100 = ly_2100,
+               interactions_2030 = interactions_2030,  # NA for no treatment
+               interactions_2050 = interactions_2050,  # NA for no treatment
+               interactions_2100 = interactions_2100,
+               timeseries = timeseries)  # NA for no treatment
+
+  outlist <- list("screen" = extracted_outcomes)
+  names(outlist) <- label
+
+  return(outlist)
+}
+
 
 # Scenario can be specified
 run_one_scenario <- function(..., default_parameter_list, calibrated_parameter_sets,
