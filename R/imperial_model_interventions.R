@@ -2645,9 +2645,9 @@ run_one_screening_scenario_on_cluster <- function(..., default_parameter_list, c
   years_to_extract <- seq(2025,2100, by = 5)
 
   cum_hbv_deaths <- list()
-  for (i in years_to_extract) {
-    cum_hbv_deaths[[i-2024]] <- extract_cumulative_hbv_deaths(out, scenario_label = label,
-                                                      from_year = 2020, by_year = i)
+  for (j in years_to_extract) {
+    cum_hbv_deaths[[j-2024]] <- extract_cumulative_hbv_deaths(out, scenario_label = label,
+                                                      from_year = 2020, by_year = j)
     }
   cum_hbv_deaths[sapply(cum_hbv_deaths, is.null)] <- NULL
 
@@ -2659,9 +2659,9 @@ run_one_screening_scenario_on_cluster <- function(..., default_parameter_list, c
   #                                                     from_year = 2020, by_year = 2100)
 
   ly <- list()
-  for (i in years_to_extract) {
-    ly[[i-2024]] <- extract_life_years_lived(out, scenario_label = label,
-                                             from_year = 2020, by_year = i)
+  for (j in years_to_extract) {
+    ly[[j-2024]] <- extract_life_years_lived(out, scenario_label = label,
+                                             from_year = 2020, by_year = j)
   }
   ly[sapply(ly, is.null)] <- NULL
 
@@ -2673,9 +2673,9 @@ run_one_screening_scenario_on_cluster <- function(..., default_parameter_list, c
   #                                    from_year = 2020, by_year = 2100)
 
   interactions <- list()
-  for (i in years_to_extract) {
-    interactions[[i-2024]] <- summarise_healthcare_interactions(out, scenario_label = label,
-                                             from_year = 2020, by_year = i)
+  for (j in years_to_extract) {
+    interactions[[j-2024]] <- summarise_healthcare_interactions(out, scenario_label = label,
+                                             from_year = 2020, by_year = j)
   }
   interactions[sapply(interactions, is.null)] <- NULL
 
@@ -2713,7 +2713,6 @@ run_one_screening_scenario_on_cluster <- function(..., default_parameter_list, c
 
   return(outlist)
 }
-
 
 # Scenario can be specified
 run_one_scenario <- function(..., default_parameter_list, calibrated_parameter_sets,
