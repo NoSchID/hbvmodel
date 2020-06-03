@@ -2578,12 +2578,12 @@ run_one_screening_scenario <- function(..., default_parameter_list, calibrated_p
 }
 
 # Scenario run is a screening and treatment streategy - year of screening can be specified
-run_one_screening_scenario_parallel <- function(..., default_parameter_list, calibrated_parameter_sets,
+run_one_screening_scenario_on_cluster <- function(..., default_parameter_list, calibrated_parameter_sets,
                                        parms_to_change = list(...), years_of_test, monitoring_rate,
                                        drop_timesteps_before = NULL,
                                        label) {
 
-  sim <- parApply(cl = cl, calibrated_parameter_sets, 1,
+  sim <- parApply(cl = NULL, calibrated_parameter_sets, 1,
                function(x) run_model(sim_duration = runtime,
                                      default_parameter_list = default_parameter_list,
                                      parms_to_change =
