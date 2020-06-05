@@ -1212,12 +1212,18 @@ library(here)
 ### Run with LHS calibration best parameters----
 # Run simulations with the best-fit parameter sets
 
-load(here("calibration", "input", "accepted_parmsets_119_060120.Rdata")) # params_mat_targets5
+# From first calibration:
+#load(here("calibration", "input", "accepted_parmsets_119_060120.Rdata")) # params_mat_targets5
 #load(here("calibration", "input", "target_threshold_parms_328_060120.Rdata")) # params_mat_targets5_2
-
 # params_mat_targets5: chosen so that 100% of accepted sets fall within targets
 # params_mat_targets5_2: chosen so that 99% of accepted sets fall within targets
 
+# From recalibration
+load(here("calibration", "input", "accepted_parmsets_123_180520.Rdata")) # params_mat_accepted
+params_mat_targets5 <- params_mat_accepted  # rename so I don't have to change code
+
+quantile(params_mat_targets5$pr_ic_enchb, prob = c(0.025,0.5,0.975))
+quantile(params_mat$pr_ic_enchb, prob = c(0.025,0.5,0.975))
 
 ### Visualise posteriors for different cutoffs
 load(here("calibration", "input", "lhs_samples_1000000.Rdata"))
@@ -1320,7 +1326,7 @@ ggplot(comp_prior_post2[comp_prior_post2$parm == "alpha",]) +
 # In mixed male cohort: 0.0064
 
 # Not in parallel
-out_mat <- apply(params_mat_targets5[1,], 1,
+out_mat <- apply(params_mat_targets5, 1,
                     function(x)
                       fit_model_full_output(default_parameter_list = parameter_list,
                                             data_to_fit = calibration_datasets_list,
@@ -1357,13 +1363,13 @@ out_mat <- apply(params_mat_targets5[1,], 1,
                                                    mu_dcc = as.list(x)$mu_dcc,
                                                    mu_hcc = as.list(x)$mu_hcc,
                                                    vacc_eff = as.list(x)$vacc_eff)))
+save(out_mat, file = here("calibration", "output", "model_fit_output_123_180520.Rdata"))
+out_mat_copy <- out_mat
 
-new_vacc_meth <- out_mat
-
-output1 <- new_vacc_meth2
-output2 <- new_vacc_meth
-
-new_vacc_meth <- output2
+#new_vacc_meth <- out_mat
+#output1 <- new_vacc_meth2
+#output2 <- new_vacc_meth
+#new_vacc_meth <- output2
 
 # CHECK VACCINE COVERAGE IN MODEL
 # For vaccine coverage, have to substract earlier recovery % (ca 4 %)
@@ -1579,7 +1585,7 @@ out_mat <- out_mat_median
 
 library(ggplot2)
 library(gridExtra)
-pdf(file = here("calibration", "output", "median_95ci_fit_targets5_119_new_vaccine_method2_100220.pdf"), paper="a4r")
+pdf(file = here("calibration", "output", "median_95ci_fit_123_180520.pdf"), paper="a4r")
 plot_list = list()
 for (i in 1:length(out_mat)) {
 
@@ -2508,6 +2514,8 @@ validation_out_mat <- apply(params_mat_targets5,1,
                                                                   mu_hcc = as.list(x)$mu_hcc,
                                                                   vacc_eff = as.list(x)$vacc_eff
                                                              )))
+#save(validation_out_mat, file = here("calibration", "output", "validation_output_123_180520.Rdata"))
+
 
 # HCC mortality rate in 2018
 quantile(sapply(validation_out_mat, "[[", "total_hcc_deaths_2018_f")/

@@ -7,7 +7,7 @@ source(here("R/scenario_analysis/calculate_outcomes.R"))
 
 # Load the calibrated parmsets
 #load(here("calibration", "input", "mock_parmsets_210220.Rdata"))  # params_mat_mock
-#load(here("calibration", "input", "accepted_parmsets_119_060120.Rdata")) # params_mat_targets5
+#load(here("calibration", "input", "accepted_parmsets_123_180520.Rdata")) # params_mat_targets5
 #params_mat <- params_mat_mock  # change to what is read in
 
 # ASSUMPTION A SIMULATIONS
@@ -22,7 +22,7 @@ scenario_a_parms$link_to_care_prob <- 0.8
 scenario_a_parms$treatment_initiation_prob <- 1
 scenario_a_parms$monitoring_prob <- 0.8
 scenario_a_parms$apply_bdvacc <- 0
-scenario_a_parms$apply_treat_it <- 1
+scenario_a_parms$apply_treat_it <- 0
 #save(scenario_a_parms, file= here("analysis_input", "scenario_a_parms.Rdata"))
 
 # Simulate ----
@@ -146,7 +146,7 @@ out4 <- out$out4
 out5 <- out$out5
 out6 <- out$out6
 
-out_path <- "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/screen_and_treat_strategies/Scenario A/"
+out_path <- "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/screen_and_treat_strategies/Scenario A with old parmsets and no IT treatment/"
 
 label <- "screen_2020_monit_10"
 
@@ -185,6 +185,7 @@ interactions_2050 <- summarise_healthcare_interactions(out, from_year = 2020,
                                                             by_year = 2050, scenario_label = label)
 interactions_2100 <- summarise_healthcare_interactions(out, from_year = 2020,
                                                             by_year = 2100, scenario_label = label)
+
 
 # Change object names
 out4 <- list(cohort_age_at_death = cohort_age_at_death,
