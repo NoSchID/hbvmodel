@@ -2718,7 +2718,7 @@ run_one_screening_scenario_on_cluster <- function(..., default_parameter_list, c
 run_one_scenario <- function(..., default_parameter_list, calibrated_parameter_sets,
                                              parms_to_change = list(...),
                              drop_timesteps_before = NULL,
-                             scenario) {
+                             scenario, label = "label") {
 
   # Status quo scenario: no screening
   sim <- apply(calibrated_parameter_sets, 1,
