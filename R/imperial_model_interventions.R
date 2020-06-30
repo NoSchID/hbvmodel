@@ -94,6 +94,12 @@ vaccine_coverage_list <- as.data.frame(list(times = vaccine_coverage$year,
                                             coverage = vaccine_coverage$coverage))
 timevary_vaccine_coverage <- approxfun(vaccine_coverage_list, method = "linear", rule = 2)
 
+### BD vaccine coverage assumptions ----
+# (Optional) linear scale up from 0 in 2020 to 90% in 2030
+bd_coverage_list <- as.data.frame(list(times = c(2020.0,2030.0),
+                                  coverage = c(0,0.9)))
+timevary_bd_coverage <- approxfun(bd_coverage_list, method = "linear", rule = 2)
+
 ### Infection data preparation ----
 gambia_prevdata <- read.csv(here("testdata", "edmunds_gambia_prev.csv"), stringsAsFactors = FALSE)
 
@@ -207,7 +213,9 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
     # Birth dose vaccination: set date for introduction
     # Vaccination coverage is 0 until the specified starttime and only if vaccine switch is on
     # Need to adapt vaccine coverage to vary over time
-    if (apply_bdvacc == 1 & timestep >= (bdvacc_introtime-sim_starttime)) {
+    if (apply_bdvacc == 1 & apply_bdvacc_linear_scale == 1 & timestep >= (bdvacc_introtime-sim_starttime)) {
+      bdvacc_cov = timevary_bd_coverage(timestep + sim_starttime)
+    } else if (apply_bdvacc == 1 & apply_bdvacc_linear_scale_up == 0 & timestep >= (bdvacc_introtime-sim_starttime)) {
       bdvacc_cov = bdvacc_cov
     } else {
       bdvacc_cov = 0
@@ -2982,7 +2990,8 @@ parameter_list <- list(
   vacc_introtime = 1990,                     # year of vaccine introduction
   # BIRTH DOSE VACCINATION PARAMETERS
   bdvacc_introtime = 2020,                   # year of birth dose vaccine introduction
-  bdvacc_cov = 0.05,                            # birth dose vaccine coverage
+  apply_bdvacc_linear_scale_up = 0,          # switch for whether to use a linear scale up of BD between 2020 and 2030 (if 0, using bdvacc_cov parameter instead)
+  bdvacc_cov = 0.05,                         # birth dose vaccine coverage
   mtct_prob_ebd = 0.32,                      # MTCT risk from eAg-positive mother with birth dose (95% CI from Keane = 0.1-0.58)
   mtct_prob_sbd = 0,                         # MTCT risk from eAg-negative mother with birth dose (Keane)
   mtct_prob_treatbd = 0,                     # MTCT risk from treated carrier mother with birth dose (assumption, not peripartum therapy)
