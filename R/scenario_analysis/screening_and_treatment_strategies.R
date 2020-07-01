@@ -4,7 +4,7 @@ require(here)  # for setting working directory
 require(ggplot2)
 require(tidyr)
 require(dplyr)
-#source(here("R/imperial_model_interventions.R"))
+source(here("R/imperial_model_interventions.R"))
 source(here("R/scenario_analysis/calculate_outcomes.R"))
 
 # Load the calibrated parmsets
@@ -26,6 +26,22 @@ scenario_a_parms$monitoring_prob <- 0.8
 scenario_a_parms$apply_bdvacc <- 0
 scenario_a_parms$apply_treat_it <- 0
 #save(scenario_a_parms, file= here("analysis_input", "scenario_a_parms.Rdata"))
+
+# ASSUMPTION B SIMULATIONS (Optimal with PMTCT)
+
+scenario_b_parms <- parameter_list
+scenario_b_parms$screening_coverage <- 0.9
+scenario_b_parms$min_age_to_screen <- 30
+scenario_b_parms$max_age_to_screen <- 70
+scenario_b_parms$prop_to_vaccinate <- 0
+scenario_b_parms$link_to_care_prob <- 0.8
+scenario_b_parms$treatment_initiation_prob <- 1
+scenario_b_parms$monitoring_prob <- 0.8
+scenario_b_parms$apply_treat_it <- 0
+scenario_b_parms$apply_bdvacc <- 1
+scenario_b_parms$bdvacc_introtime <- 2020
+scenario_b_parms$apply_bdvacc_linear_scale_up <- 1
+#save(scenario_b_parms, file= here("analysis_input", "scenario_b_parms.Rdata"))
 
 # Simulate ----
 
