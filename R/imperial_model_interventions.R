@@ -2589,7 +2589,7 @@ run_one_screening_scenario <- function(..., default_parameter_list, calibrated_p
 run_one_screening_scenario_on_cluster <- function(..., default_parameter_list, calibrated_parameter_sets,
                                        parms_to_change = list(...), years_of_test, monitoring_rate,
                                        drop_timesteps_before = NULL,
-                                       label) {
+                                       label, scenario = "vacc_screen") {
 
   sim <- parApply(cl = NULL, calibrated_parameter_sets, 1,
                function(x) run_model(sim_duration = runtime,
@@ -2630,7 +2630,7 @@ run_one_screening_scenario_on_cluster <- function(..., default_parameter_list, c
                                             screening_years = years_of_test,
                                             monitoring_rate = monitoring_rate),
                                      drop_timesteps_before = drop_timesteps_before,
-                                     scenario = "vacc_screen"))
+                                     scenario = scenario))  # vacc_screen by default
 
   out <- lapply(sim, code_model_output)
 
