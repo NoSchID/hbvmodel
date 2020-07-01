@@ -213,7 +213,7 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
     # Birth dose vaccination: set date for introduction
     # Vaccination coverage is 0 until the specified starttime and only if vaccine switch is on
     # Need to adapt vaccine coverage to vary over time
-    if (apply_bdvacc == 1 & apply_bdvacc_linear_scale == 1 & timestep >= (bdvacc_introtime-sim_starttime)) {
+    if (apply_bdvacc == 1 & apply_bdvacc_linear_scale_up == 1 & timestep >= (bdvacc_introtime-sim_starttime)) {
       bdvacc_cov = timevary_bd_coverage(timestep + sim_starttime)
     } else if (apply_bdvacc == 1 & apply_bdvacc_linear_scale_up == 0 & timestep >= (bdvacc_introtime-sim_starttime)) {
       bdvacc_cov = bdvacc_cov
@@ -322,7 +322,7 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
     # Mother-to-child transmission and births
     dcum_infected_births <- sum(fertility_rate *
                                   (rowSums((1-bdvacc_cov) * mtct_prob_e * pop[index$ages_wocba,HBeAg_pos,1]) +
-                                     rowSums(bdvacc_cov * mtct_prob_ebd * pop[index$ages_wocba,HBeAg_pos,1])+
+                                     rowSums(bdvacc_cov * mtct_prob_ebd_rr * mtct_prob_e * pop[index$ages_wocba,HBeAg_pos,1])+
                                      rowSums((1-bdvacc_cov) * mtct_prob_s * pop[index$ages_wocba,HBeAg_neg,1])+
                                      rowSums(bdvacc_cov * mtct_prob_sbd * pop[index$ages_wocba,HBeAg_neg,1])+
                                      rowSums((1-bdvacc_cov) * mtct_prob_treat_cofactor * mtct_prob_s * pop[index$ages_wocba,Treated_carriers,1])+
@@ -2992,7 +2992,7 @@ parameter_list <- list(
   bdvacc_introtime = 2020,                   # year of birth dose vaccine introduction
   apply_bdvacc_linear_scale_up = 0,          # switch for whether to use a linear scale up of BD between 2020 and 2030 (if 0, using bdvacc_cov parameter instead)
   bdvacc_cov = 0.05,                         # birth dose vaccine coverage
-  mtct_prob_ebd = 0.32,                      # MTCT risk from eAg-positive mother with birth dose (95% CI from Keane = 0.1-0.58)
+  mtct_prob_ebd_rr = 0.28,                   # Lee systematic review, reduction in transmission risk compared to no BD
   mtct_prob_sbd = 0,                         # MTCT risk from eAg-negative mother with birth dose (Keane)
   mtct_prob_treatbd = 0,                     # MTCT risk from treated carrier mother with birth dose (assumption, not peripartum therapy)
   # TREATMENT PARAMETERS

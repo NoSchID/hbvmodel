@@ -6,9 +6,7 @@ source(here("R/imperial_model_interventions.R"))
 
 # Simulate intervention model ----
 
-#load(here("calibration", "input", "accepted_parmsets_119_060120.Rdata")) # params_mat_targets5
 load(here("calibration", "input", "accepted_parmsets_123_180520.Rdata")) # params_mat_targets5
-#load(here("calibration", "input", "mock_parmsets_210220.Rdata"))  # params_mat_mock
 
 sim <- apply(params_mat_accepted[1,],1,
              function(x)
@@ -54,6 +52,7 @@ sim <- apply(params_mat_accepted[1,],1,
 
 out <- code_model_output(sim[[1]])
 outpath <- out
+
 
 out <- lapply(sim, code_model_output)
 
