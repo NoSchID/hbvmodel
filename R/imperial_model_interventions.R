@@ -2642,16 +2642,10 @@ run_one_screening_scenario_on_cluster <- function(..., default_parameter_list, c
   cohort_ly <- extract_cohort_life_years_lived(out,label)
   cohort_size <- extract_cohort_size(out, label)
 
-  #test <- list()
-  #for (i in c(2030,2050)) {
-  #  test[[i-2029]] <- extract_cumulative_hbv_deaths(out, scenario_label = label,
-  #                                                  from_year = 2020, by_year = i)
-  #}
-  #test[sapply(test, is.null)] <- NULL
-
   # Population outcomes
   years_to_extract <- seq(2025,2100, by = 5)
 
+  # HBV deaths
   cum_hbv_deaths <- list()
   for (j in years_to_extract) {
     cum_hbv_deaths[[j-2024]] <- extract_cumulative_hbv_deaths(out, scenario_label = label,
@@ -2659,13 +2653,7 @@ run_one_screening_scenario_on_cluster <- function(..., default_parameter_list, c
     }
   cum_hbv_deaths[sapply(cum_hbv_deaths, is.null)] <- NULL
 
-  #cum_hbv_deaths_2030 <- extract_cumulative_hbv_deaths(out, scenario_label = label,
-  #                                                     from_year = 2020, by_year = 2030)
-  #cum_hbv_deaths_2050 <- extract_cumulative_hbv_deaths(out, scenario_label = label,
-  #                                                     from_year = 2020, by_year = 2050)
-  #cum_hbv_deaths_2100 <- extract_cumulative_hbv_deaths(out, scenario_label = label,
-  #                                                     from_year = 2020, by_year = 2100)
-
+  # Life years
   ly <- list()
   for (j in years_to_extract) {
     ly[[j-2024]] <- extract_life_years_lived(out, scenario_label = label,
@@ -2673,26 +2661,20 @@ run_one_screening_scenario_on_cluster <- function(..., default_parameter_list, c
   }
   ly[sapply(ly, is.null)] <- NULL
 
-  #ly_2030 <- extract_life_years_lived(out, scenario_label = label,
-  #                                    from_year = 2020, by_year = 2030)
-  #ly_2050 <- extract_life_years_lived(out, scenario_label = label,
-  #                                    from_year = 2020, by_year = 2050)
-  #ly_2100 <- extract_life_years_lived(out, scenario_label = label,
-  #                                    from_year = 2020, by_year = 2100)
-
+  # Healthcare interactions
   interactions <- list()
-  for (j in years_to_extract) {
-    interactions[[j-2024]] <- summarise_healthcare_interactions(out, scenario_label = label,
-                                             from_year = 2020, by_year = j)
-  }
-  interactions[sapply(interactions, is.null)] <- NULL
 
-  #interactions_2030 <- summarise_healthcare_interactions(out, from_year = 2020,
-  #                                                       by_year = 2030, scenario_label = label)
-  #interactions_2050 <- summarise_healthcare_interactions(out, from_year = 2020,
-  #                                                       by_year = 2050, scenario_label = label)
-  #interactions_2100 <- summarise_healthcare_interactions(out, from_year = 2020,
-  #                                                       by_year = 2100, scenario_label = label)
+  if (scenario %in% c("vacc_screen", "vacc_bdvacc_screen")) {
+
+    for (j in years_to_extract) {
+      interactions[[j-2024]] <- summarise_healthcare_interactions(out, scenario_label = label,
+                                                                  from_year = 2020, by_year = j)
+    }
+    interactions[sapply(interactions, is.null)] <- NULL
+
+  } else {
+    interactions <- NA
+  }
 
   # Timeseries
   timeseries <- summarise_time_series(out, scenario_label = label, summarise_percentiles = FALSE)
@@ -2703,17 +2685,8 @@ run_one_screening_scenario_on_cluster <- function(..., default_parameter_list, c
                cohort_ly = cohort_ly,
                cohort_size = cohort_size,
                cum_hbv_deaths = cum_hbv_deaths,
-               #cum_hbv_deaths_2030 = cum_hbv_deaths_2030,
-               #cum_hbv_deaths_2050 = cum_hbv_deaths_2050,
-               #cum_hbv_deaths_2100 = cum_hbv_deaths_2100,
                ly = ly,
-               #ly_2030 = ly_2030,
-               #ly_2050 = ly_2050,
-               #ly_2100 = ly_2100,
                interactions = interactions,
-               #interactions_2030 = interactions_2030,  # NA for no treatment
-               #interactions_2050 = interactions_2050,  # NA for no treatment
-               #interactions_2100 = interactions_2100,
                timeseries = timeseries)  # NA for no treatment
 
   outlist <- list("screen" = extracted_outcomes)
