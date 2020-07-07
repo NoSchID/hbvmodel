@@ -41,6 +41,19 @@ scenario_b_parms$bdvacc_introtime <- 2020
 scenario_b_parms$apply_bdvacc_linear_scale_up <- 1
 #save(scenario_b_parms, file= here("analysis_input", "scenario_b_parms.Rdata"))
 
+# ASSUMPTION D1 SIMULATIONS (Optimal with younger eligibility)
+scenario_d1_parms <- parameter_list
+scenario_d1_parms$screening_coverage <- 0.9
+scenario_d1_parms$min_age_to_screen <- 15
+scenario_d1_parms$max_age_to_screen <- 65
+scenario_d1_parms$prop_to_vaccinate <- 0
+scenario_d1_parms$link_to_care_prob <- 0.8
+scenario_d1_parms$treatment_initiation_prob <- 1
+scenario_d1_parms$monitoring_prob <- 0.8
+scenario_d1_parms$apply_bdvacc <- 0
+scenario_d1_parms$apply_treat_it <- 0
+#save(scenario_d1_parms, file= here("analysis_input", "scenario_d1_parms.Rdata"))
+
 # Simulate ----
 
 # Run status quo scenario in parallel
