@@ -54,6 +54,31 @@ scenario_d1_parms$apply_bdvacc <- 0
 scenario_d1_parms$apply_treat_it <- 0
 #save(scenario_d1_parms, file= here("analysis_input", "scenario_d1_parms.Rdata"))
 
+# ASSUMPTION D2 SIMULATIONS (Optimal with different age groups)
+scenario_d2_parms <- parameter_list
+scenario_d2_parms$screening_coverage <- 0.9
+scenario_d2_parms$min_age_to_screen <- 45
+scenario_d2_parms$max_age_to_screen <- 70
+scenario_d2_parms$prop_to_vaccinate <- 0
+scenario_d2_parms$link_to_care_prob <- 0.8
+scenario_d2_parms$treatment_initiation_prob <- 1
+scenario_d2_parms$monitoring_prob <- 0.8
+scenario_d2_parms$apply_bdvacc <- 0
+scenario_d2_parms$apply_treat_it <- 0
+#save(scenario_d2_parms, file= here("analysis_input", "scenario_d2_parms.Rdata"))
+
+# ASSUMPTION D3 SIMULATIONS (Optimal with different age groups)
+scenario_d3_parms <- parameter_list
+scenario_d3_parms$screening_coverage <- 0.9
+scenario_d3_parms$min_age_to_screen <- 15
+scenario_d3_parms$max_age_to_screen <- 45
+scenario_d3_parms$prop_to_vaccinate <- 0
+scenario_d3_parms$link_to_care_prob <- 0.8
+scenario_d3_parms$treatment_initiation_prob <- 1
+scenario_d3_parms$monitoring_prob <- 0.8
+scenario_d3_parms$apply_bdvacc <- 0
+scenario_d3_parms$apply_treat_it <- 0
+#save(scenario_d3_parms, file= here("analysis_input", "scenario_d3_parms.Rdata"))
 
 # Simulate ----
 
