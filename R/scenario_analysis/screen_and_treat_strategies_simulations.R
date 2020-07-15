@@ -80,6 +80,59 @@ scenario_d3_parms$apply_bdvacc <- 0
 scenario_d3_parms$apply_treat_it <- 0
 #save(scenario_d3_parms, file= here("analysis_input", "scenario_d3_parms.Rdata"))
 
+# ASSUMPTION E SIMULATIONS (AGE 30-70 but low screening coverage)
+scenario_e_parms <- parameter_list
+scenario_e_parms$screening_coverage <- 0.1
+scenario_e_parms$min_age_to_screen <- 30
+scenario_e_parms$max_age_to_screen <- 70
+scenario_e_parms$prop_to_vaccinate <- 0
+scenario_e_parms$link_to_care_prob <- 0.8
+scenario_e_parms$treatment_initiation_prob <- 1
+scenario_e_parms$monitoring_prob <- 0.8
+scenario_e_parms$apply_bdvacc <- 0
+scenario_e_parms$apply_treat_it <- 0
+#save(scenario_e_parms, file= here("analysis_input", "scenario_e_parms.Rdata"))
+
+# ASSUMPTION E1 SIMULATIONS (Low screening coverage with younger eligibility)
+scenario_e1_parms <- parameter_list
+scenario_e1_parms$screening_coverage <- 0.1
+scenario_e1_parms$min_age_to_screen <- 15
+scenario_e1_parms$max_age_to_screen <- 65
+scenario_e1_parms$prop_to_vaccinate <- 0
+scenario_e1_parms$link_to_care_prob <- 0.8
+scenario_e1_parms$treatment_initiation_prob <- 1
+scenario_e1_parms$monitoring_prob <- 0.8
+scenario_e1_parms$apply_bdvacc <- 0
+scenario_e1_parms$apply_treat_it <- 0
+#save(scenario_e1_parms, file= here("analysis_input", "scenario_e1_parms.Rdata"))
+
+# ASSUMPTION E2 SIMULATIONS (Low screening coverage with old age groups only)
+scenario_e2_parms <- parameter_list
+scenario_e2_parms$screening_coverage <- 0.1
+scenario_e2_parms$min_age_to_screen <- 45
+scenario_e2_parms$max_age_to_screen <- 70
+scenario_e2_parms$prop_to_vaccinate <- 0
+scenario_e2_parms$link_to_care_prob <- 0.8
+scenario_e2_parms$treatment_initiation_prob <- 1
+scenario_e2_parms$monitoring_prob <- 0.8
+scenario_e2_parms$apply_bdvacc <- 0
+scenario_e2_parms$apply_treat_it <- 0
+#save(scenario_e2_parms, file= here("analysis_input", "scenario_e2_parms.Rdata"))
+
+# ASSUMPTION E3 SIMULATIONS (Low screening coverage with young age groups only)
+scenario_e3_parms <- parameter_list
+scenario_e3_parms$screening_coverage <- 0.1
+scenario_e3_parms$min_age_to_screen <- 15
+scenario_e3_parms$max_age_to_screen <- 45
+scenario_e3_parms$prop_to_vaccinate <- 0
+scenario_e3_parms$link_to_care_prob <- 0.8
+scenario_e3_parms$treatment_initiation_prob <- 1
+scenario_e3_parms$monitoring_prob <- 0.8
+scenario_e3_parms$apply_bdvacc <- 0
+scenario_e3_parms$apply_treat_it <- 0
+#save(scenario_e3_parms, file= here("analysis_input", "scenario_e3_parms.Rdata"))
+
+
 # Simulate ----
 
 # Run status quo scenario in parallel
