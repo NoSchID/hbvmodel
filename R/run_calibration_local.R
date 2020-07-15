@@ -939,167 +939,6 @@ for (i in 1:length(out_mat)) {
 dev.off()
 
 ## @knitr part5
-### ABC rejection algorithm ----
-# Steps/principles of ABC rejection for parameter estimation (Toni):
-# 1) Define prior distribution
-# 2) Sample a parameter - a particle - from the prior distribition
-# 3) Use the deterministic model to simulate an output - the trajectory
-# 4) Add noise to the simulated outputs/trajectory to be mapped to the data
-# 5) Define a distance function which compares the simulated output to the
-#    experimental data
-# 6) Define a tolerance level epsilon, representing the desired level of agreement
-#    between the data and the model output
-# 7) If the distance function is < epsilon, accept the particle sampled in 2).
-#    If the distance function is > epsilon, reject the particle sampled in 2)
-# 8) Define the desired number of particles/parameter sets N
-# 9) Repeat steps 1-7) until N particles have been accepted.
-#    The accepted particles represent an approximation of the posterior distribution.
-
-# ABC rejection alogorithm from LSHTM fitting course
-run_rejection_algorithm2 <- function(N, epsilon) {
-
-
-  # Set up empty matrix to store results
-  results <- data.frame(b1 = 0, b2 = 0, mtct_prob_s = 0, error = 0)
-
-  # Initialise the loop with i=0
-  i <- 0
-
-  # while the length of the accepted values (result) is less than the desired length (N)
-  while(i<N) {
-
-    # A) DRAW PARAMETERS TO BE VARIED FROM THE PRIOR DISTRIBUTION
-
-    # Draw a new theta from prior distributions
-    b1_sample <- runif(1, min = 0.01, max = 0.4)
-    b2_sample <- runif(1, min = 0, max = b1)
-    mtct_prob_s_sample <- runif(1, min = 0, max = 0.3)
-
-    # Combine parameters to be varied
-    params_mat <- data.frame(b1 = b1_sample, b2 = b2_sample, mtct_prob_s = mtct_prob_s_sample)
-
-    # B) RUN THE MODEL WITH THE GIVEN PARAMETER SET,
-    # CALCUTE AND PERTURB OUTPUT, ANC CALCULATE DISTANCE TO DATA
-    # Noise still needs to be added
-    out_mat <- apply(params_mat,1,
-                     function(x)
-                       fit_model(default_parameter_list = parameter_list,
-                                 data_to_fit = calibration_datasets_list,
-                                 parms_to_change =
-                                   list(b1 = as.list(x)$b1,
-                                        b2 = as.list(x)$b2,
-                                        mtct_prob_s = as.list(x)$mtct_prob_s,
-                                        mtct_prob_e = 0.6,  # decrease
-                                        alpha = 7,
-                                        b3 = 0.01,
-                                        eag_prog_function_intercept = 0.1,
-                                        eag_prog_function_rate = 0,
-                                        pr_it_ir = 1,  # fix
-                                        pr_ir_ic = 8,
-                                        pr_ir_cc_female = 0.1,
-                                        pr_ir_cc_age_threshold = 30,  # increase
-                                        pr_ir_enchb = 0.005,
-                                        pr_enchb_cc_female = 0.005, # 0.005, 0.016
-                                        hccr_dcc = 0.2,  # 5 times increase
-                                        hccr_ir = 16,  # doubled
-                                        hccr_enchb = 6,
-                                        hccr_cc = 25,
-                                        cirrhosis_male_cofactor = 5,  # increase, 20
-                                        cancer_prog_coefficient_female = 0.00017,  # doubled 0.0002
-                                        cancer_age_threshold = 15,
-                                        cancer_male_cofactor = 5,
-                                        mu_cc = 0.005, # decrease
-                                        mu_hcc = 1.5,  # increase
-                                        mu_dcc = 0.8  # 1
-                                   )))  # increase
-
-    dist <- out_mat[[1]]$error_term
-
-    params_mat <- data.frame(params_mat, error = dist)
-
-    # C) COMPARE THE DISTANCE TO THE EPSILON TOLERANCE
-    # If the distance is within the epsilon window,
-    # accept and store the parameter values.
-
-    if(dist<=epsilon){
-
-      results <- rbind(results,params_mat)
-
-    }
-
-    # Update i (dimension of results store)
-    i <- dim(results)[1]-1
-
-    # D) REPEAT PROCEDURE UNTIL N PARAMETER SETS HAVE BEEN ACCEPTED
-
-  }
-  # return the accepted values
-  return(results[-1,])
-}
-# Run the algorithm
-res <- run_rejection_algorithm2(N=10, epsilon = 300)
-
-# Issue with this is that it uses a while loop and defines the required number of accepted particles
-# This cannot be parallelised
-# However it is possible to calculate with all the parameter sets before accepting/rejecting
-# Only issue is need to figure out how many runs to make to get enough accepted parameter sets
-run_rejection_algorithm <- function(n) {
-
-  # A) RANDOMLY DRAW n PARAMETERS TO BE VARIED FROM THE PRIOR DISTRIBUTION
-
-  # Draw a new theta from prior distributions
-  b1_sample <- runif(n, min = 0.01, max = 0.4)
-  b2_sample <- runif(n, min = 0, max = b1_sample)
-  mtct_prob_s_sample <- runif(n, min = 0, max = 0.3)
-
-  # Combine parameters to be varied
-  params_mat <- data.frame(b1 = b1_sample, b2 = b2_sample, mtct_prob_s = mtct_prob_s_sample)
-
-  # B) RUN THE MODEL FOR ALL PARAMETER SETS,
-  # CALCUTE AND PERTURB OUTPUT, ANC CALCULATE DISTANCE TO DATA
-  # Noise still needs to be added
-  out_mat <- apply(params_mat,1,
-                   function(x)
-                     fit_model(default_parameter_list = parameter_list,
-                               data_to_fit = calibration_datasets_list,
-                               parms_to_change =
-                                 list(b1 = as.list(x)$b1,
-                                      b2 = as.list(x)$b2,
-                                      mtct_prob_s = as.list(x)$mtct_prob_s,
-                                      mtct_prob_e = 0.6,  # decrease
-                                      alpha = 7,
-                                      b3 = 0.01,
-                                      eag_prog_function_intercept = 0.1,
-                                      eag_prog_function_rate = 0,
-                                      pr_it_ir = 1,  # fix
-                                      pr_ir_ic = 8,
-                                      pr_ir_cc_female = 0.1,
-                                      pr_ir_cc_age_threshold = 30,  # increase
-                                      pr_ir_enchb = 0.005,
-                                      pr_enchb_cc_female = 0.005, # 0.005, 0.016
-                                      hccr_dcc = 0.2,  # 5 times increase
-                                      hccr_ir = 16,  # doubled
-                                      hccr_enchb = 6,
-                                      hccr_cc = 25,
-                                      cirrhosis_male_cofactor = 5,  # increase, 20
-                                      cancer_prog_coefficient_female = 0.00017,  # doubled 0.0002
-                                      cancer_age_threshold = 15,
-                                      cancer_male_cofactor = 5,
-                                      mu_cc = 0.005, # decrease
-                                      mu_hcc = 1.5,  # increase
-                                      mu_dcc = 0.8  # 1
-                                 )))  # increase
-
-  # C) COMBINE INTO OUTPUT TABLE
-  out_mat_subset <- sapply(out_mat, "[[", "error_term")
-  res_mat <- cbind(params_mat, error_term = out_mat_subset)
-
-  return(res_mat)
-
-}
-res <- run_rejection_algorithm(n=10)
-
-
 ### Parallelised code: vary all parameters ----
 # Set up cluster
 cl <- makeCluster(4)
@@ -1222,25 +1061,47 @@ library(here)
 load(here("calibration", "input", "accepted_parmsets_123_180520.Rdata")) # params_mat_accepted
 params_mat_targets5 <- params_mat_accepted  # rename so I don't have to change code
 
+### Visualise posteriors for different cutoffs
+load(here("calibration", "input", "lhs_samples_1000000.Rdata"))
+
 quantile(params_mat_targets5$pr_ic_enchb, prob = c(0.025,0.5,0.975))
 quantile(params_mat$pr_ic_enchb, prob = c(0.025,0.5,0.975))
 
-### Visualise posteriors for different cutoffs
-load(here("calibration", "input", "lhs_samples_1000000.Rdata"))
+# Progression to treatment eligibility test
+range((exp(params_mat_targets5$eag_prog_function_rate*ages[which(ages==33)])*params_mat_targets5$pr_it_ir)+
+  params_mat_targets5$pr_ic_enchb)
+mean((exp(params_mat_targets5$eag_prog_function_rate*ages[which(ages==33)])*params_mat_targets5$pr_it_ir)+
+        params_mat_targets5$pr_ic_enchb)
+
+# Generate table of all prior and posterior summaries
+posterior_summary <- gather(params_mat_accepted, key = "parameter", value = "sim") %>%
+  group_by(parameter) %>%
+  summarise(post_mean = round(mean(sim),4),
+            post_median = round(median(sim),4),
+            post_cri_lower = round(quantile(sim, prob = 0.025),4),
+            post_cri_upper = round(quantile(sim, prob = 0.975),4))
+
+prior_summary <- gather(params_mat, key = "parameter", value = "sim") %>%
+  group_by(parameter) %>%
+  summarise(prior_mean = round(mean(sim),4),
+            prior_median = round(median(sim),4),
+            prior_cri_lower = round(quantile(sim, prob = 0.025),4),
+            prior_cri_upper = round(quantile(sim, prob = 0.975),4))
+
+prior_posterior_summary <- left_join(prior_summary, posterior_summary, by ="parameter")
+#write.csv(prior_posterior_summary, file=here("calibration", "output", "prior_posterior_summary_table_150720.csv"), row.names = FALSE)
 
 plot_prior_posterior <- function(parm) {
   plot(density(posterior[,parm]), xlim = c(min(min(prior[,parm]),min((posterior[,parm]))), max(max(prior[,parm]),max((posterior[,parm])))),
        ylim = c(0, max(max(density(prior[,parm])$y),max((density(posterior[,parm])$y)))), main= parm,
        lwd=3, col="red")
   lines(density(prior[,parm]), lwd=3, lty=2, col="blue")
-  lines(density(posterior2[,parm]), lwd=3, lty=2, col="green")
   legend("bottomleft", legend=c("prior density","posterior density"),
          col=c("blue","red"), lty=c(3,1), lwd=c(3,3), cex = 1)
 }
 
 prior <- as.data.frame(params_mat)
 posterior <- params_mat_targets5
-posterior2 <- params_mat_targets5
 
 par(mfrow=c(1,3))
 plot_prior_posterior("b1")
