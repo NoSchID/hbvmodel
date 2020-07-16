@@ -111,6 +111,46 @@ out11 <- readRDS(paste0(out_path, "d1_out11_monit_5_screen_5_150720.rds"))
 out11 <- out11[[1]]
 
 
+# Assumption D2 set ----
+out_path <-
+  "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/screen_and_treat_strategies/Scenario D2/"
+
+# Status quo
+out1 <- readRDS(paste0(out_path, "out1_status_quo_cohort_110620.rds"))
+out1 <- out1[[1]]
+out2 <- readRDS(paste0(out_path, "out2_status_quo_080720.rds"))
+out2 <- out2[[1]]
+
+# Monitoring
+out3 <- readRDS(paste0(out_path, "d2_out3_screen_2020_monit_0_160720.rds"))
+out3 <- out3[[1]]
+out4 <- readRDS(paste0(out_path, "d2_out4_screen_2020_monit_10_160720.rds"))
+out4 <- out4[[1]]
+out5 <- readRDS(paste0(out_path, "d2_out5_screen_2020_monit_5_160720.rds"))
+out5 <- out5[[1]]
+out6 <- readRDS(paste0(out_path, "d2_out6_screen_2020_monit_1_160720.rds"))
+out6 <- out6[[1]]
+
+# Assumption D3 set ----
+out_path <-
+  "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/screen_and_treat_strategies/Scenario D3/"
+
+# Status quo
+out1 <- readRDS(paste0(out_path, "out1_status_quo_cohort_110620.rds"))
+out1 <- out1[[1]]
+out2 <- readRDS(paste0(out_path, "out2_status_quo_080720.rds"))
+out2 <- out2[[1]]
+
+# Monitoring
+out3 <- readRDS(paste0(out_path, "d3_out3_screen_2020_monit_0_160720.rds"))
+out3 <- out3[[1]]
+out4 <- readRDS(paste0(out_path, "d3_out4_screen_2020_monit_10_160720.rds"))
+out4 <- out4[[1]]
+out5 <- readRDS(paste0(out_path, "d3_out5_screen_2020_monit_5_160720.rds"))
+out5 <- out5[[1]]
+out6 <- readRDS(paste0(out_path, "d3_out6_screen_2020_monit_1_160720.rds"))
+out6 <- out6[[1]]
+
 ## IMPACT OF MONITORING ----
 ### Cohort outcomes of monitoring (uses functions from calculate_outcomes.R) ----
 
@@ -440,11 +480,6 @@ ggplot(ly_gained_pop_and_cohort[ly_gained_pop_and_cohort$type == "proportion_ave
 
 # OUTCOME = HBV DEATHS AVERTED PER INCREMENTAL TREATMENT INITIATION
 # compared to status quo, any healthcare interactions are incremental
-deaths_averted_per_treated_sq_long <-
-  plot_hbv_deaths_averted_per_healthcare_interaction(counterfactual_object = out2,
-                                                        scenario_objects = list(out3, out4,out5, out6),
-                                                        interaction_type = "total_treated",
-                                                        counterfactual_label = "no treatment programme")
 
 # OUTCOME = HBV DEATHS AVERTED PER INCREMENTAL INTERACTION
 deaths_averted_per_interaction_sq_long <-
@@ -453,6 +488,26 @@ deaths_averted_per_interaction_sq_long <-
                                                         interaction_type = "total_interactions",
                                                         counterfactual_label = "no treatment programme")
 
+# OUTCOME = HBV DEATHS AVERTED PER INCREMENTAL ASSESSMENT
+deaths_averted_per_assessment_sq_long <-
+  plot_hbv_deaths_averted_per_healthcare_interaction(counterfactual_object = out2,
+                                                     scenario_objects = list(out3, out4,out5, out6),
+                                                     interaction_type = "total_assessed",
+                                                     counterfactual_label = "no treatment programme")
+
+# OUTCOME = HBV DEATHS AVERTED PER INCREMENTAL SCREENING
+deaths_averted_per_test_sq_long <-
+  plot_hbv_deaths_averted_per_healthcare_interaction(counterfactual_object = out2,
+                                                     scenario_objects = list(out3, out4,out5, out6),
+                                                     interaction_type = "total_screened",
+                                                     counterfactual_label = "no treatment programme")
+
+deaths_averted_per_treatment_sq_long <-
+  plot_hbv_deaths_averted_per_healthcare_interaction(counterfactual_object = out2,
+                                                     scenario_objects = list(out3, out4,out5, out6),
+                                                     interaction_type = "total_treated",
+                                                     counterfactual_label = "no treatment programme")
+
 # OUTCOME = LIFE YEARS GAINED PER INCREMENTAL HEALTHCARE INTERACTION
 
 # One-off screen monitoring every 10 years
@@ -460,6 +515,23 @@ ly_gained_per_interaction_sq_long <-
   plot_ly_gained_per_healthcare_interaction(counterfactual_object = out2,
                                             scenario_objects = list(out3, out4,out5, out6),
                                             interaction_type = "total_interactions",
+                                            counterfactual_label = "no treatment programme")
+
+ly_gained_per_assessment_sq_long <-
+  plot_ly_gained_per_healthcare_interaction(counterfactual_object = out2,
+                                            scenario_objects = list(out3, out4,out5, out6),
+                                            interaction_type = "total_assessed",
+                                            counterfactual_label = "no treatment programme")
+ly_gained_per_test_sq_long <-
+  plot_ly_gained_per_healthcare_interaction(counterfactual_object = out2,
+                                            scenario_objects = list(out3, out4,out5, out6),
+                                            interaction_type = "total_screened",
+                                            counterfactual_label = "no treatment programme")
+
+ly_gained_per_treatment_sq_long <-
+  plot_ly_gained_per_healthcare_interaction(counterfactual_object = out2,
+                                            scenario_objects = list(out3, out4,out5, out6),
+                                            interaction_type = "total_treated",
                                             counterfactual_label = "no treatment programme")
 
 # COUNTERFACTUAL = TREATMENT BUT NO MONITORING (out3)
@@ -471,6 +543,25 @@ deaths_averted_per_interaction_long <-
                                                      interaction_type = "total_interactions",
                                                      counterfactual_label = "treatment programme without monitoring")
 
+deaths_averted_per_assessment_long <-
+  plot_hbv_deaths_averted_per_healthcare_interaction(counterfactual_object = out3,
+                                                     scenario_objects = list(out4,out5, out6),
+                                                     interaction_type = "total_assessed",
+                                                     counterfactual_label = "treatment programme without monitoring")
+
+deaths_averted_per_test_long <-
+  plot_hbv_deaths_averted_per_healthcare_interaction(counterfactual_object = out3,
+                                                     scenario_objects = list(out4,out5, out6),
+                                                     interaction_type = "total_screened",
+                                                     counterfactual_label = "treatment programme without monitoring")
+
+deaths_averted_per_treatment_long <-
+  plot_hbv_deaths_averted_per_healthcare_interaction(counterfactual_object = out3,
+                                                     scenario_objects = list(out4,out5, out6),
+                                                     interaction_type = "total_treated",
+                                                     counterfactual_label = "treatment programme without monitoring")
+
+
 # OUTCOME = LIFE YEARS GAINED PER INCREMENTAL HEALTHCARE INTERACTION
 ly_gained_per_interaction_long <-
   plot_ly_gained_per_healthcare_interaction(counterfactual_object = out3,
@@ -478,6 +569,23 @@ ly_gained_per_interaction_long <-
                                             interaction_type = "total_interactions",
                                             counterfactual_label = "treatment programme without monitoring")
 
+ly_gained_per_assessment_long <-
+  plot_ly_gained_per_healthcare_interaction(counterfactual_object = out3,
+                                            scenario_objects = list(out4,out5, out6),
+                                            interaction_type = "total_assessed",
+                                            counterfactual_label = "treatment programme without monitoring")
+
+ly_gained_per_test_long <-
+  plot_ly_gained_per_healthcare_interaction(counterfactual_object = out3,
+                                            scenario_objects = list(out4,out5, out6),
+                                            interaction_type = "total_screened",
+                                            counterfactual_label = "treatment programme without monitoring")
+
+ly_gained_per_treatment_long <-
+  plot_ly_gained_per_healthcare_interaction(counterfactual_object = out3,
+                                            scenario_objects = list(out4,out5, out6),
+                                            interaction_type = "total_treated",
+                                            counterfactual_label = "treatment programme without monitoring")
 
 # Need to think about what I would like to represent:
 # compared to monitoring, not monitoring averts more deaths per incremental clinical assessments and
@@ -683,8 +791,6 @@ ly_gained_per_interaction_combi_long <-
 
 ## TABLE OF ALL KEY OUTCOMES FOR 1 ASSUMPTION SET ----
 
-# Missing age at death
-
 scenario_d1_full_results <-
   list(
     # Monitoring analysis
@@ -698,8 +804,21 @@ scenario_d1_full_results <-
     ly_gained_long = ly_gained_long,
     ly_gained_sq_long = ly_gained_sq_long,
     deaths_averted_per_interaction_long = deaths_averted_per_interaction_long,
+    deaths_averted_per_assessment_long = deaths_averted_per_assessment_long,
+    deaths_averted_per_test_long = deaths_averted_per_test_long,
+    deaths_averted_per_treatment_long = deaths_averted_per_treatment_long,
     deaths_averted_per_interaction_sq_long = deaths_averted_per_interaction_sq_long,
+    deaths_averted_per_assessment_sq_long = deaths_averted_per_assessment_sq_long,
+    deaths_averted_per_test_sq_long = deaths_averted_per_test_sq_long,
+    deaths_averted_per_treatment_sq_long = deaths_averted_per_treatment_sq_long,
     ly_gained_per_interaction_long = ly_gained_per_interaction_long,
+    ly_gained_per_assessment_long = ly_gained_per_assessment_long,
+    ly_gained_per_test_long = ly_gained_per_test_long,
+    ly_gained_per_treatment_long = ly_gained_per_treatment_long,
+    ly_gained_per_interaction_sq_long = ly_gained_per_interaction_sq_long,
+    ly_gained_per_assessment_sq_long = ly_gained_per_assessment_sq_long,
+    ly_gained_per_test_sq_long = ly_gained_per_test_sq_long,
+    ly_gained_per_treatment_sq_long = ly_gained_per_treatment_sq_long,
     # Screening analysis
     deaths_averted_screen_long = deaths_averted_screen_long,
     deaths_averted_sq_screen_long = deaths_averted_sq_screen_long,
@@ -777,6 +896,11 @@ scenario_d1_summary_results <- list(
                                      summarise(median = median(1/value),
                                                cri_lower = quantile(1/value, prob = 0.025),
                                                cri_upper = quantile(1/value, prob = 0.975))),
+  interactions_per_ly_gained_sq_long =(group_by(ly_gained_per_interaction_sq_long,
+                                             by_year,scenario) %>%
+                                      summarise(median = median(1/value),
+                                                cri_lower = quantile(1/value, prob = 0.025),
+                                                cri_upper = quantile(1/value, prob = 0.975))),
   # SCREENING ANALYSIS
   deaths_averted_screen_long = (group_by(deaths_averted_screen_long, by_year,
                                          counterfactual, scenario, type) %>%
@@ -853,6 +977,105 @@ scenario_d1_summary_results <- list(
 #saveRDS(scenario_d1_summary_results, here("output", "screen_and_treat_results", "scenario_d1_summary_results.rds"))
 
 
+
+## TABLE OF ALL KEY OUTCOMES FOR 1 ASSUMPTION SET (MONITORING ONLY) ----
+
+scenario_d3_full_results <-
+  list(
+    # Monitoring analysis
+    cohort_deaths_averted_long = cohort_deaths_averted_long,
+    cohort_deaths_averted_sq_long = cohort_deaths_averted_sq_long,
+    cohort_ly_gained_long = cohort_ly_gained_long,
+    cohort_ly_gained_sq_long = cohort_ly_gained_sq_long,
+    cohort_average_age_at_death_long = cohort_age_at_death_long,
+    deaths_averted_long = deaths_averted_long,
+    deaths_averted_sq_long = deaths_averted_sq_long,
+    ly_gained_long = ly_gained_long,
+    ly_gained_sq_long = ly_gained_sq_long,
+    deaths_averted_per_interaction_long = deaths_averted_per_interaction_long,
+    deaths_averted_per_assessment_long = deaths_averted_per_assessment_long,
+    deaths_averted_per_test_long = deaths_averted_per_test_long,
+    deaths_averted_per_treatment_long = deaths_averted_per_treatment_long,
+    deaths_averted_per_interaction_sq_long = deaths_averted_per_interaction_sq_long,
+    deaths_averted_per_assessment_sq_long = deaths_averted_per_assessment_sq_long,
+    deaths_averted_per_test_sq_long = deaths_averted_per_test_sq_long,
+    deaths_averted_per_treatment_sq_long = deaths_averted_per_treatment_sq_long,
+    ly_gained_per_interaction_long = ly_gained_per_interaction_long,
+    ly_gained_per_assessment_long = ly_gained_per_assessment_long,
+    ly_gained_per_test_long = ly_gained_per_test_long,
+    ly_gained_per_treatment_long = ly_gained_per_treatment_long,
+    ly_gained_per_interaction_sq_long = ly_gained_per_interaction_sq_long,
+    ly_gained_per_assessment_sq_long = ly_gained_per_assessment_sq_long,
+    ly_gained_per_test_sq_long = ly_gained_per_test_sq_long,
+    ly_gained_per_treatment_sq_long = ly_gained_per_treatment_sq_long
+  )
+#saveRDS(scenario_d3_full_results, here("output", "screen_and_treat_results", "scenario_d3_full_results.rds"))
+
+# Summary values (median, 2.5th and 97.5th percentile)
+scenario_d3_summary_results <- list(
+  # MONITORING ANALYSIS
+  cohort_deaths_averted_long = (group_by(cohort_deaths_averted_long, counterfactual, scenario, type) %>%
+                                  summarise(median = median(value),
+                                            cri_lower = quantile(value, prob = 0.025),
+                                            cri_upper = quantile(value, prob = 0.975))),
+  cohort_deaths_averted_sq_long = (group_by(cohort_deaths_averted_sq_long, counterfactual, scenario, type) %>%
+                                     summarise(median = median(value),
+                                               cri_lower = quantile(value, prob = 0.025),
+                                               cri_upper = quantile(value, prob = 0.975))),
+  cohort_ly_gained_long = (group_by(cohort_ly_gained_long, counterfactual, scenario, type) %>%
+                             summarise(median = median(value),
+                                       cri_lower = quantile(value, prob = 0.025),
+                                       cri_upper = quantile(value, prob = 0.975))),
+  cohort_ly_gained_sq_long = (group_by(cohort_ly_gained_sq_long, counterfactual, scenario, type) %>%
+                                summarise(median = median(value),
+                                          cri_lower = quantile(value, prob = 0.025),
+                                          cri_upper = quantile(value, prob = 0.975))),
+  cohort_average_age_at_death_long = (group_by(cohort_age_at_death_long, scenario) %>%
+                                        summarise(median = median(value),
+                                                  cri_lower = quantile(value, prob = 0.025),
+                                                  cri_upper = quantile(value, prob = 0.975))),
+  deaths_averted_long = (group_by(deaths_averted_long, by_year,
+                                  counterfactual, scenario, type) %>%
+                           summarise(median = median(value),
+                                     cri_lower = quantile(value, prob = 0.025),
+                                     cri_upper = quantile(value, prob = 0.975))),
+  deaths_averted_sq_long = (group_by(deaths_averted_sq_long, by_year,
+                                     counterfactual, scenario, type) %>%
+                              summarise(median = median(value),
+                                        cri_lower = quantile(value, prob = 0.025),
+                                        cri_upper = quantile(value, prob = 0.975))),
+  ly_gained_long = (group_by(ly_gained_long, by_year,
+                             counterfactual, scenario, type) %>%
+                      summarise(median = median(value),
+                                cri_lower = quantile(value, prob = 0.025),
+                                cri_upper = quantile(value, prob = 0.975))),
+  ly_gained_sq_long = (group_by(ly_gained_sq_long, by_year,
+                                counterfactual, scenario, type) %>%
+                         summarise(median = median(value),
+                                   cri_lower = quantile(value, prob = 0.025),
+                                   cri_upper = quantile(value, prob = 0.975))),
+  interactions_per_death_averted_long =(group_by(deaths_averted_per_interaction_long,
+                                                 by_year,scenario) %>%
+                                          summarise(median = median(1/value),
+                                                    cri_lower = quantile(1/value, prob = 0.025),
+                                                    cri_upper = quantile(1/value, prob = 0.975))),
+  interactions_per_death_averted_sq_long =(group_by(deaths_averted_per_interaction_sq_long,
+                                                    by_year,scenario) %>%
+                                             summarise(median = median(1/value),
+                                                       cri_lower = quantile(1/value, prob = 0.025),
+                                                       cri_upper = quantile(1/value, prob = 0.975))),
+  interactions_per_ly_gained_long =(group_by(ly_gained_per_interaction_long,
+                                             by_year,scenario) %>%
+                                      summarise(median = median(1/value),
+                                                cri_lower = quantile(1/value, prob = 0.025),
+                                                cri_upper = quantile(1/value, prob = 0.975))),
+  interactions_per_ly_gained_sq_long =(group_by(ly_gained_per_interaction_sq_long,
+                                             by_year,scenario) %>%
+                                      summarise(median = median(1/value),
+                                                cri_lower = quantile(1/value, prob = 0.025),
+                                                cri_upper = quantile(1/value, prob = 0.975)))
+)
+#saveRDS(scenario_d3_summary_results, here("output", "screen_and_treat_results", "scenario_d3_summary_results.rds"))
 
 ## TIMESERIES PLOTS ----
 
