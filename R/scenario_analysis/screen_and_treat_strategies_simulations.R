@@ -132,6 +132,32 @@ scenario_e3_parms$apply_bdvacc <- 0
 scenario_e3_parms$apply_treat_it <- 0
 #save(scenario_e3_parms, file= here("analysis_input", "scenario_e3_parms.Rdata"))
 
+# ASSUMPTION F1 SIMULATIONS (15-65 years and low assessment uptake)
+scenario_f1_parms <- parameter_list
+scenario_f1_parms$screening_coverage <- 0.9
+scenario_f1_parms$min_age_to_screen <- 15
+scenario_f1_parms$max_age_to_screen <- 65
+scenario_f1_parms$prop_to_vaccinate <- 0
+scenario_f1_parms$link_to_care_prob <- 0.4
+scenario_f1_parms$treatment_initiation_prob <- 1
+scenario_f1_parms$monitoring_prob <- 0.8   # to be adapted
+scenario_f1_parms$apply_bdvacc <- 0
+scenario_f1_parms$apply_treat_it <- 0
+#save(scenario_f1_parms, file= here("analysis_input", "scenario_f1_parms.Rdata"))
+
+# ASSUMPTION G1 SIMULATIONS (15-65 years and low treatment uptake/retention)
+scenario_g1_parms <- parameter_list
+scenario_g1_parms$screening_coverage <- 0.9
+scenario_g1_parms$min_age_to_screen <- 15
+scenario_g1_parms$max_age_to_screen <- 65
+scenario_g1_parms$prop_to_vaccinate <- 0
+scenario_g1_parms$link_to_care_prob <- 0.8
+scenario_g1_parms$treatment_initiation_prob <- 0.4
+scenario_g1_parms$monitoring_prob <- 0.8
+scenario_g1_parms$apply_bdvacc <- 0
+scenario_g1_parms$apply_treat_it <- 0
+#save(scenario_g1_parms, file= here("analysis_input", "scenario_g1_parms.Rdata"))
+
 
 # Simulate ----
 

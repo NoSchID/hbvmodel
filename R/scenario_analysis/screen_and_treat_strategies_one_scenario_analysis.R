@@ -81,7 +81,7 @@ out_path <-
   "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/screen_and_treat_strategies/Scenario D1/"
 
 # Status quo
-out1 <- readRDS(paste0(out_path, "out1_status_quo_cohort_110620.rds"))
+out1 <- readRDS(paste0(out_path, "d1_out1_status_quo_cohort_160720.rds"))
 out1 <- out1[[1]]
 out2 <- readRDS(paste0(out_path, "out2_status_quo_080720.rds"))
 out2 <- out2[[1]]
@@ -116,7 +116,7 @@ out_path <-
   "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/screen_and_treat_strategies/Scenario D2/"
 
 # Status quo
-out1 <- readRDS(paste0(out_path, "out1_status_quo_cohort_110620.rds"))
+out1 <- readRDS(paste0(out_path, "d2_out1_status_quo_cohort_160720.rds"))
 out1 <- out1[[1]]
 out2 <- readRDS(paste0(out_path, "out2_status_quo_080720.rds"))
 out2 <- out2[[1]]
@@ -136,7 +136,7 @@ out_path <-
   "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/screen_and_treat_strategies/Scenario D3/"
 
 # Status quo
-out1 <- readRDS(paste0(out_path, "out1_status_quo_cohort_110620.rds"))
+out1 <- readRDS(paste0(out_path, "d3_out1_status_quo_cohort_160720.rds"))
 out1 <- out1[[1]]
 out2 <- readRDS(paste0(out_path, "out2_status_quo_080720.rds"))
 out2 <- out2[[1]]
@@ -149,6 +149,86 @@ out4 <- out4[[1]]
 out5 <- readRDS(paste0(out_path, "d3_out5_screen_2020_monit_5_160720.rds"))
 out5 <- out5[[1]]
 out6 <- readRDS(paste0(out_path, "d3_out6_screen_2020_monit_1_160720.rds"))
+out6 <- out6[[1]]
+
+# Assumption E set ----
+out_path <-
+  "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/screen_and_treat_strategies/Scenario E/"
+
+# Status quo
+out1 <- readRDS(paste0(out_path, "e_out1_status_quo_cohort_160720.rds"))
+out1 <- out1[[1]]
+out2 <- readRDS(paste0(out_path, "out2_status_quo_080720.rds"))
+out2 <- out2[[1]]
+
+# Monitoring
+out3 <- readRDS(paste0(out_path, "e_out3_screen_2020_monit_0_160720.rds"))
+out3 <- out3[[1]]
+out4 <- readRDS(paste0(out_path, "e_out4_screen_2020_monit_10_160720.rds"))
+out4 <- out4[[1]]
+out5 <- readRDS(paste0(out_path, "e_out5_screen_2020_monit_5_160720.rds"))
+out5 <- out5[[1]]
+out6 <- readRDS(paste0(out_path, "e_out6_screen_2020_monit_1_160720.rds"))
+out6 <- out6[[1]]
+
+# Assumption E1 set ----
+out_path <-
+  "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/screen_and_treat_strategies/Scenario E1/"
+
+# Status quo
+out1 <- readRDS(paste0(out_path, "e1_out1_status_quo_cohort_160720.rds"))
+out1 <- out1[[1]]
+out2 <- readRDS(paste0(out_path, "out2_status_quo_080720.rds"))
+out2 <- out2[[1]]
+
+# Monitoring
+out3 <- readRDS(paste0(out_path, "e1_out3_screen_2020_monit_0_160720.rds"))
+out3 <- out3[[1]]
+out4 <- readRDS(paste0(out_path, "e1_out4_screen_2020_monit_10_160720.rds"))
+out4 <- out4[[1]]
+out5 <- readRDS(paste0(out_path, "e1_out5_screen_2020_monit_5_160720.rds"))
+out5 <- out5[[1]]
+out6 <- readRDS(paste0(out_path, "e1_out6_screen_2020_monit_1_160720.rds"))
+out6 <- out6[[1]]
+
+# Assumption E2 set ----
+out_path <-
+  "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/screen_and_treat_strategies/Scenario E2/"
+
+# Status quo
+out1 <- readRDS(paste0(out_path, "e2_out1_status_quo_cohort_160720.rds"))
+out1 <- out1[[1]]
+out2 <- readRDS(paste0(out_path, "out2_status_quo_080720.rds"))
+out2 <- out2[[1]]
+
+# Monitoring
+out3 <- readRDS(paste0(out_path, "e2_out3_screen_2020_monit_0_160720.rds"))
+out3 <- out3[[1]]
+out4 <- readRDS(paste0(out_path, "e2_out4_screen_2020_monit_10_160720.rds"))
+out4 <- out4[[1]]
+out5 <- readRDS(paste0(out_path, "e2_out5_screen_2020_monit_5_160720.rds"))
+out5 <- out5[[1]]
+out6 <- readRDS(paste0(out_path, "e2_out6_screen_2020_monit_1_160720.rds"))
+out6 <- out6[[1]]
+
+# Assumption E3 set ----
+out_path <-
+  "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/screen_and_treat_strategies/Scenario E3/"
+
+# Status quo
+out1 <- readRDS(paste0(out_path, "e3_out1_status_quo_cohort_160720.rds"))
+out1 <- out1[[1]]
+out2 <- readRDS(paste0(out_path, "out2_status_quo_080720.rds"))
+out2 <- out2[[1]]
+
+# Monitoring
+out3 <- readRDS(paste0(out_path, "e3_out3_screen_2020_monit_0_160720.rds"))
+out3 <- out3[[1]]
+out4 <- readRDS(paste0(out_path, "e3_out4_screen_2020_monit_10_160720.rds"))
+out4 <- out4[[1]]
+out5 <- readRDS(paste0(out_path, "e3_out5_screen_2020_monit_5_160720.rds"))
+out5 <- out5[[1]]
+out6 <- readRDS(paste0(out_path, "e3_out6_screen_2020_monit_1_160720.rds"))
 out6 <- out6[[1]]
 
 ## IMPACT OF MONITORING ----
@@ -980,7 +1060,7 @@ scenario_d1_summary_results <- list(
 
 ## TABLE OF ALL KEY OUTCOMES FOR 1 ASSUMPTION SET (MONITORING ONLY) ----
 
-scenario_d3_full_results <-
+scenario_e3_full_results <-
   list(
     # Monitoring analysis
     cohort_deaths_averted_long = cohort_deaths_averted_long,
@@ -1009,10 +1089,10 @@ scenario_d3_full_results <-
     ly_gained_per_test_sq_long = ly_gained_per_test_sq_long,
     ly_gained_per_treatment_sq_long = ly_gained_per_treatment_sq_long
   )
-#saveRDS(scenario_d3_full_results, here("output", "screen_and_treat_results", "scenario_d3_full_results.rds"))
+#saveRDS(scenario_e3_full_results, here("output", "screen_and_treat_results", "scenario_e3_full_results.rds"))
 
 # Summary values (median, 2.5th and 97.5th percentile)
-scenario_d3_summary_results <- list(
+scenario_e3_summary_results <- list(
   # MONITORING ANALYSIS
   cohort_deaths_averted_long = (group_by(cohort_deaths_averted_long, counterfactual, scenario, type) %>%
                                   summarise(median = median(value),
@@ -1075,7 +1155,7 @@ scenario_d3_summary_results <- list(
                                                 cri_lower = quantile(1/value, prob = 0.025),
                                                 cri_upper = quantile(1/value, prob = 0.975)))
 )
-#saveRDS(scenario_d3_summary_results, here("output", "screen_and_treat_results", "scenario_d3_summary_results.rds"))
+#saveRDS(scenario_e3_summary_results, here("output", "screen_and_treat_results", "scenario_e3_summary_results.rds"))
 
 ## TIMESERIES PLOTS ----
 
@@ -1095,6 +1175,10 @@ hbv_deaths_rate <- rbind(cbind(out2$timeseries$total_hbv_deaths_rate[,c(1:2)],
                                median = apply(out9$timeseries$total_hbv_deaths_rate[,-c(1:2)], 1, median),
                                cri_lower = apply(out9$timeseries$total_hbv_deaths_rate[,-c(1:2)], 1, quantile, prob = 0.025),
                                cri_upper = apply(out9$timeseries$total_hbv_deaths_rate[,-c(1:2)], 1, quantile, prob = 0.975)))
+
+# Fewer parmsets (108)
+#index_to_remove <- c(1,5,45,47,52,60,61,70,86,87,95,98,109,115,119)+2 # +2 because of time and scenario column
+# Tried the HBV mortality plot with fewer parmsets from k means clustering, which looks nearly identical
 
 hbv_deaths<- rbind(cbind(out2$timeseries$total_hbv_deaths[,c(1:2)],
                          median = apply(out2$timeseries$total_hbv_deaths[,-c(1:2)], 1, median),
@@ -1140,6 +1224,8 @@ ggplot(hbv_deaths_rate[hbv_deaths_rate$scenario %in% c("status_quo", "monit_0_sc
   xlab("Year")+
   ylim(0,5) +
   theme_classic()
+
+
 
 ggplot(hbv_deaths) +
   geom_line(aes(x=time, y = median/0.5, group = scenario, colour = scenario), size =1)+
@@ -1207,12 +1293,22 @@ red_mort <-
 
 quantile(red_mort, prob = c(0.025,0.5,0.975))
 
-red_mort_rate <-
+red_mort_rate_sq <-
   (out2$timeseries$total_hbv_deaths_rate[out2$timeseries$total_hbv_deaths_rate$time == 2015,-c(1:2)]-
      out2$timeseries$total_hbv_deaths_rate[out2$timeseries$total_hbv_deaths_rate$time == 2030,-c(1:2)])/
   out2$timeseries$total_hbv_deaths_rate[out2$timeseries$total_hbv_deaths_rate$time == 2015,-c(1:2)]
+quantile(red_mort_rate_sq, prob = c(0.025,0.5,0.975))
+# For no treatment: 0.4 (0.3-0.6)
 
-quantile(red_mort_rate, prob = c(0.025,0.5,0.975))
+# Treatment compared to no treatment
+red_mort_rate_by_treatment <-
+  ((out3$timeseries$total_hbv_deaths_rate[out3$timeseries$total_hbv_deaths_rate$time == 2015,-c(1:2)]-
+     out3$timeseries$total_hbv_deaths_rate[out3$timeseries$total_hbv_deaths_rate$time == 2030,-c(1:2)])/
+  out3$timeseries$total_hbv_deaths_rate[out3$timeseries$total_hbv_deaths_rate$time == 2015,-c(1:2)])/red_mort_rate_sq
+quantile(red_mort_rate_by_treatment, prob = c(0.025,0.5,0.975))
+# For A: 1.4 (1.2-1.9)
+# For D1: 1.5 (1.2-2)
+
 
 ## PREVIOUS ATTEMPTS ----
 ### Monitoring analysis: Plot population outcomes (y) by healthcare interactions (x) ----
@@ -1465,4 +1561,49 @@ ggplot(data = ly_gained_by_interactions_sq[ly_gained_by_interactions_sq$by_year 
 # OUTCOME = HBV DEATHS AVERTED
 
 
+
+
+### TEST: Sensitivity analysis on out2 (no treatment) ----
+load(here("analysis_input/accepted_parmsets_123_180520.Rdata"))
+library(sensitivity)
+
+# PRCC
+# Check order is the same
+rownames(params_mat_accepted)==
+colnames(out2$timeseries$total_hbv_deaths_rate[out2$timeseries$total_hbv_deaths_rate$time == 2020,-c(1:2)])
+
+out_vec <- c(unlist(out2$timeseries$total_hbv_deaths_rate[
+  out2$timeseries$total_hbv_deaths_rate$time == 2050,-c(1:2)]))
+
+
+# Run PRCC
+test_prcc <- pcc(params_mat_accepted,
+    out_vec,
+    rank = TRUE, nboot = 100)
+#View(test_prcc$PRCC)
+rownames(test_prcc$PRCC)[which(abs(test_prcc$PRCC$original)>=quantile(abs(test_prcc$PRCC$original), prob = 0.9))]
+# 1990: "pr_ir_cc_female", "pr_ir_cc_age_threshold", "pr_ic_enchb", "cirrhosis_male_cofactor"
+# 2010: "pr_ir_ic", "pr_ir_cc_female", "pr_ic_enchb", "pr_enchb_cc_female"
+# 2020: "pr_ir_ic", "pr_ir_cc_female", "pr_ic_enchb", "pr_enchb_cc_female"
+# 2030: "mtct_prob_e", "p_chronic_function_r", "pr_ic_enchb", "pr_enchb_cc_female"
+# 2050: "mtct_prob_e", "mtct_prob_s", "p_chronic_in_mtct", "pr_ic_enchb"
+
+plot(test_prcc)
+abline(h=0)
+plot(x= params_mat_accepted$pr_ic_enchb, y = out_vec)  # Example of a correlated parameter
+plot(x= params_mat_accepted$hccr_dcc, y = out_vec)     # Example of an uncorrelated parameter
+
+# Assess monotonic relationships: not always clear
+for(i in 1:ncol(params_mat_accepted)) {
+  plot(x= params_mat_accepted[,i], y = out_vec, xlab = colnames(params_mat_accepted)[i])
+}
+
+# pr_it_ir, pr_enchb_cc_female, pr_cc_dcc, hccr_dcc are all fine
+x <- params_mat_accepted$hccr_dcc
+y <- out_vec
+cor(rank(y), rank(x))^2 # almost 0
+summary(lm(rank(y) ~ poly(rank(x), 2)))
+# A low squared Spearman's rank correlation but high R-squared from such regression indicates a
+# strong non-monotonic relationship.
+# Need to check this is the correct way of testing this
 

@@ -1137,6 +1137,19 @@ plot_prior_posterior("mu_dcc")
 plot_prior_posterior("mu_hcc")
 plot_prior_posterior("vacc_eff")
 
+# Posterior correlation
+library(corrplot)
+corrmatrix_post <- cor(posterior) # methods Spearman and Pearson look similar, only Kendall focuses on the highest correlations
+# Correlation plot
+corrplot(corrmatrix_post, method = "circle")
+# Clustered correlation plot (https://stackoverflow.com/questions/45896231/r-corrplot-with-clustering-default-dissimilarity-measure-for-correlation-matrix)
+corrplot(corrmatrix_post, method = "circle", order="hclust")
+# Look into different hclust.method
+
+corrmatrix_prior <- cor(prior)
+corrplot(corrmatrix_prior, method = "circle")
+
+
 library(HDInterval)
 
 Mode <- function(x) {
