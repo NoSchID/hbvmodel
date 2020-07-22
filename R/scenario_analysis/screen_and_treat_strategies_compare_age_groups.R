@@ -41,6 +41,14 @@ scenario_e2_full_results <- readRDS(here("output", "screen_and_treat_results",
 scenario_e3_full_results <- readRDS(here("output", "screen_and_treat_results",
                                          "scenario_e3_full_results.rds"))
 
+# F1 = Low assessment uptake, ages 15-65
+scenario_f1_full_results <- readRDS(here("output", "screen_and_treat_results",
+                                         "scenario_f1_basic_results.rds"))
+
+# G1 = Low treatment uptake/retention, ages 15-65
+scenario_g1_full_results <- readRDS(here("output", "screen_and_treat_results",
+                                         "scenario_g1_basic_results.rds"))
+
 ## Population-level outcomes of the treatment programme (without/with monitoring) ----
 
 # Full dataframes of HBV deaths averted and LY saved compared to infant vaccine only
@@ -453,3 +461,107 @@ ggplot(data = subset(cohort_hbv_deaths_averted,
 # Monitoring is fairly beneficial on the cohort level overall though (even 10 yearly can avert another 25% of deaths)
 
 # ISSUE WITH A NEGATIVE NUMBER IN D3  - likely due to runtime not being long enough?
+
+## One-way sensitivity analysis of the cascade of care (example) ----
+
+# Currently for 1 age group (15-65) and basic programme only:
+# compare D1 (optimal - 90% screening, 80% assessment, 100% treatment),
+# E1 (10% screening coverage), F1 (40% assessment) and G1 (40% treatment)
+
+# HBV deaths averted compared to infant vaccine only
+cascade_deaths_averted_sq <- rbind(
+  cbind(scenario_d1_full_results$deaths_averted_sq_long, assumption = "d1"),
+  cbind(scenario_e1_full_results$deaths_averted_sq_long, assumption = "e1"),
+  cbind(scenario_f1_full_results$deaths_averted_sq_long, assumption = "f1"),
+  cbind(scenario_g1_full_results$deaths_averted_sq_long, assumption = "g1")
+)
+cascade_deaths_averted_sq$screening_coverage <- 0.9
+cascade_deaths_averted_sq$screening_coverage[cascade_deaths_averted_sq$assumption == "e1"] <- 0.1
+cascade_deaths_averted_sq$assessment_uptake <- 0.8
+cascade_deaths_averted_sq$assessment_uptake[cascade_deaths_averted_sq$assumption == "f1"] <- 0.4
+cascade_deaths_averted_sq$treatment_uptake <- 1
+cascade_deaths_averted_sq$treatment_uptake[cascade_deaths_averted_sq$assumption == "g1"] <- 0.4
+
+# Visualise what result could look like (but would plot median and 95% CrI with ribbon)
+
+p1 <- ggplot(subset(cascade_deaths_averted_sq,
+              assumption %in% c("d1", "e1") & type == "proportion_averted" & by_year == 2050),
+             aes(x = screening_coverage, y = value, group = assumption)) +
+  geom_boxplot(width = 0.1) +
+  xlim(0,1.1) + ylim(0,1) +
+  ylab("Proportion of HBV deaths averted") +
+  stat_summary(fun=median, geom="smooth", aes(group=1), lwd=1) +
+  theme_classic()
+
+p2 <- ggplot(subset(cascade_deaths_averted_sq,
+              assumption %in% c("d1", "f1") & type == "proportion_averted" & by_year == 2050),
+             aes(x = assessment_uptake, y = value, group = assumption)) +
+  geom_boxplot(width = 0.1) +
+  xlim(0,1.1) + ylim(0,1) +
+  ylab("") +
+  stat_summary(fun=median, geom="smooth", aes(group=1), lwd=1) +
+  theme_classic()
+
+p3 <- ggplot(subset(cascade_deaths_averted_sq,
+                    assumption %in% c("d1", "g1") & type == "proportion_averted" & by_year == 2050),
+             aes(x = treatment_uptake, y = value, group = assumption)) +
+  geom_boxplot(width = 0.1) +
+  xlim(0,1.1) + ylim(0,1) +
+  ylab("") +
+  stat_summary(fun=median, geom="smooth", aes(group=1), lwd=1) +
+  theme_classic()
+
+library(gridExtra)
+grid.arrange(p1,p2,p3, ncol = 3)
+# Slope for assessment uptake appears steeper than for screening coverage and treatment uptake
+# (this becomes more visible over time)
+# Linear trend may not be true.
+
+# HBV deaths averted per interaction
+cascade_deaths_averted_per_interaction_sq <- rbind(
+  cbind(scenario_d1_full_results$deaths_averted_per_interaction_sq_long, assumption = "d1"),
+  cbind(scenario_e1_full_results$deaths_averted_per_interaction_sq_long, assumption = "e1"),
+  cbind(scenario_f1_full_results$deaths_averted_per_interaction_sq_long, assumption = "f1"),
+  cbind(scenario_g1_full_results$deaths_averted_per_interaction_sq_long, assumption = "g1")
+)
+cascade_deaths_averted_per_interaction_sq$screening_coverage <- 0.9
+cascade_deaths_averted_per_interaction_sq$screening_coverage[cascade_deaths_averted_per_interaction_sq$assumption == "e1"] <- 0.1
+cascade_deaths_averted_per_interaction_sq$assessment_uptake <- 0.8
+cascade_deaths_averted_per_interaction_sq$assessment_uptake[cascade_deaths_averted_per_interaction_sq$assumption == "f1"] <- 0.4
+cascade_deaths_averted_per_interaction_sq$treatment_uptake <- 1
+cascade_deaths_averted_per_interaction_sq$treatment_uptake[cascade_deaths_averted_per_interaction_sq$assumption == "g1"] <- 0.4
+
+
+p1a <- ggplot(subset(cascade_deaths_averted_sq,
+                    assumption %in% c("d1", "e1") & type == "proportion_averted" & by_year == 2030),
+             aes(x = screening_coverage, y = 1/value, group = assumption)) +
+  geom_boxplot(width = 0.1) +
+  xlim(0,1.1) + ylim(0,35) +
+  ylab("Interactions per death averted") +
+  stat_summary(fun=median, geom="smooth", aes(group=1), lwd=1) +
+  theme_classic()
+
+p2a <- ggplot(subset(cascade_deaths_averted_sq,
+                    assumption %in% c("d1", "f1") & type == "proportion_averted" & by_year == 2030),
+             aes(x = assessment_uptake, y = 1/value, group = assumption)) +
+  geom_boxplot(width = 0.1) +
+  xlim(0,1.1) + ylim(0,35) +
+  ylab("") +
+  stat_summary(fun=median, geom="smooth", aes(group=1), lwd=1) +
+  theme_classic()
+
+p3a <- ggplot(subset(cascade_deaths_averted_sq,
+                    assumption %in% c("d1", "g1") & type == "proportion_averted" & by_year == 2030),
+             aes(x = treatment_uptake, y = 1/value, group = assumption)) +
+  geom_boxplot(width = 0.1) +
+  xlim(0,1.1) + ylim(0,35) +
+  ylab("") +
+  stat_summary(fun=median, geom="smooth", aes(group=1), lwd=1) +
+  theme_classic()
+
+grid.arrange(p1a,p2a,p3a, ncol = 3)
+# Higher uptake along the casecade lead to reductions in the number of healthcare
+# interactions required to avert 1 HBV death. Reduction appears largest (steepest slope)
+# for screening, but HBsAg tests are the easiest and cheapest intervention.
+# Pattern is similar although less pronounced by 2050.
+# Linear trend may not be true.

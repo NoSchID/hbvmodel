@@ -41,6 +41,54 @@ scenario_b_parms$bdvacc_introtime <- 2020
 scenario_b_parms$apply_bdvacc_linear_scale_up <- 1
 #save(scenario_b_parms, file= here("analysis_input", "scenario_b_parms.Rdata"))
 
+# ASSUMPTION B1 SIMULATIONS (Optimal with PMTCT)
+scenario_b1_parms <- parameter_list
+scenario_b1_parms$screening_coverage <- 0.9
+scenario_b1_parms$min_age_to_screen <- 15
+scenario_b1_parms$max_age_to_screen <- 65
+scenario_b1_parms$prop_to_vaccinate <- 0
+scenario_b1_parms$link_to_care_prob <- 0.8
+scenario_b1_parms$treatment_initiation_prob <- 1
+scenario_b1_parms$monitoring_prob <- 0.8
+scenario_b1_parms$apply_treat_it <- 0
+scenario_b1_parms$apply_bdvacc <- 1
+scenario_b1_parms$bdvacc_introtime <- 2020
+scenario_b1_parms$apply_bdvacc_linear_scale_up <- 1
+#save(scenario_b1_parms, file= here("analysis_input", "scenario_b1_parms.Rdata"))
+
+
+# ASSUMPTION B2 SIMULATIONS (Optimal with PMTCT)
+scenario_b2_parms <- parameter_list
+scenario_b2_parms$screening_coverage <- 0.9
+scenario_b2_parms$min_age_to_screen <- 45
+scenario_b2_parms$max_age_to_screen <- 70
+scenario_b2_parms$prop_to_vaccinate <- 0
+scenario_b2_parms$link_to_care_prob <- 0.8
+scenario_b2_parms$treatment_initiation_prob <- 1
+scenario_b2_parms$monitoring_prob <- 0.8
+scenario_b2_parms$apply_treat_it <- 0
+scenario_b2_parms$apply_bdvacc <- 1
+scenario_b2_parms$bdvacc_introtime <- 2020
+scenario_b2_parms$apply_bdvacc_linear_scale_up <- 1
+#save(scenario_b2_parms, file= here("analysis_input", "scenario_b2_parms.Rdata"))
+
+
+# ASSUMPTION B3 SIMULATIONS (Optimal with PMTCT)
+scenario_b3_parms <- parameter_list
+scenario_b3_parms$screening_coverage <- 0.9
+scenario_b3_parms$min_age_to_screen <- 15
+scenario_b3_parms$max_age_to_screen <- 45
+scenario_b3_parms$prop_to_vaccinate <- 0
+scenario_b3_parms$link_to_care_prob <- 0.8
+scenario_b3_parms$treatment_initiation_prob <- 1
+scenario_b3_parms$monitoring_prob <- 0.8
+scenario_b3_parms$apply_treat_it <- 0
+scenario_b3_parms$apply_bdvacc <- 1
+scenario_b3_parms$bdvacc_introtime <- 2020
+scenario_b3_parms$apply_bdvacc_linear_scale_up <- 1
+#save(scenario_b3_parms, file= here("analysis_input", "scenario_b3_parms.Rdata"))
+
+
 # ASSUMPTION D1 SIMULATIONS (Optimal with younger eligibility)
 scenario_d1_parms <- parameter_list
 scenario_d1_parms$screening_coverage <- 0.9
@@ -158,6 +206,61 @@ scenario_g1_parms$apply_bdvacc <- 0
 scenario_g1_parms$apply_treat_it <- 0
 #save(scenario_g1_parms, file= here("analysis_input", "scenario_g1_parms.Rdata"))
 
+# ASSUMPTION BX SIMULATIONS: delayed infant vaccine introduction
+scenario_bx_parms <- parameter_list
+scenario_bx_parms$screening_coverage <- 0.9
+scenario_bx_parms$min_age_to_screen <- 30
+scenario_bx_parms$max_age_to_screen <- 70
+scenario_bx_parms$prop_to_vaccinate <- 0
+scenario_bx_parms$link_to_care_prob <- 0.8
+scenario_bx_parms$treatment_initiation_prob <- 1
+scenario_bx_parms$monitoring_prob <- 0.8
+scenario_bx_parms$apply_bdvacc <- 0
+scenario_bx_parms$apply_treat_it <- 0
+scenario_bx_parms$vacc_introtime <- 2004
+#save(scenario_bx_parms, file= here("analysis_input", "scenario_bx_parms.Rdata"))
+
+# ASSUMPTION BX1 SIMULATIONS
+scenario_bx1_parms <- parameter_list
+scenario_bx1_parms$screening_coverage <- 0.9
+scenario_bx1_parms$min_age_to_screen <- 15
+scenario_bx1_parms$max_age_to_screen <- 65
+scenario_bx1_parms$prop_to_vaccinate <- 0
+scenario_bx1_parms$link_to_care_prob <- 0.8
+scenario_bx1_parms$treatment_initiation_prob <- 1
+scenario_bx1_parms$monitoring_prob <- 0.8
+scenario_bx1_parms$apply_bdvacc <- 0
+scenario_bx1_parms$apply_treat_it <- 0
+scenario_bx1_parms$vacc_introtime <- 2004
+#save(scenario_bx1_parms, file= here("analysis_input", "scenario_bx1_parms.Rdata"))
+
+# ASSUMPTION BX2 SIMULATIONS
+scenario_bx2_parms <- parameter_list
+scenario_bx2_parms$screening_coverage <- 0.9
+scenario_bx2_parms$min_age_to_screen <- 45
+scenario_bx2_parms$max_age_to_screen <- 70
+scenario_bx2_parms$prop_to_vaccinate <- 0
+scenario_bx2_parms$link_to_care_prob <- 0.8
+scenario_bx2_parms$treatment_initiation_prob <- 1
+scenario_bx2_parms$monitoring_prob <- 0.8
+scenario_bx2_parms$apply_bdvacc <- 0
+scenario_bx2_parms$apply_treat_it <- 0
+scenario_bx2_parms$vacc_introtime <- 2004
+#save(scenario_bx2_parms, file= here("analysis_input", "scenario_bx2_parms.Rdata"))
+
+# ASSUMPTION BX3 SIMULATIONS
+scenario_bx3_parms <- parameter_list
+scenario_bx3_parms$screening_coverage <- 0.9
+scenario_bx3_parms$min_age_to_screen <- 15
+scenario_bx3_parms$max_age_to_screen <- 45
+scenario_bx3_parms$prop_to_vaccinate <- 0
+scenario_bx3_parms$link_to_care_prob <- 0.8
+scenario_bx3_parms$treatment_initiation_prob <- 1
+scenario_bx3_parms$monitoring_prob <- 0.8
+scenario_bx3_parms$apply_bdvacc <- 0
+scenario_bx3_parms$apply_treat_it <- 0
+scenario_bx3_parms$vacc_introtime <- 2004
+#save(scenario_bx3_parms, file= here("analysis_input", "scenario_bx3_parms.Rdata"))
 
 # Simulate ----
 

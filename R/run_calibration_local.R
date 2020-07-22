@@ -2584,3 +2584,76 @@ hbsag_prev$median <- apply(hbsag_prev, 1, median)
 hbsag_prev$lower <- apply(hbsag_prev, 1, quantile, prob = 0.025)
 hbsag_prev$upper <- apply(hbsag_prev, 1,quantile, prob = 0.975)
 hbsag_prev_long <-gather(hbsag_prev, key = "sim", value = "prev", -time)
+
+
+# HBsAg prev by age in status_quo scenario
+out_path <-
+  "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/screen_and_treat_strategies/Scenario A with new parmsets/"
+
+sim2 <- readRDS(paste0(out_path, "a_sim2_status_quo_220620.rds"))
+sim2 <- sim2$status_quo
+
+which(sim2[[1]]$time == 2030)
+
+carriers <- sapply(sim2, "[", "carriers")
+carriers <- lapply(carriers, function(x) x[61,])  # 61=2020, 81 = 2030
+carriers <- do.call(rbind, carriers)
+
+pop <- sapply(sim2, "[", "pop")
+pop <- lapply(pop, function(x) x[61,])
+pop <- do.call(rbind, pop)
+
+prev <- carriers/pop
+prev$sim <- rownames(prev)
+prev <- gather(prev, key = "age", value = "prev", -sim)
+prev$age <- rep(ages, each = 123)
+
+ggplot(prev) +
+  geom_line(aes(x = age, y = prev, group = sim, colour = sim)) +
+  geom_vline(xintercept = 15) +
+  geom_vline(xintercept = 30) +
+  geom_vline(xintercept = 45) +
+  geom_vline(xintercept = 65) +
+  geom_vline(xintercept = 70) +
+  theme_bw() +
+  theme(legend.position = "none")
+
+carriers$sim <- rownames(carriers)
+carriers <- gather(carriers, key = "age", value = "number_carriers", -sim)
+carriers$age <- rep(ages, each = 123)
+
+ggplot(carriers) +
+  geom_line(aes(x = age, y = number_carriers, group = sim, colour = sim)) +
+  geom_vline(xintercept = 15) +
+  geom_vline(xintercept = 30) +
+  geom_vline(xintercept = 45) +
+  geom_vline(xintercept = 65) +
+  geom_vline(xintercept = 70) +
+  theme_bw() +
+  theme(legend.position = "none")
+
+
+carriers_2020 <- sapply(sim2, "[", "carriers")
+carriers_2020 <- lapply(carriers_2020, function(x) x[61,])  # 61=2020, 81 = 2030
+carriers_2020 <- do.call(rbind, carriers_2020)
+
+carriers_2030 <- sapply(sim2, "[", "carriers")
+carriers_2030 <- lapply(carriers_2030, function(x) x[81,])
+carriers_2030 <- do.call(rbind, carriers_2030)
+
+carriers_2040 <- sapply(sim2, "[", "carriers")
+carriers_2040 <- lapply(carriers_2040, function(x) x[101,])
+carriers_2040 <- do.call(rbind, carriers_2040)
+
+round(quantile(apply(carriers_2020[,which(ages == 15):which(ages==30)],1,sum), prob = c(0.5,0.025, 0.975)),0)
+round(quantile(apply(carriers_2020[,which(ages == 30):which(ages==45)],1,sum), prob = c(0.5,0.025, 0.975)),0)
+round(quantile(apply(carriers_2020[,which(ages == 45):which(ages==65)],1,sum), prob = c(0.5,0.025, 0.975)),0)
+round(quantile(apply(carriers_2030[,which(ages == 15):which(ages==30)],1,sum), prob = c(0.5,0.025, 0.975)),0)
+round(quantile(apply(carriers_2030[,which(ages == 30):which(ages==45)],1,sum), prob = c(0.5,0.025, 0.975)),0)
+round(quantile(apply(carriers_2030[,which(ages == 45):which(ages==65)],1,sum), prob = c(0.5,0.025, 0.975)),0)
+round(quantile(apply(carriers_2040[,which(ages == 15):which(ages==30)],1,sum), prob = c(0.5,0.025, 0.975)),0)
+round(quantile(apply(carriers_2040[,which(ages == 30):which(ages==45)],1,sum), prob = c(0.5,0.025, 0.975)),0)
+round(quantile(apply(carriers_2040[,which(ages == 45):which(ages==65)],1,sum), prob = c(0.5,0.025, 0.975)),0)
+
+
+

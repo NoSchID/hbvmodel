@@ -231,6 +231,132 @@ out5 <- out5[[1]]
 out6 <- readRDS(paste0(out_path, "e3_out6_screen_2020_monit_1_160720.rds"))
 out6 <- out6[[1]]
 
+# Assumption F1 set (basic programme only) ----
+out_path <-
+  "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/screen_and_treat_strategies/Scenario F1/"
+
+# Status quo
+out1 <- readRDS(paste0(out_path, "f1_out1_status_quo_cohort_220720.rds"))
+out1 <- out1[[1]]
+out2 <- readRDS(paste0(out_path, "out2_status_quo_080720.rds"))
+out2 <- out2[[1]]
+
+# Monitoring
+out3 <- readRDS(paste0(out_path, "f1_out3_screen_2020_monit_0_220720.rds"))
+out3 <- out3[[1]]
+
+# Assumption G1 set (basic programme only) ----
+out_path <-
+  "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/screen_and_treat_strategies/Scenario G1/"
+
+# Status quo
+out1 <- readRDS(paste0(out_path, "g1_out1_status_quo_cohort_220720.rds"))
+out1 <- out1[[1]]
+out2 <- readRDS(paste0(out_path, "out2_status_quo_080720.rds"))
+out2 <- out2[[1]]
+
+# Monitoring
+out3 <- readRDS(paste0(out_path, "g1_out3_screen_2020_monit_0_220720.rds"))
+out3 <- out3[[1]]
+## BASIC PROGRAMME IMPACT (if only this available) ----
+### Cohort outcomes
+# Average age at death
+cohort_age_at_death <- data.frame(rbind(out1$cohort_age_at_death,
+                                        out3$cohort_age_at_death))
+
+cohort_age_at_death_long <- gather(cohort_age_at_death, key = "sim", value = "value", -scenario)
+
+# Compare cohort number of HBV deaths averted compared to no treatment (status quo)
+cohort_deaths_averted_sq_long <-
+  plot_hbv_deaths_averted_cohort(counterfactual_object = out1,
+                                 scenario_objects = list(out3),
+                                 counterfactual_label = "no treatment")
+
+# Compare cohort number of life years gained compared to no monitoring
+cohort_ly_gained_sq_long <-
+  plot_ly_gained_cohort(counterfactual_object = out1,
+                        scenario_objects = list(out3),
+                        counterfactual_label = "no treatment")
+
+### Population outcomes
+
+# HBV DEATHS AVERTED
+
+# COUNTERFACTUAL = STATUS QUO
+deaths_averted_sq_long <- plot_hbv_deaths_averted(counterfactual_object = out2,
+                                                  scenario_objects = list(out3),
+                                                  counterfactual_label = "no treatment programme")
+
+
+# LIFE YEARS GAINED
+
+# COUNTERFACTUAL = STATUS QUO
+# Population-level effect of screening/treatment/monitoring in the short and long term
+ly_gained_sq_long <- plot_ly_gained(counterfactual_object = out2,
+                                    scenario_objects = list(out3),
+                                    counterfactual_label = "treatment programme without monitoring")
+
+
+### Population outcomes per healthcare interaction
+
+# COUNTERFACTUAL = STATUS QUO
+
+# OUTCOME = HBV DEATHS AVERTED PER INCREMENTAL TREATMENT INITIATION
+# compared to status quo, any healthcare interactions are incremental
+
+# OUTCOME = HBV DEATHS AVERTED PER INCREMENTAL INTERACTION
+deaths_averted_per_interaction_sq_long <-
+  plot_hbv_deaths_averted_per_healthcare_interaction(counterfactual_object = out2,
+                                                     scenario_objects = list(out3),
+                                                     interaction_type = "total_interactions",
+                                                     counterfactual_label = "no treatment programme")
+
+# OUTCOME = HBV DEATHS AVERTED PER INCREMENTAL ASSESSMENT
+deaths_averted_per_assessment_sq_long <-
+  plot_hbv_deaths_averted_per_healthcare_interaction(counterfactual_object = out2,
+                                                     scenario_objects = list(out3),
+                                                     interaction_type = "total_assessed",
+                                                     counterfactual_label = "no treatment programme")
+
+# OUTCOME = HBV DEATHS AVERTED PER INCREMENTAL SCREENING
+deaths_averted_per_test_sq_long <-
+  plot_hbv_deaths_averted_per_healthcare_interaction(counterfactual_object = out2,
+                                                     scenario_objects = list(out3),
+                                                     interaction_type = "total_screened",
+                                                     counterfactual_label = "no treatment programme")
+
+deaths_averted_per_treatment_sq_long <-
+  plot_hbv_deaths_averted_per_healthcare_interaction(counterfactual_object = out2,
+                                                     scenario_objects = list(out3),
+                                                     interaction_type = "total_treated",
+                                                     counterfactual_label = "no treatment programme")
+
+# OUTCOME = LIFE YEARS GAINED PER INCREMENTAL HEALTHCARE INTERACTION
+
+# One-off screen monitoring every 10 years
+ly_gained_per_interaction_sq_long <-
+  plot_ly_gained_per_healthcare_interaction(counterfactual_object = out2,
+                                            scenario_objects = list(out3),
+                                            interaction_type = "total_interactions",
+                                            counterfactual_label = "no treatment programme")
+
+ly_gained_per_assessment_sq_long <-
+  plot_ly_gained_per_healthcare_interaction(counterfactual_object = out2,
+                                            scenario_objects = list(out3),
+                                            interaction_type = "total_assessed",
+                                            counterfactual_label = "no treatment programme")
+ly_gained_per_test_sq_long <-
+  plot_ly_gained_per_healthcare_interaction(counterfactual_object = out2,
+                                            scenario_objects = list(out3),
+                                            interaction_type = "total_screened",
+                                            counterfactual_label = "no treatment programme")
+
+ly_gained_per_treatment_sq_long <-
+  plot_ly_gained_per_healthcare_interaction(counterfactual_object = out2,
+                                            scenario_objects = list(out3),
+                                            interaction_type = "total_treated",
+                                            counterfactual_label = "no treatment programme")
+
 ## IMPACT OF MONITORING ----
 ### Cohort outcomes of monitoring (uses functions from calculate_outcomes.R) ----
 
@@ -1156,6 +1282,25 @@ scenario_e3_summary_results <- list(
                                                 cri_upper = quantile(1/value, prob = 0.975)))
 )
 #saveRDS(scenario_e3_summary_results, here("output", "screen_and_treat_results", "scenario_e3_summary_results.rds"))
+
+## TABLE OF ALL KEY OUTCOMES FOR 1 ASSUMPTION SET (BASIC PROGRAMME ONLY) ----
+scenario_g1_full_results <-
+  list(
+    cohort_deaths_averted_sq_long = cohort_deaths_averted_sq_long,
+    cohort_ly_gained_sq_long = cohort_ly_gained_sq_long,
+    cohort_average_age_at_death_long = cohort_age_at_death_long,
+    deaths_averted_sq_long = deaths_averted_sq_long,
+    ly_gained_sq_long = ly_gained_sq_long,
+    deaths_averted_per_interaction_sq_long = deaths_averted_per_interaction_sq_long,
+    deaths_averted_per_assessment_sq_long = deaths_averted_per_assessment_sq_long,
+    deaths_averted_per_test_sq_long = deaths_averted_per_test_sq_long,
+    deaths_averted_per_treatment_sq_long = deaths_averted_per_treatment_sq_long,
+    ly_gained_per_interaction_sq_long = ly_gained_per_interaction_sq_long,
+    ly_gained_per_assessment_sq_long = ly_gained_per_assessment_sq_long,
+    ly_gained_per_test_sq_long = ly_gained_per_test_sq_long,
+    ly_gained_per_treatment_sq_long = ly_gained_per_treatment_sq_long
+  )
+#saveRDS(scenario_g1_full_results, here("output", "screen_and_treat_results", "scenario_g1_basic_results.rds"))
 
 ## TIMESERIES PLOTS ----
 
