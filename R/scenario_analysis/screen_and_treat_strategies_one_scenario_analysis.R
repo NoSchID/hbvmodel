@@ -42,6 +42,10 @@ out10 <- out10[[1]]
 out11 <- readRDS(paste0(out_path, "a_out11_monit_5_screen_5_150720.rds"))
 out11 <- out11[[1]]
 
+# Test: set alpha2=0 to see if it affects incidence
+out3_test <- readRDS(paste0(out_path, "test_a_out3_screen_2020_monit_0_alpha2_0_240720.rds"))
+out3_test <- out3_test[[1]]
+
 # Assumption B set ----
 out_path <-
   "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/screen_and_treat_strategies/Scenario B/"
@@ -76,6 +80,53 @@ out10 <- out10[[1]]
 out11 <- readRDS(paste0(out_path, "b_out11_monit_5_screen_5_150720.rds"))
 out11 <- out11[[1]]
 
+# Assumption B1 set ----
+out_path <-
+  "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/screen_and_treat_strategies/Scenario B1/"
+
+# Status quo
+out1 <- readRDS(paste0(out_path, "b1_out1_bd_scale_up_cohort_240720.rds"))
+out1 <- out1[[1]]
+out2 <- readRDS(paste0(out_path, "out2_bd_scale_up_080720.rds"))
+out2 <- out2[[1]]
+
+# Monitoring
+out3 <- readRDS(paste0(out_path, "b1_out3_screen_2020_monit_0_240720.rds"))
+out3 <- out3[[1]]
+out6 <- readRDS(paste0(out_path, "b1_out6_screen_2020_monit_1_240720.rds"))
+out6 <- out6[[1]]
+
+
+# Assumption B2 set ----
+out_path <-
+  "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/screen_and_treat_strategies/Scenario B2/"
+
+# Status quo
+out1 <- readRDS(paste0(out_path, "b2_out1_bd_scale_up_cohort_240720.rds"))
+out1 <- out1[[1]]
+out2 <- readRDS(paste0(out_path, "out2_bd_scale_up_080720.rds"))
+out2 <- out2[[1]]
+
+# Monitoring
+out3 <- readRDS(paste0(out_path, "b2_out3_screen_2020_monit_0_240720.rds"))
+out3 <- out3[[1]]
+out6 <- readRDS(paste0(out_path, "b2_out6_screen_2020_monit_1_240720.rds"))
+out6 <- out6[[1]]
+# Assumption B3 set ----
+out_path <-
+  "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/screen_and_treat_strategies/Scenario B3/"
+
+# Status quo
+out1 <- readRDS(paste0(out_path, "b3_out1_bd_scale_up_cohort_240720.rds"))
+out1 <- out1[[1]]
+out2 <- readRDS(paste0(out_path, "out2_bd_scale_up_080720.rds"))
+out2 <- out2[[1]]
+
+# Monitoring
+out3 <- readRDS(paste0(out_path, "b3_out3_screen_2020_monit_0_240720.rds"))
+out3 <- out3[[1]]
+out6 <- readRDS(paste0(out_path, "b3_out6_screen_2020_monit_1_240720.rds"))
+out6 <- out6[[1]]
 # Assumption D1 set ----
 out_path <-
   "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/screen_and_treat_strategies/Scenario D1/"
@@ -258,6 +309,66 @@ out2 <- out2[[1]]
 # Monitoring
 out3 <- readRDS(paste0(out_path, "g1_out3_screen_2020_monit_0_220720.rds"))
 out3 <- out3[[1]]
+# Assumption BX set (basic programme only) ----
+out_path <-
+  "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/screen_and_treat_strategies/Scenario BX/"
+
+# Status quo
+out1 <- readRDS(paste0(out_path, "bx_out1_status_quo_cohort_240720.rds"))
+out1 <- out1[[1]]
+out2 <- readRDS(paste0(out_path, "bx_out2_status_quo_240720.rds"))
+out2 <- out2[[1]]
+
+# Monitoring
+out3 <- readRDS(paste0(out_path, "bx_out3_screen_2020_monit_0_240720.rds"))
+out3 <- out3[[1]]
+
+
+# Assumption BX1 set (basic programme only-cohort missing) ----
+out_path <-
+  "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/screen_and_treat_strategies/Scenario BX1/"
+
+# Status quo
+out1 <- readRDS(paste0(out_path, "bx1_out1_status_quo_cohort_250720.rds"))
+out1 <- out1[[1]]
+out2 <- readRDS(paste0(out_path, "bx1_out2_status_quo_250720.rds"))
+out2 <- out2[[1]]
+
+# Monitoring
+out3 <- readRDS(paste0(out_path, "bx1_out3_screen_2020_monit_0_250720.rds"))
+out3 <- out3[[1]]
+
+
+# Assumption BX2 set (basic programme only) ----
+out_path <-
+  "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/screen_and_treat_strategies/Scenario BX2/"
+
+# Status quo
+out1 <- readRDS(paste0(out_path, "bx2_out1_status_quo_cohort_250720.rds"))
+out1 <- out1[[1]]
+out2 <- readRDS(paste0(out_path, "bx2_out2_status_quo_250720.rds"))
+out2 <- out2[[1]]
+
+# Monitoring
+out3 <- readRDS(paste0(out_path, "bx2_out3_screen_2020_monit_0_250720.rds"))
+out3 <- out3[[1]]
+
+
+# Assumption BX3 set (basic programme only-cohort missing) ----
+out_path <-
+  "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/screen_and_treat_strategies/Scenario BX3/"
+
+# Status quo
+out1 <- readRDS(paste0(out_path, "bx3_out1_status_quo_cohort_250720.rds"))
+out1 <- out1[[1]]
+out2 <- readRDS(paste0(out_path, "bx3_out2_status_quo_250720.rds"))
+out2 <- out2[[1]]
+
+# Monitoring
+out3 <- readRDS(paste0(out_path, "bx3_out3_screen_2020_monit_0_250720.rds"))
+out3 <- out3[[1]]
+
+
 ## BASIC PROGRAMME IMPACT (if only this available) ----
 ### Cohort outcomes
 # Average age at death
@@ -1284,7 +1395,7 @@ scenario_e3_summary_results <- list(
 #saveRDS(scenario_e3_summary_results, here("output", "screen_and_treat_results", "scenario_e3_summary_results.rds"))
 
 ## TABLE OF ALL KEY OUTCOMES FOR 1 ASSUMPTION SET (BASIC PROGRAMME ONLY) ----
-scenario_g1_full_results <-
+scenario_bx3_full_results <-
   list(
     cohort_deaths_averted_sq_long = cohort_deaths_averted_sq_long,
     cohort_ly_gained_sq_long = cohort_ly_gained_sq_long,
@@ -1300,7 +1411,7 @@ scenario_g1_full_results <-
     ly_gained_per_test_sq_long = ly_gained_per_test_sq_long,
     ly_gained_per_treatment_sq_long = ly_gained_per_treatment_sq_long
   )
-#saveRDS(scenario_g1_full_results, here("output", "screen_and_treat_results", "scenario_g1_basic_results.rds"))
+#saveRDS(scenario_bx3_full_results, here("output", "screen_and_treat_results", "scenario_bx3_basic_results.rds"))
 
 ## TIMESERIES PLOTS ----
 
@@ -1325,7 +1436,7 @@ hbv_deaths_rate <- rbind(cbind(out2$timeseries$total_hbv_deaths_rate[,c(1:2)],
 #index_to_remove <- c(1,5,45,47,52,60,61,70,86,87,95,98,109,115,119)+2 # +2 because of time and scenario column
 # Tried the HBV mortality plot with fewer parmsets from k means clustering, which looks nearly identical
 
-hbv_deaths<- rbind(cbind(out2$timeseries$total_hbv_deaths[,c(1:2)],
+hbv_deaths <- rbind(cbind(out2$timeseries$total_hbv_deaths[,c(1:2)],
                          median = apply(out2$timeseries$total_hbv_deaths[,-c(1:2)], 1, median),
                          cri_lower = apply(out2$timeseries$total_hbv_deaths[,-c(1:2)], 1, quantile, prob = 0.025),
                          cri_upper = apply(out2$timeseries$total_hbv_deaths[,-c(1:2)], 1, quantile, prob = 0.975)),
@@ -1342,46 +1453,111 @@ hbv_deaths<- rbind(cbind(out2$timeseries$total_hbv_deaths[,c(1:2)],
                          cri_lower = apply(out9$timeseries$total_hbv_deaths[,-c(1:2)], 1, quantile, prob = 0.025),
                          cri_upper = apply(out9$timeseries$total_hbv_deaths[,-c(1:2)], 1, quantile, prob = 0.975)))
 
-
-# HBV-related deaths
-ggplot(hbv_deaths_rate[hbv_deaths_rate$scenario %in% c("status_quo", "monit_0_screen_5"),]) +
+# HBV-related deaths rate
+ggplot(hbv_deaths_rate[hbv_deaths_rate$scenario %in% c("status_quo", "screen_2020_monit_5"),]) +
   geom_line(aes(x=time, y = median*10000/0.5, group = scenario, colour = scenario), size =1)+
-  geom_ribbon(aes(x=time, ymin=cri_lower*10000/0.5, ymax=cri_upper*10000/0.5, group = scenario, colour = scenario, fill = scenario),
-              linetype = "dashed", alpha = 0)+
-  labs(title = "HBV-related deaths",
+  geom_ribbon(aes(x=time, ymin=cri_lower*10000/0.5, ymax=cri_upper*10000/0.5, group = scenario,
+                  fill = scenario),  #colour=scenario
+              linetype = "dashed", alpha = 0.1)+
+  labs(title = "HBV-related mortality rate",
        colour = "Modelled scenario", fill = "Modelled scenario",
        caption = "Status quo: historical infant vaccine coverage since 1990 and maintaining 93% coverage after 2018\n
        One-off screen+treat: infant vaccine and screening once in 2020\n
        Repeat screen+treat: Infant vaccine and screening every 5 years starting in 2020") +
-  scale_x_continuous(breaks=seq(1960, 2100, by = 10), limits = c(2015,2050)) +
+  scale_x_continuous(breaks=seq(1960, 2100, by = 10), limits = c(2015,2070)) +
   scale_color_manual(limits = c("status_quo", "screen_2020_monit_0", "screen_2020_monit_5", "monit_0_screen_5"),
                      labels = c("status_quo"="Status quo",
                                 "screen_2020_monit_0"="One-off screen+treat",
                                 "screen_2020_monit_5"="Monitor every 5 years",
                                 "monit_0_screen_5" = "Screen every 5 years"),
-                     values = c("screen_2020_monit_0"="steelblue", "status_quo"="orange", "monit_0_screen_5"="deeppink", "screen_2020_monit_5" = "black")) +
-  #scale_fill_manual(limits = c("status_quo", "screen_once", "screen_5"),
-  #                  labels = c("status_quo"="Status quo",
-  #                             "screen_once"="One-off screen+treat",
-  #                             "screen_5"="Repeat screen+treat"),
-  #                  values = c("screen_once"="steelblue", "status_quo"="orange", "screen_5"="deeppink")) +
+                     values = c("screen_2020_monit_0"= "orange",
+                                "status_quo"="steelblue",
+                                "monit_0_screen_5"="black",
+                                "screen_2020_monit_5" = "deeppink")) +
+  scale_fill_manual(limits = c("status_quo", "screen_2020_monit_0", "screen_2020_monit_5", "monit_0_screen_5"),
+                    labels = c("status_quo"="Status quo",
+                               "screen_2020_monit_0"="One-off screen+treat",
+                               "screen_2020_monit_5"="Monitor every 5 years",
+                               "monit_0_screen_5" = "Screen every 5 years"),
+                    values = c("screen_2020_monit_0"="orange",
+                               "status_quo"="steelblue",
+                               "monit_0_screen_5"="black",
+                               "screen_2020_monit_5" = "deeppink")) +
+  ylab("HBV-related death rate  per 10,000 person-years")+
+  xlab("Year")+
+  ylim(0,5) +
+  theme_classic()
+# Alternative visualisation:
+ggplot(hbv_deaths_rate[hbv_deaths_rate$scenario %in% c("status_quo", "screen_2020_monit_5"),]) +
+  geom_line(aes(x=time, y = median*10000/0.5, group = scenario, colour = scenario), size =1)+
+  geom_ribbon(data =hbv_deaths_rate[hbv_deaths_rate$scenario %in% c("status_quo"),],
+              aes(x=time, ymin=cri_lower*10000/0.5, ymax=cri_upper*10000/0.5, group = scenario,
+                  colour = scenario),
+              linetype = "dashed", alpha = 0)+
+  geom_ribbon(data =hbv_deaths_rate[hbv_deaths_rate$scenario %in% c("screen_2020_monit_5"),],
+              aes(x=time, ymin=cri_lower*10000/0.5, ymax=cri_upper*10000/0.5, group = scenario,
+                  fill = scenario, colour = scenario),  #colour=scenario
+              linetype = "dashed", alpha = 0.15)+
+  labs(title = "HBV-related mortality rate",
+       colour = "Modelled scenario", fill = "Modelled scenario",
+       caption = "Status quo: historical infant vaccine coverage since 1990 and maintaining 93% coverage after 2018\n
+       One-off screen+treat: infant vaccine and screening once in 2020\n
+       Repeat screen+treat: Infant vaccine and screening every 5 years starting in 2020") +
+  scale_x_continuous(breaks=seq(1960, 2100, by = 10), limits = c(2015,2070)) +
+  scale_color_manual(limits = c("status_quo", "screen_2020_monit_0", "screen_2020_monit_5", "monit_0_screen_5"),
+                     labels = c("status_quo"="Status quo",
+                                "screen_2020_monit_0"="One-off screen+treat",
+                                "screen_2020_monit_5"="Monitor every 5 years",
+                                "monit_0_screen_5" = "Screen every 5 years"),
+                     values = c("screen_2020_monit_0"= "orange",
+                                "status_quo"="steelblue",
+                                "monit_0_screen_5"="black",
+                                "screen_2020_monit_5" = "deeppink")) +
+  scale_fill_manual(limits = c("status_quo", "screen_2020_monit_0", "screen_2020_monit_5", "monit_0_screen_5"),
+                    labels = c("status_quo"="Status quo",
+                               "screen_2020_monit_0"="One-off screen+treat",
+                               "screen_2020_monit_5"="Monitor every 5 years",
+                               "monit_0_screen_5" = "Screen every 5 years"),
+                    values = c("screen_2020_monit_0"="orange",
+                               "status_quo"="steelblue",
+                               "monit_0_screen_5"="black",
+                               "screen_2020_monit_5" = "deeppink")) +
   ylab("HBV-related death rate  per 10,000 person-years")+
   xlab("Year")+
   ylim(0,5) +
   theme_classic()
 
 
-
-ggplot(hbv_deaths) +
+# HBV related deaths number
+ggplot(hbv_deaths[hbv_deaths$scenario %in% c("status_quo", "screen_2020_monit_5"),]) +
   geom_line(aes(x=time, y = median/0.5, group = scenario, colour = scenario), size =1)+
-  geom_ribbon(aes(x=time, ymin=cri_lower/0.5, ymax=cri_upper/0.5, group = scenario, colour = scenario, fill = scenario),
-              linetype = "dashed", alpha = 0.05)+
+  geom_ribbon(aes(x=time, ymin=cri_lower/0.5, ymax=cri_upper/0.5, group = scenario,
+                  fill = scenario),  #colour=scenario
+              linetype = "dashed", alpha = 0.1)+
+  scale_color_manual(limits = c("status_quo", "screen_2020_monit_0", "screen_2020_monit_5", "monit_0_screen_5"),
+                     labels = c("status_quo"="Status quo",
+                                "screen_2020_monit_0"="One-off screen+treat",
+                                "screen_2020_monit_5"="Monitor every 5 years",
+                                "monit_0_screen_5" = "Screen every 5 years"),
+                     values = c("screen_2020_monit_0"= "orange",
+                                "status_quo"="steelblue",
+                                "monit_0_screen_5"="black",
+                                "screen_2020_monit_5" = "deeppink")) +
+  scale_fill_manual(limits = c("status_quo", "screen_2020_monit_0", "screen_2020_monit_5", "monit_0_screen_5"),
+                    labels = c("status_quo"="Status quo",
+                               "screen_2020_monit_0"="One-off screen+treat",
+                               "screen_2020_monit_5"="Monitor every 5 years",
+                               "monit_0_screen_5" = "Screen every 5 years"),
+                    values = c("screen_2020_monit_0"="orange",
+                               "status_quo"="steelblue",
+                               "monit_0_screen_5"="black",
+                               "screen_2020_monit_5" = "deeppink")) +
   labs(title = "HBV-related deaths",
        colour = "Modelled scenario", fill = "Modelled scenario",
        caption = "Status quo: historical infant vaccine coverage since 1990 and maintaining 93% coverage after 2018\n
        One-off screen+treat: infant vaccine and screening once in 2020\n
        Repeat screen+treat: Infant vaccine and screening every 5 years starting in 2020") +
-  scale_x_continuous(breaks=seq(1960, 2100, by = 10), limits = c(2015,2100)) +
+  scale_x_continuous(breaks=seq(1960, 2100, by = 10)) +   # , limits = c(2015,2070)
   ylab("Annual number of HBV-related deaths")+
   xlab("Year")+
   theme_classic()
@@ -1414,6 +1590,64 @@ quantile((out5$timeseries$total_hbv_deaths_rate[out5$timeseries$total_hbv_deaths
            (out5$timeseries$total_hbv_deaths_rate[out5$timeseries$total_hbv_deaths_rate$time == 2020,-c(1,2)]), prob =
            c(0.025,0.5,0.975))
 
+# Compare A out3 with alpha2=1 and alpha2=0
+inf_rate_default <- gather(out3$timeseries$total_chronic_infections_rate, key = "sim", value = "value",-time,-scenario)
+inf_rate_alpha2 <- gather(out3_test$timeseries$total_chronic_infections_rate, key = "sim", value = "value",-time,-scenario)
+inf_rate_comp <- rbind(cbind(inf_rate_default, alpha2 = "1"),
+                       cbind(inf_rate_alpha2, alpha2 = "0"))
+
+plot(x=inf_rate_default$time[inf_rate_default$sim == "9035"],
+     y = inf_rate_default$value[inf_rate_default$sim == "9035"], xlim=c(2015,2050), ylim = c(0,0.0003))
+points(x=inf_rate_alpha2$time[inf_rate_alpha2$sim == "9035"],
+       y = inf_rate_alpha2$value[inf_rate_alpha2$sim == "9035"], col = "red")
+
+inf_rate_alpha2$ratio <- inf_rate_alpha2$value/inf_rate_default$value
+quantile(inf_rate_alpha2$ratio[inf_rate_alpha2$time>2020])
+# Effect of alpha2 assumption on infection incidence is minimal (alpha2=0 projection at most 5% below
+# an alpha2=1 projection)
+
+deaths_rate_default <- gather(out3$timeseries$total_hbv_deaths_rate, key = "sim", value = "value",-time,-scenario)
+deaths_rate_alpha2 <- gather(out3_test$timeseries$total_hbv_deaths_rate, key = "sim", value = "value",-time,-scenario)
+deaths_rate_alpha2$ratio <- deaths_rate_alpha2$value/deaths_rate_default$value
+quantile(deaths_rate_alpha2$ratio[deaths_rate_alpha2$time>2020])
+
+plot(x=deaths_rate_default$time,
+     y = deaths_rate_default$value)
+points(x=deaths_rate_alpha2$time,
+       y = deaths_rate_alpha2$value, col = "red")
+# Note some simulation have a strange upwards trend in the HBV deaths rate after 2110
+# Need to be careful with these for cohort effect
+# This is maybe because demography only goes to 2100!! Interestingly nothing like this happens
+# without treatment
+plot(x = gather(out2$timeseries$total_hbv_deaths_rate, key = "sim", value = "value",-time,-scenario)$time,
+     y = gather(out2$timeseries$total_hbv_deaths_rate, key = "sim", value = "value",-time,-scenario)$value)
+
+plot(x = gather(out3$timeseries$total_hbv_deaths, key = "sim", value = "value",-time,-scenario)$time,
+     y = gather(out3$timeseries$total_hbv_deaths, key = "sim", value = "value",-time,-scenario)$value)
+plot(x = gather(out4$timeseries$total_hbv_deaths, key = "sim", value = "value",-time,-scenario)$time,
+     y = gather(out4$timeseries$total_hbv_deaths, key = "sim", value = "value",-time,-scenario)$value)
+plot(x = gather(out5$timeseries$total_hbv_deaths, key = "sim", value = "value",-time,-scenario)$time,
+     y = gather(out5$timeseries$total_hbv_deaths, key = "sim", value = "value",-time,-scenario)$value)
+abline(v=2110)
+plot(x = gather(out6$timeseries$total_hbv_deaths, key = "sim", value = "value",-time,-scenario)$time,
+     y = gather(out6$timeseries$total_hbv_deaths, key = "sim", value = "value",-time,-scenario)$value)
+plot(x = gather(out7$timeseries$total_hbv_deaths, key = "sim", value = "value",-time,-scenario)$time,
+     y = gather(out7$timeseries$total_hbv_deaths, key = "sim", value = "value",-time,-scenario)$value)
+plot(x = gather(out9$timeseries$total_hbv_deaths, key = "sim", value = "value",-time,-scenario)$time,
+     y = gather(out9$timeseries$total_hbv_deaths, key = "sim", value = "value",-time,-scenario)$value)
+
+# Effect of treatment on incidence check
+plot(x=gather(out2$timeseries$total_chronic_infections_rate, key = "sim", value = "value", -time,-scenario)$time,
+     y=gather(out2$timeseries$total_chronic_infections_rate, key = "sim", value = "value", -time,-scenario)$value,
+     xlim = c(2015,2050), ylim = c(0,0.002))
+points(x=gather(out3$timeseries$total_chronic_infections_rate, key = "sim", value = "value", -time,-scenario)$time,
+       y=gather(out3$timeseries$total_chronic_infections_rate, key = "sim", value = "value", -time,-scenario)$value,
+       col = "red")
+
+# Cohort timeseries check
+# Number of deaths
+plot(x=gather(out1$timeseries$total_hbv_deaths, key = "sim", value = "value", -time, -scenario)$time,
+     y=gather(out1$timeseries$total_hbv_deaths, key = "sim", value = "value", -time, -scenario)$value)
 
 ## REDUCTIONS FOR ELIMINATION ----
 

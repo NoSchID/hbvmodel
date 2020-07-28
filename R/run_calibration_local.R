@@ -1074,36 +1074,70 @@ mean((exp(params_mat_targets5$eag_prog_function_rate*ages[which(ages==33)])*para
         params_mat_targets5$pr_ic_enchb)
 
 # Generate table of all prior and posterior summaries
+library(HDInterval)
+Mode <- function(x) {
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
+
+comp_prior_post2 <- rbind(cbind(apply(prior, 2, Mode),
+                                t(apply(prior, 2, hdi))),
+                          cbind(apply(posterior, 2, Mode),
+                                t(apply(posterior, 2, hdi))))
+
 posterior_summary <- gather(params_mat_accepted, key = "parameter", value = "sim") %>%
   group_by(parameter) %>%
   summarise(post_mean = round(mean(sim),4),
             post_median = round(median(sim),4),
             post_cri_lower = round(quantile(sim, prob = 0.025),4),
-            post_cri_upper = round(quantile(sim, prob = 0.975),4))
+            post_cri_upper = round(quantile(sim, prob = 0.975),4),
+            post_mode = round(Mode(sim),4),
+            post_hdi_lower = round(hdi(sim)["lower"],4),
+            post_hdi_upper = round(hdi(sim)["upper"],4))
 
 prior_summary <- gather(params_mat, key = "parameter", value = "sim") %>%
   group_by(parameter) %>%
   summarise(prior_mean = round(mean(sim),4),
             prior_median = round(median(sim),4),
             prior_cri_lower = round(quantile(sim, prob = 0.025),4),
-            prior_cri_upper = round(quantile(sim, prob = 0.975),4))
+            prior_cri_upper = round(quantile(sim, prob = 0.975),4),
+            prior_mode = round(Mode(sim),4),
+            prior_hdi_lower = round(hdi(sim)["lower"],4),
+            prior_hdi_upper = round(hdi(sim)["upper"],4))
 
 prior_posterior_summary <- left_join(prior_summary, posterior_summary, by ="parameter")
 #write.csv(prior_posterior_summary, file=here("calibration", "output", "prior_posterior_summary_table_150720.csv"), row.names = FALSE)
+
+prior_posterior_summary$hdi_width_red <-
+  ((prior_posterior_summary$prior_hdi_upper-prior_posterior_summary$prior_hdi_lower)-
+  (prior_posterior_summary$post_hdi_upper-prior_posterior_summary$post_hdi_lower))/
+  (prior_posterior_summary$prior_hdi_upper-prior_posterior_summary$prior_hdi_lower)
 
 plot_prior_posterior <- function(parm) {
   plot(density(posterior[,parm]), xlim = c(min(min(prior[,parm]),min((posterior[,parm]))), max(max(prior[,parm]),max((posterior[,parm])))),
        ylim = c(0, max(max(density(prior[,parm])$y),max((density(posterior[,parm])$y)))), main= parm,
        lwd=3, col="red")
-  lines(density(prior[,parm]), lwd=3, lty=2, col="blue")
-  legend("bottomleft", legend=c("prior density","posterior density"),
-         col=c("blue","red"), lty=c(3,1), lwd=c(3,3), cex = 1)
+  if (parm %in% c("pr_ir_cc_age_threshold", "cancer_age_threshold")) {
+    lines(density(prior[,parm], bw = 1), lwd=3, lty=2, col="blue")
+  } else {
+    lines(density(prior[,parm]), lwd=3, lty=2, col="blue")
+  }
+#  legend("bottomleft", legend=c("prior density","posterior density"),
+#         col=c("blue","red"), lty=c(3,1), lwd=c(3,3), cex = 1)
 }
+
+plot(density(prior[,"pr_ir_cc_age_threshold"], bw = 1))
+hist(prior[,"pr_ir_cc_age_threshold"], breaks=seq(min(prior[,"pr_ir_cc_age_threshold"])-0.5,
+                                                  max(prior[,"pr_ir_cc_age_threshold"])+0.5, by=1))
 
 prior <- as.data.frame(params_mat)
 posterior <- params_mat_targets5
 
-par(mfrow=c(1,3))
+#pdf(file = here("calibration", "output", "prior_posterior_density_plots_240720.pdf"), title="Prior and posterior density")
+par(mfrow=c(3,3))
+plot(x=0,y=0, col = "white", xlab = "", ylab = "")
+legend("center", legend=c("prior density","posterior density"),
+       col=c("blue","red"), lty=c(3,1), lwd=c(3,3), cex = 1)
 plot_prior_posterior("b1")
 plot_prior_posterior("b2")
 plot_prior_posterior("b3")
@@ -1136,6 +1170,7 @@ plot_prior_posterior("mu_cc")
 plot_prior_posterior("mu_dcc")
 plot_prior_posterior("mu_hcc")
 plot_prior_posterior("vacc_eff")
+#dev.off()
 
 # Posterior correlation
 library(corrplot)

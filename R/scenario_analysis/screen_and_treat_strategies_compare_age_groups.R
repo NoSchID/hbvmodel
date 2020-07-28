@@ -49,6 +49,22 @@ scenario_f1_full_results <- readRDS(here("output", "screen_and_treat_results",
 scenario_g1_full_results <- readRDS(here("output", "screen_and_treat_results",
                                          "scenario_g1_basic_results.rds"))
 
+# BX = vaccine introduction in 2004, ages 30-70
+scenario_bx_full_results <- readRDS(here("output", "screen_and_treat_results",
+                                         "scenario_bx_basic_results.rds"))
+
+# BX1 = vaccine introduction in 2004, ages 15-65
+scenario_bx1_full_results <- readRDS(here("output", "screen_and_treat_results",
+                                         "scenario_bx1_basic_results.rds"))
+
+# BX2 = vaccine introduction in 2004, ages 45-70
+scenario_bx2_full_results <- readRDS(here("output", "screen_and_treat_results",
+                                          "scenario_bx2_basic_results.rds"))
+
+# BX3 = vaccine introduction in 2004, ages 15-45
+scenario_bx3_full_results <- readRDS(here("output", "screen_and_treat_results",
+                                          "scenario_bx3_basic_results.rds"))
+
 ## Population-level outcomes of the treatment programme (without/with monitoring) ----
 
 # Full dataframes of HBV deaths averted and LY saved compared to infant vaccine only
@@ -462,6 +478,105 @@ ggplot(data = subset(cohort_hbv_deaths_averted,
 
 # ISSUE WITH A NEGATIVE NUMBER IN D3  - likely due to runtime not being long enough?
 
+## Plot of population- vs cohort effect of monitoring in the 15-65 year group ----
+
+# HBV deaths averted (by 2100 in the population)
+pop_cohort_comp_deaths <- rbind(
+      scenario_d1_full_results$cohort_deaths_averted_sq_long,
+      scenario_d1_full_results$deaths_averted_sq_long[
+        scenario_d1_full_results$deaths_averted_sq_long$by_year == 2100,-c(1,2)])
+
+# LY saved
+pop_cohort_comp_ly <- rbind(
+  scenario_d1_full_results$cohort_ly_gained_sq_long,
+  scenario_d1_full_results$ly_gained_sq_long[
+    scenario_d1_full_results$ly_gained_sq_long$by_year == 2100,-c(1,2)])
+# Why is number of LY saved not the same in the population as in the cohort?
+
+# HBV deaths averted plot
+
+# Facet label names
+cohort_pop_label <- c("Cohort-level", "Population-level")
+names(cohort_pop_label) <- c("status_quo_cohort", "status_quo")
+
+ggplot(subset(pop_cohort_comp_deaths, type == "proportion_averted" &
+                scenario %in% c("screen_2020_monit_0", "screen_2020_monit_1"))) +
+  geom_boxplot(aes(x=scenario, y = value, fill = counterfactual)) +
+  facet_wrap(~counterfactual, labeller = labeller(counterfactual = cohort_pop_label)) +
+  xlab("Treatment programme strategy") + ylab("Proportion of HBV-related deaths averted\ncompared to no treatment") +
+  scale_x_discrete(labels=c("screen_2020_monit_0" = "No monitoring",
+                            "screen_2020_monit_1" = "Yearly monitoring")) +
+  theme_bw() +
+  theme(legend.position = "none") +
+  ylim(0,1)
+
+# What proportion of deaths averted in the yearly monitoring programme are from the
+# initial screen+treat?
+# Total number averted by basic programme compared to no treatment divided by
+# total number averted monitoring programme compared to no treatment
+quantile(subset(pop_cohort_comp_deaths, type == "number_averted" &
+         scenario == "screen_2020_monit_0" & counterfactual == "status_quo_cohort")$value/
+  subset(pop_cohort_comp_deaths, type == "number_averted" &
+           scenario == "screen_2020_monit_1" & counterfactual == "status_quo_cohort")$value,
+  prob = c(0.5,0.025,0.975))
+# In the cohort, 61% (49-76%) of averted HBV deaths are averted through the initial screening and
+# treatment.
+quantile(subset(pop_cohort_comp_deaths, type == "number_averted" &
+                  scenario == "screen_2020_monit_0" & counterfactual == "status_quo")$value/
+           subset(pop_cohort_comp_deaths, type == "number_averted" &
+                    scenario == "screen_2020_monit_1" & counterfactual == "status_quo")$value,
+         prob = c(0.5,0.025,0.975))
+# Pretty much same values in the population.
+# What about LY?
+quantile(subset(pop_cohort_comp_ly, type == "number_averted" &
+                  counterfactual == "screen_2020_monit_0" & scenario == "status_quo_cohort")$value/
+           subset(pop_cohort_comp_ly, type == "number_averted" &
+                    counterfactual == "screen_2020_monit_1" & scenario == "status_quo_cohort")$value,
+         prob = c(0.5,0.025,0.975))
+# In cohort, 67% (56-81%) but slightly higher on average in population.
+
+# How many extra deaths are averted by monitoring? Same in cohort and population.
+quantile(subset(pop_cohort_comp_deaths, type == "number_averted" &
+         scenario == "screen_2020_monit_1" & counterfactual == "status_quo_cohort")$value-
+  subset(pop_cohort_comp_deaths, type == "number_averted" &
+           scenario == "screen_2020_monit_0" & counterfactual == "status_quo_cohort")$value,
+  prob = c(0.5,0.025,0.975))
+# This number is the same as previously calculated when comparing monitoring to no monitoring:
+median(subset(pop_cohort_comp_deaths_monit, type == "number_averted" &
+         scenario == "screen_2020_monit_1" & x == "cohort")$value)
+# What proportion of deaths does this represent compared to the deaths that would occur
+# in the programme without monitoring? Need to look at original number of deaths, NOT
+# deaths averted by the basic treatment programme.
+
+# Yearly monitoring would avert an additional 2348 (734-5298) HBV-related deaths. This represents
+# 50% (23-72%) of HBV-related deaths that would occur in the screened and treated cohort in the absence
+# of monitoring, and 19% (8-28%) of HBV-related deaths occurring in the Gambian population without
+# monitoring.
+quantile(subset(pop_cohort_comp_deaths_monit, type == "proportion_averted" &
+         scenario == "screen_2020_monit_1" & x == "pop")$value, prob = c(0.5,0.025,0.975))
+
+# Effect of monitoring on HBV deaths averted (by 2100 in the population)
+pop_cohort_comp_deaths_monit <- rbind(
+  cbind(scenario_d1_full_results$cohort_deaths_averted_long, x="cohort"),
+  cbind(scenario_d1_full_results$deaths_averted_long[
+    scenario_d1_full_results$deaths_averted_long$by_year == 2100,-c(1,2)], x= "pop"))
+
+# HBV deaths averted
+ggplot(subset(pop_cohort_comp_deaths_monit, type == "proportion_averted" &
+                scenario %in% c("screen_2020_monit_5", "screen_2020_monit_1"))) +
+  geom_boxplot(aes(x=scenario, y = value, fill = x)) +
+  facet_wrap(~x) +
+  theme_bw() +
+  ylim(0,1)
+# Shows that monitoring averts more larger proportion of deaths compared to no monitoring in the
+# cohort than in the population
+
+ggplot(subset(scenario_d1_full_results$deaths_averted_long, type == "proportion_averted" &
+                scenario %in% c("screen_2020_monit_5", "screen_2020_monit_1"))) +
+  geom_boxplot(aes(x=scenario, y = value, fill = by_year)) +
+  facet_wrap(~by_year) +
+  theme_bw()
+
 ## One-way sensitivity analysis of the cascade of care (example) ----
 
 # Currently for 1 age group (15-65) and basic programme only:
@@ -565,3 +680,276 @@ grid.arrange(p1a,p2a,p3a, ncol = 3)
 # for screening, but HBsAg tests are the easiest and cheapest intervention.
 # Pattern is similar although less pronounced by 2050.
 # Linear trend may not be true.
+
+## Compare population-level impact and age groups if infant vaccine was introduced in 2004----
+# Issue with cohort projections: not everyone has died in BX1 and BX3
+# Overall conclusion from the population-level analysis:
+# Later vaccine introduction favours inclusion/focus on younger age groups even more!
+
+# Full dataframes of HBV deaths averted and LY saved compared to infant vaccine only
+hbv_deaths_averted_sq_vaccintro <- rbind(
+  cbind(scenario_a_full_results$deaths_averted_sq_long, assumption = "a"),
+  cbind(scenario_d1_full_results$deaths_averted_sq_long, assumption = "d1"),
+  cbind(scenario_d2_full_results$deaths_averted_sq_long, assumption = "d2"),
+  cbind(scenario_d3_full_results$deaths_averted_sq_long, assumption = "d3"),
+  cbind(scenario_bx_full_results$deaths_averted_sq_long, assumption = "bx"),
+  cbind(scenario_bx1_full_results$deaths_averted_sq_long, assumption = "bx1"),
+  cbind(scenario_bx2_full_results$deaths_averted_sq_long, assumption = "bx2"),
+  cbind(scenario_bx3_full_results$deaths_averted_sq_long, assumption = "bx3"))
+hbv_deaths_averted_sq_vaccintro$vaccintro <- "1990"
+hbv_deaths_averted_sq_vaccintro$vaccintro[hbv_deaths_averted_sq_vaccintro$assumption
+                                          %in% c("bx", "bx1", "bx2", "bx3")] <- "2004"
+
+ly_gained_sq_vaccintro <- rbind(
+  cbind(scenario_a_full_results$ly_gained_sq_long, assumption = "a"),
+  cbind(scenario_d1_full_results$ly_gained_sq_long, assumption = "d1"),
+  cbind(scenario_d2_full_results$ly_gained_sq_long, assumption = "d2"),
+  cbind(scenario_d3_full_results$ly_gained_sq_long, assumption = "d3"),
+  cbind(scenario_bx_full_results$ly_gained_sq_long, assumption = "bx"),
+  cbind(scenario_bx1_full_results$ly_gained_sq_long, assumption = "bx1"),
+  cbind(scenario_bx2_full_results$ly_gained_sq_long, assumption = "bx2"),
+  cbind(scenario_bx3_full_results$ly_gained_sq_long, assumption = "bx3"))
+colnames(ly_gained_sq_vaccintro)[colnames(ly_gained_sq_vaccintro) %in% c("counterfactual", "scenario")] <- c("scenario", "counterfactual")
+ly_gained_sq_vaccintro$vaccintro <- "1990"
+ly_gained_sq_vaccintro$vaccintro[ly_gained_sq_vaccintro$assumption
+                                          %in% c("bx", "bx1", "bx2", "bx3")] <- "2004"
+
+# Deaths
+ggplot(data = subset(hbv_deaths_averted_sq_vaccintro,
+                     type == "proportion_averted" & by_year == 2030)) +
+  geom_boxplot(aes(x=assumption, y = value, fill = assumption)) +
+  facet_wrap(~ vaccintro, scales = "free_x") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle =45, hjust = 1))
+# By 2030: Effect for BX1/D1 (15-65) is very similar, and also BX3/D3
+# BX and BX2 are worse than A and D2. For vaccintro in 1990, the order
+# from best to worst was: D1, A, D3, D2. For 2004 vaccintro, it is BX1, BX3, A, BX2.
+# => Later vaccine introduction favours screening of younger age groups even more.
+# Number averted is higher for 2004 than for 1990 (higher absolute impact of treatment
+# if prevention is lagging behind).
+
+ggplot(data = subset(hbv_deaths_averted_sq_vaccintro,
+                     type == "proportion_averted" & by_year == 2050)) +
+  geom_boxplot(aes(x=assumption, y = value, fill = assumption)) +
+  facet_wrap(~ vaccintro, scales = "free_x") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle =45, hjust = 1))
+# By 2050: Same except that the overall treatment impact % for the best age group (15-65)
+# is lower (median 30%) than if vaccine was introduced in 1990 (median 40%).
+# However, the absolute impact (number of deaths averted) is still higher, there
+# would just be more HBV deaths overall.
+
+ggplot(data = subset(hbv_deaths_averted_sq_vaccintro,
+                     type == "proportion_averted" & by_year == 2100)) +
+  geom_boxplot(aes(x=assumption, y = value, fill = assumption)) +
+  facet_wrap(~ vaccintro, scales = "free_x") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle =45, hjust = 1))
+# 2100 same pattern as 2050. BX3 nearly as good as BX1 (BX and BX2 much lower). But here for default vaccintro
+# D3 also equivalent to A.
+
+# LY saved
+ggplot(data = subset(ly_gained_sq_vaccintro,
+                     type == "proportion_averted" & by_year == 2030)) +
+  geom_boxplot(aes(x=assumption, y = value, fill = assumption)) +
+  facet_wrap(~ vaccintro, scales = "free_x") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle =45, hjust = 1))
+# For all timepoints:
+# Both number and proportion LY saved higher for 2004 than for 1990. Same age group order as for deaths.
+
+# Overall conclusion of impact: If infant vaccine had been introduced later, treatment would
+# avert a smaller proportion of HBV deaths but would save a larger proportion of life years.
+# 15-65 years is still the best age group to screen for overall impact, but later vaccine introduction
+# favours focus on the younger age groups. 30-70 year olds looking far worse and screening
+# 45-70 year olds only has negligible impact on the population level.
+# The 30-70 age group might be better for the early vaccine intro cause here it corresponds to
+# those that were not vaccinated. For the 2004 intro, 16+ year olds would not be vaccinated.
+
+# What about compared to resource use?
+
+# Full dataframe of HBV deaths averted per healthcare interaction
+hbv_deaths_averted_per_interaction_sq_vaccintro <- rbind(
+  cbind(scenario_a_full_results$deaths_averted_per_interaction_sq_long, assumption = "a"),
+  cbind(scenario_d1_full_results$deaths_averted_per_interaction_sq_long, assumption = "d1"),
+  cbind(scenario_d2_full_results$deaths_averted_per_interaction_sq_long, assumption = "d2"),
+  cbind(scenario_d3_full_results$deaths_averted_per_interaction_sq_long, assumption = "d3"),
+  cbind(scenario_bx_full_results$deaths_averted_per_interaction_sq_long, assumption = "bx"),
+  cbind(scenario_bx1_full_results$deaths_averted_per_interaction_sq_long, assumption = "bx1"),
+  cbind(scenario_bx2_full_results$deaths_averted_per_interaction_sq_long, assumption = "bx2"),
+  cbind(scenario_bx3_full_results$deaths_averted_per_interaction_sq_long, assumption = "bx3"),
+  cbind(scenario_a_full_results$deaths_averted_per_test_sq_long, assumption = "a"),
+  cbind(scenario_d1_full_results$deaths_averted_per_test_sq_long, assumption = "d1"),
+  cbind(scenario_d2_full_results$deaths_averted_per_test_sq_long, assumption = "d2"),
+  cbind(scenario_d3_full_results$deaths_averted_per_test_sq_long, assumption = "d3"),
+  cbind(scenario_bx_full_results$deaths_averted_per_test_sq_long, assumption = "bx"),
+  cbind(scenario_bx1_full_results$deaths_averted_per_test_sq_long, assumption = "bx1"),
+  cbind(scenario_bx2_full_results$deaths_averted_per_test_sq_long, assumption = "bx2"),
+  cbind(scenario_bx3_full_results$deaths_averted_per_test_sq_long, assumption = "bx3"),
+  cbind(scenario_a_full_results$deaths_averted_per_assessment_sq_long, assumption = "a"),
+  cbind(scenario_d1_full_results$deaths_averted_per_assessment_sq_long, assumption = "d1"),
+  cbind(scenario_d2_full_results$deaths_averted_per_assessment_sq_long, assumption = "d2"),
+  cbind(scenario_d3_full_results$deaths_averted_per_assessment_sq_long, assumption = "d3"),
+  cbind(scenario_bx_full_results$deaths_averted_per_assessment_sq_long, assumption = "bx"),
+  cbind(scenario_bx1_full_results$deaths_averted_per_assessment_sq_long, assumption = "bx1"),
+  cbind(scenario_bx2_full_results$deaths_averted_per_assessment_sq_long, assumption = "bx2"),
+  cbind(scenario_bx3_full_results$deaths_averted_per_assessment_sq_long, assumption = "bx3"),
+  cbind(scenario_a_full_results$deaths_averted_per_treatment_sq_long, assumption = "a"),
+  cbind(scenario_d1_full_results$deaths_averted_per_treatment_sq_long, assumption = "d1"),
+  cbind(scenario_d2_full_results$deaths_averted_per_treatment_sq_long, assumption = "d2"),
+  cbind(scenario_d3_full_results$deaths_averted_per_treatment_sq_long, assumption = "d3"),
+  cbind(scenario_bx_full_results$deaths_averted_per_treatment_sq_long, assumption = "bx"),
+  cbind(scenario_bx1_full_results$deaths_averted_per_treatment_sq_long, assumption = "bx1"),
+  cbind(scenario_bx2_full_results$deaths_averted_per_treatment_sq_long, assumption = "bx2"),
+  cbind(scenario_bx3_full_results$deaths_averted_per_treatment_sq_long, assumption = "bx3"))
+hbv_deaths_averted_per_interaction_sq_vaccintro$vaccintro <- "1990"
+hbv_deaths_averted_per_interaction_sq_vaccintro$vaccintro[hbv_deaths_averted_per_interaction_sq_vaccintro$assumption
+                                          %in% c("bx", "bx1", "bx2", "bx3")] <- "2004"
+
+# LY gained per healthcare interaction
+ly_gained_per_interaction_sq_vaccintro <- rbind(
+  cbind(scenario_a_full_results$ly_gained_per_interaction_sq_long, assumption = "a"),
+  cbind(scenario_d1_full_results$ly_gained_per_interaction_sq_long, assumption = "d1"),
+  cbind(scenario_d2_full_results$ly_gained_per_interaction_sq_long, assumption = "d2"),
+  cbind(scenario_d3_full_results$ly_gained_per_interaction_sq_long, assumption = "d3"),
+  cbind(scenario_bx_full_results$ly_gained_per_interaction_sq_long, assumption = "bx"),
+  cbind(scenario_bx1_full_results$ly_gained_per_interaction_sq_long, assumption = "bx1"),
+  cbind(scenario_bx2_full_results$ly_gained_per_interaction_sq_long, assumption = "bx2"),
+  cbind(scenario_bx3_full_results$ly_gained_per_interaction_sq_long, assumption = "bx3"),
+  cbind(scenario_a_full_results$ly_gained_per_assessment_sq_long, assumption = "a"),
+  cbind(scenario_d1_full_results$ly_gained_per_assessment_sq_long, assumption = "d1"),
+  cbind(scenario_d2_full_results$ly_gained_per_assessment_sq_long, assumption = "d2"),
+  cbind(scenario_d3_full_results$ly_gained_per_assessment_sq_long, assumption = "d3"),
+  cbind(scenario_bx_full_results$ly_gained_per_assessment_sq_long, assumption = "bx"),
+  cbind(scenario_bx1_full_results$ly_gained_per_assessment_sq_long, assumption = "bx1"),
+  cbind(scenario_bx2_full_results$ly_gained_per_assessment_sq_long, assumption = "bx2"),
+  cbind(scenario_bx3_full_results$ly_gained_per_assessment_sq_long, assumption = "bx3"),
+  cbind(scenario_a_full_results$ly_gained_per_treatment_sq_long, assumption = "a"),
+  cbind(scenario_d1_full_results$ly_gained_per_treatment_sq_long, assumption = "d1"),
+  cbind(scenario_d2_full_results$ly_gained_per_treatment_sq_long, assumption = "d2"),
+  cbind(scenario_d3_full_results$ly_gained_per_treatment_sq_long, assumption = "d3"),
+  cbind(scenario_bx_full_results$ly_gained_per_treatment_sq_long, assumption = "bx"),
+  cbind(scenario_bx1_full_results$ly_gained_per_treatment_sq_long, assumption = "bx1"),
+  cbind(scenario_bx2_full_results$ly_gained_per_treatment_sq_long, assumption = "bx2"),
+  cbind(scenario_bx3_full_results$ly_gained_per_treatment_sq_long, assumption = "bx3"))
+ly_gained_per_interaction_sq_vaccintro$vaccintro <- "1990"
+ly_gained_per_interaction_sq_vaccintro$vaccintro[ly_gained_per_interaction_sq_vaccintro$assumption
+                                                          %in% c("bx", "bx1", "bx2", "bx3")] <- "2004"
+
+# Number needed to interact, assess and treat
+nnt_df <- group_by(hbv_deaths_averted_per_interaction_sq_vaccintro,
+                   vaccintro, assumption, scenario, by_year, interaction_type) %>%
+  summarise(median = median(1/value),
+            cri_lower = quantile(1/value, prob = 0.025),
+            cri_upper = quantile(1/value, prob = 0.975))
+
+ggplot(data = subset(nnt_df,
+                     assumption %in% c("a", "d1", "d2", "d3") & by_year == 2050 & vaccintro == "1990" &
+                       scenario == "screen_2020_monit_0")) +
+  geom_col(aes(x= reorder(interaction_type, -median), y = median, group = assumption, fill = assumption),
+           position = "dodge") +
+  geom_errorbar(aes(x= reorder(interaction_type, -median), ymin = cri_lower, ymax = cri_upper,
+                    group = assumption), position = position_dodge(width=0.9), width = 0.3,
+                show.legend = FALSE) +
+  facet_wrap( ~ interaction_type, scales= "free") +
+  theme_classic()
+
+ggplot(data = subset(nnt_df,
+                     assumption %in% c("a", "d1", "d2", "d3") & by_year == 2050 & vaccintro == "1990" &
+                       scenario == "screen_2020_monit_0")) +
+  geom_col(aes(x= reorder(interaction_type, -median), y = median, group = assumption, fill = assumption),
+           position = "dodge") +
+  geom_errorbar(aes(x= reorder(interaction_type, -median), ymin = cri_lower, ymax = cri_upper,
+                    group = assumption), position = position_dodge(width=0.9), width = 0.3,
+                show.legend = FALSE) +
+  facet_wrap( ~ assumption) +
+  theme_classic()
+
+ggplot(data = subset(nnt_df,
+                     assumption =="d1" & by_year == 2050 & vaccintro == "1990" &
+                       scenario == "screen_2020_monit_0")) +
+  geom_col(aes(x= reorder(interaction_type, -median), y = median, group = interaction_type, fill = interaction_type),
+           position = "stack") +
+  geom_errorbar(aes(x= reorder(interaction_type, -median), ymin = cri_lower, ymax = cri_upper,
+                    group = assumption), position = position_dodge(width=0.9), width = 0.3,
+                show.legend = FALSE) +
+  theme_classic()
+
+# Total interactions
+ggplot(data = subset(hbv_deaths_averted_per_interaction_sq_vaccintro,
+                     interaction_type == "total_interactions" & by_year == 2030)) +
+  geom_boxplot(aes(x=assumption, y = 1/value, fill = assumption)) +
+  facet_wrap(~vaccintro, scales = "free") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle =45, hjust = 1))
+# By 2030: For the 1990 vaccintro, there is a bit of variation with higher interactions
+# required per death averted in D1 and D3 than A and D2
+# However in the 2004 vaccintro, they all look extremely similar on average with only BX
+# slightly lower than the others.
+# The number of interactions required to avert 1 death is substantially lower for the 2004 than the
+# 1990 scenario.
+
+ggplot(data = subset(hbv_deaths_averted_per_interaction_sq_vaccintro,
+                     interaction_type == "total_interactions" & by_year == 2050)) +
+  geom_boxplot(aes(x=assumption, y = 1/value, fill = assumption)) +
+  facet_wrap(~vaccintro, scales = "free") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle =45, hjust = 1))
+# By 2050 and 2100, the pattern for 1990 has not changed but for 2004 vaccintro only BX2
+# now stands out as requiring more interactions per death averted.
+
+# Assessments
+ggplot(data = subset(hbv_deaths_averted_per_interaction_sq_vaccintro,
+                     interaction_type == "total_assessed" & by_year == 2030)) +
+  geom_boxplot(aes(x=assumption, y = 1/value, fill = assumption)) +
+  facet_wrap(~vaccintro, scales = "free") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle =45, hjust = 1))
+# At all timepoints:
+# Looking at assessments for 1990, they are very similar but there is now some variation
+# for 2004, which is higher for BX1 and BX3 (If vaccine is introduced later,
+# screening younger people requires more liver disease assessments to avert 1 death than screening older age groups.
+
+# Treatments
+ggplot(data = subset(hbv_deaths_averted_per_interaction_sq_vaccintro,
+                     interaction_type == "total_treated" & by_year == 2030)) +
+  geom_boxplot(aes(x=assumption, y = 1/value, fill = assumption)) +
+  facet_wrap(~vaccintro, scales = "free") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle =45, hjust = 1))
+# By 2030, Treatment pattern by age is the same for either vaccine intro: slightly higher if including
+# younger age groups.
+# By 2100, relatively similar overall across age groups except for D2 and BX2 being higher.
+
+# LY gained
+
+# Total interactions
+ggplot(data = subset(ly_gained_per_interaction_sq_vaccintro,
+                     interaction_type == "total_interactions" & by_year == 2030)) +
+  geom_boxplot(aes(x=assumption, y = 1/value, fill = assumption)) +
+  facet_wrap(~vaccintro, scales = "free") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle =45, hjust = 1))
+# By 2030, very similar to deaths, except that BX2 slightly higher than the other BX.
+# By 2050, BX2 still the outlier for the 2004 vaccintro and BX1 and BX3 are the lowest.
+# For 1990 vaccintro, D1-D3 are now very similar and only A is slightly lower.
+# By 2100, D2 also requires far more interactions than the others.
+# Probably shows that focus on older age groups has fewer long-term benefits and gets even more
+# "expensive" compared to other screening strategies if vaccine was introduced later.
+# Nevertheless the later vaccine intro means that fewer interactions are required overall
+# to save 1 LY.
+
+# Assessments
+ggplot(data = subset(ly_gained_per_interaction_sq_vaccintro,
+                     interaction_type == "total_assessed" & by_year == 2030)) +
+  geom_boxplot(aes(x=assumption, y = 1/value, fill = assumption)) +
+  facet_wrap(~vaccintro, scales = "free") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle =45, hjust = 1))
+# By 2030, all the same in 1990, minimally higher for BX1 and BX3 in 2004.
+# By 2050 and 2100, similar trend to total interactions with BX2 (and D2) standing out as
+# particularly high.
+
+
+
+

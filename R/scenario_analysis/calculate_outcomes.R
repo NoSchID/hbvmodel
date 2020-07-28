@@ -952,23 +952,24 @@ plot_ly_gained_cohort <- function(counterfactual_object, scenario_objects,
 plot_hbv_deaths_averted <- function(counterfactual_object, scenario_objects,
                                     counterfactual_label = "",
                                     outcome_to_plot = "proportion_averted",
-                                    x_axis = "monitoring") {
+                                    x_axis = "monitoring", timepoints = c(2030,2050,2100)) {
 
-  period_labs <- c("2020-2030", "2020-2050", "2020-2100")
-  names(period_labs) <- c("2030", "2050", "2100")
+  period_labs <- c(paste0("2020-",timepoints[1]), paste0("2020-",timepoints[2]), paste0("2020-",timepoints[3]))
+  names(period_labs) <- c(as.character(timepoints[1]), as.character(timepoints[2]),
+                          as.character(timepoints[3]))
 
 
   deaths_averted <- list()
 
   for (i in 1:length(scenario_objects)) {
-    deaths_averted[[i]] <- rbind(calculate_number_averted(counterfactual_object$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==2030)]],
-                                                          scenario_objects[[i]]$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==2030)]],
+    deaths_averted[[i]] <- rbind(calculate_number_averted(counterfactual_object$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==timepoints[1])]],
+                                                          scenario_objects[[i]]$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==timepoints[1])]],
                                                           summarise = FALSE),
-                                 calculate_number_averted(counterfactual_object$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==2050)]],
-                                                          scenario_objects[[i]]$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==2050)]],
+                                 calculate_number_averted(counterfactual_object$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==timepoints[2])]],
+                                                          scenario_objects[[i]]$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==timepoints[2])]],
                                                           summarise = FALSE),
-                                 calculate_number_averted(counterfactual_object$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==2100)]],
-                                                          scenario_objects[[i]]$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==2100)]],
+                                 calculate_number_averted(counterfactual_object$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==timepoints[3])]],
+                                                          scenario_objects[[i]]$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==timepoints[3])]],
                                                           summarise = FALSE))
 
   }
@@ -1041,22 +1042,23 @@ plot_hbv_deaths_averted <- function(counterfactual_object, scenario_objects,
 plot_ly_gained <- function(counterfactual_object, scenario_objects,
                            counterfactual_label = "",
                            outcome_to_plot = "proportion_averted",
-                           x_axis = "monitoring") {
+                           x_axis = "monitoring", timepoints = c(2030,2050,2100)) {
 
-  period_labs <- c("2020-2030", "2020-2050", "2020-2100")
-  names(period_labs) <- c("2030", "2050", "2100")
+  period_labs <- c(paste0("2020-",timepoints[1]), paste0("2020-",timepoints[2]), paste0("2020-",timepoints[3]))
+  names(period_labs) <- c(as.character(timepoints[1]), as.character(timepoints[2]),
+                          as.character(timepoints[3]))
 
   ly_gained <- list()
 
   for (i in 1:length(scenario_objects)) {
-    ly_gained[[i]] <- rbind(calculate_number_averted(scenario_objects[[i]]$ly[[which(seq(2025,2100, by = 5)==2030)]],
-                                                     counterfactual_object$ly[[which(seq(2025,2100, by = 5)==2030)]],
+    ly_gained[[i]] <- rbind(calculate_number_averted(scenario_objects[[i]]$ly[[which(seq(2025,2100, by = 5)==timepoints[1])]],
+                                                     counterfactual_object$ly[[which(seq(2025,2100, by = 5)==timepoints[1])]],
                                                      summarise = FALSE),
-                            calculate_number_averted(scenario_objects[[i]]$ly[[which(seq(2025,2100, by = 5)==2050)]],
-                                                     counterfactual_object$ly[[which(seq(2025,2100, by = 5)==2050)]],
+                            calculate_number_averted(scenario_objects[[i]]$ly[[which(seq(2025,2100, by = 5)==timepoints[2])]],
+                                                     counterfactual_object$ly[[which(seq(2025,2100, by = 5)==timepoints[2])]],
                                                      summarise = FALSE),
-                            calculate_number_averted(scenario_objects[[i]]$ly[[which(seq(2025,2100, by = 5)==2100)]],
-                                                     counterfactual_object$ly[[which(seq(2025,2100, by = 5)==2100)]],
+                            calculate_number_averted(scenario_objects[[i]]$ly[[which(seq(2025,2100, by = 5)==timepoints[3])]],
+                                                     counterfactual_object$ly[[which(seq(2025,2100, by = 5)==timepoints[3])]],
                                                      summarise = FALSE))
 
   }
@@ -1140,10 +1142,12 @@ plot_ly_gained <- function(counterfactual_object, scenario_objects,
 plot_hbv_deaths_averted_per_healthcare_interaction <- function(counterfactual_object, scenario_objects,
                                                                interaction_type = "total_interactions",
                                                                counterfactual_label = "",
-                                                               x_axis = "monitoring") {
+                                                               x_axis = "monitoring",
+                                                               timepoints = c(2030,2050,2100)) {
 
-  period_labs <- c("2020-2030", "2020-2050", "2020-2100")
-  names(period_labs) <- c("2030", "2050", "2100")
+  period_labs <- c(paste0("2020-",timepoints[1]), paste0("2020-",timepoints[2]), paste0("2020-",timepoints[3]))
+  names(period_labs) <- c(as.character(timepoints[1]), as.character(timepoints[2]),
+                          as.character(timepoints[3]))
 
   # Calculating HBV deaths averted per interaction but plotting the opposite
   deaths_averted_per_interaction <- list()
@@ -1154,21 +1158,21 @@ plot_hbv_deaths_averted_per_healthcare_interaction <- function(counterfactual_ob
 
     for (i in 1:length(scenario_objects)) {
       deaths_averted_per_interaction[[i]] <- data.frame(rbind(
-        c(by_year = 2030, scenario = as.character(scenario_objects[[i]]$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==2030)]]$scenario),
-          unlist(calculate_number_averted(counterfactual_object$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==2030)]],
-                                          scenario_objects[[i]]$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==2030)]],
+        c(by_year = timepoints[1], scenario = as.character(scenario_objects[[i]]$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==timepoints[1])]]$scenario),
+          unlist(calculate_number_averted(counterfactual_object$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==timepoints[1])]],
+                                          scenario_objects[[i]]$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==timepoints[1])]],
                                           summarise = FALSE)[1,-c(1:5)]/
-                   (scenario_objects[[i]]$interactions[[which(seq(2025,2100, by = 5)==2030)]][[interaction_type]][,-c(1:3)]))),
-        c(by_year = 2050, scenario = as.character(scenario_objects[[i]]$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==2050)]]$scenario),
-          unlist(calculate_number_averted(counterfactual_object$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==2050)]],
-                                          scenario_objects[[i]]$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==2050)]],
+                   (scenario_objects[[i]]$interactions[[which(seq(2025,2100, by = 5)==timepoints[1])]][[interaction_type]][,-c(1:3)]))),
+        c(by_year = timepoints[2], scenario = as.character(scenario_objects[[i]]$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==timepoints[2])]]$scenario),
+          unlist(calculate_number_averted(counterfactual_object$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==timepoints[2])]],
+                                          scenario_objects[[i]]$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==timepoints[2])]],
                                           summarise = FALSE)[1,-c(1:5)]/
-                   (scenario_objects[[i]]$interactions[[which(seq(2025,2100, by = 5)==2050)]][[interaction_type]][,-c(1:3)]))),
-        c(by_year = 2100, scenario = as.character(scenario_objects[[i]]$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==2100)]]$scenario),
-          unlist(calculate_number_averted(counterfactual_object$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==2100)]],
-                                          scenario_objects[[i]]$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==2100)]],
+                   (scenario_objects[[i]]$interactions[[which(seq(2025,2100, by = 5)==timepoints[2])]][[interaction_type]][,-c(1:3)]))),
+        c(by_year = timepoints[3], scenario = as.character(scenario_objects[[i]]$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==timepoints[3])]]$scenario),
+          unlist(calculate_number_averted(counterfactual_object$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==timepoints[3])]],
+                                          scenario_objects[[i]]$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==timepoints[3])]],
                                           summarise = FALSE)[1,-c(1:5)]/
-                   (scenario_objects[[i]]$interactions[[which(seq(2025,2100, by = 5)==2100)]][[interaction_type]][,-c(1:3)])))
+                   (scenario_objects[[i]]$interactions[[which(seq(2025,2100, by = 5)==timepoints[3])]][[interaction_type]][,-c(1:3)])))
       ))
 
     }
@@ -1177,24 +1181,24 @@ plot_hbv_deaths_averted_per_healthcare_interaction <- function(counterfactual_ob
 
     for (i in 1:length(scenario_objects)) {
       deaths_averted_per_interaction[[i]] <- data.frame(rbind(
-        c(by_year = 2030, scenario = as.character(scenario_objects[[i]]$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==2030)]]$scenario),
-          unlist(calculate_number_averted(counterfactual_object$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==2030)]],
-                                          scenario_objects[[i]]$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==2030)]],
+        c(by_year = timepoints[1], scenario = as.character(scenario_objects[[i]]$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==timepoints[1])]]$scenario),
+          unlist(calculate_number_averted(counterfactual_object$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==timepoints[1])]],
+                                          scenario_objects[[i]]$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==timepoints[1])]],
                                           summarise = FALSE)[1,-c(1:5)]/
-                   (scenario_objects[[i]]$interactions[[which(seq(2025,2100, by = 5)==2030)]][[interaction_type]][,-c(1:3)]-
-                      counterfactual_object$interactions[[which(seq(2025,2100, by = 5)==2030)]][[interaction_type]][,-c(1:3)]))),
-        c(by_year = 2050, scenario = as.character(scenario_objects[[i]]$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==2050)]]$scenario),
-          unlist(calculate_number_averted(counterfactual_object$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==2050)]],
-                                          scenario_objects[[i]]$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==2050)]],
+                   (scenario_objects[[i]]$interactions[[which(seq(2025,2100, by = 5)==timepoints[1])]][[interaction_type]][,-c(1:3)]-
+                      counterfactual_object$interactions[[which(seq(2025,2100, by = 5)==timepoints[1])]][[interaction_type]][,-c(1:3)]))),
+        c(by_year = timepoints[2], scenario = as.character(scenario_objects[[i]]$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==timepoints[2])]]$scenario),
+          unlist(calculate_number_averted(counterfactual_object$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==timepoints[2])]],
+                                          scenario_objects[[i]]$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==timepoints[2])]],
                                           summarise = FALSE)[1,-c(1:5)]/
-                   (scenario_objects[[i]]$interactions[[which(seq(2025,2100, by = 5)==2050)]][[interaction_type]][,-c(1:3)]-
-                      counterfactual_object$interactions[[which(seq(2025,2100, by = 5)==2050)]][[interaction_type]][,-c(1:3)]))),
-        c(by_year = 2100, scenario = as.character(scenario_objects[[i]]$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==2100)]]$scenario),
-          unlist(calculate_number_averted(counterfactual_object$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==2100)]],
-                                          scenario_objects[[i]]$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==2100)]],
+                   (scenario_objects[[i]]$interactions[[which(seq(2025,2100, by = 5)==timepoints[2])]][[interaction_type]][,-c(1:3)]-
+                      counterfactual_object$interactions[[which(seq(2025,2100, by = 5)==timepoints[2])]][[interaction_type]][,-c(1:3)]))),
+        c(by_year = timepoints[3], scenario = as.character(scenario_objects[[i]]$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==timepoints[3])]]$scenario),
+          unlist(calculate_number_averted(counterfactual_object$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==timepoints[3])]],
+                                          scenario_objects[[i]]$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==timepoints[3])]],
                                           summarise = FALSE)[1,-c(1:5)]/
-                   (scenario_objects[[i]]$interactions[[which(seq(2025,2100, by = 5)==2100)]][[interaction_type]][,-c(1:3)]-
-                      counterfactual_object$interactions[[which(seq(2025,2100, by = 5)==2100)]][[interaction_type]][,-c(1:3)])))
+                   (scenario_objects[[i]]$interactions[[which(seq(2025,2100, by = 5)==timepoints[3])]][[interaction_type]][,-c(1:3)]-
+                      counterfactual_object$interactions[[which(seq(2025,2100, by = 5)==timepoints[3])]][[interaction_type]][,-c(1:3)])))
       ))
 
     }
@@ -1289,10 +1293,12 @@ plot_hbv_deaths_averted_per_healthcare_interaction <- function(counterfactual_ob
 plot_ly_gained_per_healthcare_interaction <- function(counterfactual_object, scenario_objects,
                                                       interaction_type = "total_interactions",
                                                       counterfactual_label = "",
-                                                      x_axis = "monitoring") {
+                                                      x_axis = "monitoring",
+                                                      timepoints = c(2030,2050,2100)) {
 
-  period_labs <- c("2020-2030", "2020-2050", "2020-2100")
-  names(period_labs) <- c("2030", "2050", "2100")
+  period_labs <- c(paste0("2020-",timepoints[1]), paste0("2020-",timepoints[2]), paste0("2020-",timepoints[3]))
+  names(period_labs) <- c(as.character(timepoints[1]), as.character(timepoints[2]),
+                          as.character(timepoints[3]))
 
   ly_gained_per_interaction <- list()
 
@@ -1300,21 +1306,21 @@ plot_ly_gained_per_healthcare_interaction <- function(counterfactual_object, sce
 
     for (i in 1:length(scenario_objects)) {
       ly_gained_per_interaction[[i]] <- data.frame(rbind(
-        c(by_year = 2030, scenario = as.character(scenario_objects[[i]]$ly[[which(seq(2025,2100, by = 5)==2030)]]$scenario),
-          unlist(calculate_number_averted(scenario_objects[[i]]$ly[[which(seq(2025,2100, by = 5)==2030)]],
-                                          counterfactual_object$ly[[which(seq(2025,2100, by = 5)==2030)]],
+        c(by_year = timepoints[1], scenario = as.character(scenario_objects[[i]]$ly[[which(seq(2025,2100, by = 5)==timepoints[1])]]$scenario),
+          unlist(calculate_number_averted(scenario_objects[[i]]$ly[[which(seq(2025,2100, by = 5)==timepoints[1])]],
+                                          counterfactual_object$ly[[which(seq(2025,2100, by = 5)==timepoints[1])]],
                                           summarise = FALSE)[1,-c(1:5)]/
-                   (scenario_objects[[i]]$interactions[[which(seq(2025,2100, by = 5)==2030)]][[interaction_type]][,-c(1:3)]))),
-        c(by_year = 2050, scenario = as.character(scenario_objects[[i]]$ly[[which(seq(2025,2100, by = 5)==2050)]]$scenario),
-          unlist(calculate_number_averted(scenario_objects[[i]]$ly[[which(seq(2025,2100, by = 5)==2050)]],
-                                          counterfactual_object$ly[[which(seq(2025,2100, by = 5)==2050)]],
+                   (scenario_objects[[i]]$interactions[[which(seq(2025,2100, by = 5)==timepoints[1])]][[interaction_type]][,-c(1:3)]))),
+        c(by_year = timepoints[2], scenario = as.character(scenario_objects[[i]]$ly[[which(seq(2025,2100, by = 5)==timepoints[2])]]$scenario),
+          unlist(calculate_number_averted(scenario_objects[[i]]$ly[[which(seq(2025,2100, by = 5)==timepoints[2])]],
+                                          counterfactual_object$ly[[which(seq(2025,2100, by = 5)==timepoints[2])]],
                                           summarise = FALSE)[1,-c(1:5)]/
-                   (scenario_objects[[i]]$interactions[[which(seq(2025,2100, by = 5)==2050)]][[interaction_type]][,-c(1:3)]))),
-        c(by_year = 2100, scenario = as.character(scenario_objects[[i]]$ly[[which(seq(2025,2100, by = 5)==2100)]]$scenario),
-          unlist(calculate_number_averted(scenario_objects[[i]]$ly[[which(seq(2025,2100, by = 5)==2100)]],
-                                          counterfactual_object$ly[[which(seq(2025,2100, by = 5)==2100)]],
+                   (scenario_objects[[i]]$interactions[[which(seq(2025,2100, by = 5)==timepoints[2])]][[interaction_type]][,-c(1:3)]))),
+        c(by_year = timepoints[3], scenario = as.character(scenario_objects[[i]]$ly[[which(seq(2025,2100, by = 5)==timepoints[3])]]$scenario),
+          unlist(calculate_number_averted(scenario_objects[[i]]$ly[[which(seq(2025,2100, by = 5)==timepoints[3])]],
+                                          counterfactual_object$ly[[which(seq(2025,2100, by = 5)==timepoints[3])]],
                                           summarise = FALSE)[1,-c(1:5)]/
-                   (scenario_objects[[i]]$interactions[[which(seq(2025,2100, by = 5)==2100)]][[interaction_type]][,-c(1:3)])))
+                   (scenario_objects[[i]]$interactions[[which(seq(2025,2100, by = 5)==timepoints[3])]][[interaction_type]][,-c(1:3)])))
       ))
 
     }
@@ -1323,24 +1329,24 @@ plot_ly_gained_per_healthcare_interaction <- function(counterfactual_object, sce
 
     for (i in 1:length(scenario_objects)) {
       ly_gained_per_interaction[[i]] <- data.frame(rbind(
-        c(by_year = 2030, scenario = as.character(scenario_objects[[i]]$ly[[which(seq(2025,2100, by = 5)==2030)]]$scenario),
-          unlist(calculate_number_averted(scenario_objects[[i]]$ly[[which(seq(2025,2100, by = 5)==2030)]],
-                                          counterfactual_object$ly[[which(seq(2025,2100, by = 5)==2030)]],
+        c(by_year = timepoints[1], scenario = as.character(scenario_objects[[i]]$ly[[which(seq(2025,2100, by = 5)==timepoints[1])]]$scenario),
+          unlist(calculate_number_averted(scenario_objects[[i]]$ly[[which(seq(2025,2100, by = 5)==timepoints[1])]],
+                                          counterfactual_object$ly[[which(seq(2025,2100, by = 5)==timepoints[1])]],
                                           summarise = FALSE)[1,-c(1:5)]/
-                   (scenario_objects[[i]]$interactions[[which(seq(2025,2100, by = 5)==2030)]][[interaction_type]][,-c(1:3)]-
-                      counterfactual_object$interactions[[which(seq(2025,2100, by = 5)==2030)]][[interaction_type]][,-c(1:3)]))),
-        c(by_year = 2050, scenario = as.character(scenario_objects[[i]]$ly[[which(seq(2025,2100, by = 5)==2050)]]$scenario),
-          unlist(calculate_number_averted(scenario_objects[[i]]$ly[[which(seq(2025,2100, by = 5)==2050)]],
-                                          counterfactual_object$ly[[which(seq(2025,2100, by = 5)==2050)]],
+                   (scenario_objects[[i]]$interactions[[which(seq(2025,2100, by = 5)==timepoints[1])]][[interaction_type]][,-c(1:3)]-
+                      counterfactual_object$interactions[[which(seq(2025,2100, by = 5)==timepoints[1])]][[interaction_type]][,-c(1:3)]))),
+        c(by_year = timepoints[2], scenario = as.character(scenario_objects[[i]]$ly[[which(seq(2025,2100, by = 5)==timepoints[2])]]$scenario),
+          unlist(calculate_number_averted(scenario_objects[[i]]$ly[[which(seq(2025,2100, by = 5)==timepoints[2])]],
+                                          counterfactual_object$ly[[which(seq(2025,2100, by = 5)==timepoints[2])]],
                                           summarise = FALSE)[1,-c(1:5)]/
-                   (scenario_objects[[i]]$interactions[[which(seq(2025,2100, by = 5)==2050)]][[interaction_type]][,-c(1:3)]-
-                      counterfactual_object$interactions[[which(seq(2025,2100, by = 5)==2050)]][[interaction_type]][,-c(1:3)]))),
-        c(by_year = 2100, scenario = as.character(scenario_objects[[i]]$ly[[which(seq(2025,2100, by = 5)==2100)]]$scenario),
-          unlist(calculate_number_averted(scenario_objects[[i]]$ly[[which(seq(2025,2100, by = 5)==2100)]],
-                                          counterfactual_object$ly[[which(seq(2025,2100, by = 5)==2100)]],
+                   (scenario_objects[[i]]$interactions[[which(seq(2025,2100, by = 5)==timepoints[2])]][[interaction_type]][,-c(1:3)]-
+                      counterfactual_object$interactions[[which(seq(2025,2100, by = 5)==timepoints[2])]][[interaction_type]][,-c(1:3)]))),
+        c(by_year = timepoints[3], scenario = as.character(scenario_objects[[i]]$ly[[which(seq(2025,2100, by = 5)==timepoints[3])]]$scenario),
+          unlist(calculate_number_averted(scenario_objects[[i]]$ly[[which(seq(2025,2100, by = 5)==timepoints[3])]],
+                                          counterfactual_object$ly[[which(seq(2025,2100, by = 5)==timepoints[3])]],
                                           summarise = FALSE)[1,-c(1:5)]/
-                   (scenario_objects[[i]]$interactions[[which(seq(2025,2100, by = 5)==2100)]][[interaction_type]][,-c(1:3)]-
-                      counterfactual_object$interactions[[which(seq(2025,2100, by = 5)==2100)]][[interaction_type]][,-c(1:3)])))
+                   (scenario_objects[[i]]$interactions[[which(seq(2025,2100, by = 5)==timepoints[3])]][[interaction_type]][,-c(1:3)]-
+                      counterfactual_object$interactions[[which(seq(2025,2100, by = 5)==timepoints[3])]][[interaction_type]][,-c(1:3)])))
       ))
 
     }
