@@ -369,6 +369,78 @@ out3 <- readRDS(paste0(out_path, "bx3_out3_screen_2020_monit_0_250720.rds"))
 out3 <- out3[[1]]
 
 
+# Assumption BY set (basic programme only) ----
+out_path <-
+  "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/screen_and_treat_strategies/Scenario BY/"
+
+# Status quo
+out1 <- readRDS(paste0(out_path, "by_out1_bd_scale_up_cohort_280720.rds"))
+out1 <- out1[[1]]
+out2 <- readRDS(paste0(out_path, "out2_status_quo_080720.rds"))
+out2 <- out2[[1]]
+
+out2_bd <- readRDS(paste0(out_path, "out2_bd_scale_up_080720.rds"))
+out2_bd <- out2_bd[[1]]
+
+# Monitoring
+out3 <- readRDS(paste0(out_path, "by_out3_screen_2020_monit_0_280720.rds"))
+out3 <- out3[[1]]
+
+
+# Assumption BY1 set (basic programme only) ----
+out_path <-
+  "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/screen_and_treat_strategies/Scenario BY1/"
+
+# Status quo
+out1 <- readRDS(paste0(out_path, "by1_out1_bd_scale_up_cohort_280720.rds"))
+out1 <- out1[[1]]
+out2 <- readRDS(paste0(out_path, "out2_status_quo_080720.rds"))
+out2 <- out2[[1]]
+
+out2_bd <- readRDS(paste0(out_path, "out2_bd_scale_up_080720.rds"))
+out2_bd <- out2_bd[[1]]
+
+# Monitoring
+out3 <- readRDS(paste0(out_path, "by1_out3_screen_2020_monit_0_280720.rds"))
+out3 <- out3[[1]]
+
+
+# Assumption BY2 set (basic programme only) ----
+out_path <-
+  "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/screen_and_treat_strategies/Scenario BY2/"
+
+# Status quo
+out1 <- readRDS(paste0(out_path, "by2_out1_bd_scale_up_cohort_280720.rds"))
+out1 <- out1[[1]]
+out2 <- readRDS(paste0(out_path, "out2_status_quo_080720.rds"))
+out2 <- out2[[1]]
+
+out2_bd <- readRDS(paste0(out_path, "out2_bd_scale_up_080720.rds"))
+out2_bd <- out2_bd[[1]]
+
+# Monitoring
+out3 <- readRDS(paste0(out_path, "by2_out3_screen_2020_monit_0_280720.rds"))
+out3 <- out3[[1]]
+
+
+# Assumption BY3 set (basic programme only) ----
+out_path <-
+  "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/screen_and_treat_strategies/Scenario BY3/"
+
+# Status quo
+out1 <- readRDS(paste0(out_path, "by3_out1_bd_scale_up_cohort_280720.rds"))
+out1 <- out1[[1]]
+out2 <- readRDS(paste0(out_path, "out2_status_quo_080720.rds"))
+out2 <- out2[[1]]
+
+out2_bd <- readRDS(paste0(out_path, "out2_bd_scale_up_080720.rds"))
+out2_bd <- out2_bd[[1]]
+
+# Monitoring
+out3 <- readRDS(paste0(out_path, "by3_out3_screen_2020_monit_0_280720.rds"))
+out3 <- out3[[1]]
+
+
 ## BASIC PROGRAMME IMPACT (if only this available) ----
 ### Cohort outcomes
 # Average age at death
@@ -467,6 +539,409 @@ ly_gained_per_treatment_sq_long <-
                                             scenario_objects = list(out3),
                                             interaction_type = "total_treated",
                                             counterfactual_label = "no treatment programme")
+
+# Basic programme impact for BY scenarios (multiple comparisons) ----
+### Cohort outcomes
+# Average age at death
+cohort_age_at_death <- data.frame(rbind(out1$cohort_age_at_death,
+                                        out3$cohort_age_at_death))
+
+cohort_age_at_death_long <- gather(cohort_age_at_death, key = "sim", value = "value", -scenario)
+
+# Compare cohort number of HBV deaths averted compared to no treatment (status quo)
+cohort_deaths_averted_sq_long <-
+  plot_hbv_deaths_averted_cohort(counterfactual_object = out1,
+                                 scenario_objects = list(out3),
+                                 counterfactual_label = "no treatment")
+
+# Compare cohort number of life years gained compared to no monitoring
+cohort_ly_gained_sq_long <-
+  plot_ly_gained_cohort(counterfactual_object = out1,
+                        scenario_objects = list(out3),
+                        counterfactual_label = "no treatment")
+
+### Population outcomes by 2030, 2050 and 2100 compared to status quo
+
+# HBV DEATHS AVERTED
+
+# COUNTERFACTUAL = STATUS QUO
+deaths_averted_sq_long <- plot_hbv_deaths_averted(counterfactual_object = out2,
+                                                  scenario_objects = list(out3),
+                                                  counterfactual_label = "no treatment programme")
+
+
+# LIFE YEARS GAINED
+
+# COUNTERFACTUAL = STATUS QUO
+# Population-level effect of screening/treatment/monitoring in the short and long term
+ly_gained_sq_long <- plot_ly_gained(counterfactual_object = out2,
+                                    scenario_objects = list(out3),
+                                    counterfactual_label = "treatment programme without monitoring")
+
+### Population outcomes by 2030, 2050 and 2100 compared to BD scale up
+
+# HBV DEATHS AVERTED
+
+# COUNTERFACTUAL = STATUS QUO
+deaths_averted_bd_long <- plot_hbv_deaths_averted(counterfactual_object = out2_bd,
+                                                  scenario_objects = list(out3),
+                                                  counterfactual_label = "no treatment programme")
+
+
+# LIFE YEARS GAINED
+
+# COUNTERFACTUAL = STATUS QUO
+# Population-level effect of screening/treatment/monitoring in the short and long term
+ly_gained_bd_long <- plot_ly_gained(counterfactual_object = out2_bd,
+                                    scenario_objects = list(out3),
+                                    counterfactual_label = "no treatment programme")
+
+### Population outcomes by 2040, 2060 and 2100 compared to status quo
+
+# HBV DEATHS AVERTED
+
+# COUNTERFACTUAL = STATUS QUO
+deaths_averted_sq_10_long <- plot_hbv_deaths_averted(counterfactual_object = out2,
+                                                  scenario_objects = list(out3),
+                                                  counterfactual_label = "no treatment programme",
+                                                  timepoints = c(2040,2060,2100))
+
+
+# LIFE YEARS GAINED
+
+# COUNTERFACTUAL = STATUS QUO
+# Population-level effect of screening/treatment/monitoring in the short and long term
+ly_gained_sq_10_long <- plot_ly_gained(counterfactual_object = out2,
+                                    scenario_objects = list(out3),
+                                    counterfactual_label = "treatment programme without monitoring",
+                                    timepoints = c(2040,2060,2100))
+
+### Population outcomes by 2040, 2060 and 2100 compared to BD scale-up
+
+# HBV DEATHS AVERTED
+
+# COUNTERFACTUAL = STATUS QUO
+deaths_averted_bd_10_long <- plot_hbv_deaths_averted(counterfactual_object = out2_bd,
+                                                     scenario_objects = list(out3),
+                                                     counterfactual_label = "no treatment programme",
+                                                     timepoints = c(2040,2060,2100))
+
+
+# LIFE YEARS GAINED
+
+# COUNTERFACTUAL = STATUS QUO
+# Population-level effect of screening/treatment/monitoring in the short and long term
+ly_gained_bd_10_long <- plot_ly_gained(counterfactual_object = out2_bd,
+                                       scenario_objects = list(out3),
+                                       counterfactual_label = "treatment programme without monitoring",
+                                       timepoints = c(2040,2060,2100))
+
+
+### Population outcomes per healthcare interaction by 2030, 2050 and 2100 compared to status quo
+
+# COUNTERFACTUAL = STATUS QUO
+
+# OUTCOME = HBV DEATHS AVERTED PER INCREMENTAL TREATMENT INITIATION
+# compared to status quo, any healthcare interactions are incremental
+
+# OUTCOME = HBV DEATHS AVERTED PER INCREMENTAL INTERACTION
+deaths_averted_per_interaction_sq_long <-
+  plot_hbv_deaths_averted_per_healthcare_interaction(counterfactual_object = out2,
+                                                     scenario_objects = list(out3),
+                                                     interaction_type = "total_interactions",
+                                                     counterfactual_label = "no treatment programme")
+
+# OUTCOME = HBV DEATHS AVERTED PER INCREMENTAL ASSESSMENT
+deaths_averted_per_assessment_sq_long <-
+  plot_hbv_deaths_averted_per_healthcare_interaction(counterfactual_object = out2,
+                                                     scenario_objects = list(out3),
+                                                     interaction_type = "total_assessed",
+                                                     counterfactual_label = "no treatment programme")
+
+# OUTCOME = HBV DEATHS AVERTED PER INCREMENTAL SCREENING
+deaths_averted_per_test_sq_long <-
+  plot_hbv_deaths_averted_per_healthcare_interaction(counterfactual_object = out2,
+                                                     scenario_objects = list(out3),
+                                                     interaction_type = "total_screened",
+                                                     counterfactual_label = "no treatment programme")
+
+deaths_averted_per_treatment_sq_long <-
+  plot_hbv_deaths_averted_per_healthcare_interaction(counterfactual_object = out2,
+                                                     scenario_objects = list(out3),
+                                                     interaction_type = "total_treated",
+                                                     counterfactual_label = "no treatment programme")
+
+# OUTCOME = LIFE YEARS GAINED PER INCREMENTAL HEALTHCARE INTERACTION
+
+# One-off screen monitoring every 10 years
+ly_gained_per_interaction_sq_long <-
+  plot_ly_gained_per_healthcare_interaction(counterfactual_object = out2,
+                                            scenario_objects = list(out3),
+                                            interaction_type = "total_interactions",
+                                            counterfactual_label = "no treatment programme")
+
+ly_gained_per_assessment_sq_long <-
+  plot_ly_gained_per_healthcare_interaction(counterfactual_object = out2,
+                                            scenario_objects = list(out3),
+                                            interaction_type = "total_assessed",
+                                            counterfactual_label = "no treatment programme")
+ly_gained_per_test_sq_long <-
+  plot_ly_gained_per_healthcare_interaction(counterfactual_object = out2,
+                                            scenario_objects = list(out3),
+                                            interaction_type = "total_screened",
+                                            counterfactual_label = "no treatment programme")
+
+ly_gained_per_treatment_sq_long <-
+  plot_ly_gained_per_healthcare_interaction(counterfactual_object = out2,
+                                            scenario_objects = list(out3),
+                                            interaction_type = "total_treated",
+                                            counterfactual_label = "no treatment programme")
+
+### Population outcomes per healthcare interaction by 2030, 2050 and 2100 compared to BD scale up
+
+# COUNTERFACTUAL = STATUS QUO
+
+# OUTCOME = HBV DEATHS AVERTED PER INCREMENTAL TREATMENT INITIATION
+# compared to status quo, any healthcare interactions are incremental
+
+# OUTCOME = HBV DEATHS AVERTED PER INCREMENTAL INTERACTION
+deaths_averted_per_interaction_bd_long <-
+  plot_hbv_deaths_averted_per_healthcare_interaction(counterfactual_object = out2_bd,
+                                                     scenario_objects = list(out3),
+                                                     interaction_type = "total_interactions",
+                                                     counterfactual_label = "no treatment programme")
+
+# OUTCOME = HBV DEATHS AVERTED PER INCREMENTAL ASSESSMENT
+deaths_averted_per_assessment_bd_long <-
+  plot_hbv_deaths_averted_per_healthcare_interaction(counterfactual_object = out2_bd,
+                                                     scenario_objects = list(out3),
+                                                     interaction_type = "total_assessed",
+                                                     counterfactual_label = "no treatment programme")
+
+# OUTCOME = HBV DEATHS AVERTED PER INCREMENTAL SCREENING
+deaths_averted_per_test_bd_long <-
+  plot_hbv_deaths_averted_per_healthcare_interaction(counterfactual_object = out2_bd,
+                                                     scenario_objects = list(out3),
+                                                     interaction_type = "total_screened",
+                                                     counterfactual_label = "no treatment programme")
+
+deaths_averted_per_treatment_bd_long <-
+  plot_hbv_deaths_averted_per_healthcare_interaction(counterfactual_object = out2_bd,
+                                                     scenario_objects = list(out3),
+                                                     interaction_type = "total_treated",
+                                                     counterfactual_label = "no treatment programme")
+
+# OUTCOME = LIFE YEARS GAINED PER INCREMENTAL HEALTHCARE INTERACTION
+
+# One-off screen monitoring every 10 years
+ly_gained_per_interaction_bd_long <-
+  plot_ly_gained_per_healthcare_interaction(counterfactual_object = out2_bd,
+                                            scenario_objects = list(out3),
+                                            interaction_type = "total_interactions",
+                                            counterfactual_label = "no treatment programme")
+
+ly_gained_per_assessment_bd_long <-
+  plot_ly_gained_per_healthcare_interaction(counterfactual_object = out2_bd,
+                                            scenario_objects = list(out3),
+                                            interaction_type = "total_assessed",
+                                            counterfactual_label = "no treatment programme")
+ly_gained_per_test_bd_long <-
+  plot_ly_gained_per_healthcare_interaction(counterfactual_object = out2_bd,
+                                            scenario_objects = list(out3),
+                                            interaction_type = "total_screened",
+                                            counterfactual_label = "no treatment programme")
+
+ly_gained_per_treatment_bd_long <-
+  plot_ly_gained_per_healthcare_interaction(counterfactual_object = out2_bd,
+                                            scenario_objects = list(out3),
+                                            interaction_type = "total_treated",
+                                            counterfactual_label = "no treatment programme")
+
+
+### Population outcomes per healthcare interaction by 2040, 2060 and 2100 compared to status quo
+
+# COUNTERFACTUAL = STATUS QUO
+
+# OUTCOME = HBV DEATHS AVERTED PER INCREMENTAL TREATMENT INITIATION
+# compared to status quo, any healthcare interactions are incremental
+
+# OUTCOME = HBV DEATHS AVERTED PER INCREMENTAL INTERACTION
+deaths_averted_per_interaction_sq_10_long <-
+  plot_hbv_deaths_averted_per_healthcare_interaction(counterfactual_object = out2,
+                                                     scenario_objects = list(out3),
+                                                     interaction_type = "total_interactions",
+                                                     counterfactual_label = "no treatment programme",
+                                                     timepoints = c(2040,2060,2100))
+
+# OUTCOME = HBV DEATHS AVERTED PER INCREMENTAL ASSESSMENT
+deaths_averted_per_assessment_sq_10_long <-
+  plot_hbv_deaths_averted_per_healthcare_interaction(counterfactual_object = out2,
+                                                     scenario_objects = list(out3),
+                                                     interaction_type = "total_assessed",
+                                                     counterfactual_label = "no treatment programme",
+                                                     timepoints = c(2040,2060,2100))
+
+# OUTCOME = HBV DEATHS AVERTED PER INCREMENTAL SCREENING
+deaths_averted_per_test_sq_10_long <-
+  plot_hbv_deaths_averted_per_healthcare_interaction(counterfactual_object = out2,
+                                                     scenario_objects = list(out3),
+                                                     interaction_type = "total_screened",
+                                                     counterfactual_label = "no treatment programme",
+                                                     timepoints = c(2040,2060,2100))
+
+deaths_averted_per_treatment_sq_10_long <-
+  plot_hbv_deaths_averted_per_healthcare_interaction(counterfactual_object = out2,
+                                                     scenario_objects = list(out3),
+                                                     interaction_type = "total_treated",
+                                                     counterfactual_label = "no treatment programme",
+                                                     timepoints = c(2040,2060,2100))
+
+# OUTCOME = LIFE YEARS GAINED PER INCREMENTAL HEALTHCARE INTERACTION
+
+# One-off screen monitoring every 10 years
+ly_gained_per_interaction_sq_10_long <-
+  plot_ly_gained_per_healthcare_interaction(counterfactual_object = out2,
+                                            scenario_objects = list(out3),
+                                            interaction_type = "total_interactions",
+                                            counterfactual_label = "no treatment programme",
+                                            timepoints = c(2040,2060,2100))
+
+ly_gained_per_assessment_sq_10_long <-
+  plot_ly_gained_per_healthcare_interaction(counterfactual_object = out2,
+                                            scenario_objects = list(out3),
+                                            interaction_type = "total_assessed",
+                                            counterfactual_label = "no treatment programme",
+                                            timepoints = c(2040,2060,2100))
+ly_gained_per_test_sq_10_long <-
+  plot_ly_gained_per_healthcare_interaction(counterfactual_object = out2,
+                                            scenario_objects = list(out3),
+                                            interaction_type = "total_screened",
+                                            counterfactual_label = "no treatment programme",
+                                            timepoints = c(2040,2060,2100))
+
+ly_gained_per_treatment_sq_10_long <-
+  plot_ly_gained_per_healthcare_interaction(counterfactual_object = out2,
+                                            scenario_objects = list(out3),
+                                            interaction_type = "total_treated",
+                                            counterfactual_label = "no treatment programme",
+                                            timepoints = c(2040,2060,2100))
+
+### Population outcomes per healthcare interaction by 2040, 2060 and 2100 compared to BD scale-up
+
+# COUNTERFACTUAL = STATUS QUO
+
+# OUTCOME = HBV DEATHS AVERTED PER INCREMENTAL TREATMENT INITIATION
+# compared to status quo, any healthcare interactions are incremental
+
+# OUTCOME = HBV DEATHS AVERTED PER INCREMENTAL INTERACTION
+deaths_averted_per_interaction_bd_10_long <-
+  plot_hbv_deaths_averted_per_healthcare_interaction(counterfactual_object = out2_bd,
+                                                     scenario_objects = list(out3),
+                                                     interaction_type = "total_interactions",
+                                                     counterfactual_label = "no treatment programme",
+                                                     timepoints = c(2040,2060,2100))
+
+# OUTCOME = HBV DEATHS AVERTED PER INCREMENTAL ASSESSMENT
+deaths_averted_per_assessment_bd_10_long <-
+  plot_hbv_deaths_averted_per_healthcare_interaction(counterfactual_object = out2_bd,
+                                                     scenario_objects = list(out3),
+                                                     interaction_type = "total_assessed",
+                                                     counterfactual_label = "no treatment programme",
+                                                     timepoints = c(2040,2060,2100))
+
+# OUTCOME = HBV DEATHS AVERTED PER INCREMENTAL SCREENING
+deaths_averted_per_test_bd_10_long <-
+  plot_hbv_deaths_averted_per_healthcare_interaction(counterfactual_object = out2_bd,
+                                                     scenario_objects = list(out3),
+                                                     interaction_type = "total_screened",
+                                                     counterfactual_label = "no treatment programme",
+                                                     timepoints = c(2040,2060,2100))
+
+deaths_averted_per_treatment_bd_10_long <-
+  plot_hbv_deaths_averted_per_healthcare_interaction(counterfactual_object = out2_bd,
+                                                     scenario_objects = list(out3),
+                                                     interaction_type = "total_treated",
+                                                     counterfactual_label = "no treatment programme",
+                                                     timepoints = c(2040,2060,2100))
+
+# OUTCOME = LIFE YEARS GAINED PER INCREMENTAL HEALTHCARE INTERACTION
+
+# One-off screen monitoring every 10 years
+ly_gained_per_interaction_bd_10_long <-
+  plot_ly_gained_per_healthcare_interaction(counterfactual_object = out2_bd,
+                                            scenario_objects = list(out3),
+                                            interaction_type = "total_interactions",
+                                            counterfactual_label = "no treatment programme",
+                                            timepoints = c(2040,2060,2100))
+
+ly_gained_per_assessment_bd_10_long <-
+  plot_ly_gained_per_healthcare_interaction(counterfactual_object = out2_bd,
+                                            scenario_objects = list(out3),
+                                            interaction_type = "total_assessed",
+                                            counterfactual_label = "no treatment programme",
+                                            timepoints = c(2040,2060,2100))
+ly_gained_per_test_bd_10_long <-
+  plot_ly_gained_per_healthcare_interaction(counterfactual_object = out2_bd,
+                                            scenario_objects = list(out3),
+                                            interaction_type = "total_screened",
+                                            counterfactual_label = "no treatment programme",
+                                            timepoints = c(2040,2060,2100))
+
+ly_gained_per_treatment_bd_10_long <-
+  plot_ly_gained_per_healthcare_interaction(counterfactual_object = out2_bd,
+                                            scenario_objects = list(out3),
+                                            interaction_type = "total_treated",
+                                            counterfactual_label = "no treatment programme",
+                                            timepoints = c(2040,2060,2100))
+
+scenario_by3_full_results <-
+  list(
+#    cohort_deaths_averted_sq_long = cohort_deaths_averted_sq_long,
+#    cohort_ly_gained_sq_long = cohort_ly_gained_sq_long,
+#    cohort_average_age_at_death_long = cohort_age_at_death_long,
+    deaths_averted_sq_long = deaths_averted_sq_long,
+    deaths_averted_bd_long = deaths_averted_bd_long,
+    deaths_averted_sq_10_long = deaths_averted_sq_10_long,
+    deaths_averted_bd_10_long = deaths_averted_bd_10_long,
+    ly_gained_sq_long = ly_gained_sq_long,
+    ly_gained_bd_long = ly_gained_bd_long,
+    ly_gained_sq_10_long = ly_gained_sq_10_long,
+    ly_gained_bd_10_long = ly_gained_bd_10_long,
+    deaths_averted_per_interaction_sq_long = deaths_averted_per_interaction_sq_long,
+    deaths_averted_per_interaction_bd_long = deaths_averted_per_interaction_bd_long,
+    deaths_averted_per_interaction_sq_10_long = deaths_averted_per_interaction_sq_10_long,
+    deaths_averted_per_interaction_bd_10_long = deaths_averted_per_interaction_bd_10_long,
+    deaths_averted_per_assessment_sq_long = deaths_averted_per_assessment_sq_long,
+    deaths_averted_per_assessment_bd_long = deaths_averted_per_assessment_bd_long,
+    deaths_averted_per_assessment_sq_10_long = deaths_averted_per_assessment_sq_10_long,
+    deaths_averted_per_assessment_bd_10_long = deaths_averted_per_assessment_bd_10_long,
+    deaths_averted_per_test_sq_long = deaths_averted_per_test_sq_long,
+    deaths_averted_per_test_bd_long = deaths_averted_per_test_bd_long,
+    deaths_averted_per_test_sq_10_long = deaths_averted_per_test_sq_10_long,
+    deaths_averted_per_test_bd_10_long = deaths_averted_per_test_bd_10_long,
+    deaths_averted_per_treatment_sq_long = deaths_averted_per_treatment_sq_long,
+    deaths_averted_per_treatment_bd_long = deaths_averted_per_treatment_bd_long,
+    deaths_averted_per_treatment_sq_10_long = deaths_averted_per_treatment_sq_10_long,
+    deaths_averted_per_treatment_bd_10_long = deaths_averted_per_treatment_bd_10_long,
+    ly_gained_per_interaction_sq_long = ly_gained_per_interaction_sq_long,
+    ly_gained_per_interaction_bd_long = ly_gained_per_interaction_bd_long,
+    ly_gained_per_interaction_sq_10_long = ly_gained_per_interaction_sq_10_long,
+    ly_gained_per_interaction_bd_10_long = ly_gained_per_interaction_bd_10_long,
+    ly_gained_per_assessment_sq_long = ly_gained_per_assessment_sq_long,
+    ly_gained_per_assessment_bd_long = ly_gained_per_assessment_bd_long,
+    ly_gained_per_assessment_sq_10_long = ly_gained_per_assessment_sq_10_long,
+    ly_gained_per_assessment_bd_10_long = ly_gained_per_assessment_bd_10_long,
+    ly_gained_per_test_sq_long = ly_gained_per_test_sq_long,
+    ly_gained_per_test_bd_long = ly_gained_per_test_bd_long,
+    ly_gained_per_test_sq_10_long = ly_gained_per_test_sq_10_long,
+    ly_gained_per_test_bd_10_long = ly_gained_per_test_bd_10_long,
+    ly_gained_per_treatment_sq_long = ly_gained_per_treatment_sq_long,
+    ly_gained_per_treatment_bd_long = ly_gained_per_treatment_bd_long,
+    ly_gained_per_treatment_sq_10_long = ly_gained_per_treatment_sq_10_long,
+    ly_gained_per_treatment_bd_10_long = ly_gained_per_treatment_bd_10_long
+  )
+#saveRDS(scenario_by3_full_results, here("output", "screen_and_treat_results", "scenario_by3_basic_results.rds"))
+
 
 ## IMPACT OF MONITORING ----
 ### Cohort outcomes of monitoring (uses functions from calculate_outcomes.R) ----
@@ -1415,6 +1890,58 @@ scenario_bx3_full_results <-
 
 ## TIMESERIES PLOTS ----
 
+# BD plot
+hbv_deaths_rate <- rbind(cbind(out2$timeseries$total_hbv_deaths_rate[,c(1:2)],
+                               median = apply(out2$timeseries$total_hbv_deaths_rate[,-c(1:2)], 1, median),
+                               cri_lower = apply(out2$timeseries$total_hbv_deaths_rate[,-c(1:2)], 1, quantile, prob = 0.025),
+                               cri_upper = apply(out2$timeseries$total_hbv_deaths_rate[,-c(1:2)], 1, quantile, prob = 0.975)),
+                         cbind(out3$timeseries$total_hbv_deaths_rate[,c(1:2)],
+                               median= apply(out3$timeseries$total_hbv_deaths_rate[,-c(1:2)], 1, median),
+                               cri_lower = apply(out3$timeseries$total_hbv_deaths_rate[,-c(1:2)], 1, quantile, prob = 0.025),
+                               cri_upper = apply(out3$timeseries$total_hbv_deaths_rate[,-c(1:2)], 1, quantile, prob = 0.975)),
+                         cbind(time = out3_bd$timeseries$total_hbv_deaths_rate[,1],
+                               scenario = "screen_2020_monit_0_bd",
+                               median= apply(out3_bd$timeseries$total_hbv_deaths_rate[,-c(1:2)], 1, median),
+                               cri_lower = apply(out3_bd$timeseries$total_hbv_deaths_rate[,-c(1:2)], 1, quantile, prob = 0.025),
+                               cri_upper = apply(out3_bd$timeseries$total_hbv_deaths_rate[,-c(1:2)], 1, quantile, prob = 0.975)))
+hbv_deaths_rate$median <- as.numeric(hbv_deaths_rate$median)
+hbv_deaths_rate$cri_lower <- as.numeric(hbv_deaths_rate$cri_lower)
+hbv_deaths_rate$cri_upper <- as.numeric(hbv_deaths_rate$cri_upper)
+hbv_deaths_rate$time <- as.numeric(hbv_deaths_rate$time)
+
+ggplot(hbv_deaths_rate[hbv_deaths_rate$scenario %in% c("status_quo", "screen_2020_monit_0_bd"),]) +
+  geom_line(aes(x=time, y = median*10000/0.5, group = scenario, colour = scenario), size =1)+
+  geom_ribbon(data =hbv_deaths_rate[hbv_deaths_rate$scenario %in% c("status_quo"),],
+              aes(x=time, ymin=cri_lower*10000/0.5, ymax=cri_upper*10000/0.5, group = scenario,
+                  colour = scenario),
+              linetype = "dashed", alpha = 0)+
+  geom_ribbon(data =hbv_deaths_rate[hbv_deaths_rate$scenario %in% c("screen_2020_monit_0_bd"),],
+              aes(x=time, ymin=cri_lower*10000/0.5, ymax=cri_upper*10000/0.5, group = scenario,
+                  fill = scenario, colour = scenario),  #colour=scenario
+              linetype = "dashed", alpha = 0.15)+
+  labs(title = "HBV-related mortality rate",
+       colour = "Modelled scenario", fill = "Modelled scenario") +
+  scale_x_continuous(breaks=seq(1960, 2100, by = 10), limits = c(2015,2100)) +
+  scale_color_manual(limits = c("status_quo", "screen_2020_monit_0", "screen_2020_monit_0_bd"),
+                     labels = c("status_quo"="Status quo",
+                                "screen_2020_monit_0"="Treatment",
+                                "screen_2020_monit_0_bd"="Treatment+BD"),
+                     values = c("screen_2020_monit_0"= "orange",
+                                "status_quo"="steelblue",
+                                "screen_2020_monit_0_bd" = "deeppink")) +
+  scale_fill_manual(limits = c("status_quo", "screen_2020_monit_0", "screen_2020_monit_0_bd"),
+                    labels = c("status_quo"="Status quo",
+                               "screen_2020_monit_0"="Treatment",
+                               "screen_2020_monit_0_bd"="Treatment+BD"),
+                    values = c("screen_2020_monit_0"= "orange",
+                               "status_quo"="steelblue",
+                               "screen_2020_monit_0_bd" = "deeppink")) +
+  ylab("HBV-related death rate  per 10,000 person-years")+
+  xlab("Year")+
+  ylim(0,5) +
+  theme_classic()
+
+
 hbv_deaths_rate <- rbind(cbind(out2$timeseries$total_hbv_deaths_rate[,c(1:2)],
                                median = apply(out2$timeseries$total_hbv_deaths_rate[,-c(1:2)], 1, median),
                                cri_lower = apply(out2$timeseries$total_hbv_deaths_rate[,-c(1:2)], 1, quantile, prob = 0.025),
@@ -1487,7 +2014,7 @@ ggplot(hbv_deaths_rate[hbv_deaths_rate$scenario %in% c("status_quo", "screen_202
   xlab("Year")+
   ylim(0,5) +
   theme_classic()
-# Alternative visualisation:
+# Alternative visualisation 1:
 ggplot(hbv_deaths_rate[hbv_deaths_rate$scenario %in% c("status_quo", "screen_2020_monit_5"),]) +
   geom_line(aes(x=time, y = median*10000/0.5, group = scenario, colour = scenario), size =1)+
   geom_ribbon(data =hbv_deaths_rate[hbv_deaths_rate$scenario %in% c("status_quo"),],
@@ -1522,6 +2049,40 @@ ggplot(hbv_deaths_rate[hbv_deaths_rate$scenario %in% c("status_quo", "screen_202
                                "status_quo"="steelblue",
                                "monit_0_screen_5"="black",
                                "screen_2020_monit_5" = "deeppink")) +
+  ylab("HBV-related death rate  per 10,000 person-years")+
+  xlab("Year")+
+  ylim(0,5) +
+  theme_classic()
+# Alternative visualisation 2: need to alpha the pink but not the blue
+ggplot(hbv_deaths_rate[hbv_deaths_rate$scenario %in% c("status_quo", "screen_2020_monit_5"),]) +
+  geom_ribbon(aes(x=time, ymin=cri_lower*10000/0.5, ymax=cri_upper*10000/0.5, group = scenario,
+                  fill = scenario),  #colour=scenario
+              linetype = "dashed", alpha = 0.5)+
+  geom_line(aes(x=time, y = median*10000/0.5, group = scenario, colour = scenario), size =1)+
+  labs(title = "HBV-related mortality rate",
+       colour = "Modelled scenario", fill = "Modelled scenario",
+       caption = "Status quo: historical infant vaccine coverage since 1990 and maintaining 93% coverage after 2018\n
+       One-off screen+treat: infant vaccine and screening once in 2020\n
+       Repeat screen+treat: Infant vaccine and screening every 5 years starting in 2020") +
+  scale_x_continuous(breaks=seq(1960, 2100, by = 10), limits = c(2015,2070)) +
+  scale_color_manual(limits = c("status_quo", "screen_2020_monit_0", "screen_2020_monit_5", "monit_0_screen_5"),
+                     labels = c("status_quo"="Status quo",
+                                "screen_2020_monit_0"="One-off screen+treat",
+                                "screen_2020_monit_5"="Monitor every 5 years",
+                                "monit_0_screen_5" = "Screen every 5 years"),
+                     values = c("screen_2020_monit_0"= "orange",
+                                "status_quo"="steelblue",
+                                "monit_0_screen_5"="black",
+                                "screen_2020_monit_5" = "deeppink")) +
+  scale_fill_manual(limits = c("status_quo", "screen_2020_monit_0", "screen_2020_monit_5", "monit_0_screen_5"),
+                    labels = c("status_quo"="Status quo",
+                               "screen_2020_monit_0"="One-off screen+treat",
+                               "screen_2020_monit_5"="Monitor every 5 years",
+                               "monit_0_screen_5" = "Screen every 5 years"),
+                    values = c("screen_2020_monit_0"="orange",
+                               "status_quo"="lightsteelblue1",
+                               "monit_0_screen_5"="black",
+                               "screen_2020_monit_5" = "lightpink")) +
   ylab("HBV-related death rate  per 10,000 person-years")+
   xlab("Year")+
   ylim(0,5) +
@@ -1567,9 +2128,9 @@ quantile((out2$timeseries$total_hbv_deaths_rate[out2$timeseries$total_hbv_deaths
   out2$timeseries$total_hbv_deaths_rate[out2$timeseries$total_hbv_deaths_rate$time == 2030,-c(1,2)])/
   (out2$timeseries$total_hbv_deaths_rate[out2$timeseries$total_hbv_deaths_rate$time == 2019.5,-c(1,2)]), prob =
     c(0.025,0.5,0.975))
-quantile((out2$timeseries$total_hbv_deaths_rate[out2$timeseries$total_hbv_deaths_rate$time == 2020,-c(1,2)]-
+quantile((out2$timeseries$total_hbv_deaths_rate[out2$timeseries$total_hbv_deaths_rate$time == 2019.5,-c(1,2)]-
             out2$timeseries$total_hbv_deaths_rate[out2$timeseries$total_hbv_deaths_rate$time == 2050,-c(1,2)])/
-           (out2$timeseries$total_hbv_deaths_rate[out2$timeseries$total_hbv_deaths_rate$time == 2020,-c(1,2)]), prob =
+           (out2$timeseries$total_hbv_deaths_rate[out2$timeseries$total_hbv_deaths_rate$time == 2019.5,-c(1,2)]), prob =
            c(0.025,0.5,0.975))
 
 quantile((out3$timeseries$total_hbv_deaths_rate[out3$timeseries$total_hbv_deaths_rate$time == 2019.5,-c(1,2)]-
@@ -1649,6 +2210,81 @@ points(x=gather(out3$timeseries$total_chronic_infections_rate, key = "sim", valu
 plot(x=gather(out1$timeseries$total_hbv_deaths, key = "sim", value = "value", -time, -scenario)$time,
      y=gather(out1$timeseries$total_hbv_deaths, key = "sim", value = "value", -time, -scenario)$value)
 
+# Plot of cumulative number of deaths averted over time
+deaths_averted_sq_long1 <- plot_hbv_deaths_averted(counterfactual_object = out2,
+                                                  scenario_objects = list(out3, out4, out5, out6),
+                                                  counterfactual_label = "no treatment programme",
+                                                  timepoints = c(2025,2030,2035))
+deaths_averted_sq_long2 <- plot_hbv_deaths_averted(counterfactual_object = out2,
+                                                   scenario_objects = list(out3, out4, out5, out6),
+                                                   counterfactual_label = "no treatment programme",
+                                                   timepoints = c(2040,2045,2050))
+deaths_averted_sq_long3 <- plot_hbv_deaths_averted(counterfactual_object = out2,
+                                                   scenario_objects = list(out3, out4, out5, out6),
+                                                   counterfactual_label = "no treatment programme",
+                                                   timepoints = c(2055,2060,2065))
+deaths_averted_sq_long4 <- plot_hbv_deaths_averted(counterfactual_object = out2,
+                                                   scenario_objects = list(out3, out4, out5, out6),
+                                                   counterfactual_label = "no treatment programme",
+                                                   timepoints = c(2070,2075,2080))
+
+deaths_averted_sq_long_time <- rbind(deaths_averted_sq_long1, deaths_averted_sq_long2,
+                                     deaths_averted_sq_long3, deaths_averted_sq_long4)
+
+deaths_averted_sq_long_time <- deaths_averted_sq_long_time %>%
+  filter(type == "number_averted") %>%
+  group_by(from_year, by_year, counterfactual, scenario) %>%
+  summarise(median = median(value),
+            cri_lower = quantile(value, 0.025),
+            cri_upper = quantile(value, 0.975))
+
+ly_gained_sq_long1 <- plot_ly_gained(counterfactual_object = out2,
+                                                   scenario_objects = list(out3, out4, out5, out6),
+                                                   counterfactual_label = "no treatment programme",
+                                                   timepoints = c(2025,2030,2035))
+ly_gained_sq_long2 <- plot_ly_gained(counterfactual_object = out2,
+                                                   scenario_objects = list(out3, out4, out5, out6),
+                                                   counterfactual_label = "no treatment programme",
+                                                   timepoints = c(2040,2045,2050))
+ly_gained_sq_long3 <- plot_ly_gained(counterfactual_object = out2,
+                                     scenario_objects = list(out3, out4, out5, out6),
+                                     counterfactual_label = "no treatment programme",
+                                     timepoints = c(2055,2060,2065))
+ly_gained_sq_long4 <- plot_ly_gained(counterfactual_object = out2,
+                                     scenario_objects = list(out3, out4, out5, out6),
+                                     counterfactual_label = "no treatment programme",
+                                     timepoints = c(2070,2075,2080))
+ly_gained_sq_long_time <- rbind(ly_gained_sq_long1, ly_gained_sq_long2,
+                                ly_gained_sq_long3, ly_gained_sq_long4)
+
+ly_gained_sq_long_time <- ly_gained_sq_long_time %>%
+  filter(type == "number_averted") %>%
+  group_by(from_year, by_year, counterfactual, scenario) %>%
+  summarise(median = median(value),
+            cri_lower = quantile(value, 0.025),
+            cri_upper = quantile(value, 0.975))
+
+# Plots
+p1 <- ggplot(subset(deaths_averted_sq_long_time, scenario == c("screen_2020_monit_0"))) +
+  geom_line(aes(x = by_year, y = median, group = scenario, colour = scenario)) +
+  geom_ribbon(aes(x=by_year, ymin=cri_lower, ymax=cri_upper, group = scenario,
+                  fill = scenario), alpha = 0.1)+
+  theme_classic() +
+  xlab("Time") + ylab("Cumulative number of\nHBV-related deaths averted") +
+  theme(legend.position= "none")
+
+p2 <- ggplot(subset(ly_gained_sq_long_time, counterfactual == c("screen_2020_monit_0"))) +
+  geom_line(aes(x = by_year, y = median, group = counterfactual, colour = counterfactual)) +
+  geom_ribbon(aes(x=by_year, ymin=cri_lower, ymax=cri_upper, group = counterfactual,
+                  fill = counterfactual), alpha = 0.1)+
+  theme_classic()+
+  xlab("Time") + ylab("Cumulative number of\nlife-years saved") +
+  theme(legend.position= "none")
+
+grid.arrange(p1,p2,ncol =1)
+# Would need to add earlier timesteps and indicate timing of screening in plot
+
+
 ## REDUCTIONS FOR ELIMINATION ----
 
 red_inf <-
@@ -1688,6 +2324,278 @@ quantile(red_mort_rate_by_treatment, prob = c(0.025,0.5,0.975))
 # For A: 1.4 (1.2-1.9)
 # For D1: 1.5 (1.2-2)
 
+
+## AGE GROUP AND MONITORING RESULTS TABLE ----
+# Uses, compared to sq, scenarios: A, D1, D2, D3 with no monitoring, 5 yearly or yearly
+
+# Outcome 1:
+# Baseline
+# HBV-related mortality in 2030 (per 100,000 person-year)
+c1r1 <- round(quantile(subset(out2$timeseries$total_hbv_deaths_rate, time == 2030)[,-c(1,2)]*100000*2,
+         prob = c(0.5, 0.025, 0.975)),1)
+# Reduction in HBV mortality rate between 2020 and 2030 (%)
+baseline_reduction <- (out2$timeseries$total_hbv_deaths_rate[out2$timeseries$total_hbv_deaths_rate$time == 2019.5,-c(1,2)]-
+                         out2$timeseries$total_hbv_deaths_rate[out2$timeseries$total_hbv_deaths_rate$time == 2030,-c(1,2)])/
+  (out2$timeseries$total_hbv_deaths_rate[out2$timeseries$total_hbv_deaths_rate$time == 2019.5,-c(1,2)])
+c1r2 <- round(quantile(baseline_reduction, prob =
+           c(0.5,0.025,0.975)),3)*100
+c1r3 <- c1r1*0
+
+# Treatment without monitoring
+c2r1 <- round(quantile(subset(out3$timeseries$total_hbv_deaths_rate, time == 2030)[,-c(1,2)]*100000*2,
+               prob = c(0.5, 0.025, 0.975)),1)
+# Reduction in HBV mortality rate between 2020 and 2030 (%)
+out3_reduction <- (out3$timeseries$total_hbv_deaths_rate[out3$timeseries$total_hbv_deaths_rate$time == 2019.5,-c(1,2)]-
+                     out3$timeseries$total_hbv_deaths_rate[out3$timeseries$total_hbv_deaths_rate$time == 2030,-c(1,2)])/
+  (out3$timeseries$total_hbv_deaths_rate[out3$timeseries$total_hbv_deaths_rate$time == 2019.5,-c(1,2)])
+c2r2 <- round(quantile(out3_reduction, prob =
+                 c(0.5,0.025,0.975)),3)*100
+# Reduction compared to baseline
+c2r3 <- round(quantile(out3_reduction/baseline_reduction, prob =
+                 c(0.5,0.025,0.975)),1)
+
+# Treatment with 5-yearly monitoring
+c3r1 <- round(quantile(subset(out5$timeseries$total_hbv_deaths_rate, time == 2030)[,-c(1,2)]*100000*2,
+               prob = c(0.5, 0.025, 0.975)),1)
+# Reduction in HBV mortality rate between 2020 and 2030 (%)
+out5_reduction <- (out5$timeseries$total_hbv_deaths_rate[out5$timeseries$total_hbv_deaths_rate$time == 2019.5,-c(1,2)]-
+                     out5$timeseries$total_hbv_deaths_rate[out5$timeseries$total_hbv_deaths_rate$time == 2030,-c(1,2)])/
+  (out5$timeseries$total_hbv_deaths_rate[out5$timeseries$total_hbv_deaths_rate$time == 2019.5,-c(1,2)])
+c3r2 <- round(quantile(out5_reduction, prob =
+                 c(0.5,0.025,0.975)),3)*100
+# Reduction compared to baseline
+c3r3 <- round(quantile(out5_reduction/baseline_reduction, prob =
+                 c(0.5,0.025,0.975)),1)
+
+# Treatment with yearly monitoring
+c4r1 <- round(quantile(subset(out6$timeseries$total_hbv_deaths_rate, time == 2030)[,-c(1,2)]*100000*2,
+               prob = c(0.5, 0.025, 0.975)),1)
+# Reduction in HBV mortality rate between 2020 and 2030 (%)
+out6_reduction <- (out6$timeseries$total_hbv_deaths_rate[out6$timeseries$total_hbv_deaths_rate$time == 2019.5,-c(1,2)]-
+                     out6$timeseries$total_hbv_deaths_rate[out6$timeseries$total_hbv_deaths_rate$time == 2030,-c(1,2)])/
+  (out6$timeseries$total_hbv_deaths_rate[out6$timeseries$total_hbv_deaths_rate$time == 2019.5,-c(1,2)])
+c4r2 <- round(quantile(out6_reduction, prob =
+                 c(0.5,0.025,0.975)),3)*100
+# Reduction compared to baseline
+c4r3 <- round(quantile(out6_reduction/baseline_reduction, prob =
+                 c(0.5,0.025,0.975)),1)
+
+df <- data.frame(rbind(cbind(c1r1, c2r1, c3r1, c4r1),
+      cbind(c1r2, c2r2, c3r2, c4r2),
+      cbind(c1r3, c2r3, c3r3, c4r3)))
+colnames(df) <- c("baseline_median", "baseline_lower", "baseline_upper",
+                  "no_monit_median", "no_monit_lower", "no_monit_upper",
+                  "monit5_median", "monit5_lower", "monit5_upper",
+                  "monit1_median", "monit1_lower", "monit1_upper")
+rownames(df) <- c("mortrate_in_2030", "red_in_mortrate_by_2030", "ratio_to_baseline")
+
+df2 <- data.frame(baseline = paste0(df$baseline_median, " (", df$baseline_lower, "-", df$baseline_upper, ")"),
+                  no_monit = paste0(df$no_monit_median, " (", df$no_monit_lower, "-", df$no_monit_upper, ")"),
+                  monit5 = paste0(df$monit5_median, " (", df$monit5_lower, "-", df$monit5_upper, ")"),
+                  monit1 = paste0(df$monit1_median, " (", df$monit1_lower, "-", df$monit1_upper, ")"))
+rownames(df2) <- rownames(df)
+#df2
+
+# Population level outcomes
+
+# Cumulative number of HBV-related deaths
+df <- data.frame(cbind(rbind(round(quantile(out2$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==2030)]][,-c(1:3)],
+                                                     prob = c(0.5,0.025,0.975)),0),
+                                      round(quantile(out2$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==2050)]][,-c(1:3)],
+                                                     prob = c(0.5,0.025,0.975)),0),
+                                      round(quantile(out2$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==2100)]][,-c(1:3)],
+                                                     prob = c(0.5,0.025,0.975)),0)),
+                                rbind(round(quantile(out3$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==2030)]][,-c(1:3)],
+                                                     prob = c(0.5,0.025,0.975)),0),
+                                      round(quantile(out3$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==2050)]][,-c(1:3)],
+                                                     prob = c(0.5,0.025,0.975)),0),
+                                      round(quantile(out3$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==2100)]][,-c(1:3)],
+                                                     prob = c(0.5,0.025,0.975)),0)),
+                                rbind(round(quantile(out5$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==2030)]][,-c(1:3)],
+                                                     prob = c(0.5,0.025,0.975)),0),
+                                      round(quantile(out5$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==2050)]][,-c(1:3)],
+                                                     prob = c(0.5,0.025,0.975)),0),
+                                      round(quantile(out5$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==2100)]][,-c(1:3)],
+                                                     prob = c(0.5,0.025,0.975)),0)),
+                                rbind(round(quantile(out6$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==2030)]][,-c(1:3)],
+                                                     prob = c(0.5,0.025,0.975)),0),
+                                      round(quantile(out6$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==2050)]][,-c(1:3)],
+                                                     prob = c(0.5,0.025,0.975)),0),
+                                      round(quantile(out6$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==2100)]][,-c(1:3)],
+                                                     prob = c(0.5,0.025,0.975)),0))))
+colnames(df) <- c("baseline_median", "baseline_lower", "baseline_upper",
+                  "no_monit_median", "no_monit_lower", "no_monit_upper",
+                  "monit5_median", "monit5_lower", "monit5_upper",
+                  "monit1_median", "monit1_lower", "monit1_upper")
+cum_deaths <- data.frame(baseline = paste0(df$baseline_median, " (", df$baseline_lower, "-", df$baseline_upper, ")"),
+                        no_monit = paste0(df$no_monit_median, " (", df$no_monit_lower, "-", df$no_monit_upper, ")"),
+                       monit5 = paste0(df$monit5_median, " (", df$monit5_lower, "-", df$monit5_upper, ")"),
+                       monit1 = paste0(df$monit1_median, " (", df$monit1_lower, "-", df$monit1_upper, ")"))
+rownames(cum_deaths) <- c(2030,2050,2100)
+#cum_deaths
+
+# Cumulative life-years x1,000,000
+df <- data.frame(cbind(rbind(round(quantile(out2$ly[[which(seq(2025,2100, by = 5)==2030)]][,-c(1:3)]/100000,
+                                            prob = c(0.5,0.025,0.975)),1),
+                             round(quantile(out2$ly[[which(seq(2025,2100, by = 5)==2050)]][,-c(1:3)]/100000,
+                                            prob = c(0.5,0.025,0.975)),1),
+                             round(quantile(out2$ly[[which(seq(2025,2100, by = 5)==2100)]][,-c(1:3)]/100000,
+                                            prob = c(0.5,0.025,0.975)),1)),
+                       rbind(round(quantile(out3$ly[[which(seq(2025,2100, by = 5)==2030)]][,-c(1:3)]/100000,
+                                            prob = c(0.5,0.025,0.975)),1),
+                             round(quantile(out3$ly[[which(seq(2025,2100, by = 5)==2050)]][,-c(1:3)]/100000,
+                                            prob = c(0.5,0.025,0.975)),1),
+                             round(quantile(out3$ly[[which(seq(2025,2100, by = 5)==2100)]][,-c(1:3)]/100000,
+                                            prob = c(0.5,0.025,0.975)),1)),
+                       rbind(round(quantile(out5$ly[[which(seq(2025,2100, by = 5)==2030)]][,-c(1:3)]/100000,
+                                            prob = c(0.5,0.025,0.975)),1),
+                             round(quantile(out5$ly[[which(seq(2025,2100, by = 5)==2050)]][,-c(1:3)]/100000,
+                                            prob = c(0.5,0.025,0.975)),1),
+                             round(quantile(out5$ly[[which(seq(2025,2100, by = 5)==2100)]][,-c(1:3)]/100000,
+                                            prob = c(0.5,0.025,0.975)),1)),
+                       rbind(round(quantile(out6$ly[[which(seq(2025,2100, by = 5)==2030)]][,-c(1:3)]/100000,
+                                            prob = c(0.5,0.025,0.975)),1),
+                             round(quantile(out6$ly[[which(seq(2025,2100, by = 5)==2050)]][,-c(1:3)]/100000,
+                                            prob = c(0.5,0.025,0.975)),1),
+                             round(quantile(out6$ly[[which(seq(2025,2100, by = 5)==2100)]][,-c(1:3)]/100000,
+                                            prob = c(0.5,0.025,0.975)),1))))
+colnames(df) <- c("baseline_median", "baseline_lower", "baseline_upper",
+                  "no_monit_median", "no_monit_lower", "no_monit_upper",
+                  "monit5_median", "monit5_lower", "monit5_upper",
+                  "monit1_median", "monit1_lower", "monit1_upper")
+cum_ly <- data.frame(baseline = paste0(df$baseline_median, " (", df$baseline_lower, "-", df$baseline_upper, ")"),
+                         no_monit = paste0(df$no_monit_median, " (", df$no_monit_lower, "-", df$no_monit_upper, ")"),
+                         monit5 = paste0(df$monit5_median, " (", df$monit5_lower, "-", df$monit5_upper, ")"),
+                         monit1 = paste0(df$monit1_median, " (", df$monit1_lower, "-", df$monit1_upper, ")"))
+rownames(cum_ly) <- c(2030,2050,2100)
+cum_ly
+
+# Number of interactions
+count_interactions <- function(interaction_outcome) {
+  df <- data.frame(cbind(rbind(round(quantile(out3$interactions[[which(seq(2025,2100, by = 5)==2030)]][[interaction_outcome]][,-c(1:3)],
+                                              prob = c(0.5,0.025,0.975)),0),
+                               round(quantile(out3$interactions[[which(seq(2025,2100, by = 5)==2050)]][[interaction_outcome]][,-c(1:3)],
+                                              prob = c(0.5,0.025,0.975)),0),
+                               round(quantile(out3$interactions[[which(seq(2025,2100, by = 5)==2100)]][[interaction_outcome]][,-c(1:3)],
+                                              prob = c(0.5,0.025,0.975)),0)),
+                         rbind(round(quantile(out5$interactions[[which(seq(2025,2100, by = 5)==2030)]][[interaction_outcome]][,-c(1:3)],
+                                              prob = c(0.5,0.025,0.975)),0),
+                               round(quantile(out5$interactions[[which(seq(2025,2100, by = 5)==2050)]][[interaction_outcome]][,-c(1:3)],
+                                              prob = c(0.5,0.025,0.975)),0),
+                               round(quantile(out5$interactions[[which(seq(2025,2100, by = 5)==2100)]][[interaction_outcome]][,-c(1:3)],
+                                              prob = c(0.5,0.025,0.975)),0)),
+                         rbind(round(quantile(out6$interactions[[which(seq(2025,2100, by = 5)==2030)]][[interaction_outcome]][,-c(1:3)],
+                                              prob = c(0.5,0.025,0.975)),0),
+                               round(quantile(out6$interactions[[which(seq(2025,2100, by = 5)==2050)]][[interaction_outcome]][,-c(1:3)],
+                                              prob = c(0.5,0.025,0.975)),0),
+                               round(quantile(out6$interactions[[which(seq(2025,2100, by = 5)==2100)]][[interaction_outcome]][,-c(1:3)],
+                                              prob = c(0.5,0.025,0.975)),0))))
+  colnames(df) <- c(
+                    "no_monit_median", "no_monit_lower", "no_monit_upper",
+                    "monit5_median", "monit5_lower", "monit5_upper",
+                    "monit1_median", "monit1_lower", "monit1_upper")
+  interactions <- data.frame(
+                       no_monit = paste0(df$no_monit_median, " (", df$no_monit_lower, "-", df$no_monit_upper, ")"),
+                       monit5 = paste0(df$monit5_median, " (", df$monit5_lower, "-", df$monit5_upper, ")"),
+                       monit1 = paste0(df$monit1_median, " (", df$monit1_lower, "-", df$monit1_upper, ")"))
+  rownames(interactions) <- c(2030,2050,2100)
+
+  return(interactions)
+}
+
+# Number of HBsAg tests
+count_interactions("total_screened")
+count_interactions("total_assessed")
+count_interactions("total_treated")
+
+# Test plot of number of interactions
+# Could show phases/compare age groups/monitoring scenarios
+
+# By time period (with monitoring)
+df <- data.frame(rbind(
+  cbind(out6$interactions[[which(seq(2025,2100, by = 5)==2030)]]$total_screened,
+        interaction_type = "total_screened"),
+  cbind(out6$interactions[[which(seq(2025,2100, by = 5)==2030)]]$total_assessed,
+        interaction_type = "total_assessed"),
+  cbind(out6$interactions[[which(seq(2025,2100, by = 5)==2030)]]$total_treated,
+        interaction_type = "total_treated"),
+  cbind(out6$interactions[[which(seq(2025,2100, by = 5)==2050)]]$total_screened,
+        interaction_type = "total_screened"),
+  cbind(out6$interactions[[which(seq(2025,2100, by = 5)==2050)]]$total_assessed,
+        interaction_type = "total_assessed"),
+  cbind(out6$interactions[[which(seq(2025,2100, by = 5)==2050)]]$total_treated,
+        interaction_type = "total_treated")))
+df <- df %>%
+  gather(key = "sim", value = "value", -from_year, -by_year, -scenario,-interaction_type) %>%
+  group_by(from_year, by_year, scenario,interaction_type) %>%
+  summarise(median = median(value)) %>%
+  spread(key = "by_year", value = "median") %>%
+  mutate(from2030to2050 = `2050`-`2030`) %>%
+  gather(key = "by_year", value = "median", -from_year, -scenario, - interaction_type) %>%
+  filter(by_year != 2050)
+
+library(viridis)
+ggplot(df[df$interaction_type != "total_interactions",]) +
+  geom_bar(aes(x = as.factor(by_year), y = median, fill = interaction_type), position="stack", width = 0.5, stat = "identity") +
+  scale_fill_viridis(discrete = TRUE, direction =-1) +
+  scale_x_discrete("Time period", labels = c("2020-2030", "2030-2050")) +
+  ylab("Total healthcare interactions") +
+  labs(title = "Age group 30-70 with yearly monitoring") +
+  theme_classic()
+
+# Total with/without monitoring
+df2 <- data.frame(rbind(
+  cbind(out3$interactions[[which(seq(2025,2100, by = 5)==2030)]]$total_screened,
+        interaction_type = "total_screened"),
+  cbind(out3$interactions[[which(seq(2025,2100, by = 5)==2030)]]$total_assessed,
+        interaction_type = "total_assessed"),
+  cbind(out3$interactions[[which(seq(2025,2100, by = 5)==2030)]]$total_treated,
+        interaction_type = "total_treated"),
+  cbind(out5$interactions[[which(seq(2025,2100, by = 5)==2030)]]$total_screened,
+        interaction_type = "total_screened"),
+  cbind(out5$interactions[[which(seq(2025,2100, by = 5)==2030)]]$total_assessed,
+        interaction_type = "total_assessed"),
+  cbind(out5$interactions[[which(seq(2025,2100, by = 5)==2030)]]$total_treated,
+        interaction_type = "total_treated"),
+  cbind(out6$interactions[[which(seq(2025,2100, by = 5)==2030)]]$total_screened,
+        interaction_type = "total_screened"),
+  cbind(out6$interactions[[which(seq(2025,2100, by = 5)==2030)]]$total_assessed,
+        interaction_type = "total_assessed"),
+  cbind(out6$interactions[[which(seq(2025,2100, by = 5)==2030)]]$total_treated,
+        interaction_type = "total_treated"),
+  cbind(out3$interactions[[which(seq(2025,2100, by = 5)==2100)]]$total_screened,
+        interaction_type = "total_screened"),
+  cbind(out3$interactions[[which(seq(2025,2100, by = 5)==2100)]]$total_assessed,
+        interaction_type = "total_assessed"),
+  cbind(out3$interactions[[which(seq(2025,2100, by = 5)==2100)]]$total_treated,
+        interaction_type = "total_treated"),
+  cbind(out5$interactions[[which(seq(2025,2100, by = 5)==2100)]]$total_screened,
+        interaction_type = "total_screened"),
+  cbind(out5$interactions[[which(seq(2025,2100, by = 5)==2100)]]$total_assessed,
+        interaction_type = "total_assessed"),
+  cbind(out5$interactions[[which(seq(2025,2100, by = 5)==2100)]]$total_treated,
+        interaction_type = "total_treated"),
+  cbind(out6$interactions[[which(seq(2025,2100, by = 5)==2100)]]$total_screened,
+        interaction_type = "total_screened"),
+  cbind(out6$interactions[[which(seq(2025,2100, by = 5)==2100)]]$total_assessed,
+        interaction_type = "total_assessed"),
+  cbind(out6$interactions[[which(seq(2025,2100, by = 5)==2100)]]$total_treated,
+        interaction_type = "total_treated")))
+
+df2 <- df2 %>%
+  gather(key = "sim", value = "value", -from_year, -by_year, -scenario,-interaction_type) %>%
+  group_by(from_year, by_year, scenario,interaction_type) %>%
+  summarise(median = median(value))
+
+ggplot(df2[df2$interaction_type != "total_interactions",]) +
+  geom_bar(aes(x = scenario, y = median, fill = interaction_type), position="stack", width = 0.5, stat = "identity") +
+  scale_fill_viridis(discrete = TRUE, direction =-1) +
+  facet_grid(~as.factor(by_year)) +
+  scale_x_discrete("Monitoring frequency", labels = c("Never", "5-yearly", "Yearly")) +
+  labs(title = "Age group 30-70 with/without monitoring") +
+  ylab("Total healthcare interactions") +
+  theme_classic() +
+  ylim(0,2700000)
 
 ## PREVIOUS ATTEMPTS ----
 ### Monitoring analysis: Plot population outcomes (y) by healthcare interactions (x) ----

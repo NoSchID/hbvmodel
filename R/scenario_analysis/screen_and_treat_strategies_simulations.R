@@ -262,6 +262,20 @@ scenario_bx3_parms$apply_treat_it <- 0
 scenario_bx3_parms$vacc_introtime <- 2004
 #save(scenario_bx3_parms, file= here("analysis_input", "scenario_bx3_parms.Rdata"))
 
+# ASSUMPTION C1 SIMULATIONS (15-65 year olds with feasible cascade parameters)
+scenario_c1_parms <- parameter_list
+scenario_c1_parms$screening_coverage <- 0.7
+scenario_c1_parms$min_age_to_screen <- 15
+scenario_c1_parms$max_age_to_screen <- 65
+scenario_c1_parms$prop_to_vaccinate <- 0
+scenario_c1_parms$link_to_care_prob <- 0.5
+scenario_c1_parms$treatment_initiation_prob <- 0.8
+scenario_c1_parms$monitoring_prob <- 0.5
+scenario_c1_parms$apply_bdvacc <- 0
+scenario_c1_parms$apply_treat_it <- 0
+#save(scenario_c1_parms, file= here("analysis_input", "scenario_c1_parms.Rdata"))
+
+
 # Simulate ----
 
 # Run status quo scenario in parallel

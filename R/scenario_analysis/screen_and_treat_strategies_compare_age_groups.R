@@ -5,16 +5,22 @@ require(here)  # for setting working directory
 require(ggplot2)
 require(tidyr)
 require(dplyr)
+require(gridExtra)
 source(here("R/imperial_model_interventions.R"))
 source(here("R/scenario_analysis/calculate_outcomes.R"))
+
+# Function to plot boxplot whiskers as 95% percentile
+f <- function(x) {
+  r <- quantile(x, probs = c(0.025, 0.25, 0.5, 0.75, 0.975))
+  names(r) <- c("ymin", "lower", "middle", "upper", "ymax")
+  r
+}
 
 ## Load files ----
 # A = optimal coverage, ages 30-70
 scenario_a_full_results <- readRDS(here("output", "screen_and_treat_results",
                                         "scenario_a_full_results.rds"))
-# B = A with PMTCT scale up
-#scenario_b_full_results <- readRDS(here("output", "screen_and_treat_results",
-#                                        "scenario_b_full_results.rds"))
+
 # D1 = optimal coverage, ages 15-65
 scenario_d1_full_results <- readRDS(here("output", "screen_and_treat_results",
                                          "scenario_d1_full_results.rds"))
@@ -24,6 +30,21 @@ scenario_d2_full_results <- readRDS(here("output", "screen_and_treat_results",
 # D3 = optimal coverage, ages 15-45
 scenario_d3_full_results <- readRDS(here("output", "screen_and_treat_results",
                                          "scenario_d3_full_results.rds"))
+
+# B = A with PMTCT scale up
+scenario_b_full_results <- readRDS(here("output", "screen_and_treat_results",
+                                        "scenario_b_full_results.rds"))
+# B1 = D1 with PMTCT scale up
+scenario_b1_full_results <- readRDS(here("output", "screen_and_treat_results",
+                                        "scenario_b1_basic_results.rds"))
+
+# B2 = D2 with PMTCT scale up
+scenario_b2_full_results <- readRDS(here("output", "screen_and_treat_results",
+                                         "scenario_b2_basic_results.rds"))
+
+# B3 = D3 with PMTCT scale up
+scenario_b3_full_results <- readRDS(here("output", "screen_and_treat_results",
+                                         "scenario_b3_basic_results.rds"))
 
 # E = Low screening coverage, ages 30-70
 scenario_e_full_results <- readRDS(here("output", "screen_and_treat_results",
@@ -65,6 +86,22 @@ scenario_bx2_full_results <- readRDS(here("output", "screen_and_treat_results",
 scenario_bx3_full_results <- readRDS(here("output", "screen_and_treat_results",
                                           "scenario_bx3_basic_results.rds"))
 
+# BY = BD scale-up and treatment in 2030, ages 30-70
+scenario_by_full_results <- readRDS(here("output", "screen_and_treat_results",
+                                          "scenario_by_basic_results.rds"))
+
+# BY1 = BD scale-up and treatment in 2030, ages 15-65
+scenario_by1_full_results <- readRDS(here("output", "screen_and_treat_results",
+                                         "scenario_by1_basic_results.rds"))
+
+# BY2 = BD scale-up and treatment in 2030, ages 45-70
+scenario_by2_full_results <- readRDS(here("output", "screen_and_treat_results",
+                                          "scenario_by2_basic_results.rds"))
+
+# BY3 = BD scale-up and treatment in 2030, ages 15-45
+scenario_by3_full_results <- readRDS(here("output", "screen_and_treat_results",
+                                         "scenario_by3_basic_results.rds"))
+
 ## Population-level outcomes of the treatment programme (without/with monitoring) ----
 
 # Full dataframes of HBV deaths averted and LY saved compared to infant vaccine only
@@ -102,6 +139,52 @@ ly_gained_sq$scenario <- factor(ly_gained_sq$scenario, levels =
 ly_gained_sq$screening_coverage <- "Optimal"
 ly_gained_sq$screening_coverage[ly_gained_sq$assumption %in% c("e", "e1", "e2", "e3")] <-
   "Low"
+
+# Summary table of deaths averted for age group and monitoring comparison
+View(hbv_deaths_averted_sq %>%
+  filter(screening_coverage == "Optimal" & type == "number_averted" &
+           scenario != "screen_2020_monit_10") %>%
+  group_by(assumption, scenario, by_year) %>%
+  summarise(median = round(median(value),0),
+            lower = round(quantile(value, 0.025),0),
+            upper = round(quantile(value, 0.975),0)) %>%
+  mutate(value = paste0(median, " (", lower, "-", upper, ")")) %>%
+  select(-median, -lower, -upper) %>%
+  spread(key = "scenario", value = "value"))
+
+View(hbv_deaths_averted_sq %>%
+       filter(screening_coverage == "Optimal" & type == "proportion_averted" &
+                scenario != "screen_2020_monit_10") %>%
+       group_by(assumption, scenario, by_year) %>%
+       summarise(median = round(median(value*100),1),
+                 lower = round(quantile(value*100, 0.025),1),
+                 upper = round(quantile(value*100, 0.975),1)) %>%
+       mutate(value = paste0(median, " (", lower, "-", upper, ")")) %>%
+       select(-median, -lower, -upper) %>%
+       spread(key = "scenario", value = "value"))
+
+# Summary table of LY gained for age group and monitoring comparison
+View(ly_gained_sq %>%
+       filter(screening_coverage == "Optimal" & type == "number_averted" &
+                scenario != "screen_2020_monit_10") %>%
+       group_by(assumption, scenario, by_year) %>%
+       summarise(median = round(median(value),0),
+                 lower = round(quantile(value, 0.025),0),
+                 upper = round(quantile(value, 0.975),0)) %>%
+       mutate(value = paste0(median, " (", lower, "-", upper, ")")) %>%
+       select(-median, -lower, -upper) %>%
+       spread(key = "scenario", value = "value"))
+
+View(ly_gained_sq %>%
+       filter(screening_coverage == "Optimal" & type == "proportion_averted" &
+                scenario != "screen_2020_monit_10") %>%
+       group_by(assumption, scenario, by_year) %>%
+       summarise(median = round(median(value*100),2),
+                 lower = round(quantile(value*100, 0.025),2),
+                 upper = round(quantile(value*100, 0.975),2)) %>%
+       mutate(value = paste0(median, " (", lower, "-", upper, ")")) %>%
+       select(-median, -lower, -upper) %>%
+       spread(key = "scenario", value = "value"))
 
 
 # BASIC PROGRAMME (NO MONITORING)
@@ -247,6 +330,14 @@ hbv_deaths_averted_per_interaction_sq <- rbind(
   cbind(scenario_e1_full_results$deaths_averted_per_interaction_sq_long, assumption = "e1"),
   cbind(scenario_e2_full_results$deaths_averted_per_interaction_sq_long, assumption = "e2"),
   cbind(scenario_e3_full_results$deaths_averted_per_interaction_sq_long, assumption = "e3"),
+  cbind(scenario_a_full_results$deaths_averted_per_test_sq_long, assumption = "a"),
+  cbind(scenario_d1_full_results$deaths_averted_per_test_sq_long, assumption = "d1"),
+  cbind(scenario_d2_full_results$deaths_averted_per_test_sq_long, assumption = "d2"),
+  cbind(scenario_d3_full_results$deaths_averted_per_test_sq_long, assumption = "d3"),
+  cbind(scenario_e_full_results$deaths_averted_per_test_sq_long, assumption = "e"),
+  cbind(scenario_e1_full_results$deaths_averted_per_test_sq_long, assumption = "e1"),
+  cbind(scenario_e2_full_results$deaths_averted_per_test_sq_long, assumption = "e2"),
+  cbind(scenario_e3_full_results$deaths_averted_per_test_sq_long, assumption = "e3"),
   cbind(scenario_a_full_results$deaths_averted_per_assessment_sq_long, assumption = "a"),
   cbind(scenario_d1_full_results$deaths_averted_per_assessment_sq_long, assumption = "d1"),
   cbind(scenario_d2_full_results$deaths_averted_per_assessment_sq_long, assumption = "d2"),
@@ -270,6 +361,49 @@ hbv_deaths_averted_per_interaction_sq$scenario <- factor(hbv_deaths_averted_per_
 hbv_deaths_averted_per_interaction_sq$screening_coverage <- "Optimal"
 hbv_deaths_averted_per_interaction_sq$screening_coverage[
   hbv_deaths_averted_per_interaction_sq$assumption %in% c("e", "e1", "e2", "e3")] <-
+  "Low"
+
+# Full dataframe of LY saved per healthcare interaction
+ly_gained_per_interaction_sq <- rbind(
+  cbind(scenario_a_full_results$ly_gained_per_interaction_sq_long, assumption = "a"),
+  cbind(scenario_d1_full_results$ly_gained_per_interaction_sq_long, assumption = "d1"),
+  cbind(scenario_d2_full_results$ly_gained_per_interaction_sq_long, assumption = "d2"),
+  cbind(scenario_d3_full_results$ly_gained_per_interaction_sq_long, assumption = "d3"),
+  cbind(scenario_e_full_results$ly_gained_per_interaction_sq_long, assumption = "e"),
+  cbind(scenario_e1_full_results$ly_gained_per_interaction_sq_long, assumption = "e1"),
+  cbind(scenario_e2_full_results$ly_gained_per_interaction_sq_long, assumption = "e2"),
+  cbind(scenario_e3_full_results$ly_gained_per_interaction_sq_long, assumption = "e3"),
+  cbind(scenario_a_full_results$ly_gained_per_test_sq_long, assumption = "a"),
+  cbind(scenario_d1_full_results$ly_gained_per_test_sq_long, assumption = "d1"),
+  cbind(scenario_d2_full_results$ly_gained_per_test_sq_long, assumption = "d2"),
+  cbind(scenario_d3_full_results$ly_gained_per_test_sq_long, assumption = "d3"),
+  cbind(scenario_e_full_results$ly_gained_per_test_sq_long, assumption = "e"),
+  cbind(scenario_e1_full_results$ly_gained_per_test_sq_long, assumption = "e1"),
+  cbind(scenario_e2_full_results$ly_gained_per_test_sq_long, assumption = "e2"),
+  cbind(scenario_e3_full_results$ly_gained_per_test_sq_long, assumption = "e3"),
+  cbind(scenario_a_full_results$ly_gained_per_assessment_sq_long, assumption = "a"),
+  cbind(scenario_d1_full_results$ly_gained_per_assessment_sq_long, assumption = "d1"),
+  cbind(scenario_d2_full_results$ly_gained_per_assessment_sq_long, assumption = "d2"),
+  cbind(scenario_d3_full_results$ly_gained_per_assessment_sq_long, assumption = "d3"),
+  cbind(scenario_e_full_results$ly_gained_per_assessment_sq_long, assumption = "e"),
+  cbind(scenario_e1_full_results$ly_gained_per_assessment_sq_long, assumption = "e1"),
+  cbind(scenario_e2_full_results$ly_gained_per_assessment_sq_long, assumption = "e2"),
+  cbind(scenario_e3_full_results$ly_gained_per_assessment_sq_long, assumption = "e3"),
+  cbind(scenario_a_full_results$ly_gained_per_treatment_sq_long, assumption = "a"),
+  cbind(scenario_d1_full_results$ly_gained_per_treatment_sq_long, assumption = "d1"),
+  cbind(scenario_d2_full_results$ly_gained_per_treatment_sq_long, assumption = "d2"),
+  cbind(scenario_d3_full_results$ly_gained_per_treatment_sq_long, assumption = "d3"),
+  cbind(scenario_e_full_results$ly_gained_per_treatment_sq_long, assumption = "e"),
+  cbind(scenario_e1_full_results$ly_gained_per_treatment_sq_long, assumption = "e1"),
+  cbind(scenario_e2_full_results$ly_gained_per_treatment_sq_long, assumption = "e2"),
+  cbind(scenario_e3_full_results$ly_gained_per_treatment_sq_long, assumption = "e3"))
+#ly_gained_per_interaction$scenario <- gsub("b_", "", ly_gained_per_interaction$scenario)
+ly_gained_per_interaction_sq$scenario <- factor(ly_gained_per_interaction_sq$scenario, levels =
+                                                           c("screen_2020_monit_0", "screen_2020_monit_10",
+                                                             "screen_2020_monit_5", "screen_2020_monit_1"))
+ly_gained_per_interaction_sq$screening_coverage <- "Optimal"
+ly_gained_per_interaction_sq$screening_coverage[
+  ly_gained_per_interaction_sq$assumption %in% c("e", "e1", "e2", "e3")] <-
   "Low"
 
 # Total interactions
@@ -321,6 +455,8 @@ ggplot(data = subset(hbv_deaths_averted_per_interaction_sq,
 # TRADE OFF BETWEEN MONITORING AND AGE GROUPS SCREENED
 # Here also need to look at the interaction type
 ggplot(data = subset(hbv_deaths_averted_per_interaction_sq,
+                     screening_coverage == "Optimal" &
+                       interaction_type == "total_interactions" &
                        ((scenario == "screen_2020_monit_0" & assumption == "d1") |
                           (scenario == "screen_2020_monit_1" & assumption == "a") |
                           (scenario == "screen_2020_monit_1" & assumption == "d3")))) +
@@ -334,8 +470,327 @@ ggplot(data = subset(hbv_deaths_averted_per_interaction_sq,
 # If monitoring is only 5 yearly, D3 becomes more similar to D1 and A has slightly lower
 # interactions required per life-year saved.
 
+# More complete look at this:
+# By 2030:
+ggplot(data = subset(hbv_deaths_averted_per_interaction_sq,
+                     screening_coverage == "Optimal" &
+                       interaction_type == "total_interactions" &
+                       by_year == 2030 &
+                       scenario != "screen_2020_monit_10")) +
+  geom_boxplot(aes(x=assumption, y = 1/value, fill = scenario)) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle =45, hjust = 1)) +
+  ylim(0, 2800)
 
-## To add: Total resource use! This will vary by coverage etc. ----
+# By 2050
+ggplot(data = subset(hbv_deaths_averted_per_interaction_sq,
+                     screening_coverage == "Optimal" &
+                       interaction_type == "total_interactions" &
+                       by_year == 2050 &
+                       scenario != "screen_2020_monit_10")) +
+  geom_boxplot(aes(x=assumption, y = 1/value, fill = scenario)) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle =45, hjust = 1)) +
+  ylim(0, 1500)
+
+# By 2100
+ggplot(data = subset(hbv_deaths_averted_per_interaction_sq,
+                     screening_coverage == "Optimal" &
+                       interaction_type == "total_interactions" &
+                       by_year == 2100 &
+                       scenario != "screen_2020_monit_10")) +
+  geom_boxplot(aes(x=assumption, y = 1/value, fill = scenario)) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle =45, hjust = 1)) +
+  ylim(0, 1500)
+
+# Plot with whiskers as 95% Cri
+ggplot(data = subset(hbv_deaths_averted_per_interaction_sq,
+                     screening_coverage == "Optimal" &
+                       interaction_type == "total_interactions" &
+                       by_year == 2100 &
+                       scenario != "screen_2020_monit_10"),
+       aes(x = assumption, y = 1/value, fill = scenario)) +
+  stat_summary(fun.data=f, geom="boxplot", position = "dodge") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle =45, hjust = 1))+
+  labs(title = "Interactions to avert 1 death by 2100") +
+  ylim(0, 1000)
+
+ggplot(data = subset(hbv_deaths_averted_per_interaction_sq,
+                     screening_coverage == "Optimal" &
+                       interaction_type == "total_assessed" &
+                       by_year == 2100 &
+                       scenario != "screen_2020_monit_10"),
+       aes(x = assumption, y = 1/value, fill = scenario)) +
+  stat_summary(fun.data=f, geom="boxplot", position = "dodge") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle =45, hjust = 1))+
+  ylim(0, 550)
+
+ggplot(data = subset(hbv_deaths_averted_per_interaction_sq,
+                     screening_coverage == "Optimal" &
+                       interaction_type == "total_treated" &
+                       by_year == 2100 &
+                       scenario != "screen_2020_monit_10"),
+       aes(x = assumption, y = 1/value, fill = scenario)) +
+  stat_summary(fun.data=f, geom="boxplot", position = "dodge") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle =45, hjust = 1))+
+  ylim(0, 5)
+
+# For LY gained
+ggplot(data = subset(ly_gained_per_interaction_sq,
+                     screening_coverage == "Optimal" &
+                       interaction_type == "total_interactions" &
+                       by_year == 2100 &
+                       scenario != "screen_2020_monit_10"),
+       aes(x = assumption, y = 1/value, fill = scenario)) +
+  stat_summary(fun.data=f, geom="boxplot", position = "dodge") +
+  theme_bw() +
+  labs(title = "Interactions to save 1 life-year by 2100") +
+  theme(axis.text.x = element_text(angle =45, hjust = 1)) +
+  ylim(0,60)
+# Interactions required to save 1 LY is basically the same (low) for A, D1 and D3
+# but quite a bit higher fir D2 (older age groups). Again yearly monitoring is the outlier.
+
+# Summary table of interactions per death averted for age group and monitoring comparison
+hbv_deaths_averted_per_interaction_sq %>%
+  filter(screening_coverage == "Optimal" &
+           scenario != "screen_2020_monit_10") %>%
+  group_by(assumption, scenario, by_year, interaction_type) %>%
+  summarise(median = round(median(1/value),0),
+            lower = round(quantile(1/value, 0.025),0),
+            upper = round(quantile(1/value, 0.975),0)) %>%
+  mutate(value = paste0(median, " (", lower, "-", upper, ")")) %>%
+  select(-median, -lower, -upper) %>%
+  spread(key = "scenario", value = "value")
+
+# Summary table of interactions per LY saved for age group and monitoring comparison
+View(ly_gained_per_interaction_sq %>%
+  filter(screening_coverage == "Optimal" &
+           scenario != "screen_2020_monit_10") %>%
+  group_by(assumption, scenario, by_year, interaction_type) %>%
+  summarise(median = round(median(1/value),0),
+            lower = round(quantile(1/value, 0.025),0),
+            upper = round(quantile(1/value, 0.975),0)) %>%
+  mutate(value = paste0(median, " (", lower, "-", upper, ")")) %>%
+  select(-median, -lower, -upper) %>%
+  spread(key = "scenario", value = "value"))
+
+# TEST PLOTS
+
+# Comparing deaths averted and deaths averted per interaction
+# Not sure this makes sense as a comparison as interpretation is quite different
+# Key visual aspects are: D2 far lower impact on deaths and monitoring impact is better
+# where young age groups are included. Yearly monitoring has far
+# lower deaths averted per 1000 interactions.
+# D1 is the best but also more costly than others.
+p1<-ggplot(data = subset(hbv_deaths_averted_sq,
+                     type == "proportion_averted" &
+                       assumption %in% c("a", "d1", "d2", "d3") &
+                       by_year == 2100 &
+                       scenario != "screen_2020_monit_10"),
+       aes(x=assumption, y = value, fill = scenario)) +
+  stat_summary(fun.data=f, geom="boxplot", position = "dodge") +
+  theme_bw() +
+  theme(legend.position = "bottom") +
+  labs(title = "Proportion of deaths averted by 2100") +
+  ylim(0,0.5)
+
+p2<-ggplot(data = subset(hbv_deaths_averted_per_interaction_sq,
+                     screening_coverage == "Optimal" &
+                       interaction_type == "total_interactions" &
+                       by_year == 2100 &
+                       scenario != "screen_2020_monit_10"),
+       aes(x = assumption, y = 1/value, fill = scenario)) +
+  stat_summary(fun.data=f, geom="boxplot", position = "dodge") +
+  theme_bw() +
+  theme(legend.position = "bottom") +
+  labs(title = "Deaths averted per 1000 interactions by 2100")  #+
+  ylim(0,10)
+
+library(gridExtra)
+grid.arrange(p1,p2,ncol=2)
+
+p1d<-ggplot(data = subset(hbv_deaths_averted_sq,
+                         type == "proportion_averted" &
+                           assumption %in% c("a", "d1", "d2", "d3") &
+                           by_year == 2030 &
+                           scenario == "screen_2020_monit_0"),
+           aes(x=assumption, y = value, fill = scenario)) +
+  stat_summary(fun.data=f, geom="boxplot", position = "dodge") +
+  theme_classic() +
+  theme(legend.position = "bottom") +
+  labs(title = "Proportion of deaths averted by 2030") +
+  ylim(0,0.5)
+
+p2d <-ggplot(data = subset(hbv_deaths_averted_per_interaction_sq,
+                         screening_coverage == "Optimal" &
+                           interaction_type == "total_interactions" &
+                           by_year == 2030 &
+                           scenario == "screen_2020_monit_0"),
+           aes(x = assumption, y = 1/value, fill = scenario)) +
+  stat_summary(fun.data=f, geom="boxplot", position = "dodge") +
+  theme_classic() +
+  theme(legend.position = "bottom") +
+  ylab("Total interactions per death averted") +
+  labs(title = "Interactions required to avert 1 death by 2030")  +
+  ylim(0,1600)
+
+
+p3d <-ggplot(data = subset(hbv_deaths_averted_sq,
+                         type == "proportion_averted" &
+                           assumption %in% c("a", "d1", "d2", "d3") &
+                           by_year == 2100 &
+                           scenario == "screen_2020_monit_0"),
+           aes(x=assumption, y = value, fill = scenario)) +
+  stat_summary(fun.data=f, geom="boxplot", position = "dodge") +
+  theme_classic() +
+  theme(legend.position = "bottom") +
+  labs(title = "Proportion of deaths averted by 2100")
+
+p4d <-ggplot(data = subset(hbv_deaths_averted_per_interaction_sq,
+                         screening_coverage == "Optimal" &
+                           interaction_type == "total_interactions" &
+                           by_year == 2100 &
+                           scenario == "screen_2020_monit_0"),
+           aes(x = assumption, y = 1/value, fill = scenario)) +
+  stat_summary(fun.data=f, geom="boxplot", position = "dodge") +
+  theme_classic() +
+  theme(legend.position = "bottom") +
+  labs(title = "Interactions required to avert 1 death by 2100")  +
+  ylim(0,700)
+
+library(gridExtra)
+grid.arrange(p1d,p2d,p3d,p4d,ncol=2)
+
+p1l <-ggplot(data = subset(ly_gained_sq,
+                         type == "proportion_averted" &
+                           assumption %in% c("a", "d1", "d2", "d3") &
+                           by_year == 2030 &
+                           scenario == "screen_2020_monit_0"),
+           aes(x=assumption, y = value, fill = scenario)) +
+  stat_summary(fun.data=f, geom="boxplot", position = "dodge") +
+  theme_classic() +
+  theme(legend.position = "bottom") +
+  labs(title = "Proportion of LY saved by 2030")
+
+p2l<-ggplot(data = subset(ly_gained_per_interaction_sq,
+                         screening_coverage == "Optimal" &
+                           interaction_type == "total_interactions" &
+                           by_year == 2030 &
+                           scenario == "screen_2020_monit_0"),
+           aes(x = assumption, y = 1/value, fill = scenario)) +
+  stat_summary(fun.data=f, geom="boxplot", position = "dodge") +
+  theme_classic() +
+  theme(legend.position = "bottom") +
+  labs(title = "Interactions required to save 1 LY by 2030")
+
+p3l<-ggplot(data = subset(ly_gained_sq,
+                         type == "proportion_averted" &
+                           assumption %in% c("a", "d1", "d2", "d3") &
+                           by_year == 2100 &
+                           scenario == "screen_2020_monit_0"),
+           aes(x=assumption, y = value, fill = scenario)) +
+  stat_summary(fun.data=f, geom="boxplot", position = "dodge") +
+  theme_classic() +
+  theme(legend.position = "bottom") +
+  labs(title = "Proportion of LY saved by 2100")
+
+p4l<-ggplot(data = subset(ly_gained_per_interaction_sq,
+                         screening_coverage == "Optimal" &
+                           interaction_type == "total_interactions" &
+                           by_year == 2100 &
+                           scenario == "screen_2020_monit_0"),
+           aes(x = assumption, y = 1/value, fill = scenario)) +
+  stat_summary(fun.data=f, geom="boxplot", position = "dodge") +
+  theme_classic() +
+  theme(legend.position = "bottom") +
+  ylab("Total interactions per LY saved") +
+  labs(title = "Interactions required to save 1 LY by 2100")
+
+grid.arrange(p1l,p2l,p3l,p4l, ncol=2)
+
+# Combine deaths averted and LY saved to contrast short vs long-term effects
+grid.arrange(p1d,p2d,p3l,p4l, ncol=2)
+
+# COMPLETE INTERACTIONS PLot comparing interactions for different monitoring strategies and age groups
+interaction_facet_label <- c("Treatment eligibility assessments", "Total interactions")
+names(interaction_facet_label) <- c("total_assessed", "total_interactions")
+
+intp1 <- ggplot(data = subset(hbv_deaths_averted_per_interaction_sq,
+                     screening_coverage == "Optimal" &
+                       interaction_type %in% c("total_interactions", "total_assessed") &
+                       by_year == 2030 & assumption == "d1" &
+                       scenario != "screen_2020_monit_10"),
+       aes(x = scenario, y = 1/value, fill = scenario)) +
+  stat_summary(fun.data=f, geom="boxplot", position = "dodge2", width = 0.75) +
+  facet_wrap(~interaction_type, ncol = 2, scales="free_x",
+             labeller = labeller(interaction_type = interaction_facet_label)) +
+  ylab("Incremental interactions\nper death averted") +
+  scale_x_discrete("Monitoring frequency", labels = c("Never", "5-yearly", "Yearly")) +
+  theme_bw() +
+  labs(title = "Interactions per deaths averted by 2030") +
+  theme(legend.position = "none",
+        plot.title = element_text(hjust=0.5)) +
+  ylim(0,1500)
+
+intp2 <- ggplot(data = subset(ly_gained_per_interaction_sq,
+                            screening_coverage == "Optimal" &
+                              interaction_type %in% c("total_interactions", "total_assessed") &
+                              by_year == 2100 & assumption == "d1" &
+                              scenario != "screen_2020_monit_10"),
+              aes(x = scenario, y = 1/value, fill = scenario)) +
+  stat_summary(fun.data=f, geom="boxplot", position = "dodge2", width = 0.75) +
+  facet_wrap(~interaction_type, ncol = 2, scales="free_x",
+             labeller = labeller(interaction_type = interaction_facet_label)) +
+  ylab("Incremental interactions\nper LY saved") +
+  scale_x_discrete("Monitoring frequency", labels = c("Never", "5-yearly", "Yearly")) +
+  theme_bw() +
+  labs(title = "Interactions per LY saved by 2100") +
+  theme(legend.position = "none",
+        plot.title = element_text(hjust=0.5)) +
+  ylim(0,30)
+
+p2d <-ggplot(data = subset(hbv_deaths_averted_per_interaction_sq,
+                           screening_coverage == "Optimal" &
+                             interaction_type == "total_interactions" &
+                             by_year == 2030 &
+                             scenario == "screen_2020_monit_0"),
+             aes(x = factor(assumption, level = c("d1", "a", "d3", "d2")),
+                 y = 1/value, fill = scenario)) +
+  stat_summary(fun.data=f, geom="boxplot", position = "dodge2") +
+  facet_wrap(~interaction_type,
+             labeller = labeller(interaction_type = interaction_facet_label)) +
+  theme_bw() +
+  scale_x_discrete("Age group screened", labels = c("d1" = "15-65", "a"= "30-70",
+                                                    "d3" = "15-45", "d2" = "45-70")) +
+  theme(legend.position = "none",
+        axis.title.y = element_blank()) +
+  labs(title = "") +
+  ylim(0,1500)
+
+p4l<-ggplot(data = subset(ly_gained_per_interaction_sq,
+                          screening_coverage == "Optimal" &
+                            interaction_type == "total_interactions" &
+                            by_year == 2100 &
+                            scenario == "screen_2020_monit_0"),
+            aes(x = factor(assumption, level = c("d1", "a", "d3", "d2")),
+                           y = 1/value, fill = scenario)) +
+  stat_summary(fun.data=f, geom="boxplot", position = "dodge2") +
+  facet_wrap(~interaction_type,
+             labeller = labeller(interaction_type = interaction_facet_label)) +
+  theme_bw() +
+  theme(legend.position = "none",
+        axis.title.y = element_blank()) +
+  scale_x_discrete("Age group screened", labels = c("d1" = "15-65", "a"= "30-70",
+                                                    "d3" = "15-45", "d2" = "45-70")) +
+  labs(title = "") +
+  ylim(0,30)
+
+grid.arrange(intp1, p2d, intp2,p4l, ncol = 2, widths = 2:1)
+
 ## Cohort-level outcomes of the basic treatment programme (no monitoring) ----
 
 # Full dataframes of HBV deaths averted and LY saved compared to infant vaccine only
@@ -486,6 +941,21 @@ pop_cohort_comp_deaths <- rbind(
       scenario_d1_full_results$deaths_averted_sq_long[
         scenario_d1_full_results$deaths_averted_sq_long$by_year == 2100,-c(1,2)])
 
+# For several age groups
+pop_cohort_comp_deaths_2ages <- rbind(
+  cbind(scenario_d1_full_results$cohort_deaths_averted_sq_long, assumption = "d1"),
+  cbind(scenario_d1_full_results$deaths_averted_sq_long[
+    scenario_d1_full_results$deaths_averted_sq_long$by_year == 2100,-c(1,2)], assumption = "d1"),
+  cbind(scenario_a_full_results$cohort_deaths_averted_sq_long, assumption = "a"),
+  cbind(scenario_a_full_results$deaths_averted_sq_long[
+    scenario_a_full_results$deaths_averted_sq_long$by_year == 2100,-c(1,2)], assumption = "a"),
+  cbind(scenario_d2_full_results$cohort_deaths_averted_sq_long, assumption = "d2"),
+  cbind(scenario_d2_full_results$deaths_averted_sq_long[
+    scenario_d2_full_results$deaths_averted_sq_long$by_year == 2100,-c(1,2)], assumption = "d2"),
+  cbind(scenario_d3_full_results$cohort_deaths_averted_sq_long, assumption = "d3"),
+  cbind(scenario_d3_full_results$deaths_averted_sq_long[
+    scenario_d3_full_results$deaths_averted_sq_long$by_year == 2100,-c(1,2)], assumption = "d3"))
+
 # LY saved
 pop_cohort_comp_ly <- rbind(
   scenario_d1_full_results$cohort_ly_gained_sq_long,
@@ -509,6 +979,92 @@ ggplot(subset(pop_cohort_comp_deaths, type == "proportion_averted" &
   theme_bw() +
   theme(legend.position = "none") +
   ylim(0,1)
+
+# Forest plot test:
+testdf <- subset(pop_cohort_comp_deaths, type == "proportion_averted" &
+         scenario %in% c("screen_2020_monit_0", "screen_2020_monit_1"))
+testdf <- group_by(testdf, counterfactual, scenario) %>%
+  summarise(median = median(value),
+            cri_lower = quantile(value, 0.025),
+            cri_upper = quantile(value, 0.975))
+
+ggplot(testdf) +
+  geom_point(aes(x=reorder(scenario, -median), y = median, colour = counterfactual), size = 5) +
+  geom_errorbar(aes(x=reorder(scenario, -median), ymin = cri_lower, ymax= cri_upper, colour = counterfactual), width = 0.5) +
+  facet_wrap(~counterfactual, ncol = 1, labeller = labeller(counterfactual = cohort_pop_label)) +
+  xlab("Treatment programme strategy") + ylab("Proportion of HBV-related deaths averted\ncompared to no treatment") +
+  scale_x_discrete(labels=c("screen_2020_monit_0" = "No monitoring",
+                            "screen_2020_monit_1" = "Yearly monitoring")) +
+  theme_bw() +
+  theme(legend.position = "none") +
+  ylim(0,1) +
+  coord_flip()
+
+
+ggplot(subset(pop_cohort_comp_deaths_2ages, type == "proportion_averted" &
+                scenario %in% c("screen_2020_monit_0", "screen_2020_monit_1"))) +
+  geom_boxplot(aes(x=assumption, y = value, fill = scenario)) +
+  facet_wrap(~counterfactual, labeller = labeller(counterfactual = cohort_pop_label)) +
+  xlab("Treatment programme strategy") + ylab("Proportion of HBV-related deaths averted\ncompared to no treatment") +
+  scale_x_discrete(labels=c("screen_2020_monit_0" = "No monitoring",
+                            "screen_2020_monit_1" = "Yearly monitoring")) +
+  theme_bw() +
+  ylim(0,1)
+
+# PLOT COMBINING COHORT/POP AND AGE GROUP COMPARISON FOR % DEATH AVERTED
+age_group_label <- c("15-65 years", "30-70 years", "45-65 years", "15-45 years")
+names(age_group_label) <- c("d1", "a", "d2", "d3")
+
+p1 <- ggplot(subset(pop_cohort_comp_deaths_2ages, type == "proportion_averted" &
+                      counterfactual == "status_quo" &
+                      assumption != "d1" &
+                scenario %in% c("screen_2020_monit_0", "screen_2020_monit_1")),
+             aes(x=scenario, y = value, fill = scenario)) +
+  stat_summary(fun.data=f, geom="boxplot", width = 0.5) +
+  facet_wrap(assumption~., ncol = 1, labeller = labeller(assumption = age_group_label)) +
+  xlab("") + ylab("") +
+  scale_x_discrete(labels=c("screen_2020_monit_0" = "Never",
+                            "screen_2020_monit_1" = "Yearly")) +
+  scale_y_continuous(breaks = c(0,0.25,0.5), limits = c(0,0.5)) +
+  labs(title = "") +
+  theme_bw() +
+  theme(legend.position = "none")
+
+p2 <- ggplot(subset(pop_cohort_comp_deaths_2ages, type == "proportion_averted" &
+                      counterfactual == "status_quo_cohort" &
+                assumption == "d1" &
+                scenario %in% c("screen_2020_monit_0", "screen_2020_monit_1")),
+             aes(x=scenario, y = value, colour = scenario)) +
+  stat_summary(fun.data=f, geom="boxplot", width = 0.5) +
+  facet_wrap(~assumption, labeller = labeller(assumption = age_group_label)) +
+  #facet_wrap(~counterfactual,  labeller = labeller(counterfactual = cohort_pop_label)) +
+  xlab("") + ylab("Proportion of HBV-related deaths averted\ncompared to no treatment") +
+  scale_x_discrete(labels=c("screen_2020_monit_0" = "Never",
+                            "screen_2020_monit_1" = "Yearly")) +
+  theme_bw() +
+  labs(title = "Cohort-level") +
+  theme(legend.position = "none", plot.title = element_text(hjust = 0.5)) +
+  ylim(0,1)
+
+
+p3 <- ggplot(subset(pop_cohort_comp_deaths_2ages, type == "proportion_averted" &
+                      counterfactual == "status_quo" &
+                      assumption == "d1" &
+                      scenario %in% c("screen_2020_monit_0", "screen_2020_monit_1")),
+             aes(x=scenario, y = value, fill= scenario)) +
+  stat_summary(fun.data=f, geom="boxplot", width = 0.5) +
+  facet_wrap(~assumption, labeller = labeller(assumption = age_group_label)) +
+  xlab("Monitoring strategy") + ylab("Proportion of HBV-related deaths averted\ncompared to no treatment") +
+  scale_x_discrete(labels=c("screen_2020_monit_0" = "Never",
+                            "screen_2020_monit_1" = "Yearly")) +
+  theme_bw() +
+  labs(title = "Population-level") +
+  theme(legend.position = "none",
+        plot.title = element_text(hjust = 1),
+        axis.title.y = element_text(colour = "white")) +
+  ylim(0,1)
+
+grid.arrange(p2,p3, p1,ncol = 3, widths = c(3,3,2))
 
 # What proportion of deaths averted in the yearly monitoring programme are from the
 # initial screen+treat?
@@ -681,7 +1237,7 @@ grid.arrange(p1a,p2a,p3a, ncol = 3)
 # Pattern is similar although less pronounced by 2050.
 # Linear trend may not be true.
 
-## Compare population-level impact and age groups if infant vaccine was introduced in 2004----
+## Compare population-level impact and age groups if infant vaccine was only introduced in 2004----
 # Issue with cohort projections: not everyone has died in BX1 and BX3
 # Overall conclusion from the population-level analysis:
 # Later vaccine introduction favours inclusion/focus on younger age groups even more!
@@ -951,5 +1507,116 @@ ggplot(data = subset(ly_gained_per_interaction_sq_vaccintro,
 # particularly high.
 
 
+
+
+
+## Assuming BD scale-up, does the age group to screen change if treatment implementation is in 2030? ----
+# Compare B with BY (bd_10) scenarios
+# B = 2020 BD with 2020 treatment compared to 2020 BD alone
+# BY bd_10 = 2020 BD with 2030 treatment compared to 2020 BD alone
+# Looking at 10 and 30 year impact of either treatment programme
+# Full dataframes of HBV deaths averted and LY saved compared to infant vaccine only
+hbv_deaths_averted_delay <- rbind(
+  cbind(scenario_b_full_results$deaths_averted_sq_long, assumption = "b"),
+  cbind(scenario_b1_full_results$deaths_averted_sq_long, assumption = "b1"),
+  cbind(scenario_b2_full_results$deaths_averted_sq_long, assumption = "b2"),
+  cbind(scenario_b3_full_results$deaths_averted_sq_long, assumption = "b3"),
+  cbind(scenario_by_full_results$deaths_averted_bd_10_long, assumption = "by"),
+  cbind(scenario_by1_full_results$deaths_averted_bd_10_long, assumption = "by1"),
+  cbind(scenario_by2_full_results$deaths_averted_bd_10_long, assumption = "by2"),
+  cbind(scenario_by3_full_results$deaths_averted_bd_10_long, assumption = "by3"))
+hbv_deaths_averted_delay$scenario <- gsub("b_", "", hbv_deaths_averted_delay$scenario)
+hbv_deaths_averted_delay$by_time <- "10 years"
+hbv_deaths_averted_delay$by_time[hbv_deaths_averted_delay$by_year %in% c(2050,2060)] <- "30 years"
+hbv_deaths_averted_delay$by_time[hbv_deaths_averted_delay$by_year ==2100] <- "By 2100"
+hbv_deaths_averted_delay$screening_year <- "Screen in 2020"
+hbv_deaths_averted_delay$screening_year[hbv_deaths_averted_delay$assumption %in%
+                                          c("by", "by1", "by2", "by3")] <- "Screen in 2030"
+
+ly_gained_delay <- rbind(
+  cbind(scenario_b_full_results$ly_gained_sq_long, assumption = "b"),
+  cbind(scenario_b1_full_results$ly_gained_sq_long, assumption = "b1"),
+  cbind(scenario_b2_full_results$ly_gained_sq_long, assumption = "b2"),
+  cbind(scenario_b3_full_results$ly_gained_sq_long, assumption = "b3"),
+  cbind(scenario_by_full_results$ly_gained_sq_long, assumption = "by"),
+  cbind(scenario_by1_full_results$ly_gained_sq_long, assumption = "by1"),
+  cbind(scenario_by2_full_results$ly_gained_sq_long, assumption = "by2"),
+  cbind(scenario_by3_full_results$ly_gained_sq_long, assumption = "by3"))
+colnames(ly_gained_delay)[colnames(ly_gained_delay) %in% c("counterfactual", "scenario")] <- c("scenario", "counterfactual")
+ly_gained_delay$scenario <- gsub("b_", "", ly_gained_delay$scenario)
+ly_gained_delay$by_time <- "10 years"
+ly_gained_delay$by_time[ly_gained_delay$by_year %in% c(2050,2060)] <- "30 years"
+ly_gained_delay$by_time[ly_gained_delay$by_year ==2100] <- "By 2100"
+ly_gained_delay$screening_year <- "Screen in 2020"
+ly_gained_delay$screening_year[ly_gained_delay$assumption %in%
+                                          c("by", "by1", "by2", "by3")] <- "Screen in 2030"
+
+
+ggplot(data = subset(hbv_deaths_averted_delay,
+                     type == "proportion_averted" &
+                       by_time == "10 years" &
+                       scenario %in% c("screen_2020_monit_0"))) +
+  geom_boxplot(aes(x=assumption, y = value, fill = assumption)) +
+  facet_wrap(~ screening_year, scales = "free_x") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle =45, hjust = 1)) +
+  labs(title = "10 year impact (2030/2040)")
+
+ggplot(data = subset(hbv_deaths_averted_delay,
+                     type == "proportion_averted" &
+                       by_time == "30 years" &
+                       scenario %in% c("screen_2020_monit_0"))) +
+  geom_boxplot(aes(x=assumption, y = value, fill = assumption)) +
+  facet_wrap(~ screening_year, scales = "free_x") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle =45, hjust = 1)) +
+  labs(title = "30 year impact (2050/2060)")
+
+ggplot(data = subset(hbv_deaths_averted_delay,
+                     type == "proportion_averted" &
+                       by_time == "By 2100" &
+                       scenario %in% c("screen_2020_monit_0"))) +
+  geom_boxplot(aes(x=assumption, y = value, fill = assumption)) +
+  facet_wrap(~ screening_year, scales = "free_x") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle =45, hjust = 1)) +
+  labs(title = "Impact by 2100")
+
+# Delayed implementation does have a few effects:
+# - Impact of treatment is less overall if added in 2030 after BD, especially in the first 10 years
+# although looks fairly close by 2100. Compared to BD alone, the impact of treatment
+# (particularly short term) is higher if implemented in 2020 rather than in 2030.
+# - Age groups effect is more along lines of broad vs. narrow: highest effect still for the
+# 15-65 year olds, but 30-70 years is very close to that in effect.
+# Most important distinction is that screening of older age groups is not as unfavourable
+# as it was in the early screen, and screening 15-45 year olds is less favourable than in
+# the earlier screen.
+
+ggplot(data = subset(ly_gained_delay,
+                     type == "proportion_averted" &
+                       by_time == "30 years" &
+                       scenario %in% c("screen_2020_monit_0"))) +
+  geom_boxplot(aes(x=assumption, y = value, fill = assumption)) +
+  facet_wrap(~ screening_year, scales = "free_x") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle =45, hjust = 1)) +
+  labs(title = "30 year impact (2050/2060)")
+
+ggplot(data = subset(ly_gained_delay,
+                     type == "proportion_averted" &
+                       by_time == "By 2100" &
+                       scenario %in% c("screen_2020_monit_0"))) +
+  geom_boxplot(aes(x=assumption, y = value, fill = assumption)) +
+  facet_wrap(~ screening_year, scales = "free_x") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle =45, hjust = 1)) +
+  labs(title = "By 2100")
+
+# No life-years saved for 2030 screen in the first 10 years
+# 30 year impact fairly similar for all age groups in the 2030 screen although BY1 still
+# slightly better than the others. All impact less than for the 2020 screen. In the 2020
+# screen B2 was much lower than all the others.
+# BY 2100, impact has become a bit more similar in magnitude. B2 and BY2 now the worst for both,
+# and those including younger age groups are best.
 
 
