@@ -102,6 +102,10 @@ scenario_by2_full_results <- readRDS(here("output", "screen_and_treat_results",
 scenario_by3_full_results <- readRDS(here("output", "screen_and_treat_results",
                                          "scenario_by3_basic_results.rds"))
 
+# C1 = feasible coverage, ages 15-65
+scenario_c1_full_results <- readRDS(here("output", "screen_and_treat_results",
+                                         "scenario_c1_full_results.rds"))
+
 ## Population-level outcomes of the treatment programme (without/with monitoring) ----
 
 # Full dataframes of HBV deaths averted and LY saved compared to infant vaccine only
@@ -1620,3 +1624,69 @@ ggplot(data = subset(ly_gained_delay,
 # and those including younger age groups are best.
 
 
+
+## Compare 15-65 programme with Optimal and Feasible uptake ----
+# Full dataframes of HBV deaths averted and LY saved compared to infant vaccine only
+hbv_deaths_averted_sq_cov <- rbind(
+  cbind(scenario_d1_full_results$deaths_averted_sq_long, assumption = "d1"),
+  cbind(scenario_c1_full_results$deaths_averted_sq_long, assumption = "c1"))
+hbv_deaths_averted_sq_cov$scenario <- factor(hbv_deaths_averted_sq_cov$scenario, levels =
+                                           c("screen_2020_monit_0", "screen_2020_monit_10",
+                                             "screen_2020_monit_5", "screen_2020_monit_1"))
+hbv_deaths_averted_sq_cov$cascade <- "Optimal"
+hbv_deaths_averted_sq_cov$cascade[hbv_deaths_averted_sq_cov$assumption =="c1"] <-
+  "Feasible"
+
+ly_gained_sq_cov <- rbind(
+  cbind(scenario_d1_full_results$ly_gained_sq_long, assumption = "d1"),
+  cbind(scenario_c1_full_results$ly_gained_sq_long, assumption = "c1"))
+colnames(ly_gained_sq_cov)[colnames(ly_gained_sq_cov) %in% c("counterfactual", "scenario")] <- c("scenario", "counterfactual")
+ly_gained_sq_cov$scenario <- factor(ly_gained_sq_cov$scenario, levels =
+                                  c("screen_2020_monit_0", "screen_2020_monit_10",
+                                    "screen_2020_monit_5", "screen_2020_monit_1"))
+ly_gained_sq_cov$cascadee <- "Optimal"
+ly_gained_sq_cov$screening_coverage[ly_gained_sq_cov$assumption == "c1"] <-
+  "Feasible"
+
+
+ggplot(data = subset(hbv_deaths_averted_sq_cov,
+                     type == "number_averted" &
+                       scenario != "screen_2020_monit_10")) +
+  geom_boxplot(aes(x=assumption, y = value, fill = scenario)) +
+  facet_wrap(~ by_year) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle =45, hjust = 1))
+
+group_by(hbv_deaths_averted_sq_cov, by_year, scenario, type, cascade) %>%
+  summarise(median(value))
+
+ggplot(data = subset(ly_gained_sq_cov,
+                     type == "number_averted" &
+                       scenario != "screen_2020_monit_10")) +
+  geom_boxplot(aes(x=assumption, y = value, fill = scenario)) +
+  facet_wrap(~ by_year, scales = "free_y") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle =45, hjust = 1))
+
+hbv_deaths_averted_per_interaction_sq_cov <- rbind(
+  cbind(scenario_d1_full_results$deaths_averted_per_interaction_sq_long, assumption = "d1"),
+  cbind(scenario_d1_full_results$deaths_averted_per_test_sq_long, assumption = "d1"),
+  cbind(scenario_d1_full_results$deaths_averted_per_assessment_sq_long, assumption = "d1"),
+  cbind(scenario_d1_full_results$deaths_averted_per_treatment_sq_long, assumption = "d1"),
+  cbind(scenario_c1_full_results$deaths_averted_per_interaction_sq_long, assumption = "c1"),
+  cbind(scenario_c1_full_results$deaths_averted_per_test_sq_long, assumption = "c1"),
+  cbind(scenario_c1_full_results$deaths_averted_per_assessment_sq_long, assumption = "c1"),
+  cbind(scenario_c1_full_results$deaths_averted_per_treatment_sq_long, assumption = "c1")
+)
+hbv_deaths_averted_per_interaction_sq_cov$scenario <- factor(hbv_deaths_averted_per_interaction_sq_cov$scenario, levels =
+                                                           c("screen_2020_monit_0", "screen_2020_monit_10",
+                                                             "screen_2020_monit_5", "screen_2020_monit_1"))
+
+
+ggplot(data = subset(hbv_deaths_averted_per_interaction_sq_cov,
+                       scenario != "screen_2020_monit_10" &
+                       interaction_type == "total_interactions")) +
+  geom_boxplot(aes(x=assumption, y = 1/value, fill = scenario)) +
+  facet_wrap(~ by_year, scales = "free_y") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle =45, hjust = 1))
