@@ -533,6 +533,8 @@ calculate_number_averted <- function(counterfactual_metric, scenario_metric, sum
 
 }
 
+# COHORT OUTCOMES (all evaluated in 2100)
+
 # Function to calculate average age at death of cohort for one simulation
 # This function is applied to sim
 calculate_cohort_average_age_at_death <- function(output_file) {
@@ -540,38 +542,49 @@ calculate_cohort_average_age_at_death <- function(output_file) {
   # This function calculates the median age at death of a screened+treated cohort
   # only valid if there is only one screening event
 
-  # Extract total cumulative deaths at the last 2 timesteps
-  last_timesteps <- c(length(output_file$time)-1, length(output_file$time))
+  # UPDATE 14/08/20: Calculate outcomes in 2100 even if not entire cohort has died at this point
+  # First tried to do this before negative numbers in cohort occurs or at last timestep
+  # (for each simulation individually) but actually it makes less sense to calculate this outcome
+  # at different timesteps for each simulation.
+
+  # Extract total cumulative deaths in 2100
+    last_timestep <- which(output_file$time==2100)
 
   # Add all background deaths and HBV-related deaths by age occurring after screening and treatment
   # Note this also includes deaths of those who were susceptible at test and received catch-up vaccine
-  total_deaths_by_age <- output_file$full_output[last_timesteps,grepl("^cum_screened_deathsf.",names(output_file$full_output))]+
-    output_file$full_output[last_timesteps,grepl("^cum_screened_deathsm.",names(output_file$full_output))]+
-    output_file$full_output[last_timesteps,grepl("^cum_treated_deathsf.",names(output_file$full_output))]+
-    output_file$full_output[last_timesteps,grepl("^cum_treated_deathsm.",names(output_file$full_output))]+
-    output_file$full_output[last_timesteps,grepl("^cum_screened_hbv_deathsf.",names(output_file$full_output))]+
-    output_file$full_output[last_timesteps,grepl("^cum_screened_hbv_deathsm.",names(output_file$full_output))]+
-    output_file$full_output[last_timesteps,grepl("^cum_treated_hbv_deathsf.",names(output_file$full_output))]+
-    output_file$full_output[last_timesteps,grepl("^cum_treated_hbv_deathsm.",names(output_file$full_output))]
+  total_deaths_by_age <- output_file$full_output[last_timestep,grepl("^cum_screened_deathsf.",names(output_file$full_output))]+
+    output_file$full_output[last_timestep,grepl("^cum_screened_deathsm.",names(output_file$full_output))]+
+    output_file$full_output[last_timestep,grepl("^cum_treated_deathsf.",names(output_file$full_output))]+
+    output_file$full_output[last_timestep,grepl("^cum_treated_deathsm.",names(output_file$full_output))]+
+    output_file$full_output[last_timestep,grepl("^cum_screened_hbv_deathsf.",names(output_file$full_output))]+
+    output_file$full_output[last_timestep,grepl("^cum_screened_hbv_deathsm.",names(output_file$full_output))]+
+    output_file$full_output[last_timestep,grepl("^cum_treated_hbv_deathsf.",names(output_file$full_output))]+
+    output_file$full_output[last_timestep,grepl("^cum_treated_hbv_deathsm.",names(output_file$full_output))]
 
+  ##########################################################################
+  # No longer checking this within this function:
   # Check that by the end of the simulation everyone in the cohort has died
   # (new deaths at last timestep <0.5)
-  total_deaths_sum <- apply(total_deaths_by_age,1,sum)
+  #total_deaths_sum <- apply(total_deaths_by_age,1,sum)
 
-  if (total_deaths_sum[2]-total_deaths_sum[1] >= 0.5) {
+  #if (total_deaths_sum[2]-total_deaths_sum[1] >= 0.5) {
 
-    print("Not everyone has died.")
-    print(paste(total_deaths_sum[2]-total_deaths_sum[1], "new deaths"))
+  #  print("Not everyone has died.")
+  #  print(paste(total_deaths_sum[2]-total_deaths_sum[1], "new deaths"))
 
   # Confirm there is only 1 screening event
-  } else if (length(output_file$input_parameters$screening_years)>1L) {
+  #} else
+  ###########################################################################
+
+  # Confirm there is only 1 screening event
+  if (length(output_file$input_parameters$screening_years)>1L) {
 
     print("More than one screened cohort.")
 
   } else {
 
-    # Cumulative number of age-specific deaths at last timestep
-    total_cum_deaths <- total_deaths_by_age[nrow(total_deaths_by_age),]
+    # Cumulative number of age-specific deaths at previously defined last timestep
+    total_cum_deaths <- total_deaths_by_age
     # Multiply cumulative number of deaths at each age by age at deaths
     # Sum and divide by total number of cumulative deaths
     median_age_at_death <- sum(total_cum_deaths*ages)/sum(total_cum_deaths)
@@ -596,49 +609,107 @@ summarise_cohort_average_age_at_death <- function(output_files, scenario_label) 
 # Function to calculate cumulative HBV deaths averted in a screened+treated cohort
 extract_cohort_cumulative_hbv_deaths <- function(output_files, scenario_label) {
 
-  # Check that by the end of the simulation everyone in the cohort has died
-  # (population size in screened+treated compartments <0.5)
-
-  cohort_pop <- sapply(lapply(output_files, "[[", "infectioncat_total"), "[[", "treated_pop")+
-    sapply(lapply(output_files, "[[", "infectioncat_total"), "[[", "screened_pop")
-
-  if (!(all(tail(cohort_pop,1)<0.5))) {
-
-    print("Not everyone has died.")
-
-    # Confirm there is only 1 screening event
-  } else if (length(output_files[[1]]$input_parameters$screening_years)>1L) {
+  # Confirm there is only 1 screening event
+  if (length(output_files[[1]]$input_parameters$screening_years)>1L) {
 
     print("More than one screened cohort.")
 
   } else {
 
-  # Extract absolute incident HBV-related deaths per timestep
-  incident_hbv_deaths <- data.frame(time = head(output_files[[1]]$time,-1),
-                                    deaths = tail(sapply(lapply(output_files,"[[", "screened_hbv_deaths"), "[[", "incident_number_total")+
-                                                    sapply(lapply(output_files,"[[", "treated_hbv_deaths"), "[[", "incident_number_total"),-1))
-  colnames(incident_hbv_deaths)[1] <- "time"
+    # UPDATE 14/08/20: Calculate outcomes by 2100 even if not entire cohort has died at this point
+    # First tried to do this before negative numbers in cohort occurs or at last timestep
+    # (for each simulation individually) but actually it makes less sense to calculate this outcome
+    # at different timesteps for each simulation.
 
-  cum_hbv_deaths <- as.data.frame(t(apply(incident_hbv_deaths[,-1],2,sum)))
+    # Calculate sum of incident deaths until 2100
+    last_timestep <- which(output_files[[1]]$time==2100)
 
-  res <- data.frame(scenario = scenario_label,
-                    cum_hbv_deaths = cum_hbv_deaths)
+    # Extract absolute incident HBV-related deaths per timestep
+    incident_hbv_deaths <- data.frame(time = head(output_files[[1]]$time,-1),
+                                      deaths = tail(sapply(lapply(output_files,"[[", "screened_hbv_deaths"), "[[", "incident_number_total")+
+                                                      sapply(lapply(output_files,"[[", "treated_hbv_deaths"), "[[", "incident_number_total"),-1))
+    colnames(incident_hbv_deaths)[1] <- "time"
 
-  return(res)
+    cum_hbv_deaths <- as.data.frame(t(apply(incident_hbv_deaths[1:last_timestep,-1],2,sum)))
 
+    res <- data.frame(scenario = scenario_label,
+                      cum_hbv_deaths = cum_hbv_deaths)
+
+    return(res)
   }
+
 }
 
-# Function to extract cohort population size
+
+# Function to calculate life-years lived in a screened+treated cohort
+extract_cohort_life_years_lived <- function(output_files, scenario_label, sex_to_return = "both") {
+
+  # Confirm there is only 1 screening event
+  if (length(output_files[[1]]$input_parameters$screening_years)>1L) {
+
+    print("More than one screened cohort.")
+
+  } else {
+
+    # UPDATE 14/08/20: Calculate outcomes by 2100 even if not entire cohort has died at this point
+    # First tried to do this before negative numbers in cohort occurs or at last timestep
+    # (for each simulation individually) but actually it makes less sense to calculate this outcome
+    # at different timesteps for each simulation.
+
+    # Calculate sum of life-years until 2100
+    last_timestep <- which(output_files[[1]]$time==2100)
+
+    cohort_pop_male <- sapply(lapply(output_files, "[[", "treated_pop_male"),rowSums)+
+    sapply(lapply(output_files, "[[", "screened_pop_male"),rowSums)
+
+    cohort_pop_female <- sapply(lapply(output_files, "[[", "treated_pop_female"),rowSums)+
+    sapply(lapply(output_files, "[[", "screened_pop_female"),rowSums)
+
+    cohort_pop <- cohort_pop_male+cohort_pop_female
+
+    # Life years lived in given period = sum of population size at each timestep * da
+    # Calculating life years lived up until (excluding) the defined by_year
+    life_years_male <- as.data.frame(t(apply(cohort_pop_male[1:last_timestep,],2,sum)))*da
+    life_years_female <- as.data.frame(t(apply(cohort_pop_female[1:last_timestep,],2,sum)))*da
+
+    life_years_total <- life_years_male+life_years_female
+
+    if (sex_to_return == "both") {
+      res_total <- data.frame(scenario = scenario_label,
+                              life_years_total = life_years_total)
+
+      return(res_total)
+    } else if (sex_to_return == "male") {
+      res_male <- data.frame(scenario = scenario_label,
+                             life_years_male = life_years_male)
+
+      return(res_male)
+    } else if (sex_to_return == "female") {
+      res_female <- data.frame(scenario = scenario_label,
+                               life_years_female = life_years_female)
+      return(res_female)
+    } else {
+      print("sex_to_return has to be male, female or both")
+    }
+
+  }
+
+
+}
+
+# Function to extract initial cohort population size (upon screen)
+# This cohort represents those who were screened+assessed+treated/not eligible, so these are carriers who
+# have completed the liver disease assessment and received a treatment decision (either taken up treatment
+# or not treatment eligible). It excludes carriers who refused liver disease assessment or treatment.
 extract_cohort_size <- function(output_files, scenario_label, sex_to_return = "both") {
 
-   screened_pop_female <- sapply(lapply(output_files, "[[", "screened_pop_female"), rowSums)
-   screened_pop_male <- sapply(lapply(output_files, "[[", "screened_pop_male"), rowSums)
-   treated_pop_female <- sapply(lapply(output_files, "[[", "treated_pop_female"), rowSums)
-   treated_pop_male <- sapply(lapply(output_files, "[[", "treated_pop_male"), rowSums)
+  screened_pop_female <- sapply(lapply(output_files, "[[", "screened_pop_female"), rowSums)
+  screened_pop_male <- sapply(lapply(output_files, "[[", "screened_pop_male"), rowSums)
+  treated_pop_female <- sapply(lapply(output_files, "[[", "treated_pop_female"), rowSums)
+  treated_pop_male <- sapply(lapply(output_files, "[[", "treated_pop_male"), rowSums)
 
-    # Confirm there is only 1 screening event
-   if (length(output_files[[1]]$input_parameters$screening_years)>1L) {
+  # Confirm there is only 1 screening event
+  if (length(output_files[[1]]$input_parameters$screening_years)>1L) {
 
     print("More than one screened cohort.")
 
@@ -680,59 +751,22 @@ extract_cohort_size <- function(output_files, scenario_label, sex_to_return = "b
 
 }
 
-# Function to calculate life-years lived in a screened+treated cohort
-extract_cohort_life_years_lived <- function(output_files, scenario_label, sex_to_return = "both") {
+# Function to check the remaining cohort population size in 2100, at which cohort outcomes are evaluated
+# (NOT when the entire cohort has died)
+extract_cohort_size_at_outcome <- function(output_files, scenario_label) {
 
-  # Check that by the end of the simulation everyone in the cohort has died
-  # (population size in screened+treated compartments <0.5)
+  last_timestep <- which(output_files[[1]]$time==2100)
+  cohort_size <- 0
 
-  cohort_pop_male <- sapply(lapply(output_files, "[[", "treated_pop_male"),rowSums)+
-    sapply(lapply(output_files, "[[", "screened_pop_male"),rowSums)
+ for (i in 1:length(output_files)) {
+   cohort_size[i] <- output_files[[i]]$infectioncat_total$screened_pop[last_timestep]+
+     output_files[[i]]$infectioncat_total$treated_pop[last_timestep]
+ }
 
-  cohort_pop_female <- sapply(lapply(output_files, "[[", "treated_pop_female"),rowSums)+
-    sapply(lapply(output_files, "[[", "screened_pop_female"),rowSums)
+  res <- cbind(data.frame(scenario = scenario_label),
+               cohort_size)
 
-  cohort_pop <- cohort_pop_male+cohort_pop_female
-
-  if (!(all(tail(cohort_pop,1)<0.5))) {
-
-    print("Not everyone has died.")
-
-    # Confirm there is only 1 screening event
-  } else if (length(output_files[[1]]$input_parameters$screening_years)>1L) {
-
-    print("More than one screened cohort.")
-
-  } else {
-
-    # Life years lived in given period = sum of population size at each timestep * da
-    # Calculating life years lived up until (excluding) the defined by_year
-    life_years_male <- as.data.frame(t(apply(cohort_pop_male,2,sum)))*da
-    life_years_female <- as.data.frame(t(apply(cohort_pop_female,2,sum)))*da
-
-    life_years_total <- life_years_male+life_years_female
-
-    if (sex_to_return == "both") {
-      res_total <- data.frame(scenario = scenario_label,
-                              life_years_total = life_years_total)
-
-      return(res_total)
-    } else if (sex_to_return == "male") {
-      res_male <- data.frame(scenario = scenario_label,
-                             life_years_male = life_years_male)
-
-      return(res_male)
-    } else if (sex_to_return == "female") {
-      res_female <- data.frame(scenario = scenario_label,
-                               life_years_female = life_years_female)
-      return(res_female)
-    } else {
-      print("sex_to_return has to be male, female or both")
-    }
-
-  }
-
-
+  return(res)
 }
 
 # Compare scenarios for cohort

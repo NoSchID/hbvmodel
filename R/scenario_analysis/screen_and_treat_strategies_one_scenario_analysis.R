@@ -461,6 +461,63 @@ out5 <- out5[[1]]
 out6 <- readRDS(paste0(out_path, "c1_out6_screen_2020_monit_1_110820.rds"))
 out6 <- out6[[1]]
 
+# Assumption C set (monitoring) ----
+
+out_path <-
+  "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/screen_and_treat_strategies/Scenario C/"
+
+# Status quo
+out1 <- readRDS(paste0(out_path, "c_out1_status_quo_cohort_120820.rds"))
+out1 <- out1[[1]]
+out2 <- readRDS(paste0(out_path, "out2_status_quo_080720.rds"))
+out2 <- out2[[1]]
+
+# Monitoring
+out3 <- readRDS(paste0(out_path, "c_out3_screen_2020_monit_0_120820.rds"))
+out3 <- out3[[1]]
+out5 <- readRDS(paste0(out_path, "c_out5_screen_2020_monit_5_120820.rds"))
+out5 <- out5[[1]]
+out6 <- readRDS(paste0(out_path, "c_out6_screen_2020_monit_1_120820.rds"))
+out6 <- out6[[1]]
+
+# Assumption C2 set (monitoring) ----
+
+out_path <-
+  "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/screen_and_treat_strategies/Scenario C2/"
+
+# Status quo
+out1 <- readRDS(paste0(out_path, "c2_out1_status_quo_cohort_120820.rds"))
+out1 <- out1[[1]]
+out2 <- readRDS(paste0(out_path, "out2_status_quo_080720.rds"))
+out2 <- out2[[1]]
+
+# Monitoring
+out3 <- readRDS(paste0(out_path, "c2_out3_screen_2020_monit_0_130820.rds"))
+out3 <- out3[[1]]
+out5 <- readRDS(paste0(out_path, "c2_out5_screen_2020_monit_5_120820.rds"))
+out5 <- out5[[1]]
+out6 <- readRDS(paste0(out_path, "c2_out6_screen_2020_monit_1_120820.rds"))
+out6 <- out6[[1]]
+
+# Assumption C3 set (monitoring) ----
+
+out_path <-
+  "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/screen_and_treat_strategies/Scenario C3/"
+
+# Status quo
+out1 <- readRDS(paste0(out_path, "c3_out1_status_quo_cohort_120820.rds"))
+out1 <- out1[[1]]
+out2 <- readRDS(paste0(out_path, "out2_status_quo_080720.rds"))
+out2 <- out2[[1]]
+
+# Monitoring
+out3 <- readRDS(paste0(out_path, "c3_out3_screen_2020_monit_0_120820.rds"))
+out3 <- out3[[1]]
+out5 <- readRDS(paste0(out_path, "c3_out5_screen_2020_monit_5_120820.rds"))
+out5 <- out5[[1]]
+out6 <- readRDS(paste0(out_path, "c3_out6_screen_2020_monit_1_120820.rds"))
+out6 <- out6[[1]]
+
 ## BASIC PROGRAMME IMPACT (if only this available) ----
 ### Cohort outcomes
 # Average age at death
@@ -1818,8 +1875,7 @@ scenario_d1_summary_results <- list(
 
 
 ## TABLE OF ALL KEY OUTCOMES FOR 1 ASSUMPTION SET (MONITORING ONLY) ----
-
-scenario_c1_full_results <-
+scenario_c2_full_results <-
   list(
     # Monitoring analysis
     cohort_deaths_averted_long = cohort_deaths_averted_long,
@@ -1848,10 +1904,10 @@ scenario_c1_full_results <-
     ly_gained_per_test_sq_long = ly_gained_per_test_sq_long,
     ly_gained_per_treatment_sq_long = ly_gained_per_treatment_sq_long
   )
-#saveRDS(scenario_c1_full_results, here("output", "screen_and_treat_results", "scenario_c1_full_results.rds"))
+#saveRDS(scenario_c2_full_results, here("output", "screen_and_treat_results", "scenario_c2_full_results.rds"))
 
 # Summary values (median, 2.5th and 97.5th percentile)
-scenario_c1_summary_results <- list(
+scenario_c2_summary_results <- list(
   # MONITORING ANALYSIS
   cohort_deaths_averted_long = (group_by(cohort_deaths_averted_long, counterfactual, scenario, type) %>%
                                   summarise(median = median(value),
@@ -1914,7 +1970,7 @@ scenario_c1_summary_results <- list(
                                                 cri_lower = quantile(1/value, prob = 0.025),
                                                 cri_upper = quantile(1/value, prob = 0.975)))
 )
-#saveRDS(scenario_c1_summary_results, here("output", "screen_and_treat_results", "scenario_c1_summary_results.rds"))
+#saveRDS(scenario_c2_summary_results, here("output", "screen_and_treat_results", "scenario_c2_summary_results.rds"))
 
 ## TABLE OF ALL KEY OUTCOMES FOR 1 ASSUMPTION SET (BASIC PROGRAMME ONLY) ----
 scenario_bx3_full_results <-
@@ -2255,7 +2311,13 @@ points(x=gather(out3$timeseries$total_chronic_infections_rate, key = "sim", valu
 # Cohort timeseries check
 # Number of deaths
 plot(x=gather(out1$timeseries$total_hbv_deaths, key = "sim", value = "value", -time, -scenario)$time,
-     y=gather(out1$timeseries$total_hbv_deaths, key = "sim", value = "value", -time, -scenario)$value)
+     y=gather(out1$timeseries$total_hbv_deaths, key = "sim", value = "value", -time, -scenario)$value,
+     type = "l", xlim = c(2080,2120.5))
+lines(x = subset(gather(out1$timeseries$total_hbv_deaths, key = "sim", value = "value", -time, -scenario), sim == "457160")$time,
+      y = subset(gather(out1$timeseries$total_hbv_deaths, key = "sim", value = "value", -time, -scenario), sim == "457160")$value,
+      col = "red")
+plot(x=gather(out3$timeseries$total_hbv_deaths, key = "sim", value = "value", -time, -scenario)$time,
+     y=gather(out3$timeseries$total_hbv_deaths, key = "sim", value = "value", -time, -scenario)$value)
 
 # Plot of cumulative number of deaths averted over time
 deaths_averted_sq_long1 <- plot_hbv_deaths_averted(counterfactual_object = out2,
@@ -2900,6 +2962,7 @@ ggplot(data = ly_gained_by_interactions_sq[ly_gained_by_interactions_sq$by_year 
 ### TEST: Sensitivity analysis on out2 (no treatment) ----
 load(here("analysis_input/accepted_parmsets_123_180520.Rdata"))
 library(sensitivity)
+# Maybe try epi.prcc in epiR package which is based on the HIV paper and calculates p-value.
 
 # PRCC
 # Check order is the same

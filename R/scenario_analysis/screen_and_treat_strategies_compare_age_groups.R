@@ -101,10 +101,21 @@ scenario_by2_full_results <- readRDS(here("output", "screen_and_treat_results",
 # BY3 = BD scale-up and treatment in 2030, ages 15-45
 scenario_by3_full_results <- readRDS(here("output", "screen_and_treat_results",
                                          "scenario_by3_basic_results.rds"))
+# C = feasible coverage, ages 30-70
+scenario_c_full_results <- readRDS(here("output", "screen_and_treat_results",
+                                         "scenario_c_full_results.rds"))
 
 # C1 = feasible coverage, ages 15-65
 scenario_c1_full_results <- readRDS(here("output", "screen_and_treat_results",
                                          "scenario_c1_full_results.rds"))
+
+# C2 = feasible coverage, ages 45-70
+scenario_c2_full_results <- readRDS(here("output", "screen_and_treat_results",
+                                        "scenario_c2_full_results.rds"))
+
+# C3 = feasible coverage, ages 15-45
+scenario_c3_full_results <- readRDS(here("output", "screen_and_treat_results",
+                                        "scenario_c3_full_results.rds"))
 
 ## Population-level outcomes of the treatment programme (without/with monitoring) ----
 
@@ -1625,8 +1636,10 @@ ggplot(data = subset(ly_gained_delay,
 
 
 
-## Compare 15-65 programme with Optimal and Feasible uptake ----
+## Compare age groups with Optimal and Feasible uptake ----
 # Full dataframes of HBV deaths averted and LY saved compared to infant vaccine only
+
+# Age group 15-65 only
 hbv_deaths_averted_sq_cov <- rbind(
   cbind(scenario_d1_full_results$deaths_averted_sq_long, assumption = "d1"),
   cbind(scenario_c1_full_results$deaths_averted_sq_long, assumption = "c1"))
@@ -1688,5 +1701,89 @@ ggplot(data = subset(hbv_deaths_averted_per_interaction_sq_cov,
                        interaction_type == "total_interactions")) +
   geom_boxplot(aes(x=assumption, y = 1/value, fill = scenario)) +
   facet_wrap(~ by_year, scales = "free_y") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle =45, hjust = 1))
+
+# All age groups
+# Full dataframes of HBV deaths averted and LY saved compared to infant vaccine only
+hbv_deaths_averted_sq_cascade <- rbind(
+  cbind(scenario_a_full_results$deaths_averted_sq_long, assumption = "a"),
+  cbind(scenario_d1_full_results$deaths_averted_sq_long, assumption = "d1"),
+  cbind(scenario_d2_full_results$deaths_averted_sq_long, assumption = "d2"),
+  cbind(scenario_d3_full_results$deaths_averted_sq_long, assumption = "d3"),
+  cbind(scenario_c_full_results$deaths_averted_sq_long, assumption = "c"),
+  cbind(scenario_c1_full_results$deaths_averted_sq_long, assumption = "c1"),
+  cbind(scenario_c2_full_results$deaths_averted_sq_long, assumption = "c2"),
+  cbind(scenario_c3_full_results$deaths_averted_sq_long, assumption = "c3"))
+hbv_deaths_averted_sq_cascade$scenario <- factor(hbv_deaths_averted_sq_cascade$scenario, levels =
+                                           c("screen_2020_monit_0", "screen_2020_monit_10",
+                                             "screen_2020_monit_5", "screen_2020_monit_1"))
+hbv_deaths_averted_sq_cascade$uptake <- "Optimal"
+hbv_deaths_averted_sq_cascade$uptake[hbv_deaths_averted_sq_cascade$assumption %in% c("c", "c1", "c2", "c3")] <-
+  "Feasible"
+hbv_deaths_averted_sq_cascade$age <- "30-70"
+hbv_deaths_averted_sq_cascade$age[hbv_deaths_averted_sq_cascade$assumption %in% c("d1", "c1")] <- "15-65"
+hbv_deaths_averted_sq_cascade$age[hbv_deaths_averted_sq_cascade$assumption %in% c("d2", "c2")] <- "45-70"
+hbv_deaths_averted_sq_cascade$age[hbv_deaths_averted_sq_cascade$assumption %in% c("d3", "c3")] <- "15-45"
+
+ly_gained_sq_cascade <- rbind(
+  cbind(scenario_a_full_results$ly_gained_sq_long, assumption = "a"),
+  cbind(scenario_d1_full_results$ly_gained_sq_long, assumption = "d1"),
+  cbind(scenario_d2_full_results$ly_gained_sq_long, assumption = "d2"),
+  cbind(scenario_d3_full_results$ly_gained_sq_long, assumption = "d3"),
+  cbind(scenario_c_full_results$ly_gained_sq_long, assumption = "c"),
+  cbind(scenario_c1_full_results$ly_gained_sq_long, assumption = "c1"),
+  cbind(scenario_c2_full_results$ly_gained_sq_long, assumption = "c2"),
+  cbind(scenario_c3_full_results$ly_gained_sq_long, assumption = "c3"))
+colnames(ly_gained_sq_cascade)[colnames(ly_gained_sq_cascade) %in% c("counterfactual", "scenario")] <- c("scenario", "counterfactual")
+ly_gained_sq_cascade$scenario <- factor(ly_gained_sq_cascade$scenario, levels =
+                                  c("screen_2020_monit_0", "screen_2020_monit_10",
+                                    "screen_2020_monit_5", "screen_2020_monit_1"))
+ly_gained_sq_cascade$uptake <- "Optimal"
+ly_gained_sq_cascade$uptake[ly_gained_sq_cascade$assumption %in% c("c", "c1", "c2", "c3")] <-
+  "Feasible"
+ly_gained_sq_cascade$age <- "30-70"
+ly_gained_sq_cascade$age[ly_gained_sq_cascade$assumption %in% c("d1", "c1")] <- "15-65"
+ly_gained_sq_cascade$age[ly_gained_sq_cascade$assumption %in% c("d2", "c2")] <- "45-70"
+ly_gained_sq_cascade$age[ly_gained_sq_cascade$assumption %in% c("d3", "c3")] <- "15-45"
+
+# Deaths proportion
+ggplot(data = subset(hbv_deaths_averted_sq_cascade,
+                     type == "proportion_averted" &
+                       scenario %in% c("screen_2020_monit_0"))) +
+  geom_boxplot(aes(x=age, y = value, fill = uptake)) +
+  facet_wrap(uptake ~ by_year, scales = "free_y") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle =45, hjust = 1))
+# The pattern of proportion of deaths averted for different age groups is not affected by the Feasible uptake.
+# Pretty much the same when comparing this for yearly monitoring programmes although 45-70 year olds
+# looks even worse compared to the others in this case.
+# Note thought that the proportion of deaths averted is quite minimal with the "Feasible" parameters
+# Best age group - only 17% by 2030 and around 7% by 2100.
+
+ggplot(data = subset(hbv_deaths_averted_sq_cascade,
+                     type == "proportion_averted" &
+                       by_year == 2100 &
+                       scenario != c("screen_2020_monit_10")),
+       aes(x=uptake, y = value, fill = scenario)) +
+  stat_summary(fun.data=f, geom="boxplot", position = "dodge") +
+  facet_wrap(~age, scales = "free") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle =45, hjust = 1))
+# How much higher the proportion is with Optimal compared to Feasible may vary a bit by age but
+# unclear from these plots
+# Effect of monitoring looks similar by uptake status except that the jump from no to 5-yearly
+# monitoring with the young age groups is less visible.
+
+# By 2030, looks like the proportion of deaths averted is far lower for low uptake+yearly monitoring
+# than for high uptake without monitoring. But this is more uncertain by 2100.
+
+ggplot(data = subset(ly_gained_sq_cascade,
+                     type == "proportion_averted" &
+                       by_year == 2100 &
+                       scenario != c("screen_2020_monit_10")),
+       aes(x=uptake, y = value, fill = scenario)) +
+  stat_summary(fun.data=f, geom="boxplot", position = "dodge") +
+  facet_wrap(~age, scales = "free") +
   theme_bw() +
   theme(axis.text.x = element_text(angle =45, hjust = 1))

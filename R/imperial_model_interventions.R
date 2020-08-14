@@ -2641,6 +2641,8 @@ run_one_screening_scenario_on_cluster <- function(..., default_parameter_list, c
   cohort_cum_hbv_deaths <- extract_cohort_cumulative_hbv_deaths(out, label)
   cohort_ly <- extract_cohort_life_years_lived(out,label)
   cohort_size <- extract_cohort_size(out, label)
+  cohort_size_at_outcome <- extract_cohort_size_at_outcome(out, label)  # returns remaining cohort
+  # population size in 2100, when cohort outcomes above are evaluated
 
   # Population outcomes
   years_to_extract <- seq(2025,2100, by = 5)
@@ -2684,6 +2686,7 @@ run_one_screening_scenario_on_cluster <- function(..., default_parameter_list, c
                cohort_cum_hbv_deaths = cohort_cum_hbv_deaths,
                cohort_ly = cohort_ly,
                cohort_size = cohort_size,
+               cohort_size_at_outcome = cohort_size_at_outcome,
                cum_hbv_deaths = cum_hbv_deaths,
                ly = ly,
                interactions = interactions,
