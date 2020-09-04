@@ -240,6 +240,44 @@ ggplot(data = subset(ly_gained_sq,
 
 # Effect of the lower screening coverage on LY saved appears the same as for deaths averted.
 
+# Age group comparison plot
+
+p_d <- ggplot(data = subset(hbv_deaths_averted_sq,
+                     type == "proportion_averted" &
+                       assumption %in% c("a", "d1", "d2", "d3") &
+                       by_year %in% c(2030,2100) &
+                       scenario %in% c("screen_2020_monit_0")),
+       aes(x=factor(assumption, level = c("d1", "a", "d3", "d2")),
+           y = value*100)) +
+  stat_summary(fun.data=f, geom="boxplot", position = "dodge", fill = "salmon", width = 0.5) +
+  facet_wrap(~ by_year) +
+  ylab("Percentage of HBV-related deaths averted\ncompared to no treatment programme") +
+    scale_x_discrete("Age group screened (years)", labels = c("d1" = "15-65", "a"= "30-70",
+                                                      "d3" = "15-45", "d2" = "45-70")) +
+  theme_bw() +
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        strip.text = element_text(size = 15))
+
+p_ly <- ggplot(data = subset(ly_gained_sq,
+                     type == "proportion_averted" &
+                       assumption %in% c("a", "d1", "d2", "d3") &
+                       by_year %in% c(2030,2100) &
+                       scenario %in% c("screen_2020_monit_0")),
+       aes(x=factor(assumption, level = c("d1", "a", "d3", "d2")),
+           y = value*100)) +
+  stat_summary(fun.data=f, geom="boxplot", position = "dodge", width = 0.5, fill = "salmon") +
+  facet_wrap(~ by_year) +
+  ylab("Percentage of life-years saved\ncompared to no treatment programme") +
+  scale_x_discrete("Age group screened (years)", labels = c("d1" = "15-65", "a"= "30-70",
+                                                    "d3" = "15-45", "d2" = "45-70")) +
+  theme_bw() +
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        strip.text = element_text(size = 15))
+
+grid.arrange(p_d,p_ly, ncol = 1)
+
 # WITH MONITORING
 # Deaths proportion
 ggplot(data = subset(hbv_deaths_averted_sq,
@@ -1663,7 +1701,7 @@ ly_gained_sq_cov$screening_coverage[ly_gained_sq_cov$assumption == "c1"] <-
 
 
 ggplot(data = subset(hbv_deaths_averted_sq_cov,
-                     type == "number_averted" &
+                     type == "proportion_averted" &
                        scenario != "screen_2020_monit_10")) +
   geom_boxplot(aes(x=assumption, y = value, fill = scenario)) +
   facet_wrap(~ by_year) +
@@ -1787,3 +1825,262 @@ ggplot(data = subset(ly_gained_sq_cascade,
   facet_wrap(~age, scales = "free") +
   theme_bw() +
   theme(axis.text.x = element_text(angle =45, hjust = 1))
+
+## Is inclusion of younger age groups and high uptake more important than monitoring? ----
+
+# The comparator in this case is 30-70 year age group with low uptake and no monitoring (C out3)
+# Compare this to
+# 1) Same age group, low uptake, with monitoring  (C out6)
+# 2) 15-65 age group, low uptake, without monitoring (C1 out3)
+# 3) Same age group, high uptake, without monitoring (A out3)
+df <- hbv_deaths_averted_sq_cascade %>%
+  filter((assumption == "c" & scenario == "screen_2020_monit_0") |
+           (assumption == "c" & scenario == "screen_2020_monit_1") |
+           (assumption == "c1" & scenario == "screen_2020_monit_0") |
+           (assumption == "a" & scenario == "screen_2020_monit_0")
+  )
+df$label <- "30-70 years,\nsuboptimal uptake,\nno monitoring"
+df$label[df$assumption == "c" & df$scenario == "screen_2020_monit_1"] <- "Add yearly monitoring"
+df$label[df$assumption == "c1" & df$scenario == "screen_2020_monit_0"] <- "Add 15-30 year olds"
+df$label[df$assumption == "a" & df$scenario == "screen_2020_monit_0"] <- "Achieve optimal uptake"
+
+ggplot(data = subset(df,
+                     type == "number_averted" &
+                       by_year == 2100),
+       aes(x= label, y = value)) +
+  stat_summary(fun.data=f, geom="boxplot", position = "dodge") +
+  ylab("Cumulative number of HBV deaths averted") +
+  theme_bw() +
+  ylim(c(0,5500))
+
+
+df_per_interaction <- rbind(
+  cbind(scenario_c_full_results$deaths_averted_per_interaction_sq_long, assumption = "c"),
+  cbind(scenario_c_full_results$deaths_averted_per_test_sq_long, assumption = "c"),
+  cbind(scenario_c_full_results$deaths_averted_per_assessment_sq_long, assumption = "c"),
+  cbind(scenario_c_full_results$deaths_averted_per_treatment_sq_long, assumption = "c"),
+  cbind(scenario_c1_full_results$deaths_averted_per_interaction_sq_long, assumption = "c1"),
+  cbind(scenario_c1_full_results$deaths_averted_per_test_sq_long, assumption = "c1"),
+  cbind(scenario_c1_full_results$deaths_averted_per_assessment_sq_long, assumption = "c1"),
+  cbind(scenario_c1_full_results$deaths_averted_per_treatment_sq_long, assumption = "c1"),
+  cbind(scenario_a_full_results$deaths_averted_per_interaction_sq_long, assumption = "a"),
+  cbind(scenario_a_full_results$deaths_averted_per_test_sq_long, assumption = "a"),
+  cbind(scenario_a_full_results$deaths_averted_per_assessment_sq_long, assumption = "a"),
+  cbind(scenario_a_full_results$deaths_averted_per_treatment_sq_long, assumption = "a")
+)
+df_per_interaction <- df_per_interaction %>%
+  filter((assumption == "c" & scenario == "screen_2020_monit_0") |
+           (assumption == "c" & scenario == "screen_2020_monit_1") |
+           (assumption == "c1" & scenario == "screen_2020_monit_0") |
+           (assumption == "a" & scenario == "screen_2020_monit_0")
+  )
+
+df_per_interaction$label <- "30-70 years,\nsuboptimal uptake,\nno monitoring"
+df_per_interaction$label[df_per_interaction$assumption == "c" & df_per_interaction$scenario == "screen_2020_monit_1"] <- "Add yearly monitoring"
+df_per_interaction$label[df_per_interaction$assumption == "c1" & df_per_interaction$scenario == "screen_2020_monit_0"] <- "Add 15-30 year olds"
+df_per_interaction$label[df_per_interaction$assumption == "a" & df_per_interaction$scenario == "screen_2020_monit_0"] <- "Achieve optimal uptake"
+
+
+ggplot(data = subset(df_per_interaction,
+                     interaction_type == "total_interactions" &
+                       by_year == 2100),
+       aes(x= label, y = 1/value)) +
+  stat_summary(fun.data=f, geom="boxplot", position = "dodge") +
+  ylab("Total interactions per HBV death averted") +
+  theme_bw() +
+  ylim(0,1300)
+
+# Make 15-65 year olds the default group
+df <- hbv_deaths_averted_sq_cascade %>%
+  filter((assumption == "c1" & scenario == "screen_2020_monit_0") |
+           (assumption == "c1" & scenario == "screen_2020_monit_1") |
+           (assumption == "d1" & scenario == "screen_2020_monit_0")
+  )
+
+df$label <- "15-65 years,\nsuboptimal uptake,\nno monitoring"
+df$label[df$assumption == "c1" & df$scenario == "screen_2020_monit_1"] <- "Add yearly monitoring"
+df$label[df$assumption == "d1" & df$scenario == "screen_2020_monit_0"] <- "Achieve optimal uptake"
+
+df_ly <- ly_gained_sq_cascade %>%
+  filter((assumption == "c1" & scenario == "screen_2020_monit_0") |
+           (assumption == "c1" & scenario == "screen_2020_monit_1") |
+           (assumption == "d1" & scenario == "screen_2020_monit_0")
+  )
+
+df_ly$label <- "15-65 years,\nsuboptimal uptake,\nno monitoring"
+df_ly$label[df_ly$assumption == "c1" & df_ly$scenario == "screen_2020_monit_1"] <- "Add yearly monitoring"
+df_ly$label[df_ly$assumption == "d1" & df_ly$scenario == "screen_2020_monit_0"] <- "Achieve optimal uptake"
+
+ggplot(data = subset(df,
+                     type == "number_averted" &
+                       by_year == 2100),
+       aes(x= label, y = value)) +
+  stat_summary(fun.data=f, geom="boxplot", position = "dodge") +
+  ylab("Cumulative number of HBV deaths averted") +
+  theme_bw() +
+  ylim(c(0,5500))
+
+ggplot(data = subset(df_ly,
+                     type == "number_averted" &
+                       by_year == 2100),
+       aes(x= label, y = value)) +
+  stat_summary(fun.data=f, geom="boxplot", position = "dodge") +
+  ylab("Cumulative number of LY saved") +
+  theme_bw() +
+  ylim(0,350000)
+
+df_per_interaction <- rbind(
+  cbind(scenario_c1_full_results$deaths_averted_per_interaction_sq_long, assumption = "c1"),
+  cbind(scenario_c1_full_results$deaths_averted_per_test_sq_long, assumption = "c1"),
+  cbind(scenario_c1_full_results$deaths_averted_per_assessment_sq_long, assumption = "c1"),
+  cbind(scenario_c1_full_results$deaths_averted_per_treatment_sq_long, assumption = "c1"),
+  cbind(scenario_d1_full_results$deaths_averted_per_interaction_sq_long, assumption = "d1"),
+  cbind(scenario_d1_full_results$deaths_averted_per_test_sq_long, assumption = "d1"),
+  cbind(scenario_d1_full_results$deaths_averted_per_assessment_sq_long, assumption = "d1"),
+  cbind(scenario_d1_full_results$deaths_averted_per_treatment_sq_long, assumption = "d1")
+)
+df_per_interaction <- df_per_interaction %>%
+  filter((assumption == "c1" & scenario == "screen_2020_monit_0") |
+           (assumption == "c1" & scenario == "screen_2020_monit_1") |
+           (assumption == "d1" & scenario == "screen_2020_monit_0")
+  )
+
+df_per_interaction$label <- "15-65 years,\nsuboptimal uptake,\nno monitoring"
+df_per_interaction$label[df_per_interaction$assumption == "c1" & df_per_interaction$scenario == "screen_2020_monit_1"] <- "Add yearly monitoring"
+df_per_interaction$label[df_per_interaction$assumption == "d1" & df_per_interaction$scenario == "screen_2020_monit_0"] <- "Achieve optimal uptake"
+
+df_ly_per_interaction <- rbind(
+  cbind(scenario_c1_full_results$ly_gained_per_interaction_sq_long, assumption = "c1"),
+  cbind(scenario_c1_full_results$ly_gained_per_test_sq_long, assumption = "c1"),
+  cbind(scenario_c1_full_results$ly_gained_per_assessment_sq_long, assumption = "c1"),
+  cbind(scenario_c1_full_results$ly_gained_per_treatment_sq_long, assumption = "c1"),
+  cbind(scenario_d1_full_results$ly_gained_per_interaction_sq_long, assumption = "d1"),
+  cbind(scenario_d1_full_results$ly_gained_per_test_sq_long, assumption = "d1"),
+  cbind(scenario_d1_full_results$ly_gained_per_assessment_sq_long, assumption = "d1"),
+  cbind(scenario_d1_full_results$ly_gained_per_treatment_sq_long, assumption = "d1")
+)
+df_ly_per_interaction <- df_ly_per_interaction %>%
+  filter((assumption == "c1" & scenario == "screen_2020_monit_0") |
+           (assumption == "c1" & scenario == "screen_2020_monit_1") |
+           (assumption == "d1" & scenario == "screen_2020_monit_0")
+  )
+
+df_ly_per_interaction$label <- "15-65 years,\nsuboptimal uptake,\nno monitoring"
+df_ly_per_interaction$label[df_ly_per_interaction$assumption == "c1" & df_ly_per_interaction$scenario == "screen_2020_monit_1"] <- "Add yearly monitoring"
+df_ly_per_interaction$label[df_ly_per_interaction$assumption == "d1" & df_ly_per_interaction$scenario == "screen_2020_monit_0"] <- "Achieve optimal uptake"
+
+
+ggplot(data = subset(df_per_interaction,
+                     interaction_type == "total_interactions" &
+                       by_year == 2050),
+       aes(x= label, y = 1/value)) +
+  stat_summary(fun.data=f, geom="boxplot", position = "dodge") +
+  ylab("Total interactions per HBV death averted") +
+  theme_bw() +
+  ylim(0,1300)
+
+ggplot(data = subset(df_ly_per_interaction,
+                     interaction_type == "total_interactions" &
+                       by_year == 2050),
+       aes(x= label, y = 1/value)) +
+  stat_summary(fun.data=f, geom="boxplot", position = "dodge") +
+  ylab("Total interactions per LY saved") +
+  theme_bw()
+
+# Make the 45-70 the default age group
+df2 <- hbv_deaths_averted_sq_cascade %>%
+  filter((assumption == "c2" & scenario == "screen_2020_monit_0") |
+           (assumption == "c2" & scenario == "screen_2020_monit_1") |
+           (assumption == "c1" & scenario == "screen_2020_monit_0") |
+           (assumption == "d2" & scenario == "screen_2020_monit_0")
+  )
+df2$label <- "*Screen 45-70 year olds,\nsuboptimal uptake,\nno monitoring"
+df2$label[df2$assumption == "c2" & df2$scenario == "screen_2020_monit_1"] <- "Add\nyearly monitoring"
+df2$label[df2$assumption == "c1" & df2$scenario == "screen_2020_monit_0"] <- "Add\n15-45 year olds"
+df2$label[df2$assumption == "d2" & df2$scenario == "screen_2020_monit_0"] <- "Achieve\noptimal uptake"
+
+p1 <- ggplot(data = subset(df2,
+                     type == "number_averted" &
+                       by_year == 2100),
+       aes(x= reorder(label, value), y = value)) +
+  stat_summary(fun.data=f, geom="boxplot", position = "dodge", width = 0.3, fill = "grey") +
+  ylab("Cumulative number of\nHBV deaths averted") +
+  xlab("Scenario") +
+  theme_bw() +
+  theme(axis.text.x = element_text(size = 13),
+        axis.title.x = element_text(size = 13)) +
+  ylim(c(0,2250))
+
+df_per_interaction2 <- rbind(
+  cbind(scenario_c2_full_results$deaths_averted_per_interaction_sq_long, assumption = "c2"),
+  cbind(scenario_c2_full_results$deaths_averted_per_test_sq_long, assumption = "c2"),
+  cbind(scenario_c2_full_results$deaths_averted_per_assessment_sq_long, assumption = "c2"),
+  cbind(scenario_c2_full_results$deaths_averted_per_treatment_sq_long, assumption = "c2"),
+  cbind(scenario_c1_full_results$deaths_averted_per_interaction_sq_long, assumption = "c1"),
+  cbind(scenario_c1_full_results$deaths_averted_per_test_sq_long, assumption = "c1"),
+  cbind(scenario_c1_full_results$deaths_averted_per_assessment_sq_long, assumption = "c1"),
+  cbind(scenario_c1_full_results$deaths_averted_per_treatment_sq_long, assumption = "c1"),
+  cbind(scenario_d2_full_results$deaths_averted_per_interaction_sq_long, assumption = "d2"),
+  cbind(scenario_d2_full_results$deaths_averted_per_test_sq_long, assumption = "d2"),
+  cbind(scenario_d2_full_results$deaths_averted_per_assessment_sq_long, assumption = "d2"),
+  cbind(scenario_d2_full_results$deaths_averted_per_treatment_sq_long, assumption = "d2")
+)
+
+df_per_interaction2 <- df_per_interaction2 %>%
+  filter((assumption == "c2" & scenario == "screen_2020_monit_0") |
+           (assumption == "c2" & scenario == "screen_2020_monit_1") |
+           (assumption == "c1" & scenario == "screen_2020_monit_0") |
+           (assumption == "d2" & scenario == "screen_2020_monit_0")
+  )
+
+df_per_interaction2$label <- "*Screen 45-70 year olds,\nsuboptimal uptake,\nno monitoring"
+df_per_interaction2$label[df_per_interaction2$assumption == "c2" &
+                            df_per_interaction2$scenario == "screen_2020_monit_1"] <- "Add\nyearly monitoring"
+df_per_interaction2$label[df_per_interaction2$assumption == "c1" & df_per_interaction2$scenario == "screen_2020_monit_0"] <- "Add\n15-45 year olds"
+df_per_interaction2$label[df_per_interaction2$assumption == "d2" & df_per_interaction2$scenario == "screen_2020_monit_0"] <- "Achieve\noptimal uptake"
+df_per_interaction2$label <- factor(df_per_interaction2$label, levels =
+                                      c("*Screen 45-70 year olds,\nsuboptimal uptake,\nno monitoring",
+                                        "Add\nyearly monitoring",  "Achieve\noptimal uptake", "Add\n15-45 year olds"))
+
+p2 <- ggplot(data = subset(df_per_interaction2,
+                     interaction_type == "total_interactions" &
+                       by_year == 2100),
+       aes(x= label, y = 1/value)) +
+  stat_summary(fun.data=f, geom="boxplot", position = "dodge", width = 0.3, fill = "grey") +
+  ylab("Total interactions\nper HBV death averted") +
+  xlab("Scenario") +
+  theme_bw() +
+  theme(axis.text.x = element_text(size = 13),
+        axis.title.x = element_text(size = 13)) +
+  ylim(0,1300)
+
+grid.arrange(p1,p2,ncol = 1)
+
+# Plot the extra impact compared to the comparator here:
+df2$value[df2$assumption == "c2" & df2$scenario == "screen_2020_monit_1"] <-
+  df2$value[df2$assumption == "c2" & df2$scenario == "screen_2020_monit_1"]-
+  df2$value[df2$assumption == "c2" & df2$scenario == "screen_2020_monit_0"]
+
+df2$value[df2$assumption == "c1" & df2$scenario == "screen_2020_monit_0"] <-
+  df2$value[df2$assumption == "c1" & df2$scenario == "screen_2020_monit_0"]-
+  df2$value[df2$assumption == "c2" & df2$scenario == "screen_2020_monit_0"]
+
+df2$value[df2$assumption == "d2" & df2$scenario == "screen_2020_monit_0"] <-
+  df2$value[df2$assumption == "d2" & df2$scenario == "screen_2020_monit_0"]-
+  df2$value[df2$assumption == "c2" & df2$scenario == "screen_2020_monit_0"]
+
+ggplot(data = subset(df2,
+                       type == "number_averted" &
+                       !(assumption == "c2" & scenario == "screen_2020_monit_0") &
+                         by_year == 2050),
+         aes(x = label, y = value)) +
+  stat_summary(fun.data=f, geom="boxplot", position = "dodge", width = 0.3, fill = "grey") +
+  ylab("Incremental number of HBV deaths averted") +
+  xlab("Scenario") +
+  theme_bw()
+
+
+quantile(1/subset(scenario_d1_full_results$deaths_averted_per_assessment_long,
+       by_year == 2100 & scenario == "screen_2020_monit_1")$value, c(0.5,0.025,0.975))
+quantile(1/subset(scenario_d1_full_results$ly_gained_per_assessment_long,
+                  by_year == 2100 & scenario == "screen_2020_monit_1")$value, c(0.5,0.025,0.975))
