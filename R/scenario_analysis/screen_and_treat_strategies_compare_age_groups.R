@@ -16,7 +16,7 @@ f <- function(x) {
   r
 }
 
-## Load files ----
+## Load files (target range fit) ----
 # A = optimal coverage, ages 30-70
 scenario_a_full_results <- readRDS(here("output", "screen_and_treat_results",
                                         "scenario_a_full_results.rds"))
@@ -117,6 +117,21 @@ scenario_c2_full_results <- readRDS(here("output", "screen_and_treat_results",
 scenario_c3_full_results <- readRDS(here("output", "screen_and_treat_results",
                                         "scenario_c3_full_results.rds"))
 
+## Load files (kmeans posterior fit) ----
+# A = optimal coverage, ages 30-70
+scenario_a_full_results <- readRDS(here("output", "screen_and_treat_results_kmeans_fit",
+                                        "scenario_a_full_results.rds"))
+
+# D1 = optimal coverage, ages 15-65
+scenario_d1_full_results <- readRDS(here("output", "screen_and_treat_results_kmeans_fit",
+                                         "scenario_d1_full_results.rds"))
+# D2 = optimal coverage, ages 45-70
+scenario_d2_full_results <- readRDS(here("output", "screen_and_treat_results_kmeans_fit",
+                                         "scenario_d2_full_results.rds"))
+# D3 = optimal coverage, ages 15-45
+scenario_d3_full_results <- readRDS(here("output", "screen_and_treat_results_kmeans_fit",
+                                         "scenario_d3_full_results.rds"))
+
 ## Population-level outcomes of the treatment programme (without/with monitoring) ----
 
 # Full dataframes of HBV deaths averted and LY saved compared to infant vaccine only
@@ -124,11 +139,12 @@ hbv_deaths_averted_sq <- rbind(
   cbind(scenario_a_full_results$deaths_averted_sq_long, assumption = "a"),
   cbind(scenario_d1_full_results$deaths_averted_sq_long, assumption = "d1"),
   cbind(scenario_d2_full_results$deaths_averted_sq_long, assumption = "d2"),
-  cbind(scenario_d3_full_results$deaths_averted_sq_long, assumption = "d3"),
-  cbind(scenario_e_full_results$deaths_averted_sq_long, assumption = "e"),
-  cbind(scenario_e1_full_results$deaths_averted_sq_long, assumption = "e1"),
-  cbind(scenario_e2_full_results$deaths_averted_sq_long, assumption = "e2"),
-  cbind(scenario_e3_full_results$deaths_averted_sq_long, assumption = "e3"))
+  cbind(scenario_d3_full_results$deaths_averted_sq_long, assumption = "d3")#,
+  #cbind(scenario_e_full_results$deaths_averted_sq_long, assumption = "e"),
+  #cbind(scenario_e1_full_results$deaths_averted_sq_long, assumption = "e1"),
+  #cbind(scenario_e2_full_results$deaths_averted_sq_long, assumption = "e2"),
+  #cbind(scenario_e3_full_results$deaths_averted_sq_long, assumption = "e3")
+  )
 #hbv_deaths_averted_sq$scenario <- gsub("b_", "", hbv_deaths_averted_sq$scenario)
 hbv_deaths_averted_sq$scenario <- factor(hbv_deaths_averted_sq$scenario, levels =
                                            c("screen_2020_monit_0", "screen_2020_monit_10",
@@ -141,11 +157,12 @@ ly_gained_sq <- rbind(
   cbind(scenario_a_full_results$ly_gained_sq_long, assumption = "a"),
   cbind(scenario_d1_full_results$ly_gained_sq_long, assumption = "d1"),
   cbind(scenario_d2_full_results$ly_gained_sq_long, assumption = "d2"),
-  cbind(scenario_d3_full_results$ly_gained_sq_long, assumption = "d3"),
-  cbind(scenario_e_full_results$ly_gained_sq_long, assumption = "e"),
-  cbind(scenario_e1_full_results$ly_gained_sq_long, assumption = "e1"),
-  cbind(scenario_e2_full_results$ly_gained_sq_long, assumption = "e2"),
-  cbind(scenario_e3_full_results$ly_gained_sq_long, assumption = "e3"))
+  cbind(scenario_d3_full_results$ly_gained_sq_long, assumption = "d3")#,
+  #cbind(scenario_e_full_results$ly_gained_sq_long, assumption = "e"),
+  #cbind(scenario_e1_full_results$ly_gained_sq_long, assumption = "e1"),
+  #cbind(scenario_e2_full_results$ly_gained_sq_long, assumption = "e2"),
+  #cbind(scenario_e3_full_results$ly_gained_sq_long, assumption = "e3")
+  )
 colnames(ly_gained_sq)[colnames(ly_gained_sq) %in% c("counterfactual", "scenario")] <- c("scenario", "counterfactual")
 #ly_gained_sq$scenario <- gsub("b_", "", ly_gained_sq$scenario)
 ly_gained_sq$scenario <- factor(ly_gained_sq$scenario, levels =

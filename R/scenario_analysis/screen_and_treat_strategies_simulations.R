@@ -8,7 +8,26 @@ source(here("R/imperial_model_interventions.R"))
 source(here("R/scenario_analysis/calculate_outcomes.R"))
 
 # Load the calibrated parmsets
-load(here("calibration", "input", "accepted_parmsets_123_180520.Rdata")) # params_mat_targets5
+#load(here("calibration", "input", "accepted_parmsets_123_180520.Rdata")) # params_mat_targets5
+
+# UPDATED SCENARIOS 22/09/20
+
+# Age group scenarios: 15-60 (A1), 15-30 (A2), 30-45 (A3), 30-60 (A4)
+
+# ASSUMPTION A1 SIMULATIONS
+scenario_a1_parms <- parameter_list
+scenario_a1_parms$screening_coverage <- 0.9
+scenario_a1_parms$min_age_to_screen <- 15
+scenario_a1_parms$max_age_to_screen <- 60
+scenario_a1_parms$prop_to_vaccinate <- 0
+scenario_a1_parms$link_to_care_prob <- 0.8
+scenario_a1_parms$treatment_initiation_prob <- 1
+scenario_a1_parms$monitoring_prob <- 0.8
+scenario_a1_parms$apply_bdvacc <- 0
+scenario_a1_parms$apply_treat_it <- 0
+#save(scenario_a1_parms, file= here("analysis_input", "scenario_a1_parms.Rdata"))
+
+# INITIAL SCENARIOS (before 22/09/20) ----
 
 # ASSUMPTION A SIMULATIONS
 

@@ -8,7 +8,7 @@ require(gridExtra)
 source(here("R/imperial_model_interventions.R"))
 source(here("R/scenario_analysis/calculate_outcomes.R"))
 
-## Load files (check manually) ----
+## Load files (target calibration) ----
 # Assumption A set ----
 out_path <-
   "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/screen_and_treat_strategies/Scenario A with new parmsets/"
@@ -539,6 +539,79 @@ out10 <- out10[[1]]
 out11 <- readRDS(paste0(out_path, "d1_out11_monit_5_screen_5_150720.rds"))
 out11 <- out11[[1]]
 
+
+## Load files (kmeans) ----
+# Assumption A set (monitoring) ----
+out_path <-
+  "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/screen_and_treat_strategies_kmeans_fit/Scenario A/"
+
+# Status quo
+out1 <- readRDS(paste0(out_path, "a_out1_status_quo_cohort_160920.rds"))
+out1 <- out1[[1]]
+out2 <- readRDS(paste0(out_path, "out2_status_quo_180820.rds"))
+out2 <- out2[[1]]
+
+# Monitoring
+out3 <- readRDS(paste0(out_path, "a_out3_screen_2020_monit_0_160920.rds"))
+out3 <- out3[[1]]
+out5 <- readRDS(paste0(out_path, "a_out5_screen_2020_monit_5_160920.rds"))
+out5 <- out5[[1]]
+out6 <- readRDS(paste0(out_path, "a_out6_screen_2020_monit_1_160920.rds"))
+out6 <- out6[[1]]
+
+# Assumption D1 set (monitoring) ----
+out_path <-
+  "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/screen_and_treat_strategies_kmeans_fit/Scenario D1/"
+
+# Status quo
+out1 <- readRDS(paste0(out_path, "d1_out1_status_quo_cohort_140920.rds"))
+out1 <- out1[[1]]
+out2 <- readRDS(paste0(out_path, "out2_status_quo_180820.rds"))
+out2 <- out2[[1]]
+
+# Monitoring
+out3 <- readRDS(paste0(out_path, "d1_out3_screen_2020_monit_0_180820.rds"))
+out3 <- out3[[1]]
+out5 <- readRDS(paste0(out_path, "d1_out5_screen_2020_monit_5_140920.rds"))
+out5 <- out5[[1]]
+out6 <- readRDS(paste0(out_path, "d1_out6_screen_2020_monit_1_140920.rds"))
+out6 <- out6[[1]]
+
+# Assumption D2 set (monitoring) ----
+out_path <-
+  "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/screen_and_treat_strategies_kmeans_fit/Scenario D2/"
+
+# Status quo
+out1 <- readRDS(paste0(out_path, "d2_out1_status_quo_cohort_160920.rds"))
+out1 <- out1[[1]]
+out2 <- readRDS(paste0(out_path, "out2_status_quo_180820.rds"))
+out2 <- out2[[1]]
+
+# Monitoring
+out3 <- readRDS(paste0(out_path, "d2_out3_screen_2020_monit_0_160920.rds"))
+out3 <- out3[[1]]
+out5 <- readRDS(paste0(out_path, "d2_out5_screen_2020_monit_5_160920.rds"))
+out5 <- out5[[1]]
+out6 <- readRDS(paste0(out_path, "d2_out6_screen_2020_monit_1_160920.rds"))
+out6 <- out6[[1]]
+
+# Assumption D3 set (monitoring) ----
+out_path <-
+  "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/screen_and_treat_strategies_kmeans_fit/Scenario D3/"
+
+# Status quo
+out1 <- readRDS(paste0(out_path, "d3_out1_status_quo_cohort_170920.rds"))
+out1 <- out1[[1]]
+out2 <- readRDS(paste0(out_path, "out2_status_quo_180820.rds"))
+out2 <- out2[[1]]
+
+# Monitoring
+out3 <- readRDS(paste0(out_path, "d3_out3_screen_2020_monit_0_170920.rds"))
+out3 <- out3[[1]]
+out5 <- readRDS(paste0(out_path, "d3_out5_screen_2020_monit_5_170920.rds"))
+out5 <- out5[[1]]
+out6 <- readRDS(paste0(out_path, "d3_out6_screen_2020_monit_1_170920.rds"))
+out6 <- out6[[1]]
 
 ## BASIC PROGRAMME IMPACT (if only this available) ----
 ### Cohort outcomes
@@ -1906,7 +1979,7 @@ scenario_d1_summary_results <- list(
 
 
 ## TABLE OF ALL KEY OUTCOMES FOR 1 ASSUMPTION SET (MONITORING ONLY) ----
-scenario_d1_full_results <-
+scenario_d3_full_results <-
   list(
     # Monitoring analysis
     cohort_deaths_averted_long = cohort_deaths_averted_long,
@@ -1935,10 +2008,10 @@ scenario_d1_full_results <-
     ly_gained_per_test_sq_long = ly_gained_per_test_sq_long,
     ly_gained_per_treatment_sq_long = ly_gained_per_treatment_sq_long
   )
-#saveRDS(scenario_d1_full_results, here("output", "screen_and_treat_results", "scenario_d1_full_results.rds"))
+#saveRDS(scenario_d3_full_results, here("output", "screen_and_treat_results_kmeans_fit", "scenario_d3_full_results.rds"))
 
 # Summary values (median, 2.5th and 97.5th percentile)
-scenario_d1_summary_results <- list(
+scenario_d3_summary_results <- list(
   # MONITORING ANALYSIS
   cohort_deaths_averted_long = (group_by(cohort_deaths_averted_long, counterfactual, scenario, type) %>%
                                   summarise(median = median(value),
@@ -2001,7 +2074,7 @@ scenario_d1_summary_results <- list(
                                                 cri_lower = quantile(1/value, prob = 0.025),
                                                 cri_upper = quantile(1/value, prob = 0.975)))
 )
-#saveRDS(scenario_d1_summary_results, here("output", "screen_and_treat_results", "scenario_d1_summary_results.rds"))
+#saveRDS(scenario_d3_summary_results, here("output", "screen_and_treat_results_kmeans_fit", "scenario_d3_summary_results.rds"))
 
 
 ## TABLE OF ALL KEY OUTCOMES FOR 1 ASSUMPTION SET (BASIC PROGRAMME ONLY) ----
@@ -2089,10 +2162,6 @@ hbv_deaths_rate <- rbind(cbind(out2$timeseries$total_hbv_deaths_rate[,c(1:2)],
                                median= apply(out5$timeseries$total_hbv_deaths_rate[,-c(1:2)], 1, median),
                                cri_lower = apply(out5$timeseries$total_hbv_deaths_rate[,-c(1:2)], 1, quantile, prob = 0.025),
                                cri_upper = apply(out5$timeseries$total_hbv_deaths_rate[,-c(1:2)], 1, quantile, prob = 0.975)))
-
-# Fewer parmsets (108)
-#index_to_remove <- c(1,5,45,47,52,60,61,70,86,87,95,98,109,115,119)+2 # +2 because of time and scenario column
-# Tried the HBV mortality plot with fewer parmsets from k means clustering, which looks nearly identical
 
 hbv_deaths <- rbind(cbind(out2$timeseries$total_hbv_deaths[,c(1:2)],
                          median = apply(out2$timeseries$total_hbv_deaths[,-c(1:2)], 1, median),
