@@ -47,36 +47,15 @@ sim <- apply(params_mat_accepted[1,],1,
                                 screening_years = c(2020),
                                 apply_treat_it = 0,
                                 apply_screen_not_treat = 0,
-                                monitoring_rate = c(rep(0,length(which(ages==0):which(ages==30-da))),
-                                                    rep(1,length(which(ages==30):which(ages==45-da))),
-                                                    rep(0,length(which(ages==45):which(ages==100-da))))),
+                                monitoring_rate = 0,
+                                apply_repeat_screen = 0,
+                                min_age_to_screen = 15,
+                                max_age_to_screen = 60,
+                                min_age_to_repeat_screen = 15,
+                                max_age_to_repeat_screen = 19.5,
+                                repeat_screening_years = seq(2025,2100, by = 5)),
                          drop_timesteps_before = 1960,
                          scenario = "vacc_screen"))
-
-##
-#out1 <- code_model_output(sim[[1]])  # no monitoring
-#out2 <- code_model_output(sim[[1]])  # yearly monitoring all
-#out3 <- code_model_output(sim[[1]])  # yearly monitoring in <45 year olds only
-
-View(t(rbind(ages,out2$treated_pop_male[which(out2$time==2030):which(out2$time==2031),],
-      out3$treated_pop_male[which(out2$time==2030):which(out3$time==2031),])))
-
-
-sum((out1$hbv_deaths$incident_number_total+
-       out1$screened_hbv_deaths$incident_number_total+
-       out1$treated_hbv_deaths$incident_number_total)[which(out2$time==2020):which(out2$time==2100)])-
-  sum((out2$hbv_deaths$incident_number_total+
-         out2$screened_hbv_deaths$incident_number_total+
-         out2$treated_hbv_deaths$incident_number_total)[which(out2$time==2020):which(out2$time==2100)])
-
-sum((out1$hbv_deaths$incident_number_total+
-       out1$screened_hbv_deaths$incident_number_total+
-       out1$treated_hbv_deaths$incident_number_total)[which(out2$time==2020):which(out2$time==2100)])-
-sum((out3$hbv_deaths$incident_number_total+
-     out3$screened_hbv_deaths$incident_number_total+
-       out3$treated_hbv_deaths$incident_number_total)[which(out2$time==2020):which(out2$time==2100)])
-
-##
 
 out <- code_model_output(sim[[1]])
 outpath <- out

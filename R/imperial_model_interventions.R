@@ -849,6 +849,7 @@ reset_pop_1950 <- function(timestep, pop, parameters){
   })
 }
 
+# Event function: first screening+treatment in the population
 screen_pop <- function(timestep, pop, parameters){
   with (as.list(pop),{
 
@@ -960,6 +961,120 @@ screen_pop <- function(timestep, pop, parameters){
   })
 }
 
+# Event function: repeat screening+treatment in the population
+# (same as screen_pop except for age groups to target)
+repeat_screen_pop <- function(timestep, pop, parameters){
+  with (as.list(pop),{
+
+    # Define indices for age groupts to screen
+    age_groups_to_screen <- which(ages==parameters$min_age_to_repeat_screen):which(ages==parameters$max_age_to_repeat_screen)
+
+    # Select state variables array
+    total_pop <- array(unlist(pop[1:(2 * n_infectioncat * n_agecat)]),dim=c(n_agecat,n_infectioncat,2))
+
+    # Record the total number of people screened at each screening event
+    # Note this is not a cumulative output in the model and stays the same for years where there
+    # is no screening programme (sum unique values to calculate total HBsAg tests)
+    pop_to_screen_susceptible <- parameters$screening_coverage * total_pop[age_groups_to_screen,1,1:2]
+    pop_to_screen_immune <- parameters$screening_coverage * total_pop[age_groups_to_screen,9,1:2]
+    pop_to_screen_it <- parameters$screening_coverage * total_pop[age_groups_to_screen,2,1:2]
+    pop_to_screen_chb <- parameters$screening_coverage * total_pop[age_groups_to_screen,c(3,5),1:2]
+    pop_to_screen_cirrhosis <- parameters$screening_coverage * total_pop[age_groups_to_screen,c(6,7),1:2]
+    pop_to_screen_ineligible <- parameters$screening_coverage * total_pop[age_groups_to_screen,c(4,8),1:2]
+
+    total_screened_susceptible <- sum(pop_to_screen_susceptible)
+    total_screened_immune <- sum(pop_to_screen_immune)
+    total_screened_it <- sum(pop_to_screen_it)
+    total_screened_chb <- sum(pop_to_screen_chb)
+    total_screened_cirrhosis <- sum(pop_to_screen_cirrhosis)
+    total_screened_ineligible <- sum(pop_to_screen_ineligible)
+
+    # Calculate the population to screen then treat in the treatment eligible compartments:
+    # IT (2) - optional, IR (3), ENCHB (5), CC (6), DCC (7)
+    pop_to_treat_it <- parameters$screening_coverage * parameters$link_to_care_prob *
+      parameters$treatment_initiation_prob_it[age_groups_to_screen]  * total_pop[age_groups_to_screen,2,1:2]
+    # Only >30 year old IT people can be treated
+
+    pop_to_treat_ir <- parameters$screening_coverage * parameters$link_to_care_prob *
+      parameters$treatment_initiation_prob * total_pop[age_groups_to_screen,3,1:2]
+
+    pop_to_treat_enchb <- parameters$screening_coverage * parameters$link_to_care_prob *
+      parameters$treatment_initiation_prob * total_pop[age_groups_to_screen,5,1:2]
+
+    pop_to_treat_cc <- parameters$screening_coverage * parameters$link_to_care_prob *
+      parameters$treatment_initiation_prob * total_pop[age_groups_to_screen,6,1:2]
+
+    pop_to_treat_dcc <- parameters$screening_coverage * parameters$link_to_care_prob *
+      parameters$treatment_initiation_prob * total_pop[age_groups_to_screen,7,1:2]
+
+    # Calculate the population identified as treatment-ineligible (eligible for monitoring):
+    # IT (2) - if not treated, IC (4)
+    pop_to_monitor_it <- parameters$screening_coverage * parameters$link_to_care_prob *
+      total_pop[age_groups_to_screen,2,1:2] - pop_to_treat_it
+
+    pop_to_monitor_ic <- parameters$screening_coverage * parameters$link_to_care_prob *
+      total_pop[age_groups_to_screen,4,1:2]
+
+    # Move treated/screened IT (now 2 monitor comps)
+
+    # Move screened susceptibles to post-screening immune compartment (vaccination): V_S (10)
+    # This assumes there is no re-testing unless prop_to_vaccinate is not 1
+    total_pop[age_groups_to_screen,1,1:2] <- total_pop[age_groups_to_screen,1,1:2] -
+      parameters$prop_to_vaccinate * pop_to_screen_susceptible
+
+    total_pop[age_groups_to_screen,10,1:2] <- total_pop[age_groups_to_screen,10,1:2] +
+      parameters$prop_to_vaccinate * pop_to_screen_susceptible
+
+    # Remove the population to treat from undiagnosed compartments
+    total_pop[age_groups_to_screen,2,1:2] <- total_pop[age_groups_to_screen,2,1:2] -
+      pop_to_treat_it
+    total_pop[age_groups_to_screen,3,1:2] <- total_pop[age_groups_to_screen,3,1:2] -
+      pop_to_treat_ir
+    total_pop[age_groups_to_screen,5,1:2] <- total_pop[age_groups_to_screen,5,1:2] -
+      pop_to_treat_enchb
+    total_pop[age_groups_to_screen,6,1:2] <- total_pop[age_groups_to_screen,6,1:2] -
+      pop_to_treat_cc
+    total_pop[age_groups_to_screen,7,1:2] <- total_pop[age_groups_to_screen,7,1:2] -
+      pop_to_treat_dcc
+
+    # Move the population from undiagnosed to treatment-ineligible (to monitor) compartments
+    # IT_S (11) and IC_S (13)
+    total_pop[age_groups_to_screen,2,1:2] <- total_pop[age_groups_to_screen,2,1:2] - pop_to_monitor_it
+    total_pop[age_groups_to_screen,11,1:2] <- total_pop[age_groups_to_screen,11,1:2] + pop_to_monitor_it
+
+    total_pop[age_groups_to_screen,4,1:2] <- total_pop[age_groups_to_screen,4,1:2] - pop_to_monitor_ic
+    total_pop[age_groups_to_screen,13,1:2] <- total_pop[age_groups_to_screen,13,1:2] + pop_to_monitor_ic
+
+    if (parameters$apply_screen_not_treat == 0) {
+      # Add the population to treat to treated compartments
+      # IT_T (19), CHB_T (20), CC_T (21), DCC_T (22)
+
+      total_pop[age_groups_to_screen,19,1:2] <- total_pop[age_groups_to_screen,19,1:2] + pop_to_treat_it
+      total_pop[age_groups_to_screen,20,1:2] <- total_pop[age_groups_to_screen,20,1:2] + pop_to_treat_ir +
+        pop_to_treat_enchb
+      total_pop[age_groups_to_screen,21,1:2] <- total_pop[age_groups_to_screen,21,1:2] + pop_to_treat_cc
+      total_pop[age_groups_to_screen,22,1:2] <- total_pop[age_groups_to_screen,22,1:2] + pop_to_treat_dcc
+
+    } else if (parameters$apply_screen_not_treat == 1) {
+      # If we just want to follow a screened but untreated cohort, move pop_to_treat to
+      # monitoring compartments instead
+
+      total_pop[age_groups_to_screen,11,1:2] <- total_pop[age_groups_to_screen,11,1:2] + pop_to_treat_it
+      total_pop[age_groups_to_screen,12,1:2] <- total_pop[age_groups_to_screen,12,1:2] + pop_to_treat_ir
+      total_pop[age_groups_to_screen,14,1:2] <- total_pop[age_groups_to_screen,14,1:2] + pop_to_treat_enchb
+      total_pop[age_groups_to_screen,15,1:2] <- total_pop[age_groups_to_screen,15,1:2] + pop_to_treat_cc
+      total_pop[age_groups_to_screen,16,1:2] <- total_pop[age_groups_to_screen,16,1:2] + pop_to_treat_dcc
+
+    }
+
+
+    return(c(total_pop, unlist(init_pop[(2*n_infectioncat*n_agecat+1):(length(init_pop)-6)]),
+             total_screened_susceptible, total_screened_immune, total_screened_it, total_screened_chb,
+             total_screened_cirrhosis, total_screened_ineligible))
+  })
+}
+
+# Ignore:
 screen_pop_before_changes <- function(timestep, pop, parameters){
   with (as.list(pop),{
 
@@ -1062,6 +1177,8 @@ event_func <- function(timestep, pop, parameters){
     reset_pop_1950(timestep, pop, parameters)
   } else if(timestep %in% (parameters$screening_years-parameters$sim_starttime)) {
     screen_pop(timestep, pop, parameters)
+  } else if(parameters$apply_repeat_screen == 1 & timestep %in% (parameters$repeat_screening_years-parameters$sim_starttime)) {
+    repeat_screen_pop(timestep, pop, parameters)
   } else {
     return(c(unlist(pop)))
   }
@@ -1237,25 +1354,26 @@ run_model <- function(..., sim_duration = runtime,
   timestep_vector <- round((0:((sim_duration-dt)/dt))*dt,2)
   timestep_labels <- timestep_vector + parameters$sim_starttime
 
-#  if (1950 %in% timestep_labels) {
-#    timestep_1950 <- timestep_vector[which(timestep_labels == 1950)]
-#    out <- as.data.frame(ode.1D(y = init_pop_vector, times = timestep_vector, func = imperial_model,
-#                                parms = parameters, nspec = 1, method = "lsoda",
-#                                events = list(func = reset_pop_1950, time = timestep_1950)))
-#  } else {
-#    out <- as.data.frame(ode.1D(y = init_pop_vector, times = timestep_vector, func = imperial_model,
-#                                parms = parameters, nspec = 1, method = "lsoda"))
-#  }
-
   timestep_1950 <- timestep_vector[which(timestep_labels == 1950)]
   timesteps_for_screening <- timestep_vector[which(timestep_labels %in% parameters$screening_years)]
+  timesteps_for_repeat_screening <- timestep_vector[which(timestep_labels %in% parameters$repeat_screening_years)]
+
+# Options for calling event functions:
+
+# 1) Simulation time includes 1950 and includes screening+treatment programme
 
   if (1950 %in% timestep_labels & scenario %in% c("vacc_screen", "vacc_bdvacc_screen")) {
 
     out <- as.data.frame(ode.1D(y = init_pop_vector, times = timestep_vector, func = imperial_model,
                                 parms = parameters, nspec = 1, method = "lsoda",
                                 events = list(func = event_func,
-                                              time = c(timestep_1950, timesteps_for_screening))))
+                                              time = c(timestep_1950, timesteps_for_screening,
+                                                       timesteps_for_repeat_screening))))
+
+    # Note: Optional repeat screening!
+    # Function for repeat screening is only called if the apply_repeat_screen is switched on
+
+# 2) Simulation time includes 1950 but excludes screening+treatment programme
 
   } else if (1950 %in% timestep_labels & !(scenario %in% c("vacc_screen", "vacc_bdvacc_screen"))) {
 
@@ -1263,11 +1381,19 @@ run_model <- function(..., sim_duration = runtime,
                                 parms = parameters, nspec = 1, method = "lsoda",
                                 events = list(func = reset_pop_1950, time = timestep_1950)))
 
+# 3) Simulation time excludes 1950 but includes screening+treatment programme
+
   } else if (!(1950 %in% timestep_labels) & scenario %in% c("vacc_screen", "vacc_bdvacc_screen")) {
 
     out <- as.data.frame(ode.1D(y = init_pop_vector, times = timestep_vector, func = imperial_model,
                                 parms = parameters, nspec = 1, method = "lsoda",
-                                events = list(func = screen_pop, time = timesteps_for_screening)))
+                                events = list(func = screen_pop, time = timesteps_for_screening,
+                                              timesteps_for_repeat_screening)))
+
+    # Note: Optional repeat screening!
+    # Function for repeat screening is only called if the apply_repeat_screen is switched on
+
+# 4) Simulation time excludes 1950 and excludes screening+treatment programme
 
   } else if (!(1950 %in% timestep_labels) & !(scenario %in% c("vacc_screen", "vacc_bdvacc_screen"))) {
 
@@ -2058,478 +2184,6 @@ extract_outcomes <- function(output_file, scenario_label) {
 
 ### Functions to run projection scenarios ----
 ### These functions apply run_model and code_model_output to a collection of parameter sets
-run_hbsag_screening_scenarios <- function(..., default_parameter_list, calibrated_parameter_sets,
-                                          parms_to_change = list(...)) {
-
-  # Screen every 6 months
-  sim_0point5 <- apply(calibrated_parameter_sets, 1,
-                          function(x) run_model(sim_duration = runtime,
-                           default_parameter_list = default_parameter_list,
-                           parms_to_change =
-                             list(b1 = as.list(x)$b1,
-                                  b2 = as.list(x)$b2,
-                                  b3 = as.list(x)$b3,
-                                  mtct_prob_s = as.list(x)$mtct_prob_s,
-                                  mtct_prob_e = as.list(x)$mtct_prob_e,
-                                  alpha = as.list(x)$alpha,
-                                  p_chronic_in_mtct = as.list(x)$p_chronic_in_mtct,
-                                  p_chronic_function_r = as.list(x)$p_chronic_function_r,
-                                  p_chronic_function_s = as.list(x)$p_chronic_function_s,
-                                  pr_it_ir = as.list(x)$pr_it_ir,
-                                  pr_ir_ic = as.list(x)$pr_ir_ic,
-                                  eag_prog_function_rate = as.list(x)$eag_prog_function_rate,
-                                  pr_ir_enchb = as.list(x)$pr_ir_enchb,
-                                  pr_ir_cc_female = as.list(x)$pr_ir_cc_female,
-                                  pr_ir_cc_age_threshold = as.list(x)$pr_ir_cc_age_threshold,
-                                  pr_ic_enchb = as.list(x)$pr_ic_enchb,
-                                  sag_loss_slope = as.list(x)$sag_loss_slope,
-                                  pr_enchb_cc_female = as.list(x)$pr_enchb_cc_female,
-                                  cirrhosis_male_cofactor = as.list(x)$cirrhosis_male_cofactor,
-                                  pr_cc_dcc = as.list(x)$pr_cc_dcc,
-                                  cancer_prog_coefficient_female = as.list(x)$cancer_prog_coefficient_female,
-                                  cancer_age_threshold = as.list(x)$cancer_age_threshold,
-                                  cancer_male_cofactor = as.list(x)$cancer_male_cofactor,
-                                  hccr_it = as.list(x)$hccr_it,
-                                  hccr_ir = as.list(x)$hccr_ir,
-                                  hccr_enchb = as.list(x)$hccr_enchb,
-                                  hccr_cc = as.list(x)$hccr_cc,
-                                  hccr_dcc = as.list(x)$hccr_dcc,
-                                  mu_cc = as.list(x)$mu_cc,
-                                  mu_dcc = as.list(x)$mu_dcc,
-                                  mu_hcc = as.list(x)$mu_hcc,
-                                  vacc_eff = as.list(x)$vacc_eff,
-                                  screening_years =  seq(2020,2100, by = 0.5)),
-                           scenario = "vacc_screen"))
-  out_0point5 <- lapply(sim_0point5,code_model_output)
-
-  # Screen every year
-  sim_1 <- apply(calibrated_parameter_sets, 1,
-                       function(x) run_model(sim_duration = runtime,
-                                             default_parameter_list = default_parameter_list,
-                                             parms_to_change =
-                                               list(b1 = as.list(x)$b1,
-                                                    b2 = as.list(x)$b2,
-                                                    b3 = as.list(x)$b3,
-                                                    mtct_prob_s = as.list(x)$mtct_prob_s,
-                                                    mtct_prob_e = as.list(x)$mtct_prob_e,
-                                                    alpha = as.list(x)$alpha,
-                                                    p_chronic_in_mtct = as.list(x)$p_chronic_in_mtct,
-                                                    p_chronic_function_r = as.list(x)$p_chronic_function_r,
-                                                    p_chronic_function_s = as.list(x)$p_chronic_function_s,
-                                                    pr_it_ir = as.list(x)$pr_it_ir,
-                                                    pr_ir_ic = as.list(x)$pr_ir_ic,
-                                                    eag_prog_function_rate = as.list(x)$eag_prog_function_rate,
-                                                    pr_ir_enchb = as.list(x)$pr_ir_enchb,
-                                                    pr_ir_cc_female = as.list(x)$pr_ir_cc_female,
-                                                    pr_ir_cc_age_threshold = as.list(x)$pr_ir_cc_age_threshold,
-                                                    pr_ic_enchb = as.list(x)$pr_ic_enchb,
-                                                    sag_loss_slope = as.list(x)$sag_loss_slope,
-                                                    pr_enchb_cc_female = as.list(x)$pr_enchb_cc_female,
-                                                    cirrhosis_male_cofactor = as.list(x)$cirrhosis_male_cofactor,
-                                                    pr_cc_dcc = as.list(x)$pr_cc_dcc,
-                                                    cancer_prog_coefficient_female = as.list(x)$cancer_prog_coefficient_female,
-                                                    cancer_age_threshold = as.list(x)$cancer_age_threshold,
-                                                    cancer_male_cofactor = as.list(x)$cancer_male_cofactor,
-                                                    hccr_it = as.list(x)$hccr_it,
-                                                    hccr_ir = as.list(x)$hccr_ir,
-                                                    hccr_enchb = as.list(x)$hccr_enchb,
-                                                    hccr_cc = as.list(x)$hccr_cc,
-                                                    hccr_dcc = as.list(x)$hccr_dcc,
-                                                    mu_cc = as.list(x)$mu_cc,
-                                                    mu_dcc = as.list(x)$mu_dcc,
-                                                    mu_hcc = as.list(x)$mu_hcc,
-                                                    vacc_eff = as.list(x)$vacc_eff,
-                                                    screening_years =  seq(2020,2100, by = 1)),
-                                             scenario = "vacc_screen"))
-  out_1 <- lapply(sim_1,code_model_output)
-
-  # Screen every 2 years
-  sim_2 <- apply(calibrated_parameter_sets, 1,
-                    function(x) run_model(sim_duration = runtime,
-                                          default_parameter_list = default_parameter_list,
-                                          parms_to_change =
-                                            list(b1 = as.list(x)$b1,
-                                                 b2 = as.list(x)$b2,
-                                                 b3 = as.list(x)$b3,
-                                                 mtct_prob_s = as.list(x)$mtct_prob_s,
-                                                 mtct_prob_e = as.list(x)$mtct_prob_e,
-                                                 alpha = as.list(x)$alpha,
-                                                 p_chronic_in_mtct = as.list(x)$p_chronic_in_mtct,
-                                                 p_chronic_function_r = as.list(x)$p_chronic_function_r,
-                                                 p_chronic_function_s = as.list(x)$p_chronic_function_s,
-                                                 pr_it_ir = as.list(x)$pr_it_ir,
-                                                 pr_ir_ic = as.list(x)$pr_ir_ic,
-                                                 eag_prog_function_rate = as.list(x)$eag_prog_function_rate,
-                                                 pr_ir_enchb = as.list(x)$pr_ir_enchb,
-                                                 pr_ir_cc_female = as.list(x)$pr_ir_cc_female,
-                                                 pr_ir_cc_age_threshold = as.list(x)$pr_ir_cc_age_threshold,
-                                                 pr_ic_enchb = as.list(x)$pr_ic_enchb,
-                                                 sag_loss_slope = as.list(x)$sag_loss_slope,
-                                                 pr_enchb_cc_female = as.list(x)$pr_enchb_cc_female,
-                                                 cirrhosis_male_cofactor = as.list(x)$cirrhosis_male_cofactor,
-                                                 pr_cc_dcc = as.list(x)$pr_cc_dcc,
-                                                 cancer_prog_coefficient_female = as.list(x)$cancer_prog_coefficient_female,
-                                                 cancer_age_threshold = as.list(x)$cancer_age_threshold,
-                                                 cancer_male_cofactor = as.list(x)$cancer_male_cofactor,
-                                                 hccr_it = as.list(x)$hccr_it,
-                                                 hccr_ir = as.list(x)$hccr_ir,
-                                                 hccr_enchb = as.list(x)$hccr_enchb,
-                                                 hccr_cc = as.list(x)$hccr_cc,
-                                                 hccr_dcc = as.list(x)$hccr_dcc,
-                                                 mu_cc = as.list(x)$mu_cc,
-                                                 mu_dcc = as.list(x)$mu_dcc,
-                                                 mu_hcc = as.list(x)$mu_hcc,
-                                                 vacc_eff = as.list(x)$vacc_eff,
-                                                 screening_years =  seq(2020,2100, by = 2)),
-                                          scenario = "vacc_screen"))
-  out_2 <- lapply(sim_2,code_model_output)
-
-  # Screen every 5 years
-  sim_5 <- apply(calibrated_parameter_sets, 1,
-                    function(x) run_model(sim_duration = runtime,
-                                          default_parameter_list = default_parameter_list,
-                                          parms_to_change =
-                                            list(b1 = as.list(x)$b1,
-                                                 b2 = as.list(x)$b2,
-                                                 b3 = as.list(x)$b3,
-                                                 mtct_prob_s = as.list(x)$mtct_prob_s,
-                                                 mtct_prob_e = as.list(x)$mtct_prob_e,
-                                                 alpha = as.list(x)$alpha,
-                                                 p_chronic_in_mtct = as.list(x)$p_chronic_in_mtct,
-                                                 p_chronic_function_r = as.list(x)$p_chronic_function_r,
-                                                 p_chronic_function_s = as.list(x)$p_chronic_function_s,
-                                                 pr_it_ir = as.list(x)$pr_it_ir,
-                                                 pr_ir_ic = as.list(x)$pr_ir_ic,
-                                                 eag_prog_function_rate = as.list(x)$eag_prog_function_rate,
-                                                 pr_ir_enchb = as.list(x)$pr_ir_enchb,
-                                                 pr_ir_cc_female = as.list(x)$pr_ir_cc_female,
-                                                 pr_ir_cc_age_threshold = as.list(x)$pr_ir_cc_age_threshold,
-                                                 pr_ic_enchb = as.list(x)$pr_ic_enchb,
-                                                 sag_loss_slope = as.list(x)$sag_loss_slope,
-                                                 pr_enchb_cc_female = as.list(x)$pr_enchb_cc_female,
-                                                 cirrhosis_male_cofactor = as.list(x)$cirrhosis_male_cofactor,
-                                                 pr_cc_dcc = as.list(x)$pr_cc_dcc,
-                                                 cancer_prog_coefficient_female = as.list(x)$cancer_prog_coefficient_female,
-                                                 cancer_age_threshold = as.list(x)$cancer_age_threshold,
-                                                 cancer_male_cofactor = as.list(x)$cancer_male_cofactor,
-                                                 hccr_it = as.list(x)$hccr_it,
-                                                 hccr_ir = as.list(x)$hccr_ir,
-                                                 hccr_enchb = as.list(x)$hccr_enchb,
-                                                 hccr_cc = as.list(x)$hccr_cc,
-                                                 hccr_dcc = as.list(x)$hccr_dcc,
-                                                 mu_cc = as.list(x)$mu_cc,
-                                                 mu_dcc = as.list(x)$mu_dcc,
-                                                 mu_hcc = as.list(x)$mu_hcc,
-                                                 vacc_eff = as.list(x)$vacc_eff,
-                                                 screening_years =  seq(2020,2100, by = 5)),
-                                          scenario = "vacc_screen"))
-  out_5 <- lapply(sim_5,code_model_output)
-
-  # Screen every 10 years
-  sim_10 <- apply(calibrated_parameter_sets, 1,
-                    function(x) run_model(sim_duration = runtime,
-                                          default_parameter_list = default_parameter_list,
-                                          parms_to_change =
-                                            list(b1 = as.list(x)$b1,
-                                                 b2 = as.list(x)$b2,
-                                                 b3 = as.list(x)$b3,
-                                                 mtct_prob_s = as.list(x)$mtct_prob_s,
-                                                 mtct_prob_e = as.list(x)$mtct_prob_e,
-                                                 alpha = as.list(x)$alpha,
-                                                 p_chronic_in_mtct = as.list(x)$p_chronic_in_mtct,
-                                                 p_chronic_function_r = as.list(x)$p_chronic_function_r,
-                                                 p_chronic_function_s = as.list(x)$p_chronic_function_s,
-                                                 pr_it_ir = as.list(x)$pr_it_ir,
-                                                 pr_ir_ic = as.list(x)$pr_ir_ic,
-                                                 eag_prog_function_rate = as.list(x)$eag_prog_function_rate,
-                                                 pr_ir_enchb = as.list(x)$pr_ir_enchb,
-                                                 pr_ir_cc_female = as.list(x)$pr_ir_cc_female,
-                                                 pr_ir_cc_age_threshold = as.list(x)$pr_ir_cc_age_threshold,
-                                                 pr_ic_enchb = as.list(x)$pr_ic_enchb,
-                                                 sag_loss_slope = as.list(x)$sag_loss_slope,
-                                                 pr_enchb_cc_female = as.list(x)$pr_enchb_cc_female,
-                                                 cirrhosis_male_cofactor = as.list(x)$cirrhosis_male_cofactor,
-                                                 pr_cc_dcc = as.list(x)$pr_cc_dcc,
-                                                 cancer_prog_coefficient_female = as.list(x)$cancer_prog_coefficient_female,
-                                                 cancer_age_threshold = as.list(x)$cancer_age_threshold,
-                                                 cancer_male_cofactor = as.list(x)$cancer_male_cofactor,
-                                                 hccr_it = as.list(x)$hccr_it,
-                                                 hccr_ir = as.list(x)$hccr_ir,
-                                                 hccr_enchb = as.list(x)$hccr_enchb,
-                                                 hccr_cc = as.list(x)$hccr_cc,
-                                                 hccr_dcc = as.list(x)$hccr_dcc,
-                                                 mu_cc = as.list(x)$mu_cc,
-                                                 mu_dcc = as.list(x)$mu_dcc,
-                                                 mu_hcc = as.list(x)$mu_hcc,
-                                                 vacc_eff = as.list(x)$vacc_eff,
-                                                 screening_years =  seq(2020,2100, by = 10)),
-                                          scenario = "vacc_screen"))
-  out_10 <- lapply(sim_10,code_model_output)
-
-  # Screen every 15 years
-  sim_15 <- apply(calibrated_parameter_sets, 1,
-                    function(x) run_model(sim_duration = runtime,
-                                          default_parameter_list = default_parameter_list,
-                                          parms_to_change =
-                                            list(b1 = as.list(x)$b1,
-                                                 b2 = as.list(x)$b2,
-                                                 b3 = as.list(x)$b3,
-                                                 mtct_prob_s = as.list(x)$mtct_prob_s,
-                                                 mtct_prob_e = as.list(x)$mtct_prob_e,
-                                                 alpha = as.list(x)$alpha,
-                                                 p_chronic_in_mtct = as.list(x)$p_chronic_in_mtct,
-                                                 p_chronic_function_r = as.list(x)$p_chronic_function_r,
-                                                 p_chronic_function_s = as.list(x)$p_chronic_function_s,
-                                                 pr_it_ir = as.list(x)$pr_it_ir,
-                                                 pr_ir_ic = as.list(x)$pr_ir_ic,
-                                                 eag_prog_function_rate = as.list(x)$eag_prog_function_rate,
-                                                 pr_ir_enchb = as.list(x)$pr_ir_enchb,
-                                                 pr_ir_cc_female = as.list(x)$pr_ir_cc_female,
-                                                 pr_ir_cc_age_threshold = as.list(x)$pr_ir_cc_age_threshold,
-                                                 pr_ic_enchb = as.list(x)$pr_ic_enchb,
-                                                 sag_loss_slope = as.list(x)$sag_loss_slope,
-                                                 pr_enchb_cc_female = as.list(x)$pr_enchb_cc_female,
-                                                 cirrhosis_male_cofactor = as.list(x)$cirrhosis_male_cofactor,
-                                                 pr_cc_dcc = as.list(x)$pr_cc_dcc,
-                                                 cancer_prog_coefficient_female = as.list(x)$cancer_prog_coefficient_female,
-                                                 cancer_age_threshold = as.list(x)$cancer_age_threshold,
-                                                 cancer_male_cofactor = as.list(x)$cancer_male_cofactor,
-                                                 hccr_it = as.list(x)$hccr_it,
-                                                 hccr_ir = as.list(x)$hccr_ir,
-                                                 hccr_enchb = as.list(x)$hccr_enchb,
-                                                 hccr_cc = as.list(x)$hccr_cc,
-                                                 hccr_dcc = as.list(x)$hccr_dcc,
-                                                 mu_cc = as.list(x)$mu_cc,
-                                                 mu_dcc = as.list(x)$mu_dcc,
-                                                 mu_hcc = as.list(x)$mu_hcc,
-                                                 vacc_eff = as.list(x)$vacc_eff,
-                                                 screening_years =  seq(2020,2100, by = 15)),
-                                          scenario = "vacc_screen"))
-  out_15 <- lapply(sim_15,code_model_output)
-
-
-  # Screen every 20 years
-  sim_20 <- apply(calibrated_parameter_sets, 1,
-                    function(x) run_model(sim_duration = runtime,
-                                          default_parameter_list = default_parameter_list,
-                                          parms_to_change =
-                                            list(b1 = as.list(x)$b1,
-                                                 b2 = as.list(x)$b2,
-                                                 b3 = as.list(x)$b3,
-                                                 mtct_prob_s = as.list(x)$mtct_prob_s,
-                                                 mtct_prob_e = as.list(x)$mtct_prob_e,
-                                                 alpha = as.list(x)$alpha,
-                                                 p_chronic_in_mtct = as.list(x)$p_chronic_in_mtct,
-                                                 p_chronic_function_r = as.list(x)$p_chronic_function_r,
-                                                 p_chronic_function_s = as.list(x)$p_chronic_function_s,
-                                                 pr_it_ir = as.list(x)$pr_it_ir,
-                                                 pr_ir_ic = as.list(x)$pr_ir_ic,
-                                                 eag_prog_function_rate = as.list(x)$eag_prog_function_rate,
-                                                 pr_ir_enchb = as.list(x)$pr_ir_enchb,
-                                                 pr_ir_cc_female = as.list(x)$pr_ir_cc_female,
-                                                 pr_ir_cc_age_threshold = as.list(x)$pr_ir_cc_age_threshold,
-                                                 pr_ic_enchb = as.list(x)$pr_ic_enchb,
-                                                 sag_loss_slope = as.list(x)$sag_loss_slope,
-                                                 pr_enchb_cc_female = as.list(x)$pr_enchb_cc_female,
-                                                 cirrhosis_male_cofactor = as.list(x)$cirrhosis_male_cofactor,
-                                                 pr_cc_dcc = as.list(x)$pr_cc_dcc,
-                                                 cancer_prog_coefficient_female = as.list(x)$cancer_prog_coefficient_female,
-                                                 cancer_age_threshold = as.list(x)$cancer_age_threshold,
-                                                 cancer_male_cofactor = as.list(x)$cancer_male_cofactor,
-                                                 hccr_it = as.list(x)$hccr_it,
-                                                 hccr_ir = as.list(x)$hccr_ir,
-                                                 hccr_enchb = as.list(x)$hccr_enchb,
-                                                 hccr_cc = as.list(x)$hccr_cc,
-                                                 hccr_dcc = as.list(x)$hccr_dcc,
-                                                 mu_cc = as.list(x)$mu_cc,
-                                                 mu_dcc = as.list(x)$mu_dcc,
-                                                 mu_hcc = as.list(x)$mu_hcc,
-                                                 vacc_eff = as.list(x)$vacc_eff,
-                                                 screening_years =  seq(2020,2100, by = 20)),
-                                          scenario = "vacc_screen"))
-  out_20 <- lapply(sim_20,code_model_output)
-
-  # Screen every 25 years
-  sim_25 <- apply(calibrated_parameter_sets, 1,
-                    function(x) run_model(sim_duration = runtime,
-                                          default_parameter_list = default_parameter_list,
-                                          parms_to_change =
-                                            list(b1 = as.list(x)$b1,
-                                                 b2 = as.list(x)$b2,
-                                                 b3 = as.list(x)$b3,
-                                                 mtct_prob_s = as.list(x)$mtct_prob_s,
-                                                 mtct_prob_e = as.list(x)$mtct_prob_e,
-                                                 alpha = as.list(x)$alpha,
-                                                 p_chronic_in_mtct = as.list(x)$p_chronic_in_mtct,
-                                                 p_chronic_function_r = as.list(x)$p_chronic_function_r,
-                                                 p_chronic_function_s = as.list(x)$p_chronic_function_s,
-                                                 pr_it_ir = as.list(x)$pr_it_ir,
-                                                 pr_ir_ic = as.list(x)$pr_ir_ic,
-                                                 eag_prog_function_rate = as.list(x)$eag_prog_function_rate,
-                                                 pr_ir_enchb = as.list(x)$pr_ir_enchb,
-                                                 pr_ir_cc_female = as.list(x)$pr_ir_cc_female,
-                                                 pr_ir_cc_age_threshold = as.list(x)$pr_ir_cc_age_threshold,
-                                                 pr_ic_enchb = as.list(x)$pr_ic_enchb,
-                                                 sag_loss_slope = as.list(x)$sag_loss_slope,
-                                                 pr_enchb_cc_female = as.list(x)$pr_enchb_cc_female,
-                                                 cirrhosis_male_cofactor = as.list(x)$cirrhosis_male_cofactor,
-                                                 pr_cc_dcc = as.list(x)$pr_cc_dcc,
-                                                 cancer_prog_coefficient_female = as.list(x)$cancer_prog_coefficient_female,
-                                                 cancer_age_threshold = as.list(x)$cancer_age_threshold,
-                                                 cancer_male_cofactor = as.list(x)$cancer_male_cofactor,
-                                                 hccr_it = as.list(x)$hccr_it,
-                                                 hccr_ir = as.list(x)$hccr_ir,
-                                                 hccr_enchb = as.list(x)$hccr_enchb,
-                                                 hccr_cc = as.list(x)$hccr_cc,
-                                                 hccr_dcc = as.list(x)$hccr_dcc,
-                                                 mu_cc = as.list(x)$mu_cc,
-                                                 mu_dcc = as.list(x)$mu_dcc,
-                                                 mu_hcc = as.list(x)$mu_hcc,
-                                                 vacc_eff = as.list(x)$vacc_eff,
-                                                 screening_years =  seq(2020,2100, by = 25)),
-                                          scenario = "vacc_screen"))
-
-  out_25 <- lapply(sim_25,code_model_output)
-
-  # Screen every 30 years
-  sim_30 <- apply(calibrated_parameter_sets, 1,
-                    function(x) run_model(sim_duration = runtime,
-                                          default_parameter_list = default_parameter_list,
-                                          parms_to_change =
-                                            list(b1 = as.list(x)$b1,
-                                                 b2 = as.list(x)$b2,
-                                                 b3 = as.list(x)$b3,
-                                                 mtct_prob_s = as.list(x)$mtct_prob_s,
-                                                 mtct_prob_e = as.list(x)$mtct_prob_e,
-                                                 alpha = as.list(x)$alpha,
-                                                 p_chronic_in_mtct = as.list(x)$p_chronic_in_mtct,
-                                                 p_chronic_function_r = as.list(x)$p_chronic_function_r,
-                                                 p_chronic_function_s = as.list(x)$p_chronic_function_s,
-                                                 pr_it_ir = as.list(x)$pr_it_ir,
-                                                 pr_ir_ic = as.list(x)$pr_ir_ic,
-                                                 eag_prog_function_rate = as.list(x)$eag_prog_function_rate,
-                                                 pr_ir_enchb = as.list(x)$pr_ir_enchb,
-                                                 pr_ir_cc_female = as.list(x)$pr_ir_cc_female,
-                                                 pr_ir_cc_age_threshold = as.list(x)$pr_ir_cc_age_threshold,
-                                                 pr_ic_enchb = as.list(x)$pr_ic_enchb,
-                                                 sag_loss_slope = as.list(x)$sag_loss_slope,
-                                                 pr_enchb_cc_female = as.list(x)$pr_enchb_cc_female,
-                                                 cirrhosis_male_cofactor = as.list(x)$cirrhosis_male_cofactor,
-                                                 pr_cc_dcc = as.list(x)$pr_cc_dcc,
-                                                 cancer_prog_coefficient_female = as.list(x)$cancer_prog_coefficient_female,
-                                                 cancer_age_threshold = as.list(x)$cancer_age_threshold,
-                                                 cancer_male_cofactor = as.list(x)$cancer_male_cofactor,
-                                                 hccr_it = as.list(x)$hccr_it,
-                                                 hccr_ir = as.list(x)$hccr_ir,
-                                                 hccr_enchb = as.list(x)$hccr_enchb,
-                                                 hccr_cc = as.list(x)$hccr_cc,
-                                                 hccr_dcc = as.list(x)$hccr_dcc,
-                                                 mu_cc = as.list(x)$mu_cc,
-                                                 mu_dcc = as.list(x)$mu_dcc,
-                                                 mu_hcc = as.list(x)$mu_hcc,
-                                                 vacc_eff = as.list(x)$vacc_eff,
-                                                 screening_years =  seq(2020,2100, by = 30)),
-                                          scenario = "vacc_screen"))
-  out_30 <- lapply(sim_30,code_model_output)
-
-  # One off screen in 2020
-  sim_once <- apply(calibrated_parameter_sets, 1,
-                     function(x) run_model(sim_duration = runtime,
-                                           default_parameter_list = default_parameter_list,
-                                           parms_to_change =
-                                             list(b1 = as.list(x)$b1,
-                                                  b2 = as.list(x)$b2,
-                                                  b3 = as.list(x)$b3,
-                                                  mtct_prob_s = as.list(x)$mtct_prob_s,
-                                                  mtct_prob_e = as.list(x)$mtct_prob_e,
-                                                  alpha = as.list(x)$alpha,
-                                                  p_chronic_in_mtct = as.list(x)$p_chronic_in_mtct,
-                                                  p_chronic_function_r = as.list(x)$p_chronic_function_r,
-                                                  p_chronic_function_s = as.list(x)$p_chronic_function_s,
-                                                  pr_it_ir = as.list(x)$pr_it_ir,
-                                                  pr_ir_ic = as.list(x)$pr_ir_ic,
-                                                  eag_prog_function_rate = as.list(x)$eag_prog_function_rate,
-                                                  pr_ir_enchb = as.list(x)$pr_ir_enchb,
-                                                  pr_ir_cc_female = as.list(x)$pr_ir_cc_female,
-                                                  pr_ir_cc_age_threshold = as.list(x)$pr_ir_cc_age_threshold,
-                                                  pr_ic_enchb = as.list(x)$pr_ic_enchb,
-                                                  sag_loss_slope = as.list(x)$sag_loss_slope,
-                                                  pr_enchb_cc_female = as.list(x)$pr_enchb_cc_female,
-                                                  cirrhosis_male_cofactor = as.list(x)$cirrhosis_male_cofactor,
-                                                  pr_cc_dcc = as.list(x)$pr_cc_dcc,
-                                                  cancer_prog_coefficient_female = as.list(x)$cancer_prog_coefficient_female,
-                                                  cancer_age_threshold = as.list(x)$cancer_age_threshold,
-                                                  cancer_male_cofactor = as.list(x)$cancer_male_cofactor,
-                                                  hccr_it = as.list(x)$hccr_it,
-                                                  hccr_ir = as.list(x)$hccr_ir,
-                                                  hccr_enchb = as.list(x)$hccr_enchb,
-                                                  hccr_cc = as.list(x)$hccr_cc,
-                                                  hccr_dcc = as.list(x)$hccr_dcc,
-                                                  mu_cc = as.list(x)$mu_cc,
-                                                  mu_dcc = as.list(x)$mu_dcc,
-                                                  mu_hcc = as.list(x)$mu_hcc,
-                                                  vacc_eff = as.list(x)$vacc_eff,
-                                                  screening_years =  c(2020)),
-                                           scenario = "vacc_screen"))
-  out_once <- lapply(sim_once,code_model_output)
-
-
-  # Status quo scenario: no screening
-  sim_sq <- apply(calibrated_parameter_sets, 1,
-                     function(x) run_model(sim_duration = runtime,
-                                           default_parameter_list = default_parameter_list,
-                                           parms_to_change =
-                                             list(b1 = as.list(x)$b1,
-                                                  b2 = as.list(x)$b2,
-                                                  b3 = as.list(x)$b3,
-                                                  mtct_prob_s = as.list(x)$mtct_prob_s,
-                                                  mtct_prob_e = as.list(x)$mtct_prob_e,
-                                                  alpha = as.list(x)$alpha,
-                                                  p_chronic_in_mtct = as.list(x)$p_chronic_in_mtct,
-                                                  p_chronic_function_r = as.list(x)$p_chronic_function_r,
-                                                  p_chronic_function_s = as.list(x)$p_chronic_function_s,
-                                                  pr_it_ir = as.list(x)$pr_it_ir,
-                                                  pr_ir_ic = as.list(x)$pr_ir_ic,
-                                                  eag_prog_function_rate = as.list(x)$eag_prog_function_rate,
-                                                  pr_ir_enchb = as.list(x)$pr_ir_enchb,
-                                                  pr_ir_cc_female = as.list(x)$pr_ir_cc_female,
-                                                  pr_ir_cc_age_threshold = as.list(x)$pr_ir_cc_age_threshold,
-                                                  pr_ic_enchb = as.list(x)$pr_ic_enchb,
-                                                  sag_loss_slope = as.list(x)$sag_loss_slope,
-                                                  pr_enchb_cc_female = as.list(x)$pr_enchb_cc_female,
-                                                  cirrhosis_male_cofactor = as.list(x)$cirrhosis_male_cofactor,
-                                                  pr_cc_dcc = as.list(x)$pr_cc_dcc,
-                                                  cancer_prog_coefficient_female = as.list(x)$cancer_prog_coefficient_female,
-                                                  cancer_age_threshold = as.list(x)$cancer_age_threshold,
-                                                  cancer_male_cofactor = as.list(x)$cancer_male_cofactor,
-                                                  hccr_it = as.list(x)$hccr_it,
-                                                  hccr_ir = as.list(x)$hccr_ir,
-                                                  hccr_enchb = as.list(x)$hccr_enchb,
-                                                  hccr_cc = as.list(x)$hccr_cc,
-                                                  hccr_dcc = as.list(x)$hccr_dcc,
-                                                  mu_cc = as.list(x)$mu_cc,
-                                                  mu_dcc = as.list(x)$mu_dcc,
-                                                  mu_hcc = as.list(x)$mu_hcc,
-                                                  vacc_eff = as.list(x)$vacc_eff),
-                                           scenario = "vacc"))
-  out_sq <- lapply(sim_sq,code_model_output)
-
-
-  outlist <- list("screen_0point5" = out_0point5,
-                  "screen_1" = out_1,
-                  "screen_2" = out_2,
-                  "screen_5" = out_5,
-                  "screen_10" = out_10,
-                  "screen_15" = out_15,
-                  "screen_20" = out_20,
-                  "screen_25" = out_25,
-                  "screen_30" = out_30,
-                  "screen_once" = out_once,
-                  "status_quo" = out_sq)
-
-  return(outlist)
-}
-
 # Scenario run is a screening and treatment streategy - year of screening can be specified
 run_one_screening_scenario <- function(..., default_parameter_list, calibrated_parameter_sets,
                                           parms_to_change = list(...), years_of_test, monitoring_rate,
@@ -2972,10 +2626,13 @@ parameter_list <- list(
   mtct_prob_sbd = 0,                         # MTCT risk from eAg-negative mother with birth dose (Keane)
   mtct_prob_treatbd = 0,                     # MTCT risk from treated carrier mother with birth dose (assumption, not peripartum therapy)
   # TREATMENT PARAMETERS
-  screening_years = c(2020),                 # vectors for years to implement the screening programme
+  screening_years = c(2020),                 # vectors for years to implement the first screening programme (or repeat screening in the same age group)
+  repeat_screening_years = c(2015),          # vectors for years to repeats screening if apply_repeat_screen = 1
   screening_coverage = 0.7,                  # proportion of population in given age group to screen
-  min_age_to_screen = 30,                    # Minimum age group to screen
-  max_age_to_screen = 70,                    # Maximum age group to screen
+  min_age_to_screen = 30,                    # Minimum age group to screen on first screen
+  max_age_to_screen = 70,                    # Maximum age group to screen on first screen
+  min_age_to_repeat_screen = 30,             # Minimum age group to screen on every repeat screen
+  max_age_to_repeat_screen = 70,             # Maximum age group to screen on every repeat screen
   prop_to_vaccinate = 0,                     # Proportion of screened susceptibles to vaccinate - set to 0 to switch off transition
   link_to_care_prob = 0.81,                  # probability of linkage to care (liver disease assessment) after HBsAg test
   treatment_initiation_prob = 1,             # probability of initiating treatment after diagnosis of treatment eligibility
@@ -2996,6 +2653,7 @@ parameter_list <- list(
   apply_bdvacc = 0,
   apply_treat_it = 0,                        # Switch for IT >30 year olds being eligible for treatment (default = off)
   apply_screen_not_treat = 0,                # Switch to only screen+assess but not treat (allows to follow an untreated cohort)
+  apply_repeat_screen = 0,                   # Switch to turn on repeat screening in a different age group from first screen
   # DEMOGRAPHY ON/OFF SWITCH (1/0)
   births_on = 1,
   migration_on = 1,
