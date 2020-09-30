@@ -1416,7 +1416,7 @@ run_model <- function(..., sim_duration = runtime,
 
 }
 
-# Function to the model twice under different scenarios
+# Function to the model twice under different scenarios (old)
 run_scenarios <- function(..., default_parameter_list, parms_to_change = list(...)) {
 
   sim_vacc <- run_model(sim_duration = runtime,
@@ -2187,8 +2187,10 @@ extract_outcomes <- function(output_file, scenario_label) {
 # Scenario run is a screening and treatment streategy - year of screening can be specified
 run_one_screening_scenario <- function(..., default_parameter_list, calibrated_parameter_sets,
                                           parms_to_change = list(...), years_of_test, monitoring_rate,
-                                       drop_timesteps_before = NULL,
-                                       label) {
+                                          apply_repeat_screen = 0, years_of_repeat_test = 2015,
+                                          min_age_to_repeat_screen = 15, max_age_to_repeat_screen = 60,
+                                          drop_timesteps_before = NULL,
+                                          label) {
 
   sim <- apply(calibrated_parameter_sets, 1,
                        function(x) run_model(sim_duration = runtime,
@@ -2227,7 +2229,11 @@ run_one_screening_scenario <- function(..., default_parameter_list, calibrated_p
                                                     mu_hcc = as.list(x)$mu_hcc,
                                                     vacc_eff = as.list(x)$vacc_eff,
                                                     screening_years = years_of_test,
-                                                    monitoring_rate = monitoring_rate),
+                                                    monitoring_rate = monitoring_rate,
+                                                    apply_repeat_screen = apply_repeat_screen,
+                                                    repeat_screening_years = years_of_repeat_test,
+                                                    min_age_to_repeat_screen = min_age_to_repeat_screen,
+                                                    max_age_to_repeat_screen = max_age_to_repeat_screen),
                                              drop_timesteps_before = drop_timesteps_before,
                                              scenario = "vacc_screen"))
 
@@ -2239,9 +2245,13 @@ run_one_screening_scenario <- function(..., default_parameter_list, calibrated_p
   return(outlist)
 }
 
+
+
 # Scenario run is a screening and treatment streategy - year of screening can be specified
 run_one_screening_scenario_on_cluster <- function(..., default_parameter_list, calibrated_parameter_sets,
                                        parms_to_change = list(...), years_of_test, monitoring_rate,
+                                       apply_repeat_screen = 0, years_of_repeat_test = 2015,
+                                       min_age_to_repeat_screen = 15, max_age_to_repeat_screen = 60,
                                        drop_timesteps_before = NULL,
                                        label, scenario = "vacc_screen") {
 
@@ -2282,7 +2292,11 @@ run_one_screening_scenario_on_cluster <- function(..., default_parameter_list, c
                                             mu_hcc = as.list(x)$mu_hcc,
                                             vacc_eff = as.list(x)$vacc_eff,
                                             screening_years = years_of_test,
-                                            monitoring_rate = monitoring_rate),
+                                            monitoring_rate = monitoring_rate,
+                                            apply_repeat_screen = apply_repeat_screen,
+                                            repeat_screening_years = years_of_repeat_test,
+                                            min_age_to_repeat_screen = min_age_to_repeat_screen,
+                                            max_age_to_repeat_screen = max_age_to_repeat_screen),
                                      drop_timesteps_before = drop_timesteps_before,
                                      scenario = scenario))  # vacc_screen by default
 
@@ -2335,6 +2349,12 @@ run_one_screening_scenario_on_cluster <- function(..., default_parameter_list, c
   # Timeseries
   timeseries <- summarise_time_series(out, scenario_label = label, summarise_percentiles = FALSE)
 
+  # Extract the screened and treated population by age
+  screened_pop_female <- lapply(out, "[[", "screened_pop_female")
+  screened_pop_male <- lapply(out, "[[", "screened_pop_male")
+  treated_pop_female <- lapply(out, "[[", "treated_pop_female")
+  treated_pop_male <- lapply(out, "[[", "treated_pop_male")
+
   # Change object names
   extracted_outcomes <- list(cohort_age_at_death = cohort_age_at_death,
                cohort_cum_hbv_deaths = cohort_cum_hbv_deaths,
@@ -2344,6 +2364,10 @@ run_one_screening_scenario_on_cluster <- function(..., default_parameter_list, c
                cum_hbv_deaths = cum_hbv_deaths,
                ly = ly,
                interactions = interactions,
+               screened_pop_female = screened_pop_female,
+               screened_pop_male = screened_pop_male,
+               treated_pop_female = treated_pop_female,
+               treated_pop_male = treated_pop_male,
                timeseries = timeseries)  # NA for no treatment
 
   outlist <- list("screen" = extracted_outcomes)

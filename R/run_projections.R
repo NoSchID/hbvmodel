@@ -57,6 +57,7 @@ sim <- apply(params_mat_accepted[1,],1,
                          drop_timesteps_before = 1960,
                          scenario = "vacc_screen"))
 
+
 out <- code_model_output(sim[[1]])
 outpath <- out
 
