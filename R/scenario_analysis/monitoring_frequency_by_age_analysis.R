@@ -32,10 +32,27 @@ out3 <- readRDS(paste0(out_path, "a1_out3_screen_2020_monit_0_240920.rds"))
 out3 <- out3[[1]]
 
 # Monitoring all age groups
+out4 <- readRDS(paste0(out_path, "a1_out4_screen_2020_monit_10_290920.rds"))
+out4 <- out4[[1]]
 out5 <- readRDS(paste0(out_path, "a1_out5_screen_2020_monit_5_240920.rds"))
 out5 <- out5[[1]]
+out5a <- readRDS(paste0(out_path, "a1_out5a_screen_2020_monit_6_290920.rds"))
+out5a <- out5a[[1]]
+out5b <- readRDS(paste0(out_path, "a1_out5b_screen_2020_monit_7_290920.rds"))
+out5b <- out5b[[1]]
+out5c <- readRDS(paste0(out_path, "a1_out5c_screen_2020_monit_8_290920.rds"))
+out5c <- out5c[[1]]
+out5d <- readRDS(paste0(out_path, "a1_out5d_screen_2020_monit_9_290920.rds"))
+out5d <- out5d[[1]]
 out6 <- readRDS(paste0(out_path, "a1_out6_screen_2020_monit_1_240920.rds"))
 out6 <- out6[[1]]
+out6a <- readRDS(paste0(out_path, "a1_out6a_screen_2020_monit_2_280920.rds"))
+out6a <- out6a[[1]]
+out6b <- readRDS(paste0(out_path, "a1_out6b_screen_2020_monit_3_280920.rds"))
+out6b <- out6b[[1]]
+out6c <- readRDS(paste0(out_path, "a1_out6c_screen_2020_monit_4_280920.rds"))
+out6c <- out6c[[1]]
+
 
 # Monitoring different age groups (yearly)
 monit_out1 <- readRDS(paste0(out_path, "a1_monit_out1_240920.rds"))
@@ -83,7 +100,25 @@ scenario_labels <- list("No treatment" = "status_quo_cohort",
                         "5-yearly 30+"="screen_2020_monit_sim9",
                         "5-yearly 45+"="screen_2020_monit_sim10")
 
-# 1) Yearly monitoring of which age group is most effective, compared to no monitoring? ----
+# Subset yearly frequencies
+sub_yearly <- names(scenario_labels)[4:9]
+# Subset 5-yearly frequencies
+sub_5yearly <- names(scenario_labels)[c(3,10:14)]
+# Selection for plot
+sub_mixed <- names(scenario_labels)[c(3,4,5,8,10,13)]
+# Since the best are 5-yearly 45+, 5-yearly 30+ and 5-yearly all ages, chose here <30, >30 and all
+
+# Age group comparisons
+sub_age_groups1 <- names(scenario_labels)[c(5,7,9,10,12,14)]
+# 15-30, 30-45, 45+
+sub_age_groups2 <- names(scenario_labels)[c(5,8,10,13)]
+# 15-30, 30+
+sub_age_groups3 <- names(scenario_labels)[c(6,9,11,14)]
+# 15-45, 45+
+sub_age_groups_all <- names(scenario_labels)[c(3,4)]
+
+# 1) Comparing monitoring to no treatment ----
+# Average age at death ----
 
 # Summary of average age at death for final table
 cohort_age_at_death <- data.frame(rbind(out1$cohort_age_at_death,
@@ -112,6 +147,65 @@ ggplot(cohort_age_at_death_long) +
 # worst are monit_sim6 and monit_sim1 (15-30, 5-yearly and yearly)
 # But note differences are very small.
 
+ggplot(subset(cohort_age_at_death_long, scenario %in%
+                c("No treatment", "No monitoring", "Yearly all ages", "5-yearly all ages")),
+       aes(x = reorder(scenario, value), y = value)) +
+  stat_summary(fun.data=f, geom="boxplot", position = "dodge", width = 0.5, fill = "grey") +
+  scale_x_discrete("Scenario", labels = c("5-yearly all ages" = "Monitor\nevery 5 years",
+                                          "Yearly all ages" = "Monitor\nevery year")) +
+  ylab("Average age at death (years)\nin the screened HBV carrier cohort") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        title = element_text(size = 15))
+
+# Deaths averted ----
+cohort_deaths_averted_sq_long <-
+  plot_hbv_deaths_averted_cohort(counterfactual_object = out1,
+                                 scenario_objects = list(out3,
+                                                         out5,
+                                                         out6),
+                                 outcome_to_plot = "number_averted",
+                                 counterfactual_label = "no treatment")
+
+ggplot(cohort_deaths_averted_sq_long[cohort_deaths_averted_sq_long$type == "proportion_averted",],
+       aes(scenario, value*100)) +
+  stat_summary(fun.data=f, geom="boxplot", position = "dodge", width = 0.5, fill = "grey") +
+  ylab("Percentage of HBV-related deaths averted\nin the cohort") +
+  scale_x_discrete("Monitoring frequency", labels =
+                     c("screen_2020_monit_0" = "No monitoring",
+                       "screen_2020_monit_5" = "Monitor\nevery 5 years",
+                       "screen_2020_monit_1" = "Monitor\nevery year")) +
+  theme_bw() +
+  ylim(0,100) +
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        title = element_text(size = 15))
+
+# LY saved ----
+cohort_ly_gained_sq_long <-
+  plot_ly_gained_cohort(counterfactual_object = out1,
+                        scenario_objects = list(out3,
+                                                out5,
+                                                out6),
+                                 counterfactual_label = "no treatment")
+
+ggplot(cohort_ly_gained_sq_long[cohort_ly_gained_sq_long$type == "proportion_averted",],
+       aes(counterfactual, value*100)) +
+  stat_summary(fun.data=f, geom="boxplot", position = "dodge", width = 0.5, fill = "grey") +
+  ylab("Percentage of life-years saved\nin the cohort") +
+  scale_x_discrete("Monitoring frequency", labels =
+                     c("screen_2020_monit_0" = "No monitoring",
+                       "screen_2020_monit_5" = "Monitor\nevery 5 years",
+                       "screen_2020_monit_1" = "Monitor\nevery year")) +
+  theme_bw() +
+  ylim(0,15) +
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        title = element_text(size = 15))
+
+# 2) Yearly monitoring of which age group is most effective, compared to no monitoring? ----
+# Average age at death ----
 # Extension in average age at death compared to no monitoring
 age_at_death_ext <- data.frame(rbind(cohort_age_at_death[3,]-cohort_age_at_death[2,],
                                      cohort_age_at_death[4,]-cohort_age_at_death[2,],
@@ -128,6 +222,9 @@ age_at_death_ext <- data.frame(rbind(cohort_age_at_death[3,]-cohort_age_at_death
 age_at_death_ext$scenario <- cohort_age_at_death$scenario[-c(1:2)]
 
 age_at_death_ext_long <- gather(age_at_death_ext, key = "sim", value = "value", -scenario)
+age_at_death_ext_long$freq <- "Every year"
+age_at_death_ext_long$freq[age_at_death_ext_long$scenario %in% sub_5yearly] <-
+  "Every 5 years"
 
 ggplot(age_at_death_ext_long, aes(x = reorder(scenario, value), y = value)) +
   stat_summary(fun.data=f, geom="boxplot", position = "dodge", width = 0.5) +
@@ -144,8 +241,45 @@ ggplot(age_at_death_ext_long, aes(x = reorder(scenario, value), y = value)) +
 # This means 5-yearly monitoring in 30+ year olds is better than yearly monitoring in other age groups.
 # Monitoring only 15-30 year olds is the worst strategy and barely worth it for this outcome.
 
+# Subset plot for yearly frequencies *PLOT*
+ggplot(subset(age_at_death_ext_long, scenario %in% sub_yearly),
+       aes(x = reorder(gsub("Yearly ","", scenario), value), y = value, fill = scenario)) +
+  stat_summary(fun.data=f, geom="boxplot", position = "dodge", width = 0.5) +
+  ylab("Extension in average age at death\nof cohort (years)") +
+  xlab("Age group") +
+  labs(title= "Yearly monitoring compared to no monitoring") +
+  scale_x_discrete(labels = c("all ages" = "15+ (all)")) +
+  scale_fill_brewer(palette = "Set2") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 15),
+        axis.text.x = element_text(angle = 90, hjust = 1),
+        axis.title = element_text(size = 15),
+        title = element_text(size = 15),
+        legend.position = "none")
+
+# Age group 1 plot
+age_at_death_ext_long2 <- subset(age_at_death_ext_long,
+                                                scenario %in% sub_age_groups1)
+age_at_death_ext_long2$scenario <- gsub("5-yearly ", "",
+                                                     gsub("Yearly ","",
+                                                          age_at_death_ext_long2$scenario))
+
+ggplot(age_at_death_ext_long2,
+       aes(x = scenario, y = value, fill = freq)) +
+  stat_summary(fun.data=f, geom="boxplot", position = "dodge2", width = 0.5) +
+  ylab("Extension in average age at death\nof cohort (years)") +
+  xlab("Age group monitored (years)") +
+  labs(fill = "Monitoring\nfrequency", title = paste0("Effect of monitoring compared to no monitoring")) +
+  theme_bw() +
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        strip.text = element_text(size = 15),
+        legend.text =element_text(size = 14),
+        title = element_text(size = 15))
+
 # Maybe check extension in age per 10,000 assessments
 
+# Deaths averted ----
 # Compare cohort number of HBV deaths averted compared to no monitoring
 cohort_deaths_averted_long <-
   plot_hbv_deaths_averted_cohort(counterfactual_object = out3,
@@ -164,6 +298,10 @@ cohort_deaths_averted_long <-
                                  outcome_to_plot = "number_averted",
                                  counterfactual_label = "treatment programme without monitoring")
 levels(cohort_deaths_averted_long$scenario) <- scenario_labels
+cohort_deaths_averted_long$freq <- "Every year"
+cohort_deaths_averted_long$freq[cohort_deaths_averted_long$scenario %in% sub_5yearly] <-
+  "Every 5 years"
+
 
 p1 <- ggplot(cohort_deaths_averted_long[cohort_deaths_averted_long$type == "number_averted",],
        aes(reorder(scenario, value), value, fill = scenario)) +
@@ -182,6 +320,23 @@ p1 <- ggplot(cohort_deaths_averted_long[cohort_deaths_averted_long$type == "numb
 # now followed by yearly 45+ before 5-yearly all ages and 5-yearly 30+.
 # Again very small number for 15-30 year olds.
 
+# Subset plot for yearly monitoring *PLOT*
+ggplot(subset(cohort_deaths_averted_long, type == "number_averted" & scenario %in% sub_yearly),
+       aes(reorder(gsub("Yearly ","", scenario), value), value, fill = scenario)) +
+  stat_summary(fun.data=f, geom="boxplot", position = "dodge", width = 0.5) +
+  ylab("Number of HBV-related deaths averted") +
+  labs(title = paste0("Yearly monitoring compared to no monitoring")) +
+  scale_x_discrete(labels = c("all ages" = "15+ (all)")) +
+  scale_fill_brewer(palette = "Set2") +
+  xlab("Age group") +
+  theme_bw() +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
+  theme(axis.text = element_text(size = 15),
+        axis.text.x = element_text(size = 15, angle = 90, hjust = 1),
+        axis.title = element_text(size = 15),
+        title = element_text(size = 15),
+        legend.position = "none")
+
 ggplot(cohort_deaths_averted_long[cohort_deaths_averted_long$type == "proportion_averted",],
        aes(reorder(scenario, value), value)) +
   stat_summary(fun.data=f, geom="boxplot", position = "dodge", width = 0.5) +
@@ -196,6 +351,27 @@ ggplot(cohort_deaths_averted_long[cohort_deaths_averted_long$type == "proportion
         title = element_text(size = 15))
 # Same as number but less uncertainty
 
+# Age group 1 plot
+cohort_deaths_averted_long2 <- subset(cohort_deaths_averted_long,
+                                 scenario %in% sub_age_groups1)
+cohort_deaths_averted_long2$scenario <- gsub("5-yearly ", "",
+                                        gsub("Yearly ","",
+                                             cohort_deaths_averted_long2$scenario))
+
+ggplot(subset(cohort_deaths_averted_long2,  type == "number_averted"),
+       aes(x = scenario, y = value, fill = freq)) +
+  stat_summary(fun.data=f, geom="boxplot", position = "dodge2", width = 0.5) +
+  ylab("Number of HBV-related deaths averted") +
+  xlab("Age group monitored (years)") +
+  labs(fill = "Monitoring\nfrequency", title = paste0("Effect of monitoring compared to no monitoring")) +
+  theme_bw() +
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        strip.text = element_text(size = 15),
+        legend.text =element_text(size = 14),
+        title = element_text(size = 15))
+
+# LY saved ----
 # Compare cohort number of life years gained compared to no monitoring
 cohort_ly_gained_long <-
   plot_ly_gained_cohort(counterfactual_object = out3,
@@ -214,6 +390,10 @@ cohort_ly_gained_long <-
                         counterfactual_label = "treatment programme without monitoring")
 
 levels(cohort_ly_gained_long$counterfactual) <- scenario_labels
+cohort_ly_gained_long$freq <- "Every year"
+cohort_ly_gained_long$freq[cohort_ly_gained_long$counterfactual %in% sub_5yearly] <-
+  "Every 5 years"
+
 
 ggplot(cohort_ly_gained_long[cohort_ly_gained_long$type == "number_averted",],
        aes(reorder(counterfactual, value), value)) +
@@ -232,6 +412,44 @@ ggplot(cohort_ly_gained_long[cohort_ly_gained_long$type == "number_averted",],
 # (less extension of life possible among the older age groups only).
 # Nevertheless, number of life-years saved again very low when monitoring only 15-30 year olds.
 
+# Subset plot for yearly monitoring *PLOT*
+ggplot(subset(cohort_ly_gained_long,type == "number_averted" & counterfactual %in% sub_yearly),
+       aes(reorder(gsub("Yearly ","", counterfactual), value), value, fill = counterfactual)) +
+  stat_summary(fun.data=f, geom="boxplot", position = "dodge", width = 0.5) +
+  ylab("Number of life-years saved") +
+  labs(title = paste0("Yearly monitoring compared to no monitoring")) +
+  scale_x_discrete(labels = c("all ages" = "15+ (all)")) +
+  xlab("Age group") +
+  scale_fill_brewer(palette = "Set2") +
+  theme_bw() +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
+  theme(axis.text = element_text(size = 15),
+        axis.text.x = element_text(size = 15, angle = 90, hjust = 1),
+        axis.title = element_text(size = 15),
+        title = element_text(size = 15),
+        legend.position = "none")
+
+# Age group 1 plot
+cohort_ly_gained_long2 <- subset(cohort_ly_gained_long,
+                                      counterfactual %in% sub_age_groups1)
+cohort_ly_gained_long2$counterfactual <- gsub("5-yearly ", "",
+                                             gsub("Yearly ","",
+                                                  cohort_ly_gained_long2$counterfactual))
+
+ggplot(subset(cohort_ly_gained_long2,  type == "number_averted"),
+       aes(x = counterfactual, y = value, fill = freq)) +
+  stat_summary(fun.data=f, geom="boxplot", position = "dodge2", width = 0.5) +
+  ylab("Number of life-years saved") +
+  xlab("Age group monitored (years)") +
+  labs(fill = "Monitoring\nfrequency", title = paste0("Effect of monitoring compared to no monitoring")) +
+  theme_bw() +
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        strip.text = element_text(size = 15),
+        legend.text =element_text(size = 14),
+        title = element_text(size = 15))
+
+# Deaths averted per resource use ----
 # HBV DEATHS AVERTED PER INCREMENTAL ASSESSMENT
 deaths_averted_per_assessment_long <-
   plot_hbv_deaths_averted_per_healthcare_interaction(counterfactual_object = out3,
@@ -250,6 +468,9 @@ deaths_averted_per_assessment_long <-
                                                      interaction_type = "total_assessed",
                                                      counterfactual_label = "treatment programme without monitoring")
 levels(deaths_averted_per_assessment_long$scenario) <- scenario_labels
+deaths_averted_per_assessment_long$freq <- "Every year"
+deaths_averted_per_assessment_long$freq[deaths_averted_per_assessment_long$scenario %in% sub_5yearly] <-
+  "Every 5 years"
 
 timepoints <- c(2030,2050,2100)
 period_labs <- c(paste0("2020-",timepoints[1]), paste0("2020-",timepoints[2]), paste0("2020-",timepoints[3]))
@@ -277,6 +498,47 @@ p2 <- ggplot(data = subset(deaths_averted_per_assessment_long, by_year == 2100),
 # always more resource-effective than yearly. Monitoring in <45 year olds is now more
 # attractive than in 45+ year olds. Yearly monitoring in all ages and in 30+ year olds is the worst.
 
+# Subset plot for yearly monitoring *PLOT*
+ggplot(data = subset(deaths_averted_per_assessment_long, by_year == 2100 &  scenario %in% sub_yearly),
+       aes(x=reorder(gsub("Yearly ","", scenario),value), y=value*10000, fill = scenario)) +
+  stat_summary(fun.data=f, geom="boxplot", position = "dodge", width = 0.5) +
+  ylab("HBV-related deaths averted\nper 10,000 monitoring assessments") +
+  labs(title = paste0("Yearly monitoring compared to no monitoring")) +
+  scale_x_discrete(labels = c("all ages" = "15+ (all)")) +
+  scale_fill_brewer(palette = "Set2") +
+  xlab("Age group") +
+  theme_bw() +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
+  theme(axis.text = element_text(size = 15),
+        axis.text.x = element_text(size = 15, angle =90, hjust = 1),
+        axis.title = element_text(size = 15),
+        strip.text = element_text(size = 15),
+        title = element_text(size = 15),
+        legend.position = "none")
+
+# Subset plot by age group comparison
+deaths_averted_per_assessment_long2 <- subset(deaths_averted_per_assessment_long, by_year == 2100 &
+                                                scenario %in% sub_age_groups1)
+deaths_averted_per_assessment_long2$scenario <- gsub("5-yearly ", "",
+                                                     gsub("Yearly ","",
+                                                          deaths_averted_per_assessment_long2$scenario))
+
+ggplot(data =deaths_averted_per_assessment_long2,
+       aes(x=scenario, y=value*10000, fill = freq)) +
+  stat_summary(fun.data=f, geom="boxplot", position = "dodge", width = 0.5) +
+  ylab("HBV-related deaths averted\nper 10,000 monitoring assessments") +
+  labs(fill = "Monitoring\nfrequency", title = paste0("Effect of monitoring compared to no monitoring")) +
+  xlab("Age group monitored (years)") +
+  ylim(0,100) +
+  theme_bw() +
+#  scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        strip.text = element_text(size = 15),
+        legend.text =element_text(size = 14),
+        title = element_text(size = 15))
+
+# LY saved per resource use ----
 # HBV DEATHS AVERTED PER INCREMENTAL INTERACTION
 # The difference here should be assessments + treatment initiations
 # Basically identical to assessments only
@@ -348,6 +610,9 @@ ly_gained_per_assessment_long <-
                                             interaction_type = "total_assessed",
                                             counterfactual_label = "treatment programme without monitoring")
 levels(ly_gained_per_assessment_long$scenario) <- scenario_labels
+ly_gained_per_assessment_long$freq <- "Every year"
+ly_gained_per_assessment_long$freq[ly_gained_per_assessment_long$scenario %in% sub_5yearly] <-
+  "Every 5 years"
 
 timepoints <- c(2030,2050,2100)
 period_labs <- c(paste0("2020-",timepoints[1]), paste0("2020-",timepoints[2]), paste0("2020-",timepoints[3]))
@@ -372,6 +637,45 @@ ggplot(data = subset(ly_gained_per_assessment_long, by_year == 2100),
 # than 5-yearly in 30+ and 45+ year olds). When looking at life-years (but also at deaths averted),
 # in relation to resource use, focus on younger people is more favourable.
 
+# Subset plot for yearly monitoring *PLOT*
+ggplot(data = subset(ly_gained_per_assessment_long, by_year == 2100 &  scenario %in% sub_yearly),
+       aes(x=reorder(gsub("Yearly ","", scenario),value), y=value*10000, fill = scenario)) +
+  stat_summary(fun.data=f, geom="boxplot", position = "dodge", width = 0.5) +
+  ylab("Life-years saved\nper 10,000 monitoring assessments") +
+  labs(title = paste0("Yearly monitoring compared to no monitoring")) +
+  scale_x_discrete(labels = c("all ages" = "15+ (all)")) +
+  scale_fill_brewer(palette = "Set2") +
+  xlab("Age group") +
+  theme_bw() +
+#  scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
+  theme(axis.text = element_text(size = 15),
+        axis.text.x = element_text(size = 15, angle =90, hjust = 1),
+        axis.title = element_text(size = 15),
+        strip.text = element_text(size = 15),
+        title = element_text(size = 15),
+        legend.position = "none")
+
+# Subset plot by age group comparison
+ly_gained_per_assessment_long2 <- subset(ly_gained_per_assessment_long, by_year == 2100 &
+                                                scenario %in% sub_age_groups1)
+ly_gained_per_assessment_long2$scenario <- gsub("5-yearly ", "",
+                                                     gsub("Yearly ","",
+                                                          ly_gained_per_assessment_long2$scenario))
+
+ggplot(data =ly_gained_per_assessment_long2,
+       aes(x=scenario, y=value*10000, fill = freq)) +
+  stat_summary(fun.data=f, geom="boxplot", position = "dodge", width = 0.5) +
+  ylab("Life-years saved\nper 10,000 monitoring assessments") +
+  labs(fill = "Monitoring\nfrequency", title = paste0("Effect of monitoring compared to no monitoring")) +
+  xlab("Age group monitored (years)") +
+#  ylim(0,100) +
+  theme_bw() +
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        strip.text = element_text(size = 15),
+        legend.text =element_text(size = 14),
+        title = element_text(size = 15))
+
 # Both for deaths averted and life-years saved per 10,000 assessments,
 # focusing on specific age groups is better than yearly or 5-yearly monitoring in all ages.
 # 5-yearly monitoring in given age groups is also better than yearly monitoring in the same age group.
@@ -394,7 +698,149 @@ grid.arrange(p1,p2, ncol = 1)
 # 5-yearly monitoring in all ages, 30+ and 45+ year olds have the same relative positions for
 # impact and resource use.
 
+# 3) What is the optimal monitoring frequency if monitoring all age groups? ----
 
+monitoring_freq_allages_label <- list("10"="screen_2020_monit_10",
+                                      "9"="screen_2020_monit_9",
+                                      "8"="screen_2020_monit_8",
+                                      "7"="screen_2020_monit_7",
+                                      "6"="screen_2020_monit_6",
+                                      "5"="screen_2020_monit_5",
+                                        "4"="screen_2020_monit_4",
+                                        "3"="screen_2020_monit_3",
+                                        "2"="screen_2020_monit_2",
+                                        "1"="screen_2020_monit_1")
+
+# Impact per resource use ----
+
+deaths_averted_per_interaction_allages_long <-
+  plot_hbv_deaths_averted_per_healthcare_interaction(counterfactual_object = out3,
+                                                     scenario_objects = list(out4,
+                                                                             out5,
+                                                                             out5a,
+                                                                             out5b,
+                                                                             out5c,
+                                                                             out5d,
+                                                                             out6,
+                                                                             out6a,
+                                                                             out6b,
+                                                                             out6c),
+                                                     interaction_type = "total_interactions",
+                                                     counterfactual_label = "treatment programme without monitoring")
+levels(deaths_averted_per_interaction_allages_long$scenario) <- monitoring_freq_allages_label
+
+
+ggplot(data = subset(deaths_averted_per_interaction_allages_long, by_year == 2100),
+       aes(x=scenario, y=value*10000)) +
+  stat_summary(fun.data=f, geom="boxplot", position = "dodge", width = 0.5, fill = "#00BFC4") +
+  ylab("HBV-related deaths averted\nper 10,000 incremental clinical interactions") +
+  xlab("Monitoring frequency (years)") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        strip.text = element_text(size = 15),
+        title = element_text(size = 15),
+        legend.position = "none")
+
+ly_gained_per_interaction_allages_long <-
+  plot_ly_gained_per_healthcare_interaction(counterfactual_object = out3,
+                                            scenario_objects = list(out4,
+                                                                    out5,
+                                                                    out5a,
+                                                                    out5b,
+                                                                    out5c,
+                                                                    out5d,
+                                                                    out6,
+                                                                    out6a,
+                                                                    out6b,
+                                                                    out6c),
+                                            interaction_type = "total_interactions",
+                                            counterfactual_label = "treatment programme without monitoring")
+
+
+levels(ly_gained_per_interaction_allages_long$scenario) <- monitoring_freq_allages_label
+
+ggplot(data = subset(ly_gained_per_interaction_allages_long, by_year == 2100),
+       aes(x=scenario, y=value*10000)) +
+  stat_summary(fun.data=f, geom="boxplot", position = "dodge", width = 0.5, fill = "#00BFC4") +
+  ylab("Life-years saved\nper 10,000 incremental clinical interactions") +
+  xlab("Monitoring frequency (years)") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        strip.text = element_text(size = 15),
+        title = element_text(size = 15),
+        legend.position = "none")
+
+# Absolute deaths averted ----
+cohort_deaths_averted_allages_long <-
+  plot_hbv_deaths_averted_cohort(counterfactual_object = out3,
+                                 scenario_objects = list(out4,
+                                                         out5,
+                                                         out5a,
+                                                         out5b,
+                                                         out5c,
+                                                         out5d,
+                                                         out6,
+                                                         out6a,
+                                                         out6b,
+                                                         out6c),
+                                 outcome_to_plot = "number_averted",
+                                 counterfactual_label = "treatment programme without monitoring")
+
+levels(cohort_deaths_averted_allages_long$scenario) <- monitoring_freq_allages_label
+
+ggplot(subset(cohort_deaths_averted_allages_long, type == "proportion_averted"),
+       aes(x =scenario, y= value*100)) +
+  stat_summary(fun.data=f, geom="boxplot", position = "dodge", width = 0.5, fill = "#00BFC4") +
+  ylab("Percentage of HBV-related deaths averted") +
+  labs(title = paste0("Effect of monitoring in the cohort compared to no monitoring")) +
+  xlab("Monitoring frequency (years)") +
+  ylim(0,100) +
+  theme_bw() +
+#  scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        title = element_text(size = 15),
+        legend.position = "none")
+
+# Absolute LY saved ----
+cohort_ly_gained_allages_long <-
+  plot_ly_gained_cohort(counterfactual_object = out3,
+                        scenario_objects = list(out4,
+                                                out5,
+                                                out5a,
+                                                out5b,
+                                                out5c,
+                                                out5d,
+                                                out6,
+                                                out6a,
+                                                out6b,
+                                                out6c),
+                        counterfactual_label = "treatment programme without monitoring")
+
+levels(cohort_ly_gained_allages_long$counterfactual) <- monitoring_freq_allages_label
+
+ggplot(subset(cohort_ly_gained_allages_long, type == "proportion_averted"),
+       aes(x=counterfactual, y=value*100)) +
+  stat_summary(fun.data=f, geom="boxplot", position = "dodge", width = 0.5, fill = "#00BFC4") +
+  ylab("Percentage of life-years saved") +
+  labs(title = paste0("Effect of monitoring in the cohort compared to no monitoring")) +
+  xlab("Monitoring frequency (years)") +
+  ylim(0,5) +
+  theme_bw() +
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        title = element_text(size = 15),
+        legend.position = "none")
+
+# Maybe compare different frequencies to yearly monitoring here
+#deaths_averted_per_assessment_long$frequency <- "Every 5 years"
+#deaths_averted_per_assessment_long$frequency[deaths_averted_per_assessment_long$scenario %in% sub_yearly] <- "Yearly"
+#deaths_averted_per_assessment_long$age_group <- gsub("Yearly ","", deaths_averted_per_assessment_long$scenario)
+#deaths_averted_per_assessment_long$age_group <- gsub("5-yearly ","", deaths_averted_per_assessment_long$age_group)
+
+# 4) Comparing different strategies ----
 # INCREMENTAL INTERACTIONS IN EACH SCENARIO BY 2100 COMPARED TO NO MONITORING
 interactions <- rbind(
 cbind(scenario = "screen_2020_monit_5",
@@ -444,36 +890,75 @@ df$sim <- gsub("[^0-9]", "", df$sim)
 df <- df %>%
   left_join(interactions, by = c("scenario", "sim"))
 
-df_summary <- df %>%
+df_to_plot <- subset(df, scenario %in% sub_mixed)
+levels(df_to_plot$scenario) <-
+  list("Yearly All ages" ="Yearly all ages",
+       "Yearly >30 years"="Yearly 30+",
+       "Yearly <30 years"="Yearly 15-30",
+       "Every 5 years All ages"="5-yearly all ages",
+       "Every 5 years >30 years"="5-yearly 30+",
+       "Every 5 years <30 years"="5-yearly 15-30")
+
+df_summary <- df_to_plot %>%
   group_by(scenario) %>%
   summarise(median_deaths = median(value),
             median_int = median(interactions))
 
-# Subset yearly
-sub_yearly <- names(scenario_labels)[4:9]
-# Subset 5-yearly
-sub_5yearly <- names(scenario_labels)[c(3,10:14)]
-# Selection
-sub_mixed <- names(scenario_labels)[c(3,4,5,8,10,13)]
-# Since the best are 5-yearly 45+, 5-yearly 30+ and 5-yearly all ages, chose here <30, >30 and all
-
-ggplot(subset(df, scenario %in% sub_mixed)) +
-#  geom_point(aes(x = interactions, y = value, colour = scenario)) +
+ggplot(df_to_plot) +
   stat_ellipse(geom = "polygon",
-               mapping=aes(interactions, value, group = scenario,
-                           fill= scenario), alpha = 0.3) +
-  geom_point(data = subset(df_summary, scenario %in% sub_mixed),
-             aes(x = median_int, y = median_deaths, colour = scenario), size = 5) +
-#  scale_colour_brewer(palette = "Set3") +
-#  scale_fill_brewer(palette = "Set3") +
-  scale_fill_viridis_d() +
-  scale_colour_viridis_d() +
-  ylab("Cumulative number of HBV-related deaths averted") +
-  xlab("Incremental number of healthcare interactions") +
-  theme_bw()
+               aes(interactions, value, group = scenario, fill= scenario), alpha = 0.1) +
+  geom_point(data = df_summary,
+             aes(x = median_int, y = median_deaths, colour = scenario), size = 6) +
+  scale_colour_brewer(palette = "Set1", direction = -1) +
+  scale_fill_brewer(palette = "Set1", direction = -1) +
+  labs(colour = "Monitoring strategy", fill = "Monitoring strategy") +
+#  scale_fill_viridis_d() +
+#  scale_colour_viridis_d() +
+  ylab("Cumulative number of\nHBV-related deaths averted") +
+  xlab("Incremental number of clinical interactions") +
+  labs(title = paste0("Monitoring strategies compared to no monitoring")) +
+  theme_bw() +
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        strip.text = element_text(size = 15),
+        title = element_text(size = 15))
 # 95% prediction ellipse (A prediction ellipse is a region for predicting the location of a new observation
 # under the assumption that the population is bivariate normal)
 # Need to change ellipse not to go below 0!
 
+sub_mixed2 <- names(scenario_labels)[c(5,7,9, 10, 12, 14)]  # 15-30, 30-45, 45+
+df_to_plot2 <- subset(df, scenario %in% sub_mixed2)
 
+levels(df_to_plot$scenario) <-
+  list("Yearly All ages" ="Yearly all ages",
+       "Yearly >30 years"="Yearly 30+",
+       "Yearly <30 years"="Yearly 15-30",
+       "Every 5 years All ages"="5-yearly all ages",
+       "Every 5 years >30 years"="5-yearly 30+",
+       "Every 5 years <30 years"="5-yearly 15-30")
+
+df_summary2 <- df_to_plot2 %>%
+  group_by(scenario) %>%
+  summarise(median_deaths = median(value),
+            median_int = median(interactions))
+
+
+ggplot(df_to_plot2) +
+  stat_ellipse(geom = "polygon",
+               aes(interactions, value, group = scenario, fill= scenario), alpha = 0.2) +
+  geom_point(data = df_summary2,
+             aes(x = median_int, y = median_deaths, colour = scenario), size = 6) +
+#  scale_colour_brewer(palette = "Set1", direction = -1) +
+#  scale_fill_brewer(palette = "Set1", direction = -1) +
+  scale_colour_manual(values = c( "#FFFF33","#FF7F00","#E41A1C","#4DAF4A","#377EB8","#984EA3")) +
+  scale_fill_manual(values = c( "#FFFF33","#FF7F00","#E41A1C","#4DAF4A","#377EB8","#984EA3")) +
+  labs(colour = "Monitoring strategy", fill = "Monitoring strategy") +
+  ylab("Cumulative number of\nHBV-related deaths averted") +
+  xlab("Incremental number of clinical interactions") +
+  labs(title = paste0("Monitoring strategies compared to no monitoring")) +
+  theme_bw() +
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        strip.text = element_text(size = 15),
+        title = element_text(size = 15))
 

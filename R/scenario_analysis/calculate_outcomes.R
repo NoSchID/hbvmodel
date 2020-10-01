@@ -12,7 +12,12 @@
 calculate_screening_interactions <- function(output_file, scenario_label) {
 
   # Timing of screening programme
-  time_of_screening <- output_file$input_parameters$screening_years
+  if (output_file$input_parameters$apply_repeat_screen == 0) {
+    time_of_screening <- output_file$input_parameters$screening_years
+  } else if (output_file$input_parameters$apply_repeat_screen == 1) {
+    time_of_screening <- c(output_file$input_parameters$screening_years,
+                           output_file$input_parameters$repeat_screening_years)
+  }
 
   # Number of HBsAg tests
   total_sag_tests <- unique(output_file$full_output$total_screened_susceptible +
