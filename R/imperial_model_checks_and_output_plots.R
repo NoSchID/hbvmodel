@@ -204,8 +204,8 @@ plot(ages, outpath$carriers[which(outpath$time == 1980),]/
 #points(gambia_prevdata$age, gambia_prevdata$edmunds_prev, col = "red")
 
 # anti-HBc prevalence by age in 1980
-plot(ages, outpath$ever_infected[which(outpath$time == 1980),]/
-       outpath$pop[which(outpath$time == 1980),], type = "l", ylim = c(0,1))
+plot(ages, outpath$ever_infected_male[which(outpath$time == 1980),]/
+       outpath$pop_male[which(outpath$time == 1980),], type = "l", ylim = c(0,1))
 
 # HBeAg prevalence in chronic carriers by age in 1980
 plot(ages, outpath$eag_positive[which(outpath$time == 1980),]/
@@ -225,6 +225,7 @@ plot(ages, outpath$eag_positive[which(outpath$time == 2015),]/
 # Number of new cases of chronic HBV carriage at each timestep
 plot(outpath$time,
      (outpath$incident_chronic_infections$horizontal_chronic_infections+
+        outpath$incident_chronic_infections$horizontal_negative_chronic_infections+
         outpath$incident_chronic_infections$chronic_births),
      type = "l", xlim = c(1960,2100), ylim = c(0, 5000),
      xlab = "Time", ylab = "New cases of chronic HBV carriage per timestep")
@@ -233,10 +234,16 @@ lines(outpath$time,
       lty = "dashed")
 
 # Number of HBV-related deaths at each timestep
-plot(outpath$time, outpath$hbv_deaths$incident_number_total,
+plot(outpath$time, outpath$hbv_deaths$incident_number_total+
+       outpath$screened_hbv_deaths$incident_number_total+
+       outpath$treated_hbv_deaths$incident_number_total+
+       outpath$negative_hbv_deaths$incident_number_total,
      type = "l", xlim = c(1960,2100), ylim = c(0, 400),
      xlab = "Time", ylab = "HBV-related deaths per timestep")
-lines(outpath$time, outpath$hbv_deaths$incident_number_male,
+lines(outpath$time, outpath$hbv_deaths$incident_number_male+
+        outpath$screened_hbv_deaths$incident_number_male+
+        outpath$treated_hbv_deaths$incident_number_male+
+        outpath$negative_hbv_deaths$incident_number_male,
       lty = "dashed")
 
 
