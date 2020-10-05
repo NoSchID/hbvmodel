@@ -902,7 +902,7 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
       dpop[index$ages_all,R_N,i] <- -(diff(c(0,pop[index$ages_all,R_N,i]))/da) +
         (1-p_chronic_function) * dcum_negative_infections[index$ages_all,i] +
         dcum_negative_sag_loss[index$ages_all,i] -
-        deaths[index$ages_all,R_S,i] + migrants[index$ages_all,R_S,i]
+        deaths[index$ages_all,R_N,i] + migrants[index$ages_all,R_N,i]
 
     }
 
@@ -2748,10 +2748,10 @@ run_one_screening_scenario_on_cluster <- function(..., default_parameter_list, c
   timeseries <- summarise_time_series(out, scenario_label = label, summarise_percentiles = FALSE)
 
   # Extract the screened and treated population by age
-  screened_pop_female <- lapply(out, "[[", "screened_pop_female")
-  screened_pop_male <- lapply(out, "[[", "screened_pop_male")
-  treated_pop_female <- lapply(out, "[[", "treated_pop_female")
-  treated_pop_male <- lapply(out, "[[", "treated_pop_male")
+  #screened_pop_female <- lapply(out, "[[", "screened_pop_female")
+  #screened_pop_male <- lapply(out, "[[", "screened_pop_male")
+  #treated_pop_female <- lapply(out, "[[", "treated_pop_female")
+  #treated_pop_male <- lapply(out, "[[", "treated_pop_male")
 
   # Change object names
   extracted_outcomes <- list(cohort_age_at_death = cohort_age_at_death,
@@ -2762,10 +2762,10 @@ run_one_screening_scenario_on_cluster <- function(..., default_parameter_list, c
                cum_hbv_deaths = cum_hbv_deaths,
                ly = ly,
                interactions = interactions,
-               screened_pop_female = screened_pop_female,
-               screened_pop_male = screened_pop_male,
-               treated_pop_female = treated_pop_female,
-               treated_pop_male = treated_pop_male,
+               #screened_pop_female = screened_pop_female,
+               #screened_pop_male = screened_pop_male,
+               #treated_pop_female = treated_pop_female,
+               #treated_pop_male = treated_pop_male,
                timeseries = timeseries)  # NA for no treatment
 
   outlist <- list("screen" = extracted_outcomes)

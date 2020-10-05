@@ -259,12 +259,15 @@ calculate_age_standardised_hbv_deaths_rate <- function(output_file) {
   # Age-standardised incidence of HBV-related deaths per 100000 per timestep
 
   # a) Calculate crude age-specific rates per person-year: need age-specific number of deaths and age-specific population size
- deaths_by_age <- output_file$full_output[,grepl("^cum_hbv_deathsf.",names(output_file$full_output))]+
+ deaths_by_age <-
+   output_file$full_output[,grepl("^cum_hbv_deathsf.",names(output_file$full_output))]+
    output_file$full_output[,grepl("^cum_hbv_deathsm.",names(output_file$full_output))]+
    output_file$full_output[,grepl("^cum_screened_hbv_deathsf.",names(output_file$full_output))]+
    output_file$full_output[,grepl("^cum_screened_hbv_deathsm.",names(output_file$full_output))]+
    output_file$full_output[,grepl("^cum_treated_hbv_deathsf.",names(output_file$full_output))]+
-   output_file$full_output[,grepl("^cum_treated_hbv_deathsm.",names(output_file$full_output))]
+   output_file$full_output[,grepl("^cum_treated_hbv_deathsm.",names(output_file$full_output))]+
+   output_file$full_output[,grepl("^cum_negative_hbv_deathsf.",names(output_file$full_output))]+
+   output_file$full_output[,grepl("^cum_negative_hbv_deathsm.",names(output_file$full_output))]
 
   deaths_by_age <- calculate_incident_numbers(deaths_by_age)
 
@@ -300,19 +303,24 @@ extract_time_series <- function(output_file, scenario_label) {
                              head(output_file$pop_total$pop_total,-1))
 
   # New cases of chronic HBV carriage per timestep and per population
-  total_chronic_incidence <- data.frame(total_chronic_infections = tail(output_file$incident_chronic_infections$horizontal_chronic_infections+
-                                          output_file$incident_chronic_infections$chronic_births,-1),
-                                        chronic_births = tail(output_file$incident_chronic_infections$chronic_births,-1))
+  total_chronic_incidence <-
+    data.frame(total_chronic_infections =
+                 tail(output_file$incident_chronic_infections$horizontal_chronic_infections+
+                        output_file$incident_chronic_infections$horizontal_negative_chronic_infections+
+                        output_file$incident_chronic_infections$chronic_births,-1),
+               chronic_births = tail(output_file$incident_chronic_infections$chronic_births,-1))
   total_chronic_incidence$total_chronic_infections_rate <-
     total_chronic_incidence$total_chronic_infections/head(output_file$pop_total$pop_total,-1)
 
   # HBV-related deaths per timestep and per population
   total_hbv_deaths <- data.frame(total_hbv_deaths = tail(output_file$hbv_deaths$incident_number_total+
                                    output_file$screened_hbv_deaths$incident_number_total+
-                                   output_file$treated_hbv_deaths$incident_number_total, -1),
+                                   output_file$treated_hbv_deaths$incident_number_total+
+                                     output_file$negative_hbv_deaths$incident_number_total, -1),
                                  hbv_deaths_male = tail(output_file$hbv_deaths$incident_number_male+
                                    output_file$screened_hbv_deaths$incident_number_male+
-                                   output_file$treated_hbv_deaths$incident_number_male, -1))
+                                   output_file$treated_hbv_deaths$incident_number_male+
+                                     output_file$negative_hbv_deaths$incident_number_male, -1))
   total_hbv_deaths$total_hbv_deaths_rate <- total_hbv_deaths$total_hbv_deaths/
                                                 head(output_file$pop_total$pop_total,-1)
   total_hbv_deaths$hbv_deaths_rate_male <-  total_hbv_deaths$hbv_deaths_male/
@@ -389,7 +397,8 @@ extract_cumulative_hbv_deaths <- function(output_files, scenario_label, from_yea
   incident_hbv_deaths <- data.frame(time = head(output_files[[1]]$time,-1),
                                     deaths = tail(sapply(lapply(output_files,"[[", "hbv_deaths"), "[[", "incident_number_total")+
                                                 sapply(lapply(output_files,"[[", "screened_hbv_deaths"), "[[", "incident_number_total")+
-                                                sapply(lapply(output_files,"[[", "treated_hbv_deaths"), "[[", "incident_number_total"),-1))
+                                                sapply(lapply(output_files,"[[", "treated_hbv_deaths"), "[[", "incident_number_total")+
+                                                sapply(lapply(output_files,"[[", "negative_hbv_deaths"), "[[", "incident_number_total"),-1))
   colnames(incident_hbv_deaths)[1] <- "time"
 
   cum_hbv_deaths <- as.data.frame(t(apply(incident_hbv_deaths[which(incident_hbv_deaths$time == from_year):
@@ -409,9 +418,11 @@ extract_cumulative_hbv_deaths <- function(output_files, scenario_label, from_yea
 extract_cumulative_chronic_infections <- function(output_files, scenario_label, from_year, by_year) {
 
   # Extract new chronic infections per timestep
-  incident_chronic_infections <- data.frame(time = head(output_files[[1]]$time,-1),
-                                            deaths = tail(sapply(lapply(output_files,"[[", "incident_chronic_infections"), "[[", "horizontal_chronic_infections")+
-                                                            sapply(lapply(output_files,"[[", "incident_chronic_infections"), "[[", "chronic_births"),-1))
+  incident_chronic_infections <-
+    data.frame(time = head(output_files[[1]]$time,-1),
+               deaths = tail(sapply(lapply(output_files,"[[", "incident_chronic_infections"), "[[", "horizontal_chronic_infections")+
+                               sapply(lapply(output_files,"[[", "incident_chronic_infections"), "[[", "horizontal_negative_chronic_infections")+
+                               sapply(lapply(output_files,"[[", "incident_chronic_infections"), "[[", "chronic_births"),-1))
   colnames(incident_chronic_infections)[1] <- "time"
 
   cum_chronic_infections <- as.data.frame(t(apply(incident_chronic_infections[which(incident_chronic_infections$time == from_year):
@@ -557,7 +568,8 @@ calculate_cohort_average_age_at_death <- function(output_file) {
 
   # Add all background deaths and HBV-related deaths by age occurring after screening and treatment
   # Note this also includes deaths of those who were susceptible at test and received catch-up vaccine
-  total_deaths_by_age <- output_file$full_output[last_timestep,grepl("^cum_screened_deathsf.",names(output_file$full_output))]+
+  total_deaths_by_age <-
+    output_file$full_output[last_timestep,grepl("^cum_screened_deathsf.",names(output_file$full_output))]+
     output_file$full_output[last_timestep,grepl("^cum_screened_deathsm.",names(output_file$full_output))]+
     output_file$full_output[last_timestep,grepl("^cum_treated_deathsf.",names(output_file$full_output))]+
     output_file$full_output[last_timestep,grepl("^cum_treated_deathsm.",names(output_file$full_output))]+
@@ -644,7 +656,6 @@ extract_cohort_cumulative_hbv_deaths <- function(output_files, scenario_label) {
   }
 
 }
-
 
 # Function to calculate life-years lived in a screened+treated cohort
 extract_cohort_life_years_lived <- function(output_files, scenario_label, sex_to_return = "both") {

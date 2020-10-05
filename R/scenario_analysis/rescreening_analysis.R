@@ -38,6 +38,13 @@ out9 <- out9[[1]]
 out10 <- readRDS(paste0(out_path, "a1_out10_monit_0_screen_1_290920.rds"))
 out10 <- out10[[1]]
 
+# With repeat screening in the unscreened age group (depends on repeat screening frequency)
+out8a <- readRDS(paste0(out_path, "a1_out8a_monit_0_screen_10a_021020.rds"))
+out8a <- out8a[[1]]
+out9a <- readRDS(paste0(out_path, "a1_out9a_monit_0_screen_5a_021020.rds"))
+out9a <- out9a[[1]]
+out10a <- readRDS(paste0(out_path, "a1_out10a_monit_0_screen_1a_021020.rds"))
+out10a <- out10a[[1]]
 
 # Re-screening of the same age group compared to status quo of no treatment ----
 # HBV deaths averted
@@ -45,26 +52,43 @@ deaths_averted_sq_long <- plot_hbv_deaths_averted(counterfactual_object = out2,
                                                   scenario_objects = list(out3,
                                                                           out8,
                                                                           out9,
-                                                                          out10),
+                                                                          out10,
+                                                                          out8a,
+                                                                          out9a,
+                                                                          out10a),
                                                   counterfactual_label = "no treatment programme",
                                                   x_axis = "screening")
-# Repeated screening, even if only every 100 years, affects proportion of HBV deaths averted
+# Repeated screening in the full age group, even if only every 10 years, affects proportion of HBV deaths averted
 # particularly in the long-term. In the long term not much difference between 10, 5 or yearly screening,
-# although yearly screening appears substantially better than every 5 years to avert deaths by 2030
+# although yearly screening appears substantially better than every 5 years to avert deaths by 2030.
+# For repeat screening only in the previously untargeted age group, this does not appear to make
+# a big difference compared to no repeat screening (much lower than the full age group rescreening,
+# and same for all frequencies as you would expect).
+# This is likely because of the lack of monitoring (since at this age not many people will be
+# identified for treatment).
 
 # LY saved
 ly_gained_sq_screen_long <- plot_ly_gained(counterfactual_object = out2,
                                            scenario_objects = list(out3,
                                                                    out8,
                                                                    out9,
-                                                                   out10),
+                                                                   out10,
+                                                                   out8a,
+                                                                   out9a,
+                                                                   out10a),
                                            counterfactual_label = "no treatment programme",
                                            x_axis = "screening")
 
 # Deaths averted per resource use
 deaths_averted_per_interaction_sq_long <-
   plot_hbv_deaths_averted_per_healthcare_interaction(counterfactual_object = out2,
-                                                     scenario_objects = list(out3, out8, out9, out10),
+                                                     scenario_objects = list(out3,
+                                                                             out8,
+                                                                             out9,
+                                                                             out10,
+                                                                             out8a,
+                                                                             out9a,
+                                                                             out10a),
                                                      interaction_type = "total_interactions",
                                                      counterfactual_label = "no treatment programme",
                                                      x_axis = "screening")
@@ -81,14 +105,18 @@ ggplot(data = deaths_averted_per_interaction_sq_long,
   theme_bw() +
   #  scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
   theme(axis.text = element_text(size = 15),
+        axis.text.x = element_text(angle = 90, hjust = 1),
         axis.title = element_text(size = 15),
         strip.text = element_text(size = 15),
         legend.text =element_text(size = 14),
         title = element_text(size = 15))
+# Repeat screening in only the previously unscreened age groups averts more deaths per interaction
+# than repeat screening in all the age groups, but again way fewer than no repeat screening.
 
 # Re-screening of the same age group compared to a one-off screen in 2020 ----
 deaths_averted_screen_long <- plot_hbv_deaths_averted(counterfactual_object = out3,
-                                                      scenario_objects = list(out8, out9, out10),
+                                                      scenario_objects = list(out8, out9, out10,
+                                                                              out8a, out9a, out10a),
                                                       counterfactual_label = "treatment programme with one-off screening",
                                                       x_axis = "screening")
 # By 2100, any repeat screening freq has similar impact. However at earlier timepoints,
@@ -99,14 +127,16 @@ deaths_averted_screen_long <- plot_hbv_deaths_averted(counterfactual_object = ou
 # of prevention over time.
 # Order of magnitude of deaths averted by 2050 and 2100 is approx between 10 and 30%.
 ly_gained_screen_long <- plot_ly_gained(counterfactual_object = out3,
-                                        scenario_objects = list(out8, out9, out10),
+                                        scenario_objects = list(out8, out9, out10,
+                                                                out8a, out9a, out10a),
                                         counterfactual_label = "treatment programme with one-off screening",
                                         x_axis = "screening")
 
 # Deaths averted per resource use
 deaths_averted_per_interaction_screen_long <-
   plot_hbv_deaths_averted_per_healthcare_interaction(counterfactual_object = out3,
-                                                     scenario_objects = list(out8, out9, out10),
+                                                     scenario_objects = list(out8, out9, out10,
+                                                                             out8a, out9a, out10a),
                                                      interaction_type = "total_interactions",
                                                      counterfactual_label = "treatment programme with one-off screening",
                                                      x_axis = "screening")
@@ -125,22 +155,12 @@ ggplot(data = deaths_averted_per_interaction_screen_long,
   theme_bw() +
   #  scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
   theme(axis.text = element_text(size = 15),
+        axis.text.x = element_text(angle = 90, hjust = 1),
         axis.title = element_text(size = 15),
         strip.text = element_text(size = 15),
         legend.text =element_text(size = 14),
         title = element_text(size = 15))
 
-# COUNTERFACTUAL = NO TREATMENT PROGRAMME
-
-# COUNTERFACTUAL = ONE-OFF SCREEN
-deaths_averted_per_interaction_sq_screen_long <-
-  plot_hbv_deaths_averted_per_healthcare_interaction(counterfactual_object = out2,
-                                                     scenario_objects = list(out3, out7,out8, out9, out10),
-                                                     interaction_type = "total_interactions",
-                                                     counterfactual_label = "no treatment programme",
-                                                     x_axis = "screening")
-# 20 and 10 years are fairly similar to one-off, compared to no treatment programme. 1 year frequency
-# requires far more HBsAg tests per HBV death averted.
 
 # OUTCOME = LIFE YEARS SAVED PER HEALTHCARE INTERACTION
 
