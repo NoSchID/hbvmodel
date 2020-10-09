@@ -49,7 +49,7 @@ sim <- apply(params_mat_accepted[1,],1,
                                 prop_negative_to_remove_from_rescreening = 0,
                                 apply_screen_not_treat = 0,
                                 monitoring_rate = 0,
-                                apply_repeat_screen = 1,
+                                apply_repeat_screen = 0,
                                 min_age_to_screen = 15,
                                 max_age_to_screen = 60,
                                 min_age_to_repeat_screen = 15,
@@ -57,7 +57,6 @@ sim <- apply(params_mat_accepted[1,],1,
                                 repeat_screening_years = seq(2030,2100, by = 10)),
                          drop_timesteps_before = 1960,
                          scenario = "vacc_screen"))
-
 
 out <- code_model_output(sim[[1]])
 outpath <- out

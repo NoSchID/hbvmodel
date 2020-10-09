@@ -297,6 +297,11 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
     dcum_screened_hcc <- matrix(rep(0, 2* n_agecat),
                        ncol = 2, nrow = n_agecat)  # female and male incident HCC cases after screening
 
+    dcum_screened_treatment_eligibility_progression <- matrix(rep(0, 2* n_agecat),
+                                                              ncol = 2, nrow = n_agecat)  # female and male progression to treatment-eligible compartments after screening
+    dcum_screened_non_cirrhotic_hcc <- matrix(rep(0, 2* n_agecat),
+                                             ncol = 2, nrow = n_agecat) # female and male progression from IC and IT to HCC directly after screening
+
     dcum_monitored_it <- matrix(rep(0, 2* n_agecat),
                                 ncol = 2, nrow = n_agecat)  # female and male monitoring interactions in IT
     dcum_monitored_ir <- matrix(rep(0, 2* n_agecat),
@@ -554,6 +559,17 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
         hccr_enchb * cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,ENCHB_S,i] +
         hccr_cc * cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,CC_S,i] +
         hccr_dcc * pop[index$ages_all,DCC_S,i]
+
+      # Progression to treatment-eligible compartments after screening
+      # IT => IR and IC => ENCHB
+      dcum_screened_treatment_eligibility_progression[index$ages_all,i] <-
+        pr_it_ir * eag_prog_function * pop[index$ages_all,IT_S,i] + pr_ic_enchb * pop[index$ages_all,IC_S,i]
+      # Add this to dcum_screened_non_cirrhotic_hcc to get all disease progression out of IC and IT
+
+      # Progression from IT and IC to HCC directly
+      dcum_screened_non_cirrhotic_hcc[index$ages_all,i] <-
+        hccr_it * cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,IT_S,i] +
+        cancer_prog_rates[index$ages_all,i] * pop[index$ages_all,IC_S,i]
 
       # Count monitoring interactions (includes all compartments who may have been screened - not reflecting treatment)
       if (apply_treat_it == 1) {
@@ -953,6 +969,8 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
              dcum_screened_hcc_deaths,
              dcum_screened_dcc,
              dcum_screened_hcc,
+             dcum_screened_treatment_eligibility_progression,
+             dcum_screened_non_cirrhotic_hcc,
              dcum_treated_hbv_deaths,
              dcum_treated_dcc_deaths,
              dcum_treated_hcc_deaths,
@@ -2883,6 +2901,91 @@ run_one_scenario_parallel <- function(..., default_parameter_list, calibrated_pa
   return(outlist)
 }
 
+# Validation outcomes after screening and treatment
+simulate_intervention_validation_outcomes <- function(..., default_parameter_list,
+                                                      calibrated_parameter_sets,
+                                                      parms_to_change = list(...),
+                                                      years_of_test, monitoring_rate,
+                                                      prop_negative_to_remove_from_rescreening = 0,
+                                                      apply_repeat_screen = 0, years_of_repeat_test = 2015,
+                                                      min_age_to_repeat_screen = 15, max_age_to_repeat_screen = 60,
+                                                      drop_timesteps_before = NULL,
+                                                      scenario) {
+
+  sim <- apply(calibrated_parameter_sets, 1,
+               function(x) run_model(sim_duration = runtime,
+                                     default_parameter_list = default_parameter_list,
+                                     parms_to_change =
+                                       list(b1 = as.list(x)$b1,
+                                            b2 = as.list(x)$b2,
+                                            b3 = as.list(x)$b3,
+                                            mtct_prob_s = as.list(x)$mtct_prob_s,
+                                            mtct_prob_e = as.list(x)$mtct_prob_e,
+                                            alpha = as.list(x)$alpha,
+                                            p_chronic_in_mtct = as.list(x)$p_chronic_in_mtct,
+                                            p_chronic_function_r = as.list(x)$p_chronic_function_r,
+                                            p_chronic_function_s = as.list(x)$p_chronic_function_s,
+                                            pr_it_ir = as.list(x)$pr_it_ir,
+                                            pr_ir_ic = as.list(x)$pr_ir_ic,
+                                            eag_prog_function_rate = as.list(x)$eag_prog_function_rate,
+                                            pr_ir_enchb = as.list(x)$pr_ir_enchb,
+                                            pr_ir_cc_female = as.list(x)$pr_ir_cc_female,
+                                            pr_ir_cc_age_threshold = as.list(x)$pr_ir_cc_age_threshold,
+                                            pr_ic_enchb = as.list(x)$pr_ic_enchb,
+                                            sag_loss_slope = as.list(x)$sag_loss_slope,
+                                            pr_enchb_cc_female = as.list(x)$pr_enchb_cc_female,
+                                            cirrhosis_male_cofactor = as.list(x)$cirrhosis_male_cofactor,
+                                            pr_cc_dcc = as.list(x)$pr_cc_dcc,
+                                            cancer_prog_coefficient_female = as.list(x)$cancer_prog_coefficient_female,
+                                            cancer_age_threshold = as.list(x)$cancer_age_threshold,
+                                            cancer_male_cofactor = as.list(x)$cancer_male_cofactor,
+                                            hccr_it = as.list(x)$hccr_it,
+                                            hccr_ir = as.list(x)$hccr_ir,
+                                            hccr_enchb = as.list(x)$hccr_enchb,
+                                            hccr_cc = as.list(x)$hccr_cc,
+                                            hccr_dcc = as.list(x)$hccr_dcc,
+                                            mu_cc = as.list(x)$mu_cc,
+                                            mu_dcc = as.list(x)$mu_dcc,
+                                            mu_hcc = as.list(x)$mu_hcc,
+                                            vacc_eff = as.list(x)$vacc_eff,
+                                            screening_years = years_of_test,
+                                            monitoring_rate = monitoring_rate,
+                                            prop_negative_to_remove_from_rescreening =
+                                            prop_negative_to_remove_from_rescreening,
+                                            apply_repeat_screen = apply_repeat_screen,
+                                            repeat_screening_years = years_of_repeat_test,
+                                            min_age_to_repeat_screen = min_age_to_repeat_screen,
+                                            max_age_to_repeat_screen = max_age_to_repeat_screen),
+                                     drop_timesteps_before = drop_timesteps_before,
+                                     scenario = scenario))
+  out <- lapply(sim, code_model_output)
+
+  # Progression rate to treatment eligibility after screening (from IT and IC)
+  # Calculated in 2100
+
+  # Output events and denominators separately
+  # Can experiment switching on an off IT treatment
+
+  # Events
+  #num <- tail(apply(select(out$full_output, starts_with("cum_screened_treatment_eligibility_progressionf")) +
+  #                    select(out$full_output, starts_with("cum_screened_treatment_eligibility_progressionm")),1,sum),1)
+  # Denom = screened IT and screened IC comp
+#  denom <- sum(head(apply(select(out$full_output, starts_with("S_ITf"))+select(out$full_output, starts_with("S_ITm"))+
+ #                           select(out$full_output, starts_with("S_ICf"))+select(out$full_output, starts_with("S_ICm")),1,sum),-1))*dt
+#  num/denom
+  # Rate of progression to treatment eligibility (from IT or IC) is 0.0051 per person-year
+  # Denominator is sum of all compartments at risk at each timestep but the last
+  # (when incident outcome is measured) * dt
+
+ # num2 <- tail(apply(select(out$full_output, starts_with("cum_screened_treatment_eligibility_progressionf")) +
+  #                     select(out$full_output, starts_with("cum_screened_treatment_eligibility_progressionm")),1,sum),1)+
+  #  tail(apply(select(out$full_output, starts_with("cum_screened_non_cirrhotic_hccf"))+
+  #               select(out$full_output, starts_with("cum_screened_non_cirrhotic_hccm")),1,sum),1)
+  #num2/denom
+
+
+
+}
 
 ### MODEL INPUT ----
 
@@ -2924,6 +3027,8 @@ output_storage <- c("cum_all_deathsf" = rep(0,n_agecat), "cum_all_deathsm" = rep
                     "cum_screened_hcc_deathsf" = rep(0,n_agecat), "cum_screened_hcc_deathsm" = rep(0,n_agecat),
                     "cum_screened_incident_dccf" = rep(0,n_agecat), "cum_screened_incident_dccm" = rep(0,n_agecat),
                     "cum_screened_incident_hccf" = rep(0,n_agecat), "cum_screened_incident_hccm" = rep(0,n_agecat),
+                    "cum_screened_treatment_eligibility_progressionf" = rep(0,n_agecat), "cum_screened_treatment_eligibility_progressionm" = rep(0,n_agecat),
+                    "cum_screened_non_cirrhotic_hccf" = rep(0,n_agecat), "cum_screened_non_cirrhotic_hccm" = rep(0,n_agecat),
                     "cum_treated_hbv_deathsf" = rep(0,n_agecat), "cum_treated_hbv_deathsm" = rep(0,n_agecat),
                     "cum_treated_dcc_deathsf" = rep(0,n_agecat), "cum_treated_dcc_deathsm" = rep(0,n_agecat),
                     "cum_treated_hcc_deathsf" = rep(0,n_agecat), "cum_treated_hcc_deathsm" = rep(0,n_agecat),
