@@ -2798,6 +2798,7 @@ run_one_scenario <- function(..., default_parameter_list, calibrated_parameter_s
                              drop_timesteps_before = NULL,
                              scenario, label = "label") {
 
+
   # Status quo scenario: no screening
   sim <- apply(calibrated_parameter_sets, 1,
                   function(x) run_model(sim_duration = runtime,
@@ -2902,15 +2903,17 @@ run_one_scenario_parallel <- function(..., default_parameter_list, calibrated_pa
 }
 
 # Validation outcomes after screening and treatment
+# Monitoring rate needs to be set to 0 to correctly measure these outcomes
 simulate_intervention_validation_outcomes <- function(..., default_parameter_list,
                                                       calibrated_parameter_sets,
                                                       parms_to_change = list(...),
-                                                      years_of_test, monitoring_rate,
+                                                      years_of_test, monitoring_rate = 0,
+                                                      apply_treat_it = 0,
                                                       prop_negative_to_remove_from_rescreening = 0,
                                                       apply_repeat_screen = 0, years_of_repeat_test = 2015,
                                                       min_age_to_repeat_screen = 15, max_age_to_repeat_screen = 60,
                                                       drop_timesteps_before = NULL,
-                                                      scenario) {
+                                                      scenario = "vacc_screen") {
 
   sim <- apply(calibrated_parameter_sets, 1,
                function(x) run_model(sim_duration = runtime,
@@ -2948,6 +2951,7 @@ simulate_intervention_validation_outcomes <- function(..., default_parameter_lis
                                             mu_dcc = as.list(x)$mu_dcc,
                                             mu_hcc = as.list(x)$mu_hcc,
                                             vacc_eff = as.list(x)$vacc_eff,
+                                            apply_treat_it = apply_treat_it,
                                             screening_years = years_of_test,
                                             monitoring_rate = monitoring_rate,
                                             prop_negative_to_remove_from_rescreening =
@@ -2966,26 +2970,85 @@ simulate_intervention_validation_outcomes <- function(..., default_parameter_lis
   # Output events and denominators separately
   # Can experiment switching on an off IT treatment
 
+  full_output <- lapply(out, "[[", "full_output")
+
   # Events
-  #num <- tail(apply(select(out$full_output, starts_with("cum_screened_treatment_eligibility_progressionf")) +
-  #                    select(out$full_output, starts_with("cum_screened_treatment_eligibility_progressionm")),1,sum),1)
-  # Denom = screened IT and screened IC comp
-#  denom <- sum(head(apply(select(out$full_output, starts_with("S_ITf"))+select(out$full_output, starts_with("S_ITm"))+
- #                           select(out$full_output, starts_with("S_ICf"))+select(out$full_output, starts_with("S_ICm")),1,sum),-1))*dt
-#  num/denom
-  # Rate of progression to treatment eligibility (from IT or IC) is 0.0051 per person-year
-  # Denominator is sum of all compartments at risk at each timestep but the last
-  # (when incident outcome is measured) * dt
+  cum_transitions_to_treatment_eligibility_2050 <- list()
+  cum_transitions_to_treatment_eligibility_2100 <- list()
+  it_ic_at_risk_2050 <- list()
+  it_ic_at_risk_2100 <- list()
+  cum_incident_non_cirrhotic_hcc_2050 <- list()
+  cum_incident_non_cirrhotic_hcc_2100 <- list()
 
- # num2 <- tail(apply(select(out$full_output, starts_with("cum_screened_treatment_eligibility_progressionf")) +
-  #                     select(out$full_output, starts_with("cum_screened_treatment_eligibility_progressionm")),1,sum),1)+
-  #  tail(apply(select(out$full_output, starts_with("cum_screened_non_cirrhotic_hccf"))+
-  #               select(out$full_output, starts_with("cum_screened_non_cirrhotic_hccm")),1,sum),1)
-  #num2/denom
+  for(i in 1:length(full_output)) {
 
+    # Cumulative incidence of progression to treatment eligibility (from screened IT and IC) by 2050
+    cum_transitions_to_treatment_eligibility_2050[[i]] <-
+      sum(full_output[[i]][,grepl("^cum_screened_treatment_eligibility_progressionf.",
+                                  names(full_output[[i]]))][which(full_output[[i]]$time==2050),])+
+      sum(full_output[[i]][,grepl("^cum_screened_treatment_eligibility_progressionm.",
+                                  names(full_output[[i]]))][which(full_output[[i]]$time==2050),])
+    # Cumulative incidence of progression to treatment eligibility (from screened IT and IC) by 2100
+    cum_transitions_to_treatment_eligibility_2100[[i]] <-
+      sum(full_output[[i]][,grepl("^cum_screened_treatment_eligibility_progressionf.",
+                                  names(full_output[[i]]))][which(full_output[[i]]$time==2100),])+
+      sum(full_output[[i]][,grepl("^cum_screened_treatment_eligibility_progressionm.",
+                                  names(full_output[[i]]))][which(full_output[[i]]$time==2100),])
 
+    cum_incident_non_cirrhotic_hcc_2050[[i]] <-
+      sum(full_output[[i]][,grepl("^cum_screened_non_cirrhotic_hccf.",
+                       names(full_output[[i]]))][which(full_output[[i]]$time==2050),])+
+      sum(full_output[[i]][,grepl("^cum_screened_non_cirrhotic_hccm.",
+                                  names(full_output[[i]]))][which(full_output[[i]]$time==2050),])
+
+    cum_incident_non_cirrhotic_hcc_2100[[i]] <-
+      sum(full_output[[i]][,grepl("^cum_screened_non_cirrhotic_hccf.",
+                                  names(full_output[[i]]))][which(full_output[[i]]$time==2100),])+
+      sum(full_output[[i]][,grepl("^cum_screened_non_cirrhotic_hccm.",
+                                  names(full_output[[i]]))][which(full_output[[i]]$time==2100),])
+
+    # Population at risk: person-years in screened IT and IC compartments
+    # Denominator is sum of all compartments at risk at each timestep but the last
+    # (when incident outcome is measured) * dt
+    it_ic_at_risk_2050[[i]] <-
+      (sum(full_output[[i]][,grepl("^S_ITf.",names(full_output[[i]]))][
+        which(full_output[[i]]$time==2020):which(full_output[[i]]$time==2050-dt),])+
+      sum(full_output[[i]][,grepl("^S_ITm.",names(full_output[[i]]))][
+        which(full_output[[i]]$time==2020):which(full_output[[i]]$time==2050-dt),])+
+      sum(full_output[[i]][,grepl("^S_ICf.",names(full_output[[i]]))][
+        which(full_output[[i]]$time==2020):which(full_output[[i]]$time==2050-dt),])+
+      sum(full_output[[i]][,grepl("^S_ICm.",names(full_output[[i]]))][
+        which(full_output[[i]]$time==2020):which(full_output[[i]]$time==2050-dt),]))*dt
+
+    it_ic_at_risk_2100[[i]] <-
+      (sum(full_output[[i]][,grepl("^S_ITf.",names(full_output[[i]]))][
+        which(full_output[[i]]$time==2020):which(full_output[[i]]$time==2100-dt),])+
+         sum(full_output[[i]][,grepl("^S_ITm.",names(full_output[[i]]))][
+           which(full_output[[i]]$time==2020):which(full_output[[i]]$time==2100-dt),])+
+         sum(full_output[[i]][,grepl("^S_ICf.",names(full_output[[i]]))][
+           which(full_output[[i]]$time==2020):which(full_output[[i]]$time==2100-dt),])+
+         sum(full_output[[i]][,grepl("^S_ICm.",names(full_output[[i]]))][
+           which(full_output[[i]]$time==2020):which(full_output[[i]]$time==2100-dt),]))*dt
+
+  }
+
+   outlist <- list(cum_transitions_to_treatment_eligibility_2050 =
+                     unlist(cum_transitions_to_treatment_eligibility_2050),
+                   cum_transitions_to_treatment_eligibility_2100 =
+                     unlist(cum_transitions_to_treatment_eligibility_2100),
+                   it_ic_at_risk_2050 =
+                     unlist(it_ic_at_risk_2050),
+                   it_ic_at_risk_2100 =
+                     unlist(it_ic_at_risk_2100),
+                   cum_incident_non_cirrhotic_hcc_2050 =
+                     unlist(cum_incident_non_cirrhotic_hcc_2050),
+                   cum_incident_non_cirrhotic_hcc_2100 =
+                     unlist(cum_incident_non_cirrhotic_hcc_2100))
+
+   # Dividing numerator events by it_ic_at_risk will give the rate per person-year.
 
 }
+
 
 ### MODEL INPUT ----
 
