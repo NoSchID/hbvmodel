@@ -53,7 +53,6 @@ out6b <- out6b[[1]]
 out6c <- readRDS(paste0(out_path, "a1_out6c_screen_2020_monit_4_280920.rds"))
 out6c <- out6c[[1]]
 
-
 # Monitoring different age groups (yearly)
 monit_out1 <- readRDS(paste0(out_path, "a1_monit_out1_240920.rds"))
 monit_out1 <- monit_out1[[1]]
@@ -202,6 +201,108 @@ ggplot(cohort_ly_gained_sq_long[cohort_ly_gained_sq_long$type == "proportion_ave
   ylim(0,15) +
   theme(axis.text = element_text(size = 15),
         axis.title = element_text(size = 15),
+        title = element_text(size = 15))
+
+# Deaths averted per clinical assessments and interactions (monitor all ages) ----
+deaths_averted_per_assessment_sq_long <-
+  plot_hbv_deaths_averted_per_healthcare_interaction(counterfactual_object = out2,
+                                                     scenario_objects = list(out3, out5, out6),
+                                                     interaction_type = "total_assessed",
+                                                     counterfactual_label = "no treatment")
+#levels(deaths_averted_per_assessment_sq_long$scenario) <- scenario_labels
+#deaths_averted_per_assessment_long$freq <- "Every year"
+#deaths_averted_per_assessment_long$freq[deaths_averted_per_assessment_long$scenario %in% sub_5yearly] <-
+#  "Every 5 years"
+
+ggplot(data =deaths_averted_per_assessment_sq_long,
+       aes(x=scenario, y=value*10000)) +
+  stat_summary(fun.data=f, geom="boxplot", position = "dodge", width = 0.5, fill = "grey") +
+  ylab("HBV-related deaths averted\nper 10,000 treatment eligibility assessments") +
+  xlab("Monitoring frequency") +
+  scale_x_discrete(labels = c("screen_2020_monit_0" = "No monitoring",
+                              "screen_2020_monit_5" = "Monitor\nevery 5 years",
+                              "screen_2020_monit_1" = "Monitor\nevery year")) +
+#  ylim(0,100) +
+  theme_bw() +
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        strip.text = element_text(size = 15),
+        legend.text =element_text(size = 14),
+        title = element_text(size = 15))
+
+deaths_averted_per_interactions_sq_long <-
+  plot_hbv_deaths_averted_per_healthcare_interaction(counterfactual_object = out2,
+                                                     scenario_objects = list(out3, out5, out6),
+                                                     interaction_type = "total_interactions",
+                                                     counterfactual_label = "no treatment")
+#levels(deaths_averted_per_assessment_sq_long$scenario) <- scenario_labels
+#deaths_averted_per_assessment_long$freq <- "Every year"
+#deaths_averted_per_assessment_long$freq[deaths_averted_per_assessment_long$scenario %in% sub_5yearly] <-
+#  "Every 5 years"
+
+ggplot(data =deaths_averted_per_interactions_sq_long,
+       aes(x=scenario, y=value*10000)) +
+  stat_summary(fun.data=f, geom="boxplot", position = "dodge", width = 0.5, fill = "grey") +
+  ylab("HBV-related deaths averted\nper 10,000 clinical interactions") +
+  xlab("Monitoring frequency") +
+  scale_x_discrete(labels = c("screen_2020_monit_0" = "No monitoring",
+                              "screen_2020_monit_5" = "Monitor\nevery 5 years",
+                              "screen_2020_monit_1" = "Monitor\nevery year")) +
+  ylim(0,70) +
+  theme_bw() +
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        strip.text = element_text(size = 15),
+        legend.text =element_text(size = 14),
+        title = element_text(size = 15))
+
+
+
+# Barchart of total median interactions with/without monitoring ----
+# Over the lifetime of the cohort = by 2100
+interactions_bar_df <- data.frame(rbind(
+  cbind(out3$interactions[[which(seq(2025,2100, by = 5)==2100)]]$total_screened,
+        interaction_type = "total_screened"),
+  cbind(out3$interactions[[which(seq(2025,2100, by = 5)==2100)]]$total_assessed,
+        interaction_type = "total_assessed"),
+  cbind(out3$interactions[[which(seq(2025,2100, by = 5)==2100)]]$total_treated,
+        interaction_type = "total_treated"),
+  cbind(out5$interactions[[which(seq(2025,2100, by = 5)==2100)]]$total_screened,
+        interaction_type = "total_screened"),
+  cbind(out5$interactions[[which(seq(2025,2100, by = 5)==2100)]]$total_assessed,
+        interaction_type = "total_assessed"),
+  cbind(out5$interactions[[which(seq(2025,2100, by = 5)==2100)]]$total_treated,
+        interaction_type = "total_treated"),
+  cbind(out6$interactions[[which(seq(2025,2100, by = 5)==2100)]]$total_screened,
+        interaction_type = "total_screened"),
+  cbind(out6$interactions[[which(seq(2025,2100, by = 5)==2100)]]$total_assessed,
+        interaction_type = "total_assessed"),
+  cbind(out6$interactions[[which(seq(2025,2100, by = 5)==2100)]]$total_treated,
+        interaction_type = "total_treated")))
+
+interactions_bar_df <- interactions_bar_df %>%
+  gather(key = "sim", value = "value", -from_year, -by_year, -scenario, -interaction_type) %>%
+  group_by(from_year, by_year, scenario, interaction_type) %>%
+  summarise(median = median(value))
+
+library(viridis)
+ggplot(interactions_bar_df) +
+  geom_bar(aes(x = scenario, y = median, fill = interaction_type), position="stack", width = 0.5, stat = "identity") +
+  scale_fill_viridis(discrete = TRUE, direction =-1,
+                     labels = c("total_screened" = "HBsAg tests",
+                                "total_assessed" = "Treatment eligibility\nassessments",
+                                "total_treated" = "Treatment initiations")) +
+  xlab("Monitoring frequency") +
+  scale_x_discrete(labels = c("screen_2020_monit_0" = "No monitoring",
+                              "screen_2020_monit_5" = "Monitor\nevery 5 years",
+                              "screen_2020_monit_1" = "Monitor\nevery year")) +
+  ylab("Total clinical interactions 2020-2100") +
+  labs(fill = "Resource type") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        strip.text = element_text(size = 15),
+        legend.text =element_text(size = 14),
         title = element_text(size = 15))
 
 # 2) Yearly monitoring of which age group is most effective, compared to no monitoring? ----
@@ -961,4 +1062,172 @@ ggplot(df_to_plot2) +
         axis.title = element_text(size = 15),
         strip.text = element_text(size = 15),
         title = element_text(size = 15))
+
+
+# 5) Incremental benefits and interactions between a set of strategies ----
+
+# Order of monitoring strategies from least to most intensive:
+# no monitoring, 5-yearly 15-30, 5-yearly 15-45, 5-yearly 15+ (all ages), yearly 15-30, yearly 15-45, yearly 15+ (all ages).
+# Corresponding objects: out3, monit_out6, monit_out7, out5, monit_out1, monit_out2, out6
+interactions_by_2100 <- rbind(
+  cbind(scenario = "No monitoring",
+        out3$interactions[[16]]$total_interactions[-c(1:3)]),
+  cbind(scenario = "Yearly 15-30",
+        monit_out1$interactions[[16]]$total_interactions[-c(1:3)]),
+  cbind(scenario = "Yearly 15-45",
+        monit_out2$interactions[[16]]$total_interactions[-c(1:3)]),
+  cbind(scenario = "Yearly 15+ (all ages)",
+        out6$interactions[[16]]$total_interactions[-c(1:3)]))
+
+increment_in_interactions_by_2100 <- rbind(interactions_by_2100[1,-1]*-1,
+                                           apply(interactions_by_2100[,-1],2,diff))
+
+increment_in_interactions_by_2100 <- data.frame(scenario = c("Status quo",
+                                                             as.character(interactions_by_2100$scenario[-1])),
+                                                increment_in_interactions_by_2100)
+
+increment_in_interactions_by_2100_long <- gather(increment_in_interactions_by_2100, key = "sim",
+                                                 value = "incremental_interactions", - scenario)
+
+# Deaths averted by 2100 compared to status quo
+deaths_averted_by_2100 <- plot_hbv_deaths_averted_cohort(counterfactual_object = out1,
+                               scenario_objects = list(out3, monit_out1, monit_out2, out6),
+                               outcome_to_plot = "number_averted",
+                               counterfactual_label = "no treatment")
+
+deaths_averted_by_2100 <- filter(deaths_averted_by_2100, type == "number_averted") %>%
+  select(scenario, sim, value)
+deaths_averted_by_2100$sim <- as.numeric(gsub("[^0-9]", "", deaths_averted_by_2100$sim))
+# Check simulations match:
+unique(deaths_averted_by_2100$sim) == gsub("[^0-9]", "", colnames(increment_in_interactions_by_2100[-1]))
+deaths_averted_by_2100 <- spread(deaths_averted_by_2100, key = "sim", value = "value")
+
+increment_in_deaths_averted_by_2100 <- rbind(deaths_averted_by_2100[1,-1]*-1,
+                                             apply(deaths_averted_by_2100[,-1],2,diff))
+
+increment_in_deaths_averted_by_2100 <- data.frame(scenario = c("Status quo",
+                                                               as.character(interactions_by_2100$scenario[-1])),
+                                                  increment_in_deaths_averted_by_2100)
+
+increment_in_deaths_averted_by_2100_long <- gather(increment_in_deaths_averted_by_2100, key = "sim",
+                                                 value = "incremental_deaths_averted", - scenario)
+
+incremental_df <- left_join(increment_in_interactions_by_2100_long,
+                            increment_in_deaths_averted_by_2100_long, by = c("scenario", "sim"))
+
+# Add arbitratry no monitoring point at 0 (reference)
+incremental_df <- rbind(data.frame(scenario = "No monitoring",
+                                   sim = "X",
+                                   incremental_interactions = 0,
+                                   incremental_deaths_averted = 0),
+                        incremental_df)
+
+incremental_df_summary <- group_by(incremental_df, scenario) %>%
+  summarise(median_inc_interactions = median(incremental_interactions),
+            median_inc_deaths_averted = median(incremental_deaths_averted))
+
+ggplot(incremental_df) +
+
+  geom_point(aes(x = incremental_deaths_averted,incremental_interactions,
+                 group = scenario, colour = scenario), alpha = 0.4) +
+  geom_line(aes(x = incremental_deaths_averted,incremental_interactions,
+                group = sim), colour = "grey", alpha = 0.5) +
+  stat_ellipse(geom = "polygon",
+               aes(incremental_deaths_averted,incremental_interactions,
+                   group = scenario, fill= scenario), alpha = 0.3) +
+  geom_vline(xintercept = 0) +
+  geom_hline(yintercept = 0) +
+  geom_line(data = incremental_df_summary, aes(y = median_inc_interactions,
+                                               x = median_inc_deaths_averted), size = 1) +
+  geom_point(data = incremental_df_summary, aes(y = median_inc_interactions,
+                                                x = median_inc_deaths_averted,
+                                                group = scenario, colour = scenario), size = 5) +
+  scale_colour_discrete(breaks=c("Status quo","No monitoring",
+                                 "Yearly 15-30","Yearly 15-45","Yearly 15+ (all ages)"),
+                        labels = c("Status quo" = "No treatment programme (status quo)",
+                                   "No monitoring" = "Treatment programme\nwithout monitoring",
+                                   "Yearly 15-30" = "Add yearly monitoring\nfor age 15-30",
+                                   "Yearly 15-45" = "Extend yearly monitoring\nuntil age 45",
+                                   "Yearly 15+ (all ages)" = "Extend yearly monitoring\nto all ages")) +
+  scale_fill_discrete(breaks=c("Status quo","No monitoring",
+                               "Yearly 15-30","Yearly 15-45","Yearly 15+ (all ages)"),
+                      labels = c("Status quo" = "No treatment programme (status quo)",
+                                 "No monitoring" = "Treatment programme\nwithout monitoring",
+                                 "Yearly 15-30" = "Add yearly monitoring\nfor age 15-30",
+                                 "Yearly 15-45" = "Extend yearly monitoring\nuntil age 45",
+                                 "Yearly 15+ (all ages)" = "Extend yearly monitoring\nto all ages")) +
+  ylab("Change in total clinical interactions") +
+  xlab("Change in HBV-related deaths averted") +
+  xlim(-7000,7000) +
+  ylim(-1600000,1600000) +
+  theme_bw()
+# This plot shows the increase in deaths averted and # total interactions between each 2 strategies,
+# with "treatment without monitoring" being at 0 (status quo of no treatment is shown as negative to that).
+# The assumption here is that everyone is monitored from the start, but it stops at some age (e.g. 30, 45).
+# Would ideally exclude the lines/points outside the 95% interval
+
+
+
+library(BCEA)
+?bcea
+
+interactions_test <- t(interactions_by_2100[,-1])
+interactions_test <- cbind(interactions_test[,2]-interactions_test[,1],
+                           interactions_test[,3]-interactions_test[,1],
+                           interactions_test[,4]-interactions_test[,1])
+interactions_test <- cbind(interactions_test, rep(0,183))
+outcome_test <- t(deaths_averted_by_2100[,-1])
+outcome_test <- cbind(outcome_test[,2]-outcome_test[,1],
+                      outcome_test[,3]-outcome_test[,1],
+                      outcome_test[,4]-outcome_test[,1])
+outcome_test <- cbind(outcome_test, rep(0,183))
+
+
+test <- bcea(e=outcome_test,c=interactions_test,
+             ref=4,
+             interventions=c(as.character(interactions_by_2100$scenario[-1]), "No monitoring"),
+             Kmax=50000,
+             plot=TRUE)
+
+ceef.plot(test, graph="base", relative = FALSE)
+
+#
+ceef_interactions_by_2100 <- rbind(
+cbind(scenario = "No monitoring",
+      out3$interactions[[16]]$total_interactions[-c(1:3)]-out3$interactions[[16]]$total_interactions[-c(1:3)]),
+cbind(scenario = "5-Yearly 15-30",
+      monit_out6$interactions[[16]]$total_interactions[-c(1:3)]-out3$interactions[[16]]$total_interactions[-c(1:3)]),
+cbind(scenario = "5-Yearly 15-45",
+      monit_out7$interactions[[16]]$total_interactions[-c(1:3)]-out3$interactions[[16]]$total_interactions[-c(1:3)]),
+cbind(scenario = "5-Yearly 15+ (all ages)",
+      out5$interactions[[16]]$total_interactions[-c(1:3)]-out3$interactions[[16]]$total_interactions[-c(1:3)]),
+cbind(scenario = "Yearly 15-30",
+      monit_out1$interactions[[16]]$total_interactions[-c(1:3)]-out3$interactions[[16]]$total_interactions[-c(1:3)]),
+cbind(scenario = "Yearly 15-45",
+      monit_out2$interactions[[16]]$total_interactions[-c(1:3)]-out3$interactions[[16]]$total_interactions[-c(1:3)]),
+cbind(scenario = "Yearly 15+ (all ages)",
+      out6$interactions[[16]]$total_interactions[-c(1:3)]-out3$interactions[[16]]$total_interactions[-c(1:3)]))
+ceef_interactions <- t(ceef_interactions_by_2100[,-1])
+
+ceef_deaths_averted_by_2100 <-
+  plot_hbv_deaths_averted_cohort(counterfactual_object = out3,
+                                 scenario_objects = list(out3, monit_out6, monit_out7, out5,
+                                                         monit_out1, monit_out2, out6),
+                                 outcome_to_plot = "number_averted",
+                                 counterfactual_label = "no monitoring")
+
+ceef_deaths_averted_by_2100<- filter(ceef_deaths_averted_by_2100, type == "number_averted") %>%
+  select(scenario, sim, value) %>%
+  spread(key = "scenario", value = "value") %>%
+  select(-sim)
+
+test2 <- bcea(e=as.matrix(ceef_deaths_averted_by_2100),c=ceef_interactions,
+              ref=1,
+              interventions=c(as.character(ceef_interactions_by_2100$scenario)),
+              Kmax=50000,
+              plot=TRUE)
+
+ceef.plot(test2, graph="base", relative = FALSE)
+
+
 
