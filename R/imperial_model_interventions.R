@@ -2747,8 +2747,9 @@ run_one_screening_scenario_on_cluster <- function(..., default_parameter_list, c
   }
   ly[sapply(ly, is.null)] <- NULL
 
-  # Healthcare interactions
+  # Healthcare interactions and person-time on treatment
   interactions <- list()
+  py_on_treatment <- list()
 
   if (scenario %in% c("vacc_screen", "vacc_bdvacc_screen")) {
 
@@ -2758,8 +2759,29 @@ run_one_screening_scenario_on_cluster <- function(..., default_parameter_list, c
     }
     interactions[sapply(interactions, is.null)] <- NULL
 
+    # Multiply by dt
+
+    # Person-time in all compartments after treatment initiation
+    treated_pop_total <- sapply(lapply(out, "[[", "treated_pop_female"), rowSums)+
+      sapply(lapply(out, "[[", "treated_pop_male"), rowSums)
+    # Remove T_R compartment since HBsAg loss would lead to discontinuation
+    t_rf_index <- which(grepl("^T_Rf.",names(out[[1]]$full_output)))
+    t_rm_index <- which(grepl("^T_Rm.",names(out[[1]]$full_output)))
+    t_r_female <- lapply(lapply(out, "[[", "full_output"), "[", t_rf_index)
+    t_r_male <- lapply(lapply(out, "[[", "full_output"), "[", t_rm_index)
+    t_r_total <- sapply(t_r_female, rowSums)+sapply(t_r_male, rowSums)
+    person_time_on_treatment <- treated_pop_total-t_r_total
+
+    # Extract person-YEARS by time
+    for (j in years_to_extract) {
+      py_on_treatment[[j-2024]] <-
+        apply(person_time_on_treatment[which(out[[1]]$time==2020):which(out[[1]]$time==j),],2,sum)*dt
+    }
+    py_on_treatment[sapply(py_on_treatment, is.null)] <- NULL
+
   } else {
     interactions <- NA
+    py_on_treatment <- NA
   }
 
   # Timeseries
@@ -2780,6 +2802,7 @@ run_one_screening_scenario_on_cluster <- function(..., default_parameter_list, c
                cum_hbv_deaths = cum_hbv_deaths,
                ly = ly,
                interactions = interactions,
+               py_on_treatment =  py_on_treatment,  # Excludes T_R compartment
                #screened_pop_female = screened_pop_female,
                #screened_pop_male = screened_pop_male,
                #treated_pop_female = treated_pop_female,
