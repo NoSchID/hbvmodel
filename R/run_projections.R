@@ -8,7 +8,7 @@ source(here("R/imperial_model_interventions.R"))
 
 load(here("calibration", "input", "accepted_parmsets_123_180520.Rdata")) # params_mat_targets5
 
-sim <- apply(params_mat_accepted[1:2,],1,
+sim <- apply(params_mat_accepted[1,],1,
              function(x)
                run_model(sim_duration = runtime, default_parameter_list = parameter_list,
                          parms_to_change =
@@ -62,7 +62,6 @@ out <- code_model_output(sim[[1]])
 outpath <- out
 
 out <- lapply(sim, code_model_output)
-
 
 load(here("output", "sims_output_scenario_vacc_130120.RData"))
 out <- out_vacc
