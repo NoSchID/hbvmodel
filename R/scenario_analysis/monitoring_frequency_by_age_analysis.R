@@ -1290,38 +1290,90 @@ df1 <- df1_ly %>%
   rename(ly_saved = value) %>%
   drop_na()
 
-# Add reference no monitoring point at 0
-df1 <- rbind(c("No monitoring", "X", rep(0,(ncol(df1)-2))), df1)
-df1[,-c(1:2)] <- apply(df1[,-c(1:2)], 2, as.numeric)
+# Split by monitoring frequency
+df1$frequency <- "Every 5 years"
+df1$frequency[df1$scenario %in% c("Yearly all ages", "Yearly 15-45", "Yearly 15-30")] <- "Every 1 year"
+# Split by age group
+df1$age_group <- "15+ (all ages)"
+df1$age_group[df1$scenario %in% c("Yearly 15-45", "5-yearly 15-45")] <- "15-45"
+df1$age_group[df1$scenario %in% c("Yearly 15-30", "5-yearly 15-30")] <- "15-30"
 
-# Manually find dominated strategies for each combination of exposure and outcome,
-# based on median
-# For deaths averted outcomes, it is Yearly 15-45
-# For LY saved outcomes, it is Yearly 15-45 and Yearly 15-30
-df1$frontier_deaths_averted <- "Include"
-df1$frontier_deaths_averted[df1$scenario == "Yearly 15-45"] <- "Dominated"
-df1$frontier_ly_saved <- "Include"
-df1$frontier_ly_saved[df1$scenario %in% c("Yearly 15-45", "Yearly 15-30")] <- "Dominated"
+# Add reference no monitoring point at 0
+df1$scenario <- as.character(df1$scenario)
+df1 <- rbind(c("No monitoring", "X", rep(0,(ncol(df1)-4)), "Every 5 years", "15-30"),
+             c("No monitoring", "X", rep(0,(ncol(df1)-4)), "Every 5 years", "15-45"),
+             c("No monitoring", "X", rep(0,(ncol(df1)-4)), "Every 5 years", "15+ (all ages)"),
+             c("No monitoring", "X", rep(0,(ncol(df1)-4)), "Every 1 year", "15-30"),
+             c("No monitoring", "X", rep(0,(ncol(df1)-4)), "Every 1 year", "15-45"),
+             c("No monitoring", "X", rep(0,(ncol(df1)-4)), "Every 1 year", "15+ (all ages)"),
+             df1)
+df1[,-c(1:2,ncol(df1)-1,ncol(df1))] <- apply(df1[,-c(1:2,ncol(df1)-1,ncol(df1))], 2, as.numeric)
+df1$scenario <- factor(df1$scenario)
+
+# Use BCEA package to find dominated and extended dominated strategies
+library(BCEA)
+find_dominated_strategies <- function(df, exposure, outcome) {
+plot <- ceef.plot(bcea(e=cbind(matrix(rep(0, 183)),
+                       as.matrix(select(df, scenario, sim, outcome) %>%
+                                   filter(sim != "X") %>%
+                                   spread(key="scenario", value = outcome)%>%
+                                   select(-sim))),
+               c=cbind(matrix(rep(0, 183)),
+                       as.matrix(select(df, scenario, sim, exposure) %>%
+                                   filter(sim != "X") %>%
+                                   spread(key="scenario", value = exposure)%>%
+                                   select(-sim))),
+               ref=1,
+               interventions=c("No monitoring", colnames(select(df, scenario, sim, outcome) %>%
+                 filter(sim != "X") %>%
+                 spread(key="scenario", value = outcome)%>%
+                 select(-sim))),
+               Kmax=50000000,
+               plot=FALSE),
+          graph="base", relative = FALSE)
+return(plot)
+}
+find_dominated_strategies(df1, "total_interactions", "deaths_averted")
+find_dominated_strategies(df1,"total_cost", "deaths_averted")
+find_dominated_strategies(df1,"total_interactions", "ly_saved")
+find_dominated_strategies(df1, "total_cost", "ly_saved")
+# Deaths averted and interactions: Yearly 15-45 (A), Yearly 15-30 (E)
+# Deaths averted and cost: Yearly 15-45 (A), Yearly 15-30 (E), 5-yearly 15-45 (E), 5-yearly 15-30 (E),
+# LY saved and interactions: Yearly 15-45 (A), Yearly 15-30 (E)
+# LY saved and cost: Yearly 15-45 (A), Yearly 15-30 (E), 5-yearly 15-30 (E)
+
+# Add labels for this to dataframe
+df1$frontier_interactions <- "Include"
+df1$frontier_interactions[df1$scenario %in% c("Yearly 15-45", "Yearly 15-30")] <- "Dominated"
+df1$frontier_deaths_averted_cost <- "Include"
+df1$frontier_deaths_averted_cost[df1$scenario %in% c("Yearly 15-45", "Yearly 15-30",
+                                                     "5-yearly 15-45", "5-yearly 15-30")] <- "Dominated"
+df1$frontier_ly_saved_cost <- "Include"
+df1$frontier_ly_saved_cost[df1$scenario %in% c("Yearly 15-45", "Yearly 15-30", "5-yearly 15-30")] <-
+  "Dominated"
 
 df1_summary <- df1 %>%
-  group_by(scenario, frontier_deaths_averted, frontier_ly_saved) %>%
+  group_by(scenario, frequency, age_group, frontier_interactions, frontier_deaths_averted_cost, frontier_ly_saved_cost) %>%
   summarise(median_deaths_averted = median(deaths_averted),
             median_ly_saved = median(ly_saved),
             median_interactions = median(total_interactions),
             median_cost = median(total_cost))
 
+# Plots ----
 # Plot: interactions vs deaths averted
 ggplot(df1) +
-  geom_line(data= subset(df1, frontier_deaths_averted == "Include"),
+  geom_line(data= subset(df1, frontier_interactions== "Include"),
             aes(x = deaths_averted, y= total_interactions,
                 group = sim), colour = "grey", alpha = 0.5) +
+  stat_ellipse(data=subset(df1, scenario != "No monitoring"),
+                aes(x=deaths_averted,y=total_interactions,
+                   group = reorder(scenario, deaths_averted),
+                   fill= reorder(scenario, deaths_averted)),
+               geom = "polygon", na.rm = FALSE, alpha = 0.3) +
   geom_point(aes(x = deaths_averted, y = total_interactions,
                  group =reorder(scenario, deaths_averted), colour = reorder(scenario, deaths_averted)), alpha = 0.4) +
-  stat_ellipse(geom = "polygon",
-               aes(x=deaths_averted,y=total_interactions,
-                   group = reorder(scenario, deaths_averted), fill= reorder(scenario, deaths_averted)), alpha = 0.3) +
   # Overlay median
-  geom_line(data = subset(df1_summary, frontier_deaths_averted == "Include"),
+  geom_line(data = subset(df1_summary, frontier_interactions == "Include"),
             aes(y = median_interactions,
                 x = median_deaths_averted), size = 1) +
   geom_point(data = df1_summary,
@@ -1334,6 +1386,45 @@ ggplot(df1) +
                  x = median_deaths_averted,
                  group = reorder(scenario, median_deaths_averted)),
              size = 5, shape = 1, colour = "black") +
+  scale_fill_manual("Monitoring strategies\nstarting at entry\ninto cohort",
+                    values=brewer.pal(6,"RdYlBu")) +
+  scale_colour_manual("Monitoring strategies\nstarting at entry\ninto cohort",
+                      values=c("black", brewer.pal(6,"RdYlBu"))) +
+  guides(fill=FALSE) +
+  xlab("Incremental HBV-related deaths averted") +
+  ylab("Incremental number of clinical interactions") +
+  xlim(-150,7200) +
+  #  ylim(0,2500000) +
+  theme_bw() +
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        legend.text = element_text(size = 12),
+        title = element_text(size = 15))
+
+# Plot: interactions vs deaths averted (separated by frequency)
+ggplot(df1) +
+  geom_line(aes(x = deaths_averted, y= total_interactions,
+                group = sim), colour = "grey", alpha = 0.5) +
+  geom_point(aes(x = deaths_averted, y = total_interactions,
+                 group =reorder(scenario, deaths_averted), colour = reorder(scenario, deaths_averted)), alpha = 0.4) +
+  stat_ellipse(geom = "polygon",
+               aes(x=deaths_averted,y=total_interactions,
+                   group = reorder(scenario, deaths_averted), fill= reorder(scenario, deaths_averted)), alpha = 0.3) +
+  # Overlay median
+  geom_line(data = df1_summary,
+            aes(y = median_interactions,
+                x = median_deaths_averted), size = 1) +
+  geom_point(data = df1_summary,
+             aes(y = median_interactions,
+                 x = median_deaths_averted,
+                 group = reorder(scenario, median_deaths_averted),
+                 colour = reorder(scenario, median_deaths_averted)), size = 5) +
+  geom_point(data = df1_summary,
+             aes(y = median_interactions,
+                 x = median_deaths_averted,
+                 group = reorder(scenario, median_deaths_averted)),
+             size = 5, shape = 1, colour = "black") +
+  facet_wrap(~frequency) +
   scale_fill_brewer("Monitoring strategies\nstarting at entry\ninto cohort", palette="RdYlBu") +
   scale_colour_brewer("Monitoring strategies\nstarting at entry\ninto cohort",
                       palette="RdYlBu") +
@@ -1349,7 +1440,7 @@ ggplot(df1) +
 
 # Plot: cost vs deaths averted
 ggplot(df1) +
-  geom_line(data= subset(df1, frontier_deaths_averted == "Include"),
+  geom_line(data= subset(df1, frontier_deaths_averted_cost == "Include"),
             aes(x = deaths_averted, y= total_cost,
                 group = sim), colour = "grey", alpha = 0.5) +
   geom_point(aes(x = deaths_averted, y = total_cost,
@@ -1360,7 +1451,7 @@ ggplot(df1) +
                    group = reorder(scenario, deaths_averted),
                    fill= reorder(scenario, deaths_averted)), alpha = 0.3) +
   # Overlay median
-  geom_line(data = subset(df1_summary, frontier_deaths_averted == "Include"),
+  geom_line(data = subset(df1_summary, frontier_deaths_averted_cost == "Include"),
             aes(y = median_cost,
                 x = median_deaths_averted), size = 1) +
   geom_point(data = df1_summary,
@@ -1388,7 +1479,7 @@ ggplot(df1) +
 
 # Plot: interactions vs LY saved
 ggplot(df1) +
-  geom_line(data= subset(df1, frontier_ly_saved == "Include"),
+  geom_line(data= subset(df1, frontier_interactions == "Include"),
             aes(x = ly_saved, y= total_interactions,
                 group = sim), colour = "grey", alpha = 0.5) +
   geom_point(aes(x = ly_saved, y = total_interactions,
@@ -1397,7 +1488,7 @@ ggplot(df1) +
                aes(x=ly_saved,y=total_interactions,
                    group = reorder(scenario, ly_saved), fill= reorder(scenario, ly_saved)), alpha = 0.3) +
   # Overlay median
-  geom_line(data = subset(df1_summary, frontier_ly_saved == "Include"),
+  geom_line(data = subset(df1_summary, frontier_interactions == "Include"),
             aes(y = median_interactions,
                 x = median_ly_saved), size = 1) +
   geom_point(data = df1_summary,
@@ -1425,7 +1516,7 @@ ggplot(df1) +
 
 # Plot: cost vs LY saved
 ggplot(df1) +
-  geom_line(data= subset(df1, frontier_ly_saved == "Include"),
+  geom_line(data= subset(df1, frontier_ly_saved_cost == "Include"),
             aes(x = ly_saved, y= total_cost,
                 group = sim), colour = "grey", alpha = 0.5) +
   geom_point(aes(x = ly_saved, y = total_cost,
@@ -1436,7 +1527,7 @@ ggplot(df1) +
                    group = reorder(scenario, ly_saved),
                    fill= reorder(scenario, ly_saved)), alpha = 0.3) +
   # Overlay median
-  geom_line(data = subset(df1_summary, frontier_ly_saved == "Include"),
+  geom_line(data = subset(df1_summary, frontier_ly_saved_cost == "Include"),
             aes(y = median_cost,
                 x = median_ly_saved), size = 1) +
   geom_point(data = df1_summary,
@@ -1597,9 +1688,9 @@ df2 <- cohort_ly_gained2_long %>%
 df2$frequency <- "Every 5 years"
 df2$frequency[df2$scenario %in% c("Yearly 15+ (all ages)", "Yearly 45+", "Yearly 30+")] <- "Every 1 year"
 # Split by birth cohort age group
-df2$birth_cohort <- "15+ (all ages)"
-df2$birth_cohort[df2$scenario %in% c("Yearly 45+", "5-yearly 45+")] <- "45+"
-df2$birth_cohort[df2$scenario %in% c("Yearly 30+", "5-yearly 30+")] <- "30+"
+df2$age_group <- "15+ (all ages)"
+df2$age_group[df2$scenario %in% c("Yearly 45+", "5-yearly 45+")] <- "45+"
+df2$age_group[df2$scenario %in% c("Yearly 30+", "5-yearly 30+")] <- "30+"
 
 # Add reference no monitoring point at 0
 df2$scenario <- as.character(df2$scenario)
@@ -1613,52 +1704,49 @@ df2 <- rbind(c("No monitoring", "X", rep(0,(ncol(df2)-4)), "Every 5 years", "45+
 df2[,-c(1:2,ncol(df2)-1,ncol(df2))] <- apply(df2[,-c(1:2,ncol(df2)-1,ncol(df2))], 2, as.numeric)
 df2$scenario <- factor(df2$scenario)
 
-# Manually find dominated strategies for each combination of exposure and outcome,
-# based on median
-df2 %>%
-  group_by(scenario) %>%
-  summarise(median_deaths_averted = median(deaths_averted),
-            median_ly_saved = median(ly_saved),
-            median_interactions = median(total_interactions),
-            median_cost = median(total_cost)) %>%
-  arrange(median_deaths_averted)
-# For deaths averted & interactions, it is Yearly 45+ and Yearly 30+
-# For deaths averted & cost, it is Yearly 30+
-df2 %>%
-  group_by(scenario) %>%
-  summarise(median_deaths_averted = median(deaths_averted),
-            median_ly_saved = median(ly_saved),
-            median_interactions = median(total_interactions),
-            median_cost = median(total_cost)) %>%
-  arrange(median_ly_saved)
-# For LY saved & interactions, it is Yearly 45+ and Yearly 30+
-# For LY saved & cost, it is Yearly 30+
-df2$frontier_interactions <- "Include"
-df2$frontier_interactions[df2$scenario == "Yearly 45+" |
-                           df2$scenario == "Yearly 30+"] <- "Dominated"
-df2$frontier_cost <- "Include"
-df2$frontier_cost[df2$scenario == "Yearly 30+"] <- "Dominated"
+# Find dominated strategies for each combination of exposure and outcome using BCEA package
+find_dominated_strategies(df2, "total_interactions", "deaths_averted")
+find_dominated_strategies(df2,"total_cost", "deaths_averted")
+find_dominated_strategies(df2,"total_interactions", "ly_saved")
+find_dominated_strategies(df2, "total_cost", "ly_saved")
+# Deaths averted & interactions, LY saved & any exp.:
+# Yearly 30+, Yearly 45+, 5-yearly 30+, 5-yearly 45+
+# Deaths averted & cost: Yearly 30+, 5-yearly 45+, Yearly 45+
+
+# Add labels to this dataframe
+df2$frontier_deaths_averted_interactions <- "Include"
+df2$frontier_deaths_averted_interactions[df2$scenario %in% c("Yearly 30+", "5-yearly 30+",
+                                                "5-yearly 45+", "Yearly 45+")] <- "Dominated"
+df2$frontier_deaths_averted_cost <- "Include"
+df2$frontier_deaths_averted_cost[df2$scenario %in% c("Yearly 30+", "5-yearly 45+", "Yearly 45+")] <-
+  "Dominated"
+df2$frontier_ly_saved <- "Include"
+df2$frontier_ly_saved[df2$scenario %in% c("Yearly 30+", "5-yearly 30+",
+                                          "5-yearly 45+", "Yearly 45+")] <- "Dominated"
 
 df2_summary <- df2 %>%
-  group_by(scenario, frequency, birth_cohort, frontier_interactions, frontier_cost) %>%
+  group_by(scenario, frequency, age_group, frontier_deaths_averted_interactions,
+           frontier_deaths_averted_cost, frontier_ly_saved) %>%
   summarise(median_deaths_averted = median(deaths_averted),
             median_ly_saved = median(ly_saved),
             median_interactions = median(total_interactions),
             median_cost = median(total_cost))
 
-
+# Plots ----
 # Plot: interactions vs deaths averted (combined)
 ggplot(df2) +
-  geom_line(data= subset(df2, frontier_interactions == "Include"),
+  geom_line(data= subset(df2, frontier_deaths_averted_interactions == "Include"),
             aes(x = deaths_averted, y= total_interactions,
                 group = sim), colour = "grey", alpha = 0.5) +
   geom_point(aes(x = deaths_averted, y = total_interactions,
-                 group =reorder(scenario, deaths_averted), colour = reorder(scenario, deaths_averted)), alpha = 0.4) +
+                 group =reorder(scenario, deaths_averted), colour = reorder(scenario, deaths_averted)),
+             alpha = 0.4) +
   stat_ellipse(geom = "polygon",
                aes(x=deaths_averted,y=total_interactions,
-                   group = reorder(scenario, deaths_averted), fill= reorder(scenario, deaths_averted)), alpha = 0.3) +
+                   group = reorder(scenario, deaths_averted), fill= reorder(scenario, deaths_averted)),
+               alpha = 0.3) +
   # Overlay median
-  geom_line(data = subset(df2_summary, frontier_interactions == "Include"),
+  geom_line(data = subset(df2_summary, frontier_deaths_averted_interactions == "Include"),
             aes(y = median_interactions,
                 x = median_deaths_averted), size = 1) +
   geom_point(data = df2_summary,
@@ -1676,7 +1764,7 @@ ggplot(df2) +
                       palette="RdYlBu") +
   xlab("Incremental HBV-related deaths averted") +
   ylab("Incremental number of clinical interactions") +
-  xlim(-150,7200) +
+  #xlim(-150,7200) +
   #  ylim(0,2500000) +
   theme_bw() +
   theme(axis.text = element_text(size = 15),
@@ -1708,7 +1796,7 @@ ggplot(df2) +
                  x = median_deaths_averted,
                  group = reorder(scenario, median_deaths_averted)),
              size = 5, shape = 1, colour = "black") +
-  facet_wrap(~birth_cohort) +
+  facet_wrap(~age_group) +
   scale_fill_brewer("Monitoring strategies\nstarting at entry\ninto cohort", palette="RdYlBu") +
   scale_colour_brewer("Monitoring strategies\nstarting at entry\ninto cohort",
                       palette="RdYlBu") +

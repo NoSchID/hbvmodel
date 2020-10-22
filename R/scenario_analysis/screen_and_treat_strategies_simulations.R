@@ -12,7 +12,7 @@ source(here("R/scenario_analysis/calculate_outcomes.R"))
 
 # UPDATED SCENARIOS 22/09/20
 
-# Age group scenarios: 15-60 (A1), 45-60 (A2), 30-60 (A3), 15-30 (A4), 30-45 (A5)
+# Age group scenarios: 15-60 (A1), 45-60 (A2), 30-60 (A3), 15-30-da (A4), 30-45-da (A5)
 
 # ASSUMPTION A1 SIMULATIONS
 scenario_a1_parms <- parameter_list
@@ -52,6 +52,32 @@ scenario_a3_parms$monitoring_prob <- 0.8
 scenario_a3_parms$apply_bdvacc <- 0
 scenario_a3_parms$apply_treat_it <- 0
 #save(scenario_a3_parms, file= here("analysis_input", "scenario_a3_parms.Rdata"))
+
+# ASSUMPTION A4 SIMULATIONS
+scenario_a4_parms <- parameter_list
+scenario_a4_parms$screening_coverage <- 0.9
+scenario_a4_parms$min_age_to_screen <- 15
+scenario_a4_parms$max_age_to_screen <- 30-da
+scenario_a4_parms$prop_to_vaccinate <- 0
+scenario_a4_parms$link_to_care_prob <- 0.8
+scenario_a4_parms$treatment_initiation_prob <- 1
+scenario_a4_parms$monitoring_prob <- 0.8
+scenario_a4_parms$apply_bdvacc <- 0
+scenario_a4_parms$apply_treat_it <- 0
+#save(scenario_a4_parms, file= here("analysis_input", "scenario_a4_parms.Rdata"))
+
+# ASSUMPTION A5 SIMULATIONS
+scenario_a5_parms <- parameter_list
+scenario_a5_parms$screening_coverage <- 0.9
+scenario_a5_parms$min_age_to_screen <- 30
+scenario_a5_parms$max_age_to_screen <- 45-da
+scenario_a5_parms$prop_to_vaccinate <- 0
+scenario_a5_parms$link_to_care_prob <- 0.8
+scenario_a5_parms$treatment_initiation_prob <- 1
+scenario_a5_parms$monitoring_prob <- 0.8
+scenario_a5_parms$apply_bdvacc <- 0
+scenario_a5_parms$apply_treat_it <- 0
+#save(scenario_a5_parms, file= here("analysis_input", "scenario_a5_parms.Rdata"))
 
 
 # INITIAL SCENARIOS (before 22/09/20) ----
