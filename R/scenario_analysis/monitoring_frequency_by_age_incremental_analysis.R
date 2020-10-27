@@ -554,10 +554,14 @@ monit_out10 <- monit_out10[[1]]
 # (combining different frequencies at different ages)
 # monit_out11 = 3 yearly frequency in 15-30 year olds and 5-yearly frequency in other groups,
 # monit_out12 = yearly frequency in 15-30 year olds and 5-yearly frequency in other groups
+# monit_out13 = 3 yearly frequency in 45+ year olds and 5-yearly frequency in other groups
+# monit_out14 = yearly frequency in 45+ year olds and 5-yearly frequency in other groups
 monit_out11 <- readRDS(paste0(out_path, "a1_monit_out11_261020.rds"))
 monit_out11 <- monit_out11[[1]]
 monit_out12 <- readRDS(paste0(out_path, "a1_monit_out12_261020.rds"))
 monit_out12 <- monit_out12[[1]]
+monit_out14 <- readRDS(paste0(out_path, "a1_monit_out14_271020.rds"))
+monit_out14 <- monit_out14[[1]]
 
 # Labels of age groups being monitored
 # sim1, sim6 = 15-30
@@ -595,6 +599,8 @@ a5_out5 <- a5_out5[[1]]
 # Intensification in 30+ birth cohort:
 a5_out6b <- readRDS(paste0(out_path, "a5_out6b_screen_2020_monit_3_261020.rds"))
 a5_out6b <- a5_out6b[[1]]
+a5_out6 <- readRDS(paste0(out_path, "a5_out6_screen_2020_monit_1_271020.rds"))
+a5_out6 <- a5_out6[[1]]
 
 scenario_labels <- list("No treatment" = "status_quo_cohort",
                         "No monitoring" = "screen_2020_monit_0",
@@ -928,7 +934,7 @@ ggplot(data = incremental_df_ly_freq) +
 
 # 2) Incremental benefits and interactions between a set of strategies (monitoring by age) ----
 
-## Approach 1: monitoring given age group from entry until aging out ----
+## Approach 1 (by age): monitoring given age group from entry until aging out ----
 # Incrementally intensive strategies are: 15-30 years, 15-45 years, 15+ (all ages)
 
 # INCREMENTAL INTERACTIONS IN EACH SCENARIO BY 2100 COMPARED TO NO MONITORING
@@ -1262,11 +1268,12 @@ ggplot(df1) +
         legend.text = element_text(size = 12),
         title = element_text(size = 15))
 
-## Intensification from approach 1: focused in 15-30 year olds or unfocused across all ages ----
+## Intensification from approach 1: focused in 15-30 / 45+ year olds or unfocused across all ages ----
 # Reference = No monitoring. Strategies to compare:
 # Monitor all ages every 5 years.
-# Monitor 15-30 year olds 3/1 years and everyone else every 5 years.
-# Monitor all ages every 3/1 years.
+# Intensification in young people: Monitor 15-30 year olds 3/1 years and everyone else every 5 years.
+# Intensification at older age: Monitor 45+ year olds 3/1 years and everyone else every 5 years.
+# Unfocused intensification: Monitor all ages every 3/1 years.
 
 # Extract interactions
 interactions1b <- rbind(
@@ -1294,6 +1301,16 @@ interactions1b <- rbind(
         left_join(gather(monit_out12$interactions[[16]]$total_assessed[-c(1:3)]-out3$interactions[[16]]$total_assessed[-c(1:3)],
                          key = "sim", value = "monitoring_assessments"),
                   gather(monit_out12$interactions[[16]]$total_treated[-c(1:3)]-out3$interactions[[16]]$total_treated[-c(1:3)],
+                         key = "sim", value = "treatment_initiations"), by = "sim")),
+  #  cbind(scenario = "3-yearly 45+, 5-yearly 15-45",
+  #        left_join(gather(monit_out13$interactions[[16]]$total_assessed[-c(1:3)]-out3$interactions[[16]]$total_assessed[-c(1:3)],
+  #                         key = "sim", value = "monitoring_assessments"),
+  #                  gather(monit_out13$interactions[[16]]$total_treated[-c(1:3)]-out3$interactions[[16]]$total_treated[-c(1:3)],
+  #                         key = "sim", value = "treatment_initiations"), by = "sim")),
+  cbind(scenario = "Yearly 45+, 5-yearly 15-45",
+        left_join(gather(monit_out14$interactions[[16]]$total_assessed[-c(1:3)]-out3$interactions[[16]]$total_assessed[-c(1:3)],
+                         key = "sim", value = "monitoring_assessments"),
+                  gather(monit_out14$interactions[[16]]$total_treated[-c(1:3)]-out3$interactions[[16]]$total_treated[-c(1:3)],
                          key = "sim", value = "treatment_initiations"), by = "sim"))
 )
 
@@ -1313,7 +1330,14 @@ interactions1b_py_on_treatment <- rbind(
              py_on_treatment= monit_out11$py_on_treatment[[16]]-out3$py_on_treatment[[16]]),
   data.frame(scenario = "Yearly 15-30, 5-yearly 30+",
              sim = names(monit_out12$py_on_treatment[[16]]-out3$py_on_treatment[[16]]),
-             py_on_treatment= monit_out12$py_on_treatment[[16]]-out3$py_on_treatment[[16]])
+             py_on_treatment= monit_out12$py_on_treatment[[16]]-out3$py_on_treatment[[16]]),
+#  data.frame(scenario = "3-yearly 45+, 5-yearly 15-45",
+#             sim = names(monit_out13$py_on_treatment[[16]]-out3$py_on_treatment[[16]]),
+#             py_on_treatment= monit_out13$py_on_treatment[[16]]-out3$py_on_treatment[[16]]),
+  data.frame(scenario = "Yearly 45+, 5-yearly 15-45",
+             sim = names(monit_out14$py_on_treatment[[16]]-out3$py_on_treatment[[16]]),
+             py_on_treatment= monit_out14$py_on_treatment[[16]]-out3$py_on_treatment[[16]])
+
   )
 
 # Outcome 1: HBV related deaths averted
@@ -1327,7 +1351,11 @@ cohort_deaths_averted1b <- rbind(
   cbind(scenario = "3-yearly 15-30, 5-yearly 30+",
         out3$cum_hbv_deaths[[16]][-c(1:3)]-monit_out11$cum_hbv_deaths[[16]][-c(1:3)]),
   cbind(scenario = "Yearly 15-30, 5-yearly 30+",
-        out3$cum_hbv_deaths[[16]][-c(1:3)]-monit_out12$cum_hbv_deaths[[16]][-c(1:3)])
+        out3$cum_hbv_deaths[[16]][-c(1:3)]-monit_out12$cum_hbv_deaths[[16]][-c(1:3)]),
+#  cbind(scenario = "3-yearly 45+, 5-yearly 15-45",
+#        out3$cum_hbv_deaths[[16]][-c(1:3)]-monit_out13$cum_hbv_deaths[[16]][-c(1:3)]),
+  cbind(scenario = "Yearly 45+, 5-yearly 15-45",
+        out3$cum_hbv_deaths[[16]][-c(1:3)]-monit_out14$cum_hbv_deaths[[16]][-c(1:3)])
   )
 colnames(cohort_deaths_averted1b)[-1] <- as.numeric(gsub("[^0-9]", "",
                                                          colnames(cohort_deaths_averted1b)[-1]))
@@ -1347,7 +1375,11 @@ cohort_ly_gained1b <- rbind(
   cbind(scenario = "3-yearly 15-30, 5-yearly 30+",
         monit_out11$ly[[16]][-c(1:3)]-out3$ly[[16]][-c(1:3)]),
   cbind(scenario = "Yearly 15-30, 5-yearly 30+",
-        monit_out12$ly[[16]][-c(1:3)]-out3$ly[[16]][-c(1:3)])
+        monit_out12$ly[[16]][-c(1:3)]-out3$ly[[16]][-c(1:3)]),
+#  cbind(scenario = "3-yearly 45+, 5-yearly 15-45",
+#        monit_out13$ly[[16]][-c(1:3)]-out3$ly[[16]][-c(1:3)]),
+  cbind(scenario = "Yearly 45+, 5-yearly 15-45",
+        monit_out14$ly[[16]][-c(1:3)]-out3$ly[[16]][-c(1:3)])
   )
 colnames(cohort_ly_gained1b)[-1] <- as.numeric(gsub("[^0-9]", "",
                                                     colnames(cohort_ly_gained1b)[-1]))
@@ -1366,6 +1398,8 @@ find_dominated_strategies(df1b, "total_interactions", "deaths_averted")
 find_dominated_strategies(df1b,"total_cost", "deaths_averted")
 find_dominated_strategies(df1b,"total_interactions", "ly_saved")
 find_dominated_strategies(df1b, "total_cost", "ly_saved")
+
+# For only the 15-30 intensification (excluding 45+ intensification):
 # Deaths averted & interactions: Yearly 15-30, 5-yearly 30+
 # Deaths & cost: 3-yearly 15-30, 5-yearly 30+; Yearly 15-30, 5-yearly 30+
 # LY & interactions: 5-yearly 15+ (all ages)
@@ -1378,7 +1412,7 @@ group_by(df1b, scenario) %>%
             ly_per_cost = median(ly_saved/total_cost)*10000)
 
 
-## Approach 2: monitoring given age cohort from entry until death ----
+## Approach 2 (by birth cohort): monitoring given age cohort from entry until death ----
 # Incrementally intensive strategies are: 45+ years, 30+ years, 15+ (all ages)
 # Start with 5-yearly frequency
 # Increment between no monitoring and status quo: out3-out1
@@ -1844,15 +1878,15 @@ interactions2b <- rbind(
                            (a4_out5$interactions[[16]]$total_treated[-c(1:3)]-a4_out3$interactions[[16]]$total_treated[-c(1:3)])+
                            (a5_out6b$interactions[[16]]$total_treated[-c(1:3)]-a5_out3$interactions[[16]]$total_treated[-c(1:3)]),
                          key = "sim", value = "treatment_initiations"), by = "sim")),
-#  cbind(scenario = "Yearly 30+, 5-yearly 15-30",
-#        left_join(gather((a2_out6$interactions[[16]]$total_assessed[-c(1:3)]-a2_out3$interactions[[16]]$total_assessed[-c(1:3)])+
-#                           (a4_out5$interactions[[16]]$total_assessed[-c(1:3)]-a4_out3$interactions[[16]]$total_assessed[-c(1:3)])+
-#                           (a5_out6$interactions[[16]]$total_assessed[-c(1:3)]-a5_out3$interactions[[16]]$total_assessed[-c(1:3)]),
-#                         key = "sim", value = "monitoring_assessments"),
-#                  gather((a2_out6$interactions[[16]]$total_treated[-c(1:3)]-a2_out3$interactions[[16]]$total_treated[-c(1:3)])+
-#                           (a4_out5$interactions[[16]]$total_treated[-c(1:3)]-a4_out3$interactions[[16]]$total_treated[-c(1:3)])+
-#                           (a5_out6$interactions[[16]]$total_treated[-c(1:3)]-a5_out3$interactions[[16]]$total_treated[-c(1:3)]),
-#                         key = "sim", value = "treatment_initiations"), by = "sim")),
+  cbind(scenario = "Yearly 30+, 5-yearly 15-30",
+        left_join(gather((a2_out6$interactions[[16]]$total_assessed[-c(1:3)]-a2_out3$interactions[[16]]$total_assessed[-c(1:3)])+
+                           (a4_out5$interactions[[16]]$total_assessed[-c(1:3)]-a4_out3$interactions[[16]]$total_assessed[-c(1:3)])+
+                           (a5_out6$interactions[[16]]$total_assessed[-c(1:3)]-a5_out3$interactions[[16]]$total_assessed[-c(1:3)]),
+                         key = "sim", value = "monitoring_assessments"),
+                  gather((a2_out6$interactions[[16]]$total_treated[-c(1:3)]-a2_out3$interactions[[16]]$total_treated[-c(1:3)])+
+                           (a4_out5$interactions[[16]]$total_treated[-c(1:3)]-a4_out3$interactions[[16]]$total_treated[-c(1:3)])+
+                           (a5_out6$interactions[[16]]$total_treated[-c(1:3)]-a5_out3$interactions[[16]]$total_treated[-c(1:3)]),
+                         key = "sim", value = "treatment_initiations"), by = "sim")),
   cbind(scenario = "3-yearly 15+ (all ages)",
         left_join(gather(out6b$interactions[[16]]$total_assessed[-c(1:3)]-out3$interactions[[16]]$total_assessed[-c(1:3)],
                          key = "sim", value = "monitoring_assessments"),
@@ -1891,13 +1925,13 @@ interactions2b_py_on_treatment <- rbind(
              py_on_treatment =((a2_out6b$py_on_treatment[[16]]-a2_out3$py_on_treatment[[16]])+
                                  (a4_out5$py_on_treatment[[16]]-a4_out3$py_on_treatment[[16]])+
                                  (a5_out6b$py_on_treatment[[16]]-a5_out3$py_on_treatment[[16]]))),
-#  data.frame(scenario = "Yearly 45+, 5-yearly 15-30",
-#             sim = names(((a2_out6$py_on_treatment[[16]]-a2_out3$py_on_treatment[[16]])+
-#                            (a4_out5$py_on_treatment[[16]]-a4_out3$py_on_treatment[[16]])+
-#                            (a5_out6$py_on_treatment[[16]]-a5_out3$py_on_treatment[[16]]))),
-#             py_on_treatment =((a2_out6$py_on_treatment[[16]]-a2_out3$py_on_treatment[[16]])+
-#                                 (a4_out5$py_on_treatment[[16]]-a4_out3$py_on_treatment[[16]])+
-#                                 (a5_out6$py_on_treatment[[16]]-a5_out3$py_on_treatment[[16]]))),
+  data.frame(scenario = "Yearly 30+, 5-yearly 15-30",
+             sim = names(((a2_out6$py_on_treatment[[16]]-a2_out3$py_on_treatment[[16]])+
+                            (a4_out5$py_on_treatment[[16]]-a4_out3$py_on_treatment[[16]])+
+                            (a5_out6$py_on_treatment[[16]]-a5_out3$py_on_treatment[[16]]))),
+             py_on_treatment =((a2_out6$py_on_treatment[[16]]-a2_out3$py_on_treatment[[16]])+
+                                 (a4_out5$py_on_treatment[[16]]-a4_out3$py_on_treatment[[16]])+
+                                 (a5_out6$py_on_treatment[[16]]-a5_out3$py_on_treatment[[16]]))),
   data.frame(scenario = "3-yearly 15+ (all ages)",
              sim = names(out6b$py_on_treatment[[16]]-out3$py_on_treatment[[16]]),
              py_on_treatment = out6b$py_on_treatment[[16]]-out3$py_on_treatment[[16]]),
@@ -1921,10 +1955,10 @@ cohort_deaths_averted2b <- rbind(
         ((a2_out3$cum_hbv_deaths[[16]][-c(1:3)]-a2_out6b$cum_hbv_deaths[[16]][-c(1:3)])+
            (a4_out3$cum_hbv_deaths[[16]][-c(1:3)]-a4_out5$cum_hbv_deaths[[16]][-c(1:3)])+
            (a5_out3$cum_hbv_deaths[[16]][-c(1:3)]-a5_out6b$cum_hbv_deaths[[16]][-c(1:3)]))),
-#  cbind(scenario = "Yearly 30+, 5-yearly 15-30",
-#        ((a2_out3$cum_hbv_deaths[[16]][-c(1:3)]-a2_out6$cum_hbv_deaths[[16]][-c(1:3)])+
-#           (a4_out3$cum_hbv_deaths[[16]][-c(1:3)]-a4_out5$cum_hbv_deaths[[16]][-c(1:3)])+
-#           (a5_out3$cum_hbv_deaths[[16]][-c(1:3)]-a5_out6$cum_hbv_deaths[[16]][-c(1:3)]))),
+  cbind(scenario = "Yearly 30+, 5-yearly 15-30",
+        ((a2_out3$cum_hbv_deaths[[16]][-c(1:3)]-a2_out6$cum_hbv_deaths[[16]][-c(1:3)])+
+           (a4_out3$cum_hbv_deaths[[16]][-c(1:3)]-a4_out5$cum_hbv_deaths[[16]][-c(1:3)])+
+           (a5_out3$cum_hbv_deaths[[16]][-c(1:3)]-a5_out6$cum_hbv_deaths[[16]][-c(1:3)]))),
   cbind(scenario = "3-yearly 15+ (all ages)",
         out3$cum_hbv_deaths[[16]][-c(1:3)]-out6b$cum_hbv_deaths[[16]][-c(1:3)]),
   cbind(scenario = "Yearly 15+ (all ages)",
@@ -1952,10 +1986,10 @@ cohort_ly_gained2b <- rbind(
         ((a2_out6b$ly[[16]][-c(1:3)]-a2_out3$ly[[16]][-c(1:3)])+
            (a4_out5$ly[[16]][-c(1:3)]-a4_out3$ly[[16]][-c(1:3)])+
            (a5_out6b$ly[[16]][-c(1:3)]-a5_out3$ly[[16]][-c(1:3)]))),
-#  cbind(scenario = "Yearly 30+, 5-yearly 15-30",
-#        ((a2_out6$ly[[16]][-c(1:3)]-a2_out3$ly[[16]][-c(1:3)])+
-#           (a4_out5$ly[[16]][-c(1:3)]-a4_out3$ly[[16]][-c(1:3)])+
-#           (a5_out6$ly[[16]][-c(1:3)]-a5_out3$ly[[16]][-c(1:3)]))),
+  cbind(scenario = "Yearly 30+, 5-yearly 15-30",
+        ((a2_out6$ly[[16]][-c(1:3)]-a2_out3$ly[[16]][-c(1:3)])+
+           (a4_out5$ly[[16]][-c(1:3)]-a4_out3$ly[[16]][-c(1:3)])+
+           (a5_out6$ly[[16]][-c(1:3)]-a5_out3$ly[[16]][-c(1:3)]))),
   cbind(scenario = "3-yearly 15+ (all ages)",
         out6b$ly[[16]][-c(1:3)]-out3$ly[[16]][-c(1:3)]),
   cbind(scenario = "Yearly 15+ (all ages)",
@@ -1998,13 +2032,31 @@ df2b_summary <- df2b %>%
             median_cost = median(total_cost))
 
 # Intensify in 30+ cohort
+# Find dominated strategies for each combination of exposure and outcome using BCEA package
+find_dominated_strategies(df2b_30, "total_interactions", "deaths_averted")
+find_dominated_strategies(df2b_30,"total_cost", "deaths_averted")
+find_dominated_strategies(df2b_30,"total_interactions", "ly_saved")
+find_dominated_strategies(df2b_30, "total_cost", "ly_saved")
+# Deaths averted/LY saved & interactions; LY & cost
+# 3-yearly 30+, 5-yearly 15-30 ; Yearly 30+, 5-yearly 15-30
+# Deaths averted & cost: Yearly 30+, 5-yearly 15-30
+
+# Add labels to this dataframe
+df2b_30$frontier_interactions <- "Include"
+df2b_30$frontier_interactions[df2b_30$scenario %in% c("3-yearly 30+, 5-yearly 15-30",
+                                                      "Yearly 30+, 5-yearly 15-30")] <- "Dominated"
+df2b_30$frontier_ly_saved_cost <- "Include"
+df2b_30$frontier_ly_saved_cost[df2b_30$scenario %in% c("3-yearly 30+, 5-yearly 15-30",
+                                                       "Yearly 30+, 5-yearly 15-30")] <- "Dominated"
+df2b_30$frontier_deaths_averted_cost <- "Include"
+df2b_30$frontier_deaths_averted_cost[df2b_30$scenario %in% c("Yearly 30+, 5-yearly 15-30")] <- "Dominated"
+
 df2b_30_summary <- df2b_30 %>%
-  group_by(scenario) %>%
+  group_by(scenario,frontier_interactions, frontier_ly_saved_cost, frontier_deaths_averted_cost) %>%
   summarise(median_deaths_averted = median(deaths_averted),
             median_ly_saved = median(ly_saved),
             median_interactions = median(total_interactions),
             median_cost = median(total_cost))
-
 
 # Plots for focused intensification in 45+ cohort ----
 # Plot: interactions vs deaths averted
@@ -2163,8 +2215,6 @@ ggplot(df2b) +
         axis.title = element_text(size = 15),
         legend.text = element_text(size = 12),
         title = element_text(size = 15))
-
-# TO DO: Plots for focused intensification in 30+ cohort ----
 
 ## Combine approaches 1 and 2 ----
 combined_df <- rbind(subset(df1, scenario != "5-yearly all ages" &
