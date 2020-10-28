@@ -79,6 +79,42 @@ scenario_a5_parms$apply_bdvacc <- 0
 scenario_a5_parms$apply_treat_it <- 0
 #save(scenario_a5_parms, file= here("analysis_input", "scenario_a5_parms.Rdata"))
 
+# ASSUMPTION ANC1 SIMULATIONS (Antenatal care screening, ambitious - 90% coverage)
+scenario_anc1_parms <- parameter_list
+scenario_anc1_parms$screening_coverage <- matrix(c(fert_rates[fert_rates[,1]==2020,-1]*0.9,
+                                                   rep(0, length(which(ages == 15): which(ages==50-da)))),
+                                                 ncol = 2)
+scenario_anc1_parms$min_age_to_screen <- 15
+scenario_anc1_parms$max_age_to_screen <- 50-da
+scenario_anc1_parms$prop_to_vaccinate <- 0
+scenario_anc1_parms$link_to_care_prob <- 0.8
+scenario_anc1_parms$treatment_initiation_prob <- 1
+scenario_anc1_parms$monitoring_prob <- 0.8
+scenario_anc1_parms$apply_bdvacc <- 0
+scenario_anc1_parms$apply_treat_it <- 0
+scenario_anc1_parms$mtct_prob_treat_cofactor <- 1
+#save(scenario_anc1_parms, file= here("analysis_input", "scenario_anc1_parms.Rdata"))
+
+# ASSUMPTION WPL1 SIMULATIONS (Workplace screening, ambitious - 90% coverage)
+scenario_wpl1_parms <- parameter_list
+scenario_wpl1_parms$screening_coverage <- matrix(c(rep(0.08, length(which(ages == 15): which(ages==25-da))),
+                                                  rep(0.3, length(which(ages == 25): which(ages==35-da))),
+                                                  rep(0.3, length(which(ages == 35): which(ages==65-da))),
+                                                  rep(0.15, length(which(ages == 15): which(ages==25-da))),
+                                                  rep(0.5, length(which(ages == 25): which(ages==35-da))),
+                                                  rep(0.6, length(which(ages == 35): which(ages==65-da)))),
+                                                ncol = 2)
+scenario_wpl1_parms$min_age_to_screen <- 15
+scenario_wpl1_parms$max_age_to_screen <- 65-da
+scenario_wpl1_parms$prop_to_vaccinate <- 0
+scenario_wpl1_parms$link_to_care_prob <- 0.8
+scenario_wpl1_parms$treatment_initiation_prob <- 1
+scenario_wpl1_parms$monitoring_prob <- 0.8
+scenario_wpl1_parms$apply_bdvacc <- 0
+scenario_wpl1_parms$apply_treat_it <- 0
+scenario_wpl1_parms$mtct_prob_treat_cofactor <- 1
+#save(scenario_wpl1_parms, file= here("analysis_input", "scenario_wpl1_parms.Rdata"))
+
 
 # INITIAL SCENARIOS (before 22/09/20) ----
 
