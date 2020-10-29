@@ -2626,6 +2626,8 @@ run_one_screening_scenario_on_cluster <- function(..., default_parameter_list, c
                                      drop_timesteps_before = drop_timesteps_before,
                                      scenario = scenario))  # vacc_screen by default
 
+  gc()
+
   out <- lapply(sim, code_model_output)
 
   # Exract outcomes for analysis
@@ -2696,6 +2698,8 @@ run_one_screening_scenario_on_cluster <- function(..., default_parameter_list, c
 
   # Timeseries
   timeseries <- summarise_time_series(out, scenario_label = label, summarise_percentiles = FALSE)
+
+  gc()
 
   # Extract the screened and treated population by age
   #screened_pop_female <- lapply(out, "[[", "screened_pop_female")
