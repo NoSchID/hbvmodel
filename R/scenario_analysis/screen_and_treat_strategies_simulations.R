@@ -116,6 +116,48 @@ scenario_wpl1_parms$mtct_prob_treat_cofactor <- 1
 #save(scenario_wpl1_parms, file= here("analysis_input", "scenario_wpl1_parms.Rdata"))
 
 
+# FOR IVHEM ##
+# ASSUMPTION A6 SIMULATIONS
+scenario_a6_parms <- parameter_list
+scenario_a6_parms$screening_coverage <- 0.9
+scenario_a6_parms$min_age_to_screen <- 60+da
+scenario_a6_parms$max_age_to_screen <- 65-da
+scenario_a6_parms$prop_to_vaccinate <- 0
+scenario_a6_parms$link_to_care_prob <- 0.8
+scenario_a6_parms$treatment_initiation_prob <- 1
+scenario_a6_parms$monitoring_prob <- 0.8
+scenario_a6_parms$apply_bdvacc <- 0
+scenario_a6_parms$apply_treat_it <- 0
+#save(scenario_a6_parms, file= here("analysis_input", "scenario_a6_parms.Rdata"))
+
+# ASSUMPTION A7 SIMULATIONS
+scenario_a7_parms <- parameter_list
+scenario_a7_parms$screening_coverage <- 0.9
+scenario_a7_parms$min_age_to_screen <- 65
+scenario_a7_parms$max_age_to_screen <- 70-da
+scenario_a7_parms$prop_to_vaccinate <- 0
+scenario_a7_parms$link_to_care_prob <- 0.8
+scenario_a7_parms$treatment_initiation_prob <- 1
+scenario_a7_parms$monitoring_prob <- 0.8
+scenario_a7_parms$apply_bdvacc <- 0
+scenario_a7_parms$apply_treat_it <- 0
+#save(scenario_a7_parms, file= here("analysis_input", "scenario_a7_parms.Rdata"))
+
+# ASSUMPTION CX SIMULATIONS
+scenario_cx_parms <- parameter_list
+scenario_cx_parms$screening_coverage <- 0.7
+scenario_cx_parms$min_age_to_screen <- 15
+scenario_cx_parms$max_age_to_screen <- 65-da
+scenario_cx_parms$prop_to_vaccinate <- 0
+scenario_cx_parms$link_to_care_prob <- 0.5
+scenario_cx_parms$treatment_initiation_prob <- 0.8
+scenario_cx_parms$monitoring_prob <- 0.5
+scenario_cx_parms$apply_bdvacc <- 0
+scenario_cx_parms$apply_treat_it <- 0
+#save(scenario_cx_parms, file= here("analysis_input", "scenario_cx_parms.Rdata"))
+##
+
+
 # INITIAL SCENARIOS (before 22/09/20) ----
 
 # ASSUMPTION A SIMULATIONS
