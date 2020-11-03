@@ -74,6 +74,14 @@ out9b_2050 <- out9b_2050[[1]]
 out9b_2060 <- readRDS(paste0(out_path, "a1_out9b_monit_0_screen_5b_2060_121020.rds"))
 out9b_2060 <- out9b_2060[[1]]
 
+# Access channels analysis
+# Workplace screening
+out3_wpl <-  readRDS(paste0(out_path, "wpl1_out3_screen_2020_monit_0_301020.rds"))
+out3_wpl <- out3_wpl[[1]]
+# ANC screening
+out3_anc <-  readRDS(paste0(out_path, "anc1_out3_screen_2020_monit_0_021120.rds"))
+out3_anc <- out3_anc[[1]]
+
 
 # Labels
 timepoints <- c(2050,2100)
@@ -850,4 +858,212 @@ testdf$prev <- apply(out2$timeseries$number_infected[which(out2$timeseries$numbe
                      1,median)
 
 plot(x=testdf$prev, y = testdf$new_deaths_averted_median, xlim = c(0,120000))
+
+
+## Test: One-off population based vs workplace screening ----
+plot_hbv_deaths_averted(counterfactual_object = out2,
+                        scenario_objects = list(out3,
+                                                out3_wpl),
+                        counterfactual_label = "no treatment programme",
+                        x_axis = "screening")
+
+plot_hbv_deaths_averted_per_healthcare_interaction(counterfactual_object = out2,
+                                                   scenario_objects = list(out3,
+                                                                           out3_wpl),
+                                                   interaction_type = "total_interactions",
+                                                   counterfactual_label = "no treatment programme",
+                                                   x_axis = "screening")
+
+plot_ly_gained(counterfactual_object = out2,
+                        scenario_objects = list(out3,
+                                                out3_wpl),
+                        counterfactual_label = "no treatment programme",
+                        x_axis = "screening")
+
+plot_ly_gained_per_healthcare_interaction(counterfactual_object = out2,
+                                                   scenario_objects = list(out3,
+                                                                           out3_wpl),
+                                                   interaction_type = "total_interactions",
+                                                   counterfactual_label = "no treatment programme",
+                                                   x_axis = "screening")
+
+
+
+# Compare this to out5
+d1 <- plot_hbv_deaths_averted(counterfactual_object = out2,
+                                                 scenario_objects = list(out3),
+                                                 outcome_to_plot = "number_averted",
+                                                 counterfactual_label = "no treatment")
+d2 <- plot_hbv_deaths_averted(counterfactual_object = out2,
+                                                     scenario_objects = list(out3_wpl),
+                                                     outcome_to_plot = "number_averted",
+                                                     counterfactual_label = "no treatment")
+
+i1 <- out3$interactions[[16]]$total_interactions[,-c(1:3)]
+i2<- out3_wpl$interactions[[16]]$total_interactions[,-c(1:3)]
+
+deaths_df <- cbind(d1$value[d1$by_year==2100 &
+                              d1$type == "number_averted"],
+                   d2$value[d2$by_year==2100 &
+                              d2$type == "number_averted"],
+                   rep(0,183))
+int_df <- cbind(unlist(i1), unlist(i2),rep(0,183))
+
+
+ceef.plot(bcea(e=deaths_df,
+               c=int_df,ref=3,interventions=c("General population", "Workplace", "No treatment")),graph="base")
+
+
+# TEST: 1 REPEAT SCREEN VS ALL AGE MONITORING AND ACCESS CHANNELS ----
+out_path2 <-
+  "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/monitoring_frequency/"
+
+# No monitoring and 5-yearly monitoring
+out3 <- readRDS(paste0(out_path2, "a1_out3_screen_2020_monit_0_201020.rds"))
+out3 <- out3[[1]]
+out5 <- readRDS(paste0(out_path2, "a1_out5_screen_2020_monit_5_201020.rds"))
+out5 <- out5[[1]]
+
+# Compare this to out5
+monit_scenario_deaths <- plot_hbv_deaths_averted(counterfactual_object = out2,
+                                                 scenario_objects = list(out5),
+                                                 outcome_to_plot = "number_averted",
+                                                 counterfactual_label = "no treatment")
+screen_scenario_deaths <- plot_hbv_deaths_averted(counterfactual_object = out2,
+                                                  scenario_objects = list(out3),
+                                                  outcome_to_plot = "number_averted",
+                                                  counterfactual_label = "no treatment")
+repscreen_scenario_deaths <- plot_hbv_deaths_averted(counterfactual_object = out2,
+                                                     scenario_objects = list(out8b_2030),
+                                                     outcome_to_plot = "number_averted",
+                                                     counterfactual_label = "no treatment")
+
+wpl_deaths <- plot_hbv_deaths_averted(counterfactual_object = out2,
+                              scenario_objects = list(out3_wpl),
+                              outcome_to_plot = "number_averted",
+                              counterfactual_label = "no treatment")
+
+anc_deaths <- plot_hbv_deaths_averted(counterfactual_object = out2,
+                                      scenario_objects = list(out3_anc),
+                                      outcome_to_plot = "number_averted",
+                                      counterfactual_label = "no treatment")
+
+
+monit_scenario_int <- out5$interactions[[16]]$total_interactions[,-c(1:3)]
+screen_scenario_int <- out3$interactions[[16]]$total_interactions[,-c(1:3)]
+repscreen_scenario_int <- out8b_2030$interactions[[16]]$total_interactions[,-c(1:3)]
+wpl_int <- out3_wpl$interactions[[16]]$total_interactions[,-c(1:3)]
+anc_int <- out3_anc$interactions[[16]]$total_interactions[,-c(1:3)]
+
+# NOTE monit_scenario is only 1 with monitoring
+
+deaths_df <- cbind(monit_scenario_deaths$value[monit_scenario_deaths$by_year==2100 &
+                                                 monit_scenario_deaths$type == "number_averted"],
+                   screen_scenario_deaths$value[screen_scenario_deaths$by_year==2100 &
+                                                  screen_scenario_deaths$type == "number_averted"],
+                   repscreen_scenario_deaths$value[repscreen_scenario_deaths$by_year==2100 &
+                                                     repscreen_scenario_deaths$type == "number_averted"],
+                   wpl_deaths$value[wpl_deaths$by_year==2100 &
+                                      wpl_deaths$type == "number_averted"],
+                   anc_deaths$value[anc_deaths$by_year==2100 &
+                                                     anc_deaths$type == "number_averted"],
+                   rep(0,183))
+int_df <- cbind(unlist(monit_scenario_int), unlist(screen_scenario_int), unlist(repscreen_scenario_int),
+                unlist(wpl_int), unlist(anc_int),
+                rep(0,183))
+
+scenario_labels2 <- c("2020 population screen,\n5-yearly monitoring",
+                     "2020 population screen,\nno monitoring",
+                     "2020+2030 population screen,\nno monitoring",
+                     "2020 workplace screen,\nno monitoring",
+                     "2020 antenatal screen,\nno monitoring",
+                     "No treatment")
+
+ceef.plot.median(bcea(e=deaths_df,c=int_df,ref=ncol(deaths_df),
+               interventions=scenario_labels2),
+          graph="base")
+
+deaths_df <- data.frame(deaths_df)
+colnames(deaths_df) <- scenario_labels2
+deaths_df$sim <- rownames(deaths_df)
+deaths_df <- gather(deaths_df, key = "scenario", value = "deaths_averted", -sim)
+
+int_df <- data.frame(int_df)
+colnames(int_df) <- scenario_labels2
+int_df$sim <- as.character(seq(1:183))
+int_df <- gather(int_df, key = "scenario", value = "interactions", -sim)
+
+combi <- left_join(deaths_df, int_df, by = c("scenario", "sim"))
+# Checked that simulation order is the same
+
+combi$frontier <- "Include"
+combi$frontier[combi$scenario %in% c("2020 population screen,\nno monitoring",
+                                     "2020+2030 population screen,\nno monitoring",
+                                     "2020 antenatal screen,\nno monitoring")] <- "Dominated"
+
+combi_summary <- combi %>%
+  group_by(scenario, frontier) %>%
+  summarise(median_deaths_averted = median(deaths_averted),
+            median_interactions = median(interactions))
+
+# Plot
+ggplot(combi) +
+  geom_line(data= subset(combi, frontier== "Include"),
+            aes(x = deaths_averted, y= interactions,
+                group = sim), colour = "grey", alpha = 0.3) +
+  stat_ellipse(data=subset(combi, scenario != "No treatment"),
+               aes(x=deaths_averted,y=interactions,
+                   group = reorder(scenario, deaths_averted),
+                   fill= reorder(scenario, deaths_averted)),
+               geom = "polygon", na.rm = FALSE, alpha = 0.2) +
+  geom_point(aes(x = deaths_averted, y = interactions,
+                 group =reorder(scenario, deaths_averted), colour = reorder(scenario, deaths_averted)),
+             alpha = 0.15) +
+  # Overlay median
+  geom_line(data = subset(combi_summary, frontier == "Include"),
+            aes(y = median_interactions,
+                x = median_deaths_averted), size = 1) +
+  geom_point(data = combi_summary,
+             aes(y = median_interactions,
+                 x = median_deaths_averted,
+                 group = reorder(scenario, median_deaths_averted),
+                 colour = reorder(scenario, median_deaths_averted)), size = 5) +
+  geom_point(data = combi_summary,
+             aes(y = median_interactions,
+                 x = median_deaths_averted,
+                 group = reorder(scenario, median_deaths_averted)),
+             size = 5, shape = 1, colour = "black") +
+  scale_fill_manual("Screening scenarios",
+                    values=rev(brewer.pal(5,"RdYlBu"))) +
+  scale_colour_manual("Screening scenarios",
+                      values=c("black", rev(brewer.pal(5,"RdYlBu")))) +
+  guides(fill=FALSE,
+         colour=guide_legend(keywidth=0.1,keyheight=0.5,default.unit="inch")) +
+  xlab("Incremental HBV-related deaths averted") +
+  ylab("Incremental number of clinical interactions") +
+  #  xlim(-150,7200) +
+  #  ylim(0,2500000) +
+  theme_bw() +
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        legend.text = element_text(size = 12),
+        title = element_text(size = 15))
+
+###
+
+# In out5, average time on treatment is 22.3 years - assume the same for repeat screen
+
+monit_scenario_cost <- out5$interactions[[16]]$total_screened[,-c(1:3)]*10.38+
+  out3$interactions[[16]]$total_assessed[,-c(1:3)]*120+
+  (out5$interactions[[16]]$total_assessed[,-c(1:3)]-out3$interactions[[16]]$total_assessed[,-c(1:3)])*15.77+
+  out3$interactions[[16]]$total_treated[,-c(1:3)]*22.3*84.88
+
+repscreen_scenario_cost <- out8b_2030$interactions[[16]]$total_screened[,-c(1:3)]*10.38+
+  out8b_2030$interactions[[16]]$total_assessed[,-c(1:3)]*120+
+  out8b_2030$interactions[[16]]$total_treated[,-c(1:3)]*22.3*84.88
+
+cost_df <- cbind(unlist(monit_scenario_cost), unlist(repscreen_scenario_cost),rep(0,183))
+
+ceef.plot(bcea(e=deaths_df,c=cost_df,ref=3,interventions=c("Monitoring", "Repeat screen", "No treatment")),graph="base")
+
 
