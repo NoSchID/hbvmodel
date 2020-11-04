@@ -1566,6 +1566,9 @@ run_scenarios <- function(..., default_parameter_list, parms_to_change = list(..
 ### Output-related functions ----
 # Function to sum numbers from different compartments for each age and time step
 sum_pop_by_age <- function(time, pop_output_file) {
+
+  gc()
+
   pop_output <- data.frame(time = time, pop_output_file) %>%
     gather(key = "agegroup", value = "pop", -time) %>%       # turn into wide format
     arrange(time) %>%                                        # order by timestep
@@ -1576,6 +1579,8 @@ sum_pop_by_age <- function(time, pop_output_file) {
     spread(key = "agegroup", value = "pop")                  # return to wide format
   # Note: this code is quicker than using do.call(cbind, by(t(output), rep(0:99,9), FUN = colSums))
   # slowest step is ordering by time
+
+  gc()
 
   return(as.data.frame(pop_output[,-1]))
 }
