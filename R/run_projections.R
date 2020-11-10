@@ -6,9 +6,10 @@ source(here("R/imperial_model_interventions.R"))
 
 # Simulate intervention model ----
 
-load(here("calibration", "input", "accepted_parmsets_123_180520.Rdata")) # params_mat_targets5
+#load(here("calibration", "input", "accepted_parmsets_123_180520.Rdata")) # params_mat_targets5
+load(here("calibration", "input", "accepted_parmsets_kmeans_170820.Rdata")) # params_mat_accepted_kmeans
 
-sim2 <- apply(params_mat_accepted[1,],1,
+sim <- apply(params_mat_accepted_kmeans[111,],1,
              function(x)
                run_model(sim_duration = runtime, default_parameter_list = parameter_list,
                          parms_to_change =
@@ -45,22 +46,23 @@ sim2 <- apply(params_mat_accepted[1,],1,
                                 mu_hcc = as.list(x)$mu_hcc,
                                 vacc_eff = as.list(x)$vacc_eff,
                                 screening_years = c(2020),
-                                screening_coverage = anc_screening_cov,
+                                screening_coverage = 0.9,
                                 apply_treat_it = 0,
                                 prop_negative_to_remove_from_rescreening = 0,
-                                apply_screen_not_treat = 0,
-                                monitoring_rate = 0,
+                                apply_screen_not_treat = 1,
+                                monitoring_rate = 1,
                                 apply_repeat_screen = 0,
                                 min_age_to_screen = 15,
-                                max_age_to_screen = 50-da,
+                                max_age_to_screen = 30-da,
                                 min_age_to_repeat_screen = 15,
                                 max_age_to_repeat_screen = 60,
                                 repeat_screening_years = seq(2030,2100, by = 10)),
                          drop_timesteps_before = 1960,
                          scenario = "vacc_screen"))
 
-out2 <- code_model_output(sim2[[1]])
+out <- code_model_output(sim[[1]])
 outpath <- out
+
 
 out <- lapply(sim, code_model_output)
 

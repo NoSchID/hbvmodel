@@ -115,6 +115,19 @@ scenario_wpl1_parms$apply_treat_it <- 0
 scenario_wpl1_parms$mtct_prob_treat_cofactor <- 1
 #save(scenario_wpl1_parms, file= here("analysis_input", "scenario_wpl1_parms.Rdata"))
 
+# ASSUMPTION E1 SIMULATIONS (low screening coverage)
+scenario_e1_parms <- parameter_list
+scenario_e1_parms$screening_coverage <- 0.1
+scenario_e1_parms$min_age_to_screen <- 15
+scenario_e1_parms$max_age_to_screen <- 60
+scenario_e1_parms$prop_to_vaccinate <- 0
+scenario_e1_parms$link_to_care_prob <- 0.8
+scenario_e1_parms$treatment_initiation_prob <- 1
+scenario_e1_parms$monitoring_prob <- 0.8
+scenario_e1_parms$apply_bdvacc <- 0
+scenario_e1_parms$apply_treat_it <- 0
+#save(scenario_e1_parms, file= here("analysis_input", "scenario_e1_parms.Rdata"))
+
 
 # FOR IVHEM ##
 # ASSUMPTION A6 SIMULATIONS
