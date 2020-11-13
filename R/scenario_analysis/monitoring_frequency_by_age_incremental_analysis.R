@@ -437,6 +437,22 @@ assign_dominated_strategies <- function(df, exposure, outcome) {
 
 }
 
+# Function to calculate ICER for specified strategies for a single simulation
+# For this, need to manually decide on dominated strategies to exclude and remove these from arguments!
+calculate_icer_per_sim <- function(df, exposure, outcome) {
+
+  ranked_strategies <- arrange(df, exposure)
+  ranked_strategies$diff_exposure <- c(ranked_strategies[,exposure][1], diff(ranked_strategies[,exposure]))
+  ranked_strategies$diff_outcome <- c(ranked_strategies[,outcome][1], diff(ranked_strategies[,outcome]))
+  ranked_strategies$icer <-ranked_strategies$diff_exposure/ranked_strategies$diff_outcome
+  ranked_strategies$icer[is.na(ranked_strategies$icer)] <- 0
+  ranked_strategies$comparator <- lag(ranked_strategies$scenario)
+  icer <- select(ranked_strategies, -diff_exposure, -diff_outcome)
+
+  return(icer)
+
+}
+
 # Function to find dominated and extended dominated strategies on cost-effectiveness frontier
 find_dominated_strategies <- function(df, exposure, outcome) {
   plot <- ceef.plot.median(bcea(e=cbind(matrix(rep(0, 183)),
@@ -992,11 +1008,22 @@ freq_interactions$interactions <- freq_interactions$hbsag_tests+
   freq_interactions$treatment_initiations
 
 # TEST: Transform into cost with approximated time on treatment
-freq_interactions$total_cost <- freq_interactions$hbsag_tests*10.38+
-  freq_interactions$clinical_assessments*120+
- freq_interactions$monitoring_assessments*15.77+
-  freq_interactions$treatment_initiations*66.44
+freq_interactions$total_cost <- freq_interactions$hbsag_tests*2.4+
+  freq_interactions$clinical_assessments*35.8+
+ freq_interactions$monitoring_assessments*35.8+
+  freq_interactions$treatment_initiations*57.1
+# Add upfront Fibroscan cost:
+#freq_interactions$total_cost <- freq_interactions$total_cost+127700
 
+# Shevanthi original values:
+# HBsAg 10.38, clinical assessment 120, monitoring 15.77, treatment person-year 66.44
+# Tordrup values (commodities only)
+# HBsAg 1.86, clinical assessment 22.5, monitoring 22.5, treatment person-year 52.5
+# New costing estimates:
+# HBsAg: 2.4 or 8.3
+# Clinical assessment: 35.8 + upfront cost of 127700, or 11.1
+# Monitoring: same as clinical assessment (don't double-count upfront cost)
+# Treatment: 57.1
 
 freq_cohort_deaths_averted <-
   plot_hbv_deaths_averted_cohort(counterfactual_object = out1,
@@ -1046,7 +1073,7 @@ ceef.plot.median(bcea(e=as.matrix(select(incremental_df_freq, scenario, sim,deat
                               c=as.matrix(select(incremental_df_freq, scenario, sim, interactions) %>%
                                                   spread(key="scenario", value = "interactions")%>%
                                                   select(-sim)),
-                              ref=1,
+                              ref=12,
                               interventions=c(colnames(select(incremental_df_freq, scenario, sim, deaths_averted) %>%
                                                        spread(key="scenario", value = "deaths_averted")%>%
                                                                           select(-sim))),
@@ -1060,7 +1087,7 @@ ceef.plot.median(bcea(e=as.matrix(select(incremental_df_freq, scenario, sim,deat
                       c=as.matrix(select(incremental_df_freq, scenario, sim, total_cost) %>%
                                     spread(key="scenario", value = "total_cost")%>%
                                     select(-sim)),
-                      ref=1,
+                      ref=12,
                       interventions=c(colnames(select(incremental_df_freq, scenario, sim, deaths_averted) %>%
                                                  spread(key="scenario", value = "deaths_averted")%>%
                                                  select(-sim))),
@@ -1068,6 +1095,10 @@ ceef.plot.median(bcea(e=as.matrix(select(incremental_df_freq, scenario, sim,deat
                       plot=FALSE),
                  graph="base", relative = FALSE)
 
+
+as.matrix(select(incremental_df_freq, scenario, sim,deaths_averted) %>%
+            spread(key="scenario", value = "deaths_averted")%>%
+            select(-sim))
 
 # No monitoring, Every 10 years, Every 9 years
 incremental_df_freq$frontier_interactions <- "Include"
@@ -1303,43 +1334,107 @@ ggplot(data = incremental_df_ly_freq) +
         legend.title = element_text(size = 14)) +
   coord_flip()
 
+
 # LY saved vs cost
 ggplot(data = incremental_df_ly_freq) +
   geom_line(data=subset(incremental_df_ly_freq,frontier_cost == "Include"),
-            aes(y = ly_saved, x = total_cost, group = sim),
+            aes(x = ly_saved, y = total_cost, group = sim),
             colour = "grey", alpha = 0.3) +
-  geom_point(aes(y = ly_saved, x= total_cost,
+  geom_point(aes(x = ly_saved,y= total_cost,
                  group = scenario, colour = scenario), alpha = 0.15) +
   stat_ellipse(data = incremental_df_ly_freq[incremental_df_ly_freq$scenario != "Status quo",],
-               aes(y=ly_saved,x=total_cost,
+               aes(x=ly_saved,y=total_cost,
                    group = scenario, fill= scenario),
                geom = "polygon",
                alpha = 0.2) +
-  geom_vline(xintercept = 0) +
-  geom_hline(yintercept = 0) +
   geom_line(data = subset(incremental_df_ly_freq_summary, frontier_cost == "Include"),
-            aes(x = median_cost,
-                y = median_ly_saved), size = 1) +
-  geom_point(data = incremental_df_ly_freq_summary, aes(x = median_cost,
-                                                        y = median_ly_saved,
+            aes(y = median_cost,
+                x = median_ly_saved), size = 1) +
+  geom_point(data = incremental_df_ly_freq_summary, aes(y = median_cost,
+                                                        x= median_ly_saved,
                                                         group = scenario, colour = scenario),
              size = 5) +
-  geom_point(data = incremental_df_ly_freq_summary, aes(x = median_cost,
-                                                        y = median_ly_saved,
+  geom_point(data = incremental_df_ly_freq_summary, aes(y = median_cost,
+                                                        x = median_ly_saved,
                                                         group = scenario),
              size = 5, shape = 1, colour = "black") +
   scale_fill_manual(values = rev(brewer.pal(11,"RdYlBu"))) +
   scale_colour_manual("Monitoring frequency",
                       values = c("black", rev(brewer.pal(11,"RdYlBu"))),
                       labels = c("Status quo" = "No treatment")) +
+  geom_abline(intercept = 0, slope = 326, linetype="dashed") +
   guides(fill=FALSE) +
-  xlab("Incremental cost") +
-  ylab("Incremental life-years saved") +
+  ylab("Incremental cost") +
+  xlab("Incremental life-years saved") +
   theme_bw() +
   theme(axis.text = element_text(size = 15),
         axis.title = element_text(size = 15),
         legend.text = element_text(size = 14),
-        legend.title = element_text(size = 14)) +
+        legend.title = element_text(size = 14))
+# All those lines that would not intersect with the dashed WTP line are cost-effective
+
+# Calculate probability of each strategy being non-dominated ----
+# For LY saved and cost:
+dominance_prob_list <- list()
+
+for(i in 1:183) {
+  print(i)
+  dominance_prob_list[[i]] <- incremental_df_ly_freq[which(incremental_df_ly_freq$sim==
+                                                        unique(incremental_df_ly_freq$sim)[i]),]
+  dominance_prob_list[[i]] <- assign_dominated_strategies(dominance_prob_list[[i]],
+                                                          exposure="total_cost",
+                                                          outcome="ly_saved")
+}
+dominance_prob_df <- do.call("rbind", dominance_prob_list)
+dominance_prob_result <- group_by(dominance_prob_df, scenario, dominated) %>%
+  tally() %>%
+  spread(key = "dominated", value = "n") %>%
+  replace_na(list(No = 0, Yes = 0))
+dominance_prob_result$prob_non_dominated <- dominance_prob_result$No/
+  (dominance_prob_result$Yes+dominance_prob_result$No)
+
+ggplot(dominance_prob_result) +
+  geom_col(aes(x=reorder(scenario, desc(prob_non_dominated)), y = prob_non_dominated)) +
+  theme_bw()
+
+# Calculate ICER by simulation
+# Previous plot shows no strategies are dominated, so including all
+
+icer_list <- list()
+
+for(i in 1:183) {
+  print(i)
+  icer_list[[i]] <- incremental_df_ly_freq[which(incremental_df_ly_freq$sim==
+                                                             unique(incremental_df_ly_freq$sim)[i]),]
+  icer_list[[i]] <- calculate_icer_per_sim(icer_list[[i]],
+                                                          exposure="total_cost",
+                                                          outcome="ly_saved")
+}
+icer_df <- do.call("rbind", icer_list)
+icer_result <- group_by(icer_df, scenario, comparator) %>%
+  arrange(sim,total_cost) %>%
+  summarise(icer_median = median(icer),
+            icer_lower = quantile(icer, 0.025),
+            icer_upper = quantile(icer, 0.975)) %>%
+  arrange(icer_median)
+
+# Manually remove outer quantiles from every 1 year scenario with limits but need to do the same for all
+ggplot(icer_df[icer_df$scenario != "Status quo",]) +
+  geom_histogram(aes(icer, group = scenario, fill = scenario), bins = 75) +
+  facet_wrap(~scenario, ncol = 3, scales = "free_y") +
+  xlim(0,38953) +
+  theme_bw()
+# No monitoring y axis too large
+# Shows that ICERS for the larger monitoring frequencies mainly get progressively more uncertain
+# However the median is not sensitive to these outliers.
+
+# Could make sideways boxplot next to % non_dominated (Alistair thesis p227)
+# Only 95 quantiles
+ggplot(icer_result[icer_result$scenario != "Status quo",]) +
+  geom_pointrange(aes(x = reorder(scenario, icer_median), y = icer_median, ymin = icer_lower, ymax =icer_upper),
+                  size=1.2, position = position_dodge(width = 0.3), col = "turquoise") +
+  ylim(0,38953) +
+  theme_bw() +
   coord_flip()
 
 # 2) Incremental benefits and interactions between a set of strategies (monitoring by age) ----
