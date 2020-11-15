@@ -209,15 +209,15 @@ summarise_healthcare_interactions <- function(output_files, from_year, by_year, 
   monitoring_interactions <- data.frame(sapply(output_files, calculate_monitoring_interactions, from_year, by_year, scenario_label))
   monitoring_interactions <- as.data.frame(apply(monitoring_interactions,2,unlist))
 
-  total_monitored <- monitoring_interactions["cum_monitoring_events_it",]+
-    monitoring_interactions["cum_monitoring_events_ir",]+
-    monitoring_interactions["cum_monitoring_events_enchb",]+
-    monitoring_interactions["cum_monitoring_events_cc",]+
-    monitoring_interactions["cum_monitoring_events_dcc",]+
-    monitoring_interactions["cum_monitoring_events_ineligible",]   # ignore rowname
+  total_monitored <- as.numeric(monitoring_interactions["cum_monitoring_events_it",])+
+    as.numeric(monitoring_interactions["cum_monitoring_events_ir",])+
+    as.numeric(monitoring_interactions["cum_monitoring_events_enchb",])+
+    as.numeric(monitoring_interactions["cum_monitoring_events_cc",])+
+    as.numeric(monitoring_interactions["cum_monitoring_events_dcc",])+
+    as.numeric(monitoring_interactions["cum_monitoring_events_ineligible",])   # ignore rowname
 
-  total_treated_after_monitoring <- monitoring_interactions["cum_monitoring_treatment_initiations",]+
-    monitoring_interactions["cum_monitoring_treatment_initiations_it",]
+  total_treated_after_monitoring <- as.numeric(monitoring_interactions["cum_monitoring_treatment_initiations",])+
+   as.numeric(monitoring_interactions["cum_monitoring_treatment_initiations_it",])
 
   total_assessed <- total_assessed_immediately+total_monitored
   rownames(total_assessed) <- NULL

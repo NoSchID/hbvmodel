@@ -2744,7 +2744,7 @@ run_one_screening_scenario_on_cluster_not_parallel <- function(..., default_para
                                                   drop_timesteps_before = NULL,
                                                   label, scenario = "vacc_screen") {
 
-  sim1 <- apply(calibrated_parameter_sets[1:91,], 1,
+  sim1 <- apply(calibrated_parameter_sets[1:91,], 1,   #1:91
                   function(x) run_model(sim_duration = runtime,
                                         default_parameter_list = default_parameter_list,
                                         parms_to_change =
@@ -2795,7 +2795,7 @@ run_one_screening_scenario_on_cluster_not_parallel <- function(..., default_para
   rm(sim1)
   gc()
 
-  sim2 <- apply(calibrated_parameter_sets[92:183,], 1,
+  sim2 <- apply(calibrated_parameter_sets[92:183,], 1,   #92:183
                 function(x) run_model(sim_duration = runtime,
                                       default_parameter_list = default_parameter_list,
                                       parms_to_change =
