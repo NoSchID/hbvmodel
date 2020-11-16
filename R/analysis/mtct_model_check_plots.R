@@ -1,6 +1,9 @@
 # Plots for check of proportion of new chronic infections due to MTCT
 
 # Read in chronic_infection_incidence_status_quo_250920.rds
+out_path <-
+  "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/kmeans_full_output/"
+chronic_infection_incidence <- readRDS(paste0(out_path, "sq_chronic_infection_incidence_status_quo_250920.rds"))
 
 prop_mtct_long <- chronic_infection_incidence$prop_mtct
 # Extract the other 2...
