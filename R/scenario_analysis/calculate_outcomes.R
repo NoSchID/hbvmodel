@@ -1,5 +1,6 @@
 ### FUNCTIONS FOR ANALYSIS OF MODEL RESULTS ###
 
+
 # Functions to calculate analysis outcomes ----
 
 # These are all applied to the output from code_model_output
