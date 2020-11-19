@@ -24,6 +24,18 @@ out1 <- out1[[1]]
 out2 <- readRDS(paste0(out_path, "out2_status_quo_180820.rds"))
 out2 <- out2[[1]]
 
+# Age-specific cohorts without treatment
+a5_out1 <- readRDS(paste0(out_path2, "a5_out1_status_quo_cohort_181120.rds"))
+a5_out1 <- a5_out1[[1]]
+a4_out1 <- readRDS(paste0(out_path2, "a4_out1_status_quo_cohort_191120.rds"))
+a4_out1 <- a4_out1[[1]]
+a2_out1 <- readRDS(paste0(out_path2, "a2_out1_status_quo_cohort_191120.rds"))
+a2_out1 <- a2_out1[[1]]
+a6_out1 <- readRDS(paste0(out_path2, "a6_out1_status_quo_cohort_191120.rds"))
+a6_out1 <- a6_out1[[1]]
+
+# Status quo cohorts by age group
+
 # Status quo full code_model_output
 out2_carriers <- readRDS("C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/kmeans_full_output/out_sq_carriers.rds")
 
@@ -148,41 +160,57 @@ deaths_averted_by_age_all_scenarios <- rbind(
                       type == "number_averted") %>% select(scenario, sim, value))
   )
 
+deaths_averted_by_age_all_scenarios_prop <- rbind(
+  data.frame(age_group = "15-30",
+             filter(deaths_averted_by_age1, by_year == 2100 &
+                      type == "proportion_averted") %>% select(scenario, sim, value)),
+  data.frame(age_group = "30-45",
+             filter(deaths_averted_by_age2, by_year == 2100 &
+                      type == "proportion_averted") %>% select(scenario, sim, value)),
+  data.frame(age_group = "45-60",
+             filter(deaths_averted_by_age3, by_year == 2100 &
+                      type == "proportion_averted") %>% select(scenario, sim, value)),
+  data.frame(age_group = "60-65",
+             filter(deaths_averted_by_age4, by_year == 2100 &
+                      type == "proportion_averted") %>% select(scenario, sim, value))
+)
+
 deaths_averted_by_age <- subset(deaths_averted_by_age_all_scenarios, scenario == "screen_2020_monit_0")
 deaths_averted_by_age$sim <- gsub("[^0-9]", "", deaths_averted_by_age$sim)
 
 # Number of life-years saved in each age group
+# CALCULATE LY IN THE COHORT to avoid inclusion of extra births
 ly_saved_by_age1 <-
-  plot_ly_gained(counterfactual_object = out2,
+  plot_ly_gained_cohort(counterfactual_object = a4_out1,
                           scenario_objects = list(a4_out3,
                                                   a4_out5,
                                                   a4_out6),
                           counterfactual_label = "treatment programme without monitoring")
 ly_saved_by_age2 <-
-  plot_ly_gained(counterfactual_object = out2,
+  plot_ly_gained_cohort(counterfactual_object = a5_out1,
                           scenario_objects = list(a5_out3,
                                                   a5_out5,
                                                   a5_out6),
                           counterfactual_label = "treatment programme without monitoring")
 ly_saved_by_age3 <-
-  plot_ly_gained(counterfactual_object = out2,
+  plot_ly_gained_cohort(counterfactual_object = a2_out1,
                           scenario_objects = list(a2_out3,
                                                   a2_out5,
                                                   a2_out6),
                           counterfactual_label = "treatment programme without monitoring")
 
 ly_saved_by_age4 <-
-  plot_ly_gained(counterfactual_object = out2,
+  plot_ly_gained_cohort(counterfactual_object = a6_out1,
                           scenario_objects = list(a6_out3,
                                                   a6_out5,
                                                   a6_out6),
                           counterfactual_label = "treatment programme without monitoring")
-ly_saved_by_age5 <-
-  plot_ly_gained(counterfactual_object = out2,
-                          scenario_objects = list(a7_out3,
-                                                  a7_out5,
-                                                  a7_out6),
-                          counterfactual_label = "treatment programme without monitoring")
+#ly_saved_by_age5 <-
+#  plot_ly_gained_cohort(counterfactual_object = out2,
+#                          scenario_objects = list(a7_out3,
+#                                                  a7_out5,
+#                                                  a7_out6),
+#                          counterfactual_label = "treatment programme without monitoring")
 
 # Add 4 and 5 together:
 #ly_saved_by_age4 <- left_join((filter(ly_saved_by_age4, by_year == 2100 &
@@ -197,16 +225,16 @@ ly_saved_by_age5 <-
 
 ly_saved_by_age_all_scenarios <- rbind(
   data.frame(age_group = "15-30",
-             filter(ly_saved_by_age1, by_year == 2100 &
+             filter(ly_saved_by_age1,
                       type == "number_averted") %>% select(counterfactual, sim, value)),
   data.frame(age_group = "30-45",
-             filter(ly_saved_by_age2, by_year == 2100 &
+             filter(ly_saved_by_age2,
                       type == "number_averted") %>% select(counterfactual, sim, value)),
   data.frame(age_group = "45-60",
-             filter(ly_saved_by_age3, by_year == 2100 &
+             filter(ly_saved_by_age3,
                       type == "number_averted") %>% select(counterfactual, sim, value)),
   data.frame(age_group = "60-65",
-             filter(ly_saved_by_age4, by_year == 2100 &
+             filter(ly_saved_by_age4,
                       type == "number_averted") %>% select(counterfactual, sim, value))
 )
 colnames(ly_saved_by_age_all_scenarios)[colnames(ly_saved_by_age_all_scenarios)=="counterfactual"] <- "scenario"
@@ -305,28 +333,38 @@ ggplot(outcomes_by_age) +
 # Maybe make a stacked bar chart of outcome by age group? And then same for interactions?
 
 p1 <- ggplot(subset(outcomes_by_age, outcome == "deaths_averted")) +
-  geom_bar(aes(x=age_group, y= value, group = outcome), fill = "grey40",
+  geom_bar(aes(x=age_group, y= value/1000, group = outcome), fill = "grey40",
            stat = "summary", fun = "median", width = 0.9) +
-  geom_errorbar(mapping = aes(x=age_group, y= value, group = outcome),
+  geom_errorbar(mapping = aes(x=age_group, y= value/1000, group = outcome),
                 stat = "summary",
                 fun.min = function(z) {quantile(z,0.025)},
                 fun.max = function(z) {quantile(z,0.975)},
                 width = 0.25) +
-  ylab("HBV-related deaths\naverted") +
-  xlab("") +
-  theme_classic()
+  ylab("HBV deaths\naverted\n(thousands)") +
+  theme_classic() +
+  theme(axis.text.y = element_text(size = 13),
+        axis.text.x = element_blank(),
+        axis.title.y = element_text(size = 13),
+        axis.title.x = element_blank(),
+        legend.text = element_text(size = 13),
+        legend.title = element_text(size = 13))
 
 p2<- ggplot(subset(outcomes_by_age, outcome == "ly_saved")) +
-  geom_bar(aes(x=age_group, y= value), fill = "grey40",
+  geom_bar(aes(x=age_group, y= value/1000), fill = "grey40",
            position = "dodge", stat = "summary", fun = "median", width = 0.9) +
-  geom_errorbar(mapping = aes(x=age_group, y= value, group = outcome),
+  geom_errorbar(mapping = aes(x=age_group, y= value/1000, group = outcome),
                 stat = "summary",
                 fun.min = function(z) {quantile(z,0.025)},
                 fun.max = function(z) {quantile(z,0.975)},
                 width = 0.25) +
-  ylab("Life-years saved") +
-  xlab("") +
-  theme_classic()
+  ylab("Life-years\nsaved\n(thousands)") +
+  theme_classic()+
+  theme(axis.text.y = element_text(size = 13),
+        axis.text.x = element_blank(),
+        axis.title.y = element_text(size = 13),
+        axis.title.x = element_blank(),
+        legend.text = element_text(size = 13),
+        legend.title = element_text(size = 13))
 
 total_interactions_errorbar <- subset(interactions_by_age, interaction_type == "total_interactions") %>%
   group_by(age_group) %>%
@@ -335,24 +373,39 @@ total_interactions_errorbar <- subset(interactions_by_age, interaction_type == "
 
 library(viridis)
 options(scipen=1000000)
+median_carriers <- subset(outcomes_by_age, outcome=="carriers") %>% group_by(age_group) %>%
+  summarise(median = median(value))
+
 p3 <- ggplot(subset(interactions_by_age, interaction_type != "total_interactions")) +
-  geom_bar(aes(x=age_group, y= value, fill = reorder(interaction_type, -value)),
+  geom_bar(aes(x=age_group, y= value/1000, fill = reorder(interaction_type, -value)),
            stat = "summary", fun = "median", width = 0.9) +
+  geom_errorbar(data=median_carriers,
+           aes(x=age_group, y= median/1000, ymin= median/1000, ymax= median/1000, linetype = "HBV carriers"),
+           width = 0.9, size = 1) +
   geom_errorbar(data=total_interactions_errorbar,
-                aes(x = age_group, ymin = lower, ymax = upper),width = 0.25) +
+                aes(x = age_group, ymin = lower/1000, ymax = upper/1000),width = 0.25) +
   labs(fill = "Resource utilisation") +
   scale_fill_viridis_d(direction=-1,
                        labels = c("hbsag_tests" = "HBsAg tests",
-                                  "clinical_assessments" = "HBV carriers assessed\nfor treatment eligibility",
-                                  "treatment_initiations" = "HBV carriers initiated on treatment")) +
+                                  "clinical_assessments" = "Clinical\nassessments",
+                                  "treatment_initiations" = "Treatment\ninitiations")) +
+  scale_linetype_manual(values = c("HBV carriers" = "dashed")) +
+  guides(linetype=guide_legend(title=NULL),
+         fill=guide_legend(title=NULL)) +
   theme_classic() +
-  theme(legend.position=c(.85,.85)) +
-  ylab("Number of resources utilised") +
-  xlab("")
+  theme(legend.position=c(.78,.8)) +
+  ylab("Resources utilised\n(thousands)") +
+  xlab("Screened age group")+
+  theme(axis.text = element_text(size = 13),
+        axis.title.y = element_text(size = 13),
+        axis.title.x = element_text(size = 15),
+        legend.text = element_text(size = 11),
+        legend.title = element_text(size = 13))
 
 #grid.arrange(grid.arrange(p1,p2,ncol=2), p3, nrow=2)
 
-grid.arrange(p1,p2,p3,ncol=1, heights = c(1,1,2))
+grid.arrange(p1,p2,p3,ncol=1, heights = c(1,1,3))
+# Rethink carrier line
 
 deaths_per_int1 <- plot_hbv_deaths_averted_per_healthcare_interaction(counterfactual_object = out2,
                                                      scenario_objects = list(a4_out3),
@@ -389,6 +442,33 @@ ggplot(deaths_per_int) +
 # 30-65 = A5+A2+A6
 # 15-45 = A4+A5
 # 45-65 = A2+A6
+
+# Proportion of deaths averted
+deaths_averted_by_age_all_scenarios_prop$sim <- paste0("X", gsub("[^0-9]", "", deaths_averted_by_age_all_scenarios_prop$sim))
+deaths_averted_by_age_prop_wide <- spread(deaths_averted_by_age_all_scenarios_prop, key = "age_group",
+                                     value = "value")
+deaths_averted_by_age_prop_wide$age15to65 <- deaths_averted_by_age_prop_wide$`15-30`+
+  deaths_averted_by_age_prop_wide$`30-45`+deaths_averted_by_age_prop_wide$`45-60`+
+  deaths_averted_by_age_prop_wide$`60-65`
+deaths_averted_by_age_prop_wide$age30to65 <- deaths_averted_by_age_prop_wide$`30-45`+
+  deaths_averted_by_age_prop_wide$`45-60`+
+  deaths_averted_by_age_prop_wide$`60-65`
+deaths_averted_by_age_prop_wide$age15to45 <- deaths_averted_by_age_prop_wide$`15-30`+
+  deaths_averted_by_age_prop_wide$`30-45`
+deaths_averted_by_age_prop_wide$age45to65 <- deaths_averted_by_age_prop_wide$`45-60`+
+  deaths_averted_by_age_prop_wide$`60-65`
+deaths_averted_by_age_prop_wide <- deaths_averted_by_age_prop_wide[, -c(3:6)]
+deaths_averted_by_age_prop_long <- gather(deaths_averted_by_age_prop_wide, key = "age_group", value = "deaths_averted",
+                                     -scenario, -sim)
+
+deaths_averted_by_age_prop_long  %>%
+  group_by(scenario, age_group) %>%
+  summarise(median = median(deaths_averted),
+            lower = quantile(deaths_averted, prob = 0.025),
+            upper = quantile(deaths_averted, prob = 0.975))
+
+# Other outcomes
+
 deaths_averted_by_age_all_scenarios$sim <- paste0("X", gsub("[^0-9]", "", deaths_averted_by_age_all_scenarios$sim))
 deaths_averted_by_age_wide <- spread(deaths_averted_by_age_all_scenarios, key = "age_group",
                                      value = "value")
@@ -490,11 +570,177 @@ interactions_by_age_long <- rbind(
                unlist(a6_out6$interactions[[16]]$total_interactions[,-c(1:3)]))
 )
 
-outcome_per_int_by_original_groups <- left_join(left_join(deaths_averted_by_age_long, ly_saved_by_age_long, by =  c("scenario", "age_group", "sim")),
-                                                interactions_by_age_long,
-                                               by = c("scenario", "age_group", "sim")) %>%
-  mutate(deaths_averted_per_interaction = deaths_averted/interactions,
-         ly_saved_per_interaction = ly_saved/interactions)
+screening_by_age_long <- rbind(
+  data.frame(scenario = "screen_2020_monit_0",
+             age_group = "age15to65",
+             sim = names(a1_out3$interactions[[16]]$total_screened[,-c(1:3)]),
+             screening = unlist(a1_out3$interactions[[16]]$total_screened[,-c(1:3)])+
+               unlist(a6_out3$interactions[[16]]$total_screened[,-c(1:3)])),
+  data.frame(scenario = "screen_2020_monit_5",
+             age_group = "age15to65",
+             sim = names(a1_out5$interactions[[16]]$total_screened[,-c(1:3)]),
+             screening = unlist(a1_out5$interactions[[16]]$total_screened[,-c(1:3)])+
+               unlist(a6_out5$interactions[[16]]$total_screened[,-c(1:3)])),
+  data.frame(scenario = "screen_2020_monit_1",
+             age_group = "age15to65",
+             sim = names(a1_out6$interactions[[16]]$total_screened[,-c(1:3)]),
+             screening = unlist(a1_out6$interactions[[16]]$total_screened[,-c(1:3)])+
+               unlist(a6_out6$interactions[[16]]$total_screened[,-c(1:3)])),
+  data.frame(scenario = "screen_2020_monit_0",
+             age_group = "age30to65",
+             sim = names(a5_out3$interactions[[16]]$total_screened[,-c(1:3)]),
+             screening = unlist(a5_out3$interactions[[16]]$total_screened[,-c(1:3)])+
+               unlist(a2_out3$interactions[[16]]$total_screened[,-c(1:3)])+
+               unlist(a6_out3$interactions[[16]]$total_screened[,-c(1:3)])),
+  data.frame(scenario = "screen_2020_monit_5",
+             age_group = "age30to65",
+             sim = names(a5_out5$interactions[[16]]$total_screened[,-c(1:3)]),
+             screening = unlist(a5_out5$interactions[[16]]$total_screened[,-c(1:3)])+
+               unlist(a2_out5$interactions[[16]]$total_screened[,-c(1:3)])+
+               unlist(a6_out5$interactions[[16]]$total_screened[,-c(1:3)])),
+  data.frame(scenario = "screen_2020_monit_1",
+             age_group = "age30to65",
+             sim = names(a5_out6$interactions[[16]]$total_screened[,-c(1:3)]),
+             screening = unlist(a5_out6$interactions[[16]]$total_screened[,-c(1:3)])+
+               unlist(a2_out6$interactions[[16]]$total_screened[,-c(1:3)])+
+               unlist(a6_out6$interactions[[16]]$total_screened[,-c(1:3)])),
+  data.frame(scenario = "screen_2020_monit_0",
+             age_group = "age15to45",
+             sim = names(a4_out3$interactions[[16]]$total_screened[,-c(1:3)]),
+             screening = unlist(a4_out3$interactions[[16]]$total_screened[,-c(1:3)])+
+               unlist(a5_out3$interactions[[16]]$total_screened[,-c(1:3)])),
+  data.frame(scenario = "screen_2020_monit_5",
+             age_group = "age15to45",
+             sim = names(a4_out5$interactions[[16]]$total_screened[,-c(1:3)]),
+             screening = unlist(a4_out5$interactions[[16]]$total_screened[,-c(1:3)])+
+               unlist(a5_out5$interactions[[16]]$total_screened[,-c(1:3)])),
+  data.frame(scenario = "screen_2020_monit_1",
+             age_group = "age15to45",
+             sim = names(a4_out6$interactions[[16]]$total_screened[,-c(1:3)]),
+             screening = unlist(a4_out6$interactions[[16]]$total_screened[,-c(1:3)])+
+               unlist(a5_out6$interactions[[16]]$total_screened[,-c(1:3)])),
+  data.frame(scenario = "screen_2020_monit_0",
+             age_group = "age45to65",
+             sim = names(a2_out3$interactions[[16]]$total_screened[,-c(1:3)]),
+             screening = unlist(a2_out3$interactions[[16]]$total_screened[,-c(1:3)])+
+               unlist(a6_out3$interactions[[16]]$total_screened[,-c(1:3)])),
+  data.frame(scenario = "screen_2020_monit_5",
+             age_group = "age45to65",
+             sim = names(a2_out5$interactions[[16]]$total_screened[,-c(1:3)]),
+             screening = unlist(a2_out5$interactions[[16]]$total_screened[,-c(1:3)])+
+               unlist(a6_out5$interactions[[16]]$total_screened[,-c(1:3)])),
+  data.frame(scenario = "screen_2020_monit_1",
+             age_group = "age45to65",
+             sim = names(a2_out6$interactions[[16]]$total_screened[,-c(1:3)]),
+             screening = unlist(a2_out6$interactions[[16]]$total_screened[,-c(1:3)])+
+               unlist(a6_out6$interactions[[16]]$total_screened[,-c(1:3)]))
+)
+
+assessment_and_treatment_by_age_long <- rbind(
+  data.frame(scenario = "screen_2020_monit_0",
+             age_group = "age15to65",
+             sim = names(a1_out3$interactions[[16]]$total_interactions[,-c(1:3)]),
+             assessment_and_treatment = unlist(a1_out3$interactions[[16]]$total_interactions[,-c(1:3)])-
+               unlist(a1_out3$interactions[[16]]$total_screened[,-c(1:3)]) +
+               unlist(a6_out3$interactions[[16]]$total_interactions[,-c(1:3)])-
+               unlist(a6_out3$interactions[[16]]$total_screened[,-c(1:3)])),
+  data.frame(scenario = "screen_2020_monit_5",
+             age_group = "age15to65",
+             sim = names(a1_out5$interactions[[16]]$total_interactions[,-c(1:3)]),
+             assessment_and_treatment = unlist(a1_out5$interactions[[16]]$total_interactions[,-c(1:3)])-
+               unlist(a1_out5$interactions[[16]]$total_screened[,-c(1:3)])+
+               unlist(a6_out5$interactions[[16]]$total_interactions[,-c(1:3)])-
+               unlist(a6_out5$interactions[[16]]$total_screened[,-c(1:3)])),
+  data.frame(scenario = "screen_2020_monit_1",
+             age_group = "age15to65",
+             sim = names(a1_out6$interactions[[16]]$total_interactions[,-c(1:3)]),
+             assessment_and_treatment = unlist(a1_out6$interactions[[16]]$total_interactions[,-c(1:3)])-
+               unlist(a1_out6$interactions[[16]]$total_screened[,-c(1:3)])+
+               unlist(a6_out6$interactions[[16]]$total_interactions[,-c(1:3)])-
+               unlist(a6_out6$interactions[[16]]$total_screened[,-c(1:3)])),
+  data.frame(scenario = "screen_2020_monit_0",
+             age_group = "age30to65",
+             sim = names(a5_out3$interactions[[16]]$total_interactions[,-c(1:3)]),
+             assessment_and_treatment = unlist(a5_out3$interactions[[16]]$total_interactions[,-c(1:3)])-
+               unlist(a5_out3$interactions[[16]]$total_screened[,-c(1:3)])+
+               unlist(a2_out3$interactions[[16]]$total_interactions[,-c(1:3)])-
+               unlist(a2_out3$interactions[[16]]$total_screened[,-c(1:3)])+
+               unlist(a6_out3$interactions[[16]]$total_interactions[,-c(1:3)])-
+               unlist(a6_out3$interactions[[16]]$total_screened[,-c(1:3)])),
+  data.frame(scenario = "screen_2020_monit_5",
+             age_group = "age30to65",
+             sim = names(a5_out5$interactions[[16]]$total_interactions[,-c(1:3)]),
+             assessment_and_treatment = unlist(a5_out5$interactions[[16]]$total_interactions[,-c(1:3)])-
+               unlist(a5_out5$interactions[[16]]$total_screened[,-c(1:3)])+
+               unlist(a2_out5$interactions[[16]]$total_interactions[,-c(1:3)])-
+               unlist(a2_out5$interactions[[16]]$total_screened[,-c(1:3)])+
+               unlist(a6_out5$interactions[[16]]$total_interactions[,-c(1:3)])-
+               unlist(a6_out5$interactions[[16]]$total_screened[,-c(1:3)])),
+  data.frame(scenario = "screen_2020_monit_1",
+             age_group = "age30to65",
+             sim = names(a5_out6$interactions[[16]]$total_interactions[,-c(1:3)]),
+             assessment_and_treatment = unlist(a5_out6$interactions[[16]]$total_interactions[,-c(1:3)])-
+               unlist(a5_out6$interactions[[16]]$total_screened[,-c(1:3)])+
+               unlist(a2_out6$interactions[[16]]$total_interactions[,-c(1:3)])-
+               unlist(a2_out6$interactions[[16]]$total_screened[,-c(1:3)])+
+               unlist(a6_out6$interactions[[16]]$total_interactions[,-c(1:3)])-
+               unlist(a6_out6$interactions[[16]]$total_screened[,-c(1:3)])),
+  data.frame(scenario = "screen_2020_monit_0",
+             age_group = "age15to45",
+             sim = names(a4_out3$interactions[[16]]$total_interactions[,-c(1:3)]),
+             assessment_and_treatment = unlist(a4_out3$interactions[[16]]$total_interactions[,-c(1:3)])-
+               unlist(a4_out3$interactions[[16]]$total_screened[,-c(1:3)])+
+               unlist(a5_out3$interactions[[16]]$total_interactions[,-c(1:3)])-
+               unlist(a5_out3$interactions[[16]]$total_screened[,-c(1:3)])),
+  data.frame(scenario = "screen_2020_monit_5",
+             age_group = "age15to45",
+             sim = names(a4_out5$interactions[[16]]$total_interactions[,-c(1:3)]),
+             assessment_and_treatment = unlist(a4_out5$interactions[[16]]$total_interactions[,-c(1:3)])-
+               unlist(a4_out5$interactions[[16]]$total_screened[,-c(1:3)])+
+               unlist(a5_out5$interactions[[16]]$total_interactions[,-c(1:3)])-
+               unlist(a5_out5$interactions[[16]]$total_screened[,-c(1:3)])),
+  data.frame(scenario = "screen_2020_monit_1",
+             age_group = "age15to45",
+             sim = names(a4_out6$interactions[[16]]$total_interactions[,-c(1:3)]),
+             assessment_and_treatment = unlist(a4_out6$interactions[[16]]$total_interactions[,-c(1:3)])-
+               unlist(a4_out6$interactions[[16]]$total_screened[,-c(1:3)])+
+               unlist(a5_out6$interactions[[16]]$total_interactions[,-c(1:3)])-
+               unlist(a5_out6$interactions[[16]]$total_screened[,-c(1:3)])),
+  data.frame(scenario = "screen_2020_monit_0",
+             age_group = "age45to65",
+             sim = names(a2_out3$interactions[[16]]$total_interactions[,-c(1:3)]),
+             assessment_and_treatment = unlist(a2_out3$interactions[[16]]$total_interactions[,-c(1:3)])-
+               unlist(a2_out3$interactions[[16]]$total_screened[,-c(1:3)])+
+               unlist(a6_out3$interactions[[16]]$total_interactions[,-c(1:3)])-
+               unlist(a6_out3$interactions[[16]]$total_screened[,-c(1:3)])),
+  data.frame(scenario = "screen_2020_monit_5",
+             age_group = "age45to65",
+             sim = names(a2_out5$interactions[[16]]$total_interactions[,-c(1:3)]),
+             assessment_and_treatment = unlist(a2_out5$interactions[[16]]$total_interactions[,-c(1:3)])-
+               unlist(a2_out5$interactions[[16]]$total_screened[,-c(1:3)])+
+               unlist(a6_out5$interactions[[16]]$total_interactions[,-c(1:3)])-
+               unlist(a6_out5$interactions[[16]]$total_screened[,-c(1:3)])),
+  data.frame(scenario = "screen_2020_monit_1",
+             age_group = "age45to65",
+             sim = names(a2_out6$interactions[[16]]$total_interactions[,-c(1:3)]),
+             assessment_and_treatment = unlist(a2_out6$interactions[[16]]$total_interactions[,-c(1:3)])-
+               unlist(a2_out6$interactions[[16]]$total_screened[,-c(1:3)])+
+               unlist(a6_out6$interactions[[16]]$total_interactions[,-c(1:3)])-
+               unlist(a6_out6$interactions[[16]]$total_screened[,-c(1:3)]))
+)
+
+outcome_per_int_by_original_groups <- left_join(left_join(left_join(
+    left_join(deaths_averted_by_age_long, ly_saved_by_age_long,
+              by =  c("scenario", "age_group", "sim")),
+    interactions_by_age_long, by = c("scenario", "age_group", "sim")),
+    assessment_and_treatment_by_age_long,  by = c("scenario", "age_group", "sim")),
+    screening_by_age_long, by = c("scenario", "age_group", "sim")) %>%
+    mutate(deaths_averted_per_interaction = deaths_averted/interactions,
+           ly_saved_per_interaction = ly_saved/interactions,
+           deaths_averted_per_assessment_and_treatment = deaths_averted/assessment_and_treatment,
+           ly_saved_per_assessment_and_treatment = ly_saved/assessment_and_treatment,
+           deaths_averted_per_screening = deaths_averted/screening,
+           ly_saved_per_screening = ly_saved/screening)
 
 # Deaths averted per 10,000 total interactions
 outcome_per_int_by_original_groups  %>%
@@ -509,6 +755,34 @@ outcome_per_int_by_original_groups  %>%
   summarise(median_per_10000 = median(ly_saved_per_interaction)*10000,
             lower_per_10000 = quantile(ly_saved_per_interaction, prob = 0.025)*10000,
             upper_per_10000 = quantile(ly_saved_per_interaction, prob = 0.975)*10000)
+
+# Deaths averted per 1000 screens
+outcome_per_int_by_original_groups  %>%
+  group_by(scenario, age_group) %>%
+  summarise(median_per_10000 = median(deaths_averted_per_screening)*1000,
+            lower_per_10000 = quantile(deaths_averted_per_screening, prob = 0.025)*1000,
+            upper_per_10000 = quantile(deaths_averted_per_screening, prob = 0.975)*1000)
+
+# LY saved per 1000 screens
+outcome_per_int_by_original_groups  %>%
+  group_by(scenario, age_group) %>%
+  summarise(median_per_10000 = median(ly_saved_per_screening)*1000,
+            lower_per_10000 = quantile(ly_saved_per_screening, prob = 0.025)*1000,
+            upper_per_10000 = quantile(ly_saved_per_screening, prob = 0.975)*1000)
+
+# Deaths averted per 1000 clinical assessments and treatments
+outcome_per_int_by_original_groups  %>%
+  group_by(scenario, age_group) %>%
+  summarise(median_per_10000 = median(deaths_averted_per_assessment_and_treatment)*1000,
+            lower_per_10000 = quantile(deaths_averted_per_assessment_and_treatment, prob = 0.025)*1000,
+            upper_per_10000 = quantile(deaths_averted_per_assessment_and_treatment, prob = 0.975)*1000)
+
+# LY saved per 1000 clinical assessments and treatments
+outcome_per_int_by_original_groups  %>%
+  group_by(scenario, age_group) %>%
+  summarise(median_per_10000 = median(ly_saved_per_assessment_and_treatment)*1000,
+            lower_per_10000 = quantile(ly_saved_per_assessment_and_treatment, prob = 0.025)*1000,
+            upper_per_10000 = quantile(ly_saved_per_assessment_and_treatment, prob = 0.975)*1000)
 
 # Absolute deaths averted
 outcome_per_int_by_original_groups  %>%
@@ -528,6 +802,11 @@ median(subset(outcome_per_int_by_original_groups, scenario == "screen_2020_monit
          age_group == "age15to65")$deaths_averted/
   subset(outcome_per_int_by_original_groups, scenario == "screen_2020_monit_0" &
                                                   age_group == "age30to65")$deaths_averted)
+
+quantile(subset(outcome_per_int_by_original_groups, scenario == "screen_2020_monit_0" &
+                age_group == "age15to65")$ly_saved/
+         subset(outcome_per_int_by_original_groups, scenario == "screen_2020_monit_0" &
+                  age_group == "age30to65")$ly_saved, prob = c(0.5,0.025,0.975))
 
 # Population impact of no monitoring vs no uptake ----
 # Show 15-65, low uptake, no monitoring (cx_out3)
@@ -632,14 +911,14 @@ deaths_averted_per_interaction_by_uptake$scenario <- factor(deaths_averted_per_i
 px1 <- ggplot(deaths_averted_by_uptake,
        aes(x = scenario, y = value, colour = reorder(uptake, value), fill = reorder(uptake, value))) +
   stat_summary(fun.data=f, geom="boxplot", position = "dodge2", width = 0.5, alpha = 0.4, lwd = 1) +
-  scale_x_discrete(labels = c("screen_2020_monit_0" = "No monitoring",
-                              "screen_2020_monit_5" = "Every 5 years",
-                              "screen_2020_monit_1" = "Every 1 year")) +
-  scale_fill_manual(labels = c("realistic" = "Low",
+  scale_x_discrete(labels = c("screen_2020_monit_0" = "No\nmonitoring",
+                              "screen_2020_monit_5" = "Every\n5 years",
+                              "screen_2020_monit_1" = "Every\n1 year")) +
+  scale_fill_manual(labels = c("realistic" = "Feasible",
                                  "ambitious" = "Ambitious"),
                       values = c("realistic" = "grey40",
                                  "ambitious" = "#440154")) +
-  scale_colour_manual(labels = c("realistic" = "Low",
+  scale_colour_manual(labels = c("realistic" = "Feasible",
                                "ambitious" = "Ambitious"),
                     values = c("realistic" = "grey40",
                                "ambitious" = "#440154")) +
@@ -648,28 +927,40 @@ px1 <- ggplot(deaths_averted_by_uptake,
   xlab("Monitoring frequency") +
   guides(colour = "none") +
   theme_classic() +
-  ylim(0,12500)
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        legend.text = element_text(size = 14),
+        legend.title = element_text(size = 14)) +
+  ylim(0,12000)
 
 px2 <- ggplot(deaths_averted_per_interaction_by_uptake, aes(x = scenario, y = value*10000,
                                                      colour = reorder(uptake, value),
                                                      fill = reorder(uptake, value))) +
   stat_summary(fun.data=f, geom="boxplot", position = "dodge2", width = 0.5, alpha = 0.4, lwd = 1) +
-  scale_x_discrete(labels = c("screen_2020_monit_0" = "No monitoring",
-                              "screen_2020_monit_5" = "Every 5 years",
-                              "screen_2020_monit_1" = "Every 1 year")) +
-  scale_fill_manual(values = c("Low" = "grey40",
+  scale_x_discrete(labels = c("screen_2020_monit_0" = "No\nmonitoring",
+                              "screen_2020_monit_5" = "Every\n5 years",
+                              "screen_2020_monit_1" = "Every\n1 year")) +
+  scale_fill_manual(labels = c("Low" = "Feasible"),
+                               values = c("Low" = "grey40",
                                "Ambitious" = "#440154")) +
-  scale_colour_manual(values = c("Low" = "grey40",
+  scale_colour_manual(labels = c("Low" = "Feasible"),
+                      values = c("Low" = "grey40",
                                  "Ambitious" = "#440154")) +
   labs(fill = "Programme coverage") +
   ylab("HBV-related deaths averted\nper 10,000 resources utilised") +
   xlab("Monitoring frequency") +
   guides(colour = "none") +
   theme_classic() +
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        legend.text = element_text(size = 14),
+        legend.title = element_text(size = 14))+
   ylim(0,80)
 
 library(ggpubr)
 ggarrange(px1, px2, ncol=2, common.legend = TRUE, legend="bottom")
 
 grid.arrange(px1, px2, ncol = 2)
+
+
 

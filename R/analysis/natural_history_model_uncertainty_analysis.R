@@ -4,14 +4,25 @@ library(tidyr)
 library(dplyr)
 library(corrplot)
 library(ggplot2)
-
-# Comparison of prior and posterios (initially run in run_calibration_local.R) ----
+library(sensitivity)
+library(ggrepel)
 
 # Load parameter sets chosen based on kmeans clustering
 load(here("calibration", "input", "accepted_parmsets_kmeans_170820.Rdata")) # params_mat_accepted_kmeans
 # Load priors
 load(here("calibration", "input", "lhs_samples_1000000.Rdata"))
 
+# Load output files
+carriers_by_age <- readRDS("C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/kmeans_full_output/out_sq_carriers.rds")
+compartments_by_age <- readRDS("C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/kmeans_full_output/out_sq_compartment_prevalence_by_age.rds")
+disease_outcomes_by_age <- readRDS("C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/kmeans_full_output/out_sq_disease_outcomes_by_age.rds")
+
+
+prior <- params_mat
+posterior <- params_mat_accepted_kmeans
+
+
+# Comparison of prior and posterios (initially run in run_calibration_local.R) ----
 # Table of median, 2.5th and 97.5th quantile of priors and posteriors
 posterior_summary <- gather(params_mat_accepted_kmeans, key = "parameter", value = "sim") %>%
   group_by(parameter) %>%
@@ -41,9 +52,6 @@ plot_prior_posterior <- function(parm) {
   #  legend("bottomleft", legend=c("prior density","posterior density"),
   #         col=c("blue","red"), lty=c(3,1), lwd=c(3,3), cex = 1)
 }
-
-prior <- params_mat
-posterior <- params_mat_accepted_kmeans
 
 plot(density(prior[,"pr_ir_cc_age_threshold"], bw = 1))
 hist(prior[,"pr_ir_cc_age_threshold"], breaks=seq(min(prior[,"pr_ir_cc_age_threshold"])-0.5,
@@ -275,79 +283,346 @@ ggplot(eag_prog_function_ir_ic) +
 
 
 # Explore key uncertainties in African natural history using PRCC ----
-# Proportion of chronic infections due to MTCT in 2020 ----
+# Proportion of chronic infections due to MTCT PRCC analysis ----
+
+# Note that bootstrapping calculates a 95% confidence interval, which is a
+# measure of uncertainty/accuracy of computed sensitivity parameter. It
+# computes the sample distribution via resampling andthen pick inner 95 % quantile.
+# Interpret as: significant input parameters: 0 not contained inconfidence interval
+# Resampling:generate bootstrap sample (M≈1000 times) bydrawing from existing simulated sample (sizeN) new samples ofsizeN  with replacement
+# I think it picks a subset of parameter set/output combinations and calculates the PRCC. Then does this many times for different subsets.
+# Maybe try epi.prcc in epiR package which is based on the HIV paper and calculates p-value.
+
 out_path <-
   "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/kmeans_full_output/"
 chronic_infection_incidence <-
   readRDS(paste0(out_path, "sq_chronic_infection_incidence_status_quo_250920.rds"))
-library(sensitivity)
 
 # Check order of sims is the samr:
 gsub("\\..*", "",
      chronic_infection_incidence$prop_mtct$sim[chronic_infection_incidence$prop_mtct$time == 2020])==
 rownames(params_mat_accepted_kmeans)
 
-# Run PRCC
-prcc_prop_mtct <- pcc(params_mat_accepted_kmeans,
+# Run PRCC for 2020
+prcc_prop_mtct_2020 <- pcc(params_mat_accepted_kmeans,
                       chronic_infection_incidence$prop_mtct$value[
                         chronic_infection_incidence$prop_mtct$time == 2020],
-                 rank = TRUE, nboot = 100)
-plot(prcc_prop_mtct)
+                 rank = TRUE, nboot = 100)   # checked and there was no difference between 100 and 1000 nboot
+plot(prcc_prop_mtct_2020)
 abline(h=0)
-rownames(prcc_prop_mtct$PRCC)[which(abs(prcc_prop_mtct$PRCC$original)>=quantile(abs(prcc_prop_mtct$PRCC$original),
-                                                                      prob = 0.9))]
-# Most influential parms in 2020 (and 2030) are:
-# "b3" ; "mtct_prob_e" ; "mtct_prob_s" ; "vacc_eff"
-# In 1990: "mtct_prob_e" ; "mtct_prob_s"; "p_chronic_in_mtct" ; "pr_it_ir"
 
-# Maybe here look at parms that don't overlap with 0
+# Significant parameters (95% CI not including 0):
+prop_mtct_2020_significant_parms <- data.frame(parm = rownames(prcc_prop_mtct_2020$PRCC)[
+  which(sign(prcc_prop_mtct_2020$PRCC$`max. c.i.`)==sign(prcc_prop_mtct_2020$PRCC$`min. c.i.`))],
+  prcc_mean = prcc_prop_mtct_2020$PRCC$original[
+    which(sign(prcc_prop_mtct_2020$PRCC$`max. c.i.`)==sign(prcc_prop_mtct_2020$PRCC$`min. c.i.`))],
+  prcc_ci_lower = prcc_prop_mtct_2020$PRCC$`min. c.i.`[
+    which(sign(prcc_prop_mtct_2020$PRCC$`max. c.i.`)==sign(prcc_prop_mtct_2020$PRCC$`min. c.i.`))],
+  prcc_ci_upper = prcc_prop_mtct_2020$PRCC$`max. c.i.`[
+    which(sign(prcc_prop_mtct_2020$PRCC$`max. c.i.`)==sign(prcc_prop_mtct_2020$PRCC$`min. c.i.`))])
+prop_mtct_2020_significant_parms <- arrange(prop_mtct_2020_significant_parms, -abs(prcc_mean))
 
-
-### TEST: Sensitivity analysis on out2 (no treatment) ----
-load(here("analysis_input/accepted_parmsets_123_180520.Rdata"))
-library(sensitivity)
-# Maybe try epi.prcc in epiR package which is based on the HIV paper and calculates p-value.
-
-# PRCC
-# Check order is the same
-rownames(params_mat_accepted)==
-  colnames(out2$timeseries$total_hbv_deaths_rate[out2$timeseries$total_hbv_deaths_rate$time == 2020,-c(1:2)])
-
-out_vec <- c(unlist(out2$timeseries$total_hbv_deaths_rate[
-  out2$timeseries$total_hbv_deaths_rate$time == 2050,-c(1:2)]))
-
-
-# Run PRCC
-test_prcc <- pcc(params_mat_accepted,
-                 out_vec,
-                 rank = TRUE, nboot = 100)
-#View(test_prcc$PRCC)
-rownames(test_prcc$PRCC)[which(abs(test_prcc$PRCC$original)>=quantile(abs(test_prcc$PRCC$original), prob = 0.9))]
-# 1990: "pr_ir_cc_female", "pr_ir_cc_age_threshold", "pr_ic_enchb", "cirrhosis_male_cofactor"
-# 2010: "pr_ir_ic", "pr_ir_cc_female", "pr_ic_enchb", "pr_enchb_cc_female"
-# 2020: "pr_ir_ic", "pr_ir_cc_female", "pr_ic_enchb", "pr_enchb_cc_female"
-# 2030: "mtct_prob_e", "p_chronic_function_r", "pr_ic_enchb", "pr_enchb_cc_female"
-# 2050: "mtct_prob_e", "mtct_prob_s", "p_chronic_in_mtct", "pr_ic_enchb"
-
-plot(test_prcc)
+# Run PRCC for 2040
+prcc_prop_mtct_2040 <- pcc(params_mat_accepted_kmeans,
+                           chronic_infection_incidence$prop_mtct$value[
+                             chronic_infection_incidence$prop_mtct$time == 2040],
+                           rank = TRUE, nboot = 100)   # checked and there was no difference between 100 and 1000 nboot
+plot(prcc_prop_mtct_2040)
 abline(h=0)
-plot(x= params_mat_accepted$pr_ic_enchb, y = out_vec)  # Example of a correlated parameter
-plot(x= params_mat_accepted$hccr_dcc, y = out_vec)     # Example of an uncorrelated parameter
 
-# Assess monotonic relationships: not always clear
-for(i in 1:ncol(params_mat_accepted)) {
-  plot(x= params_mat_accepted[,i], y = out_vec, xlab = colnames(params_mat_accepted)[i])
+# Significant parameters (95% CI not including 0):
+prop_mtct_2040_significant_parms <- data.frame(parm = rownames(prcc_prop_mtct_2040$PRCC)[
+  which(sign(prcc_prop_mtct_2040$PRCC$`max. c.i.`)==sign(prcc_prop_mtct_2040$PRCC$`min. c.i.`))],
+  prcc_mean = prcc_prop_mtct_2040$PRCC$original[
+    which(sign(prcc_prop_mtct_2040$PRCC$`max. c.i.`)==sign(prcc_prop_mtct_2040$PRCC$`min. c.i.`))],
+  prcc_ci_lower = prcc_prop_mtct_2040$PRCC$`min. c.i.`[
+    which(sign(prcc_prop_mtct_2040$PRCC$`max. c.i.`)==sign(prcc_prop_mtct_2040$PRCC$`min. c.i.`))],
+  prcc_ci_upper = prcc_prop_mtct_2040$PRCC$`max. c.i.`[
+    which(sign(prcc_prop_mtct_2040$PRCC$`max. c.i.`)==sign(prcc_prop_mtct_2040$PRCC$`min. c.i.`))])
+prop_mtct_2040_significant_parms <- arrange(prop_mtct_2040_significant_parms, -abs(prcc_mean))
+
+# Run PRCC for 1989
+prcc_prop_mtct_1989 <- pcc(params_mat_accepted_kmeans,
+                           chronic_infection_incidence$prop_mtct$value[
+                             chronic_infection_incidence$prop_mtct$time == 1989],
+                           rank = TRUE, nboot = 100)   # checked and there was no difference between 100 and 1000 nboot
+plot(prcc_prop_mtct_1989)
+abline(h=0)
+
+# Significant parameters (95% CI not including 0):
+prop_mtct_1989_significant_parms <- data.frame(parm = rownames(prcc_prop_mtct_1989$PRCC)[
+  which(sign(prcc_prop_mtct_1989$PRCC$`max. c.i.`)==sign(prcc_prop_mtct_1989$PRCC$`min. c.i.`))],
+  prcc_mean = prcc_prop_mtct_1989$PRCC$original[
+    which(sign(prcc_prop_mtct_1989$PRCC$`max. c.i.`)==sign(prcc_prop_mtct_1989$PRCC$`min. c.i.`))],
+  prcc_ci_lower = prcc_prop_mtct_1989$PRCC$`min. c.i.`[
+    which(sign(prcc_prop_mtct_1989$PRCC$`max. c.i.`)==sign(prcc_prop_mtct_1989$PRCC$`min. c.i.`))],
+  prcc_ci_upper = prcc_prop_mtct_1989$PRCC$`max. c.i.`[
+    which(sign(prcc_prop_mtct_1989$PRCC$`max. c.i.`)==sign(prcc_prop_mtct_1989$PRCC$`min. c.i.`))])
+prop_mtct_1989_significant_parms <- arrange(prop_mtct_1989_significant_parms, -abs(prcc_mean))
+
+prop_mtct_2020_significant_parms
+prop_mtct_2040_significant_parms
+prop_mtct_1989_significant_parms
+# Interesting that vacc_eff actually affects prop_mtct in the pre-vaccination period
+# This is because value of vacc_eff and post-vaccination data influences calibration of other
+# parameters. Though it's not correlated with other parms in the correlation matrix.
+
+# Parameters affecting prop_mtct at all times:
+int_vec <- intersect(intersect(prop_mtct_2020_significant_parms$parm,
+          prop_mtct_2040_significant_parms$parm),
+          prop_mtct_1989_significant_parms$parm)
+data.frame(parm = int_vec,
+           prop_1989 = subset(prop_mtct_1989_significant_parms, parm %in% int_vec)$prcc_mean,
+           prop_2020 = subset(prop_mtct_2020_significant_parms, parm %in% int_vec)$prcc_mean,
+           prop_2040 = subset(prop_mtct_2040_significant_parms, parm %in% int_vec)$prcc_mean)
+# "mtct_prob_s", "vacc_eff", "mtct_prob_e", "p_chronic_in_mtct", "pr_it_ir"
+# Note that for "p_chronic_in_mtct", the direction of association varies pre- and post-vaccination
+# "p_chronic_in_mtct" and "pr_it_ir"  have a weaker association (<0.5)
+
+# Parameters unique to the post-vaccination prop
+unique_postvacc <- unique(c(setdiff(prop_mtct_2020_significant_parms$parm,
+          prop_mtct_1989_significant_parms$parm),
+         setdiff(prop_mtct_2040_significant_parms$parm,
+        prop_mtct_1989_significant_parms$parm)))
+arrange(subset(prop_mtct_2020_significant_parms, parm %in% unique_postvacc), parm)
+arrange(subset(prop_mtct_2040_significant_parms, parm %in% unique_postvacc), parm)
+# of these only b3 is >0.5
+
+# Parameters unique to the pre-vaccination prop:
+unique_prevacc <- unique(c(setdiff(prop_mtct_1989_significant_parms$parm,
+        prop_mtct_2020_significant_parms$parm),
+        setdiff(prop_mtct_1989_significant_parms$parm,
+        prop_mtct_2040_significant_parms$parm)))
+arrange(subset(prop_mtct_1989_significant_parms, parm %in% unique_prevacc), parm)
+# "b1", "alpha", "b2", "pr_ir_cc_female", "pr_ir_ic",
+# but none of these is >0.5 (including CI)
+
+# Change in prop_mtct between 1989 and 2020
+prcc_prop_mtct_2020_increase <- pcc(params_mat_accepted_kmeans,
+                           chronic_infection_incidence$prop_mtct$value[
+                             chronic_infection_incidence$prop_mtct$time == 2020]-chronic_infection_incidence$prop_mtct$value[
+                               chronic_infection_incidence$prop_mtct$time == 1989],
+                           rank = TRUE, nboot = 100)   # checked and there was no difference between 100 and 1000 nboot
+plot(prcc_prop_mtct_2020_increase)
+abline(h=0)
+
+# Significant parameters (95% CI not including 0):
+prop_mtct_2020_increase_significant_parms <- data.frame(parm = rownames(prcc_prop_mtct_2020_increase$PRCC)[
+  which(sign(prcc_prop_mtct_2020_increase$PRCC$`max. c.i.`)==sign(prcc_prop_mtct_2020_increase$PRCC$`min. c.i.`))],
+  prcc_mean = prcc_prop_mtct_2020_increase$PRCC$original[
+    which(sign(prcc_prop_mtct_2020_increase$PRCC$`max. c.i.`)==sign(prcc_prop_mtct_2020_increase$PRCC$`min. c.i.`))],
+  prcc_ci_lower = prcc_prop_mtct_2020_increase$PRCC$`min. c.i.`[
+    which(sign(prcc_prop_mtct_2020_increase$PRCC$`max. c.i.`)==sign(prcc_prop_mtct_2020_increase$PRCC$`min. c.i.`))],
+  prcc_ci_upper = prcc_prop_mtct_2020_increase$PRCC$`max. c.i.`[
+    which(sign(prcc_prop_mtct_2020_increase$PRCC$`max. c.i.`)==sign(prcc_prop_mtct_2020_increase$PRCC$`min. c.i.`))])
+prop_mtct_2020_increase_significant_parms <- arrange(prop_mtct_2020_increase_significant_parms, -abs(prcc_mean))
+
+# Compare PRCC between looking at prop in 2020 vs change between 1989 and 2020
+prop_mtct_2020_increase_significant_parms
+prop_mtct_2020_significant_parms
+df <- full_join(select(prop_mtct_2020_significant_parms, parm, prcc_mean),
+                select(prop_mtct_2020_increase_significant_parms, parm, prcc_mean),
+                by = "parm")
+colnames(df) <- c("parm", "mean_2020", "mean_2020_change")
+df$class <- ifelse(abs(df$mean_2020 - df$mean_2020_change) >0.05, "change", "no_change")
+df$class[is.na(df$class)] <- "not_significant"
+
+# Slope chart
+ggplot(df) +
+  geom_point(aes(x=1, y=mean_2020, col = class), size=2, show.legend=F) +
+  geom_point(aes(x=2, y=mean_2020_change, col = class), size=2, show.legend=F) +
+  geom_segment(aes(x=1, xend=2, y=mean_2020, yend=mean_2020_change, col = class), size=.75, show.legend=F) +
+  geom_vline(xintercept=1, linetype="dashed", size=.1) +
+  geom_vline(xintercept=2, linetype="dashed", size=.1) +
+  labs(x="", y="PRCC") +  # Axis labels
+  ylim(-0.6,1) +
+  xlim(.5, 2.5) +
+  geom_hline(yintercept = 0) +
+  scale_color_manual(values = c("change"="red", "no_change"="darkblue", "not_significant" = "red"))  +
+  geom_text_repel(label=df$parm, y=df$mean_2020, x=rep(1, NROW(df)), hjust=1.1, size=3.5, direction = "y") +
+  geom_text_repel(label=df$parm, y=df$mean_2020_change, x=rep(2, NROW(df)), hjust=-0.1, size=3.5, direction = "y") +
+  geom_text(label="2020", x=1, y=0.9, hjust=1.2, size=5) +  # title
+  geom_text(label="Change 1989-2020", x=2, y=0.9, hjust=-0.1, size=5) +
+  theme_bw()
+# Main difference is that mtct_prob_s, mtct_prob_e and to a lesser degree p_chronic_function_s and_r
+# have more influence on prop in 2020 than on the change in prop 1989-2020
+# Parameters influencing 2020 but not change: p_chronic_in_mtct, pr_ir_enchb, pr_it_ir
+# Parameters influencing change but not 2020: b1, b2, alpha, sag_loss_slope, mu_cc
+# Most influential for both (>0.5): vacc_eff, b3
+
+# Correlated parameter example
+plot(x = params_mat_accepted_kmeans$mtct_prob_s,
+      y = chronic_infection_incidence$prop_mtct$value[
+        chronic_infection_incidence$prop_mtct$time == 1989])
+
+# Assess that all parameters have monotonic relationship to outcome
+# Most commonly there is no obvious relationship rather than monotonic/non-monotonic one
+out_vec <- chronic_infection_incidence$prop_mtct$value[
+  chronic_infection_incidence$prop_mtct$time == 2020]
+for(i in 1:ncol(params_mat_accepted_kmeans)) {
+  plot(x= params_mat_accepted_kmeans[,i], y = out_vec, xlab = colnames(params_mat_accepted_kmeans)[i])
 }
 
-# pr_it_ir, pr_enchb_cc_female, pr_cc_dcc, hccr_dcc are all fine
-x <- params_mat_accepted$hccr_dcc
-y <- out_vec
-cor(rank(y), rank(x))^2 # almost 0
-summary(lm(rank(y) ~ poly(rank(x), 2)))
+#x <- params_mat_accepted_kmeans$b1
+#y <- out_vec
+#cor(rank(y), rank(x))^2 # almost 0
+#summary(lm(rank(y) ~ poly(rank(x), 2)))
 # A low squared Spearman's rank correlation but high R-squared from such regression indicates a
 # strong non-monotonic relationship.
 # Need to check this is the correct way of testing this
 
+# Proportion of chronic infections due to MTCT: Qualitative comparison of posterior distributions ----
+par(mfrow=c(1,2))
+hist(params_mat_accepted_kmeans$vacc_eff[
+  which(chronic_infection_incidence$prop_mtct$value[chronic_infection_incidence$prop_mtct$time == 2040]>=0.75)],
+  xlim = c(0.5,1))
+hist(params_mat_accepted_kmeans$vacc_eff[
+  which(chronic_infection_incidence$prop_mtct$value[chronic_infection_incidence$prop_mtct$time == 2040]<0.75)],
+  xlim = c(0.5,1))
+
+# Kolmogorov-Smirnov test
+ks.test(params_mat_accepted_kmeans$vacc_eff[
+  which(chronic_infection_incidence$prop_mtct$value[chronic_infection_incidence$prop_mtct$time == 2040]>=0.75)],
+  params_mat_accepted_kmeans$vacc_eff[
+    which(chronic_infection_incidence$prop_mtct$value[chronic_infection_incidence$prop_mtct$time == 2040]<0.75)])
+# p-value = 0.007189
+# There is some evidence to reject the null hypothesis that the 2 samples are drawn from
+# the same continuous distribution
+
+hist(params_mat_accepted_kmeans$b3[
+  which(chronic_infection_incidence$prop_mtct$value[chronic_infection_incidence$prop_mtct$time == 2040]>=0.75)],
+  xlim = c(0,0.5))
+hist(params_mat_accepted_kmeans$b3[
+  which(chronic_infection_incidence$prop_mtct$value[chronic_infection_incidence$prop_mtct$time == 2040]<0.75)],
+  xlim = c(0,0.5))
+
+ks.test(params_mat_accepted_kmeans$b3[
+  which(chronic_infection_incidence$prop_mtct$value[chronic_infection_incidence$prop_mtct$time == 2040]>=0.75)],
+  params_mat_accepted_kmeans$b3[
+    which(chronic_infection_incidence$prop_mtct$value[chronic_infection_incidence$prop_mtct$time == 2040]<0.75)])
+# p-value = 0.001452
+
+# Perform a Kolmogorov-Smirnov test on all posterior distributions, distinguishing between
+# 2020 MTCT prob contribution of >/<75%
+p_values <- data.frame(parm = 0, p_value = 0)
+for(i in 1:ncol(params_mat_accepted_kmeans)) {
+  x[i] <- ks.test(params_mat_accepted_kmeans[,i][
+    which(chronic_infection_incidence$prop_mtct$value[chronic_infection_incidence$prop_mtct$time == 2040]>=0.75)],
+    params_mat_accepted_kmeans[,i][
+      which(chronic_infection_incidence$prop_mtct$value[chronic_infection_incidence$prop_mtct$time == 2040]<0.75)])$p.value
+  p_values[i,] <- c(colnames(params_mat_accepted_kmeans)[i], x[i])
+}
+p_values[p_values$p_value<=0.05,]
 
 
 
+
+# Correlation of proportion MTCT with HBeAg prevalence in pregnant women and proportion ever infected ----
+
+ever_inf_1990 <- do.call("rbind",
+    lapply(compartments_by_age$ever_inf_female, function(x) x[which(compartments_by_age$time==1990),]))+
+  do.call("rbind",
+          lapply(compartments_by_age$ever_inf_male, function(x) x[which(compartments_by_age$time==1990),]))
+
+pop_female <- lapply(carriers_by_age, "[[", "pop_female")
+pop_male <- lapply(carriers_by_age, "[[", "pop_male")
+
+pop_1990 <- do.call("rbind",
+                         lapply(pop_female, function(x) x[which(compartments_by_age$time==1990),]))+
+  do.call("rbind",
+          lapply(pop_male, function(x) x[which(compartments_by_age$time==1990),]))
+
+prop_ever_infected <- ever_inf_1990/pop_1990
+prop_ever_infected$sim <- rownames(prop_ever_infected)
+prop_ever_infected <- gather(prop_ever_infected, key = "age", value = "value", -sim)
+prop_ever_infected$age <- rep(seq(0,99.5,0.5), each = 183)
+
+prop_ever_infected$mtct_prob_2020 <- "Low"
+prop_ever_infected$mtct_prob_2020[prop_ever_infected$sim %in%
+                                    gsub("\\..*", "", chronic_infection_incidence$prop_mtct$sim[
+                                      chronic_infection_incidence$prop_mtct$time == 2020 &
+                                        chronic_infection_incidence$prop_mtct$value >=0.65])] <- "High"
+
+prop_ever_infected$mtct_prob_2040 <- "Low"
+prop_ever_infected$mtct_prob_2040[prop_ever_infected$sim %in%
+                                    gsub("\\..*", "", chronic_infection_incidence$prop_mtct$sim[
+                                      chronic_infection_incidence$prop_mtct$time == 2040 &
+                                        chronic_infection_incidence$prop_mtct$value >=0.5])] <- "High"
+
+ggplot(prop_ever_infected) +
+  geom_line(aes(x=age, y = value, group = sim, colour = mtct_prob_2040))
+
+quantile(prop_ever_infected$value[prop_ever_infected$age == 50 & prop_ever_infected$mtct_prob_2020 == "High"])
+quantile(prop_ever_infected$value[prop_ever_infected$age == 50 & prop_ever_infected$mtct_prob_2020 == "Low"])
+quantile(prop_ever_infected$value[prop_ever_infected$age == 30 & prop_ever_infected$mtct_prob_2040 == "High"])
+quantile(prop_ever_infected$value[prop_ever_infected$age == 30 & prop_ever_infected$mtct_prob_2040 == "Low"])
+
+
+par(mfrow=c(1,2))
+# Prop MTCT in 2020
+boxplot(chronic_infection_incidence$prop_mtct$value[chronic_infection_incidence$prop_mtct$time == 2020 & gsub("\\..*", "", chronic_infection_incidence$prop_mtct$sim) %in%
+                                              prop_ever_infected$sim[which(prop_ever_infected$age==50 & prop_ever_infected$value>=0.85)]],
+        ylim= c(0.25,1), ylab = "Prop. chronic infections due to MTCT in 2020",
+        main = "Prop. ever infected >=85% at age 50\nin 1990")
+boxplot(chronic_infection_incidence$prop_mtct$value[chronic_infection_incidence$prop_mtct$time == 2020 & gsub("\\..*", "", chronic_infection_incidence$prop_mtct$sim) %in%
+                                                        prop_ever_infected$sim[which(prop_ever_infected$age==50 & prop_ever_infected$value<0.85)]],
+        ylim= c(0.25,1), main = "Prop. ever infected <85% at age 50\nin 1990")
+# Proportion of chronic infections due to MTCT in 2020 is slightly lower in simulations where
+# prop. ever infected in 50 year olds in 1990 was calibrated as over 85%
+# 85% also corresponds to about the lower quartile
+
+# Prop MTCT in 2040
+boxplot(chronic_infection_incidence$prop_mtct$value[chronic_infection_incidence$prop_mtct$time == 2040 & gsub("\\..*", "", chronic_infection_incidence$prop_mtct$sim) %in%
+                                                      prop_ever_infected$sim[which(prop_ever_infected$age==50 & prop_ever_infected$value>=0.85)]],
+        ylim= c(0,1), ylab = "Prop. chronic infections due to MTCT in 2040",
+        main = "Prop. ever infected >=85% at age 50\nin 1990")
+boxplot(chronic_infection_incidence$prop_mtct$value[chronic_infection_incidence$prop_mtct$time == 2040 & gsub("\\..*", "", chronic_infection_incidence$prop_mtct$sim) %in%
+                                                      prop_ever_infected$sim[which(prop_ever_infected$age==50 & prop_ever_infected$value<0.85)]],
+        ylim= c(0,1), main = "Prop. ever infected <85% at age 50\nin 1990")
+
+# Look at direct correlation
+par(mfrow=c(1,1))
+plot(x = prop_ever_infected$value[prop_ever_infected$age == 50],
+     y = chronic_infection_incidence$prop_mtct$value[chronic_infection_incidence$prop_mtct$time == 2040],
+     xlim = c(0,1), ylim = c(0,1),
+     ylab = "Proportion of new chronic infections due to MTCT in 2040",
+     xlab = "Anti-HBc prevalence in 50 year olds in 1990")
+# But note b3 also correlates with alpha and b1 so there might be a further relationship here
+# Could do PCA or machine learning approach to find relationship between anti-HBc prev, prop MTCT
+# b3, b1 and alpha
+
+# PCA
+pca_obj <- data.frame(
+  prop_ever_inf = prop_ever_infected$value[prop_ever_infected$age == 50],
+  prop_mtct = chronic_infection_incidence$prop_mtct$value[chronic_infection_incidence$prop_mtct$time == 2040],
+  b1 = params_mat_accepted_kmeans$b1,
+  b3 = params_mat_accepted_kmeans$b3,
+  alpha = params_mat_accepted_kmeans$alpha)
+
+pca <- prcomp(pca_obj, center = TRUE, scale = TRUE)
+summary(pca)
+
+library(factoextra)
+fviz_pca_var(pca,
+             col.var = "contrib", # Color by contributions to the PC
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+             repel = TRUE     # Avoid text overlapping
+)
+
+mtct_group <- chronic_infection_incidence$prop_mtct$value[chronic_infection_incidence$prop_mtct$time == 2040]
+mtct_group[mtct_group <0.5] <- "<50%"
+mtct_group[mtct_group >=0.5] <- ">50%"
+
+
+fviz_pca_ind(pca, geom.ind = "point", pointshape = 21,
+             pointsize = 2,
+             fill.ind = mtct_group,
+             col.ind = "black",
+             palette = "jco",
+             addEllipses = TRUE,
+             label = "var",
+             col.var = "black",
+             repel = TRUE,
+             legend.title = "Proportion of new chronic infections\ndue to MTCT in 2040") +
+  ggtitle("2D PCA-plot from 30 feature dataset") +
+  theme(plot.title = element_text(hjust = 0.5))

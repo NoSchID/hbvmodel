@@ -183,6 +183,46 @@ summarise_healthcare_interactions <- function(output_files, from_year, by_year, 
                                          scenario = scenario_label),
                               t(total_screened))
 
+  # Interactions during and after monitoring
+  monitoring_interactions <- data.frame(sapply(output_files, calculate_monitoring_interactions, from_year, by_year, scenario_label))
+  monitoring_interactions <- as.data.frame(apply(monitoring_interactions,2,unlist))
+
+  total_monitored <- as.numeric(monitoring_interactions["cum_monitoring_events_it",])+
+    as.numeric(monitoring_interactions["cum_monitoring_events_ir",])+
+    as.numeric(monitoring_interactions["cum_monitoring_events_enchb",])+
+    as.numeric(monitoring_interactions["cum_monitoring_events_cc",])+
+    as.numeric(monitoring_interactions["cum_monitoring_events_dcc",])+
+    as.numeric(monitoring_interactions["cum_monitoring_events_ineligible",])   # ignore rowname
+
+  total_treated_after_monitoring <- as.numeric(monitoring_interactions["cum_monitoring_treatment_initiations",])+
+    as.numeric(monitoring_interactions["cum_monitoring_treatment_initiations_it",])
+
+  total_assessed <- total_assessed_immediately+total_monitored
+  rownames(total_assessed) <- NULL
+  total_treated <- total_treated_immediately+total_treated_after_monitoring
+  rownames(total_treated) <- NULL
+
+  total_assessed_res <- cbind(data.frame(from_year = from_year,
+                                         by_year = by_year,
+                                         scenario = scenario_label),
+                              t(total_assessed))
+  total_treated_res <- cbind(data.frame(from_year = from_year,
+                                        by_year = by_year,
+                                        scenario = scenario_label),
+                             t(total_treated))
+
+
+  total_interactions_res <- cbind(data.frame(from_year = from_year,
+                                             by_year = by_year,
+                                             scenario = scenario_label),
+                                  t(total_screened)+t(total_assessed)+t(total_treated))
+
+
+  res <- list(total_interactions = total_interactions_res,
+              total_screened = total_screened_res,
+              total_assessed = total_assessed_res,
+              total_treated = total_treated_res)
+
   } else {
 
     total_screened <- data.frame(screening_years = screening_interactions[[1]]$screening_years,
@@ -204,47 +244,48 @@ summarise_healthcare_interactions <- function(output_files, from_year, by_year, 
                                            by_year = by_year,
                                            scenario = scenario_label),
                                 total_screened)
+
+    # Interactions during and after monitoring
+    monitoring_interactions <- data.frame(sapply(output_files, calculate_monitoring_interactions, from_year, by_year, scenario_label))
+    monitoring_interactions <- as.data.frame(apply(monitoring_interactions,2,unlist))
+
+    total_monitored <- as.numeric(monitoring_interactions["cum_monitoring_events_it",])+
+      as.numeric(monitoring_interactions["cum_monitoring_events_ir",])+
+      as.numeric(monitoring_interactions["cum_monitoring_events_enchb",])+
+      as.numeric(monitoring_interactions["cum_monitoring_events_cc",])+
+      as.numeric(monitoring_interactions["cum_monitoring_events_dcc",])+
+      as.numeric(monitoring_interactions["cum_monitoring_events_ineligible",])   # ignore rowname
+
+    total_treated_after_monitoring <- as.numeric(monitoring_interactions["cum_monitoring_treatment_initiations",])+
+      as.numeric(monitoring_interactions["cum_monitoring_treatment_initiations_it",])
+
+    total_assessed <- total_assessed_immediately+total_monitored
+    rownames(total_assessed) <- NULL
+    total_treated <- total_treated_immediately+total_treated_after_monitoring
+    rownames(total_treated) <- NULL
+
+    total_assessed_res <- cbind(data.frame(from_year = from_year,
+                                           by_year = by_year,
+                                           scenario = scenario_label),
+                                as.data.frame(total_assessed))
+    total_treated_res <- cbind(data.frame(from_year = from_year,
+                                          by_year = by_year,
+                                          scenario = scenario_label),
+                               as.data.frame(total_treated))
+
+
+    total_interactions_res <- cbind(data.frame(from_year = from_year,
+                                               by_year = by_year,
+                                               scenario = scenario_label),
+                                    total_screened+total_assessed+total_treated)
+
+
+    res <- list(total_interactions = total_interactions_res,
+                total_screened = total_screened_res,
+                total_assessed = total_assessed_res,
+                total_treated = total_treated_res)
+
   }
-
-  # Interactions during and after monitoring
-  monitoring_interactions <- data.frame(sapply(output_files, calculate_monitoring_interactions, from_year, by_year, scenario_label))
-  monitoring_interactions <- as.data.frame(apply(monitoring_interactions,2,unlist))
-
-  total_monitored <- as.numeric(monitoring_interactions["cum_monitoring_events_it",])+
-    as.numeric(monitoring_interactions["cum_monitoring_events_ir",])+
-    as.numeric(monitoring_interactions["cum_monitoring_events_enchb",])+
-    as.numeric(monitoring_interactions["cum_monitoring_events_cc",])+
-    as.numeric(monitoring_interactions["cum_monitoring_events_dcc",])+
-    as.numeric(monitoring_interactions["cum_monitoring_events_ineligible",])   # ignore rowname
-
-  total_treated_after_monitoring <- as.numeric(monitoring_interactions["cum_monitoring_treatment_initiations",])+
-   as.numeric(monitoring_interactions["cum_monitoring_treatment_initiations_it",])
-
-  total_assessed <- total_assessed_immediately+total_monitored
-  rownames(total_assessed) <- NULL
-  total_treated <- total_treated_immediately+total_treated_after_monitoring
-  rownames(total_treated) <- NULL
-
-  total_assessed_res <- cbind(data.frame(from_year = from_year,
-                                         by_year = by_year,
-                                         scenario = scenario_label),
-                          as.data.frame(total_assessed))
-  total_treated_res <- cbind(data.frame(from_year = from_year,
-                                        by_year = by_year,
-                                        scenario = scenario_label),
-                         as.data.frame(total_treated))
-
-
-  total_interactions_res <- cbind(data.frame(from_year = from_year,
-                                             by_year = by_year,
-                                             scenario = scenario_label),
-                                  total_screened+total_assessed+total_treated)
-
-
-  res <- list(total_interactions = total_interactions_res,
-              total_screened = total_screened_res,
-              total_assessed = total_assessed_res,
-              total_treated = total_treated_res)
 
   return(res)
 

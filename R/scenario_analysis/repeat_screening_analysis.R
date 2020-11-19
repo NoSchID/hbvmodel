@@ -15,7 +15,7 @@ f <- function(x) {
   r
 }
 
-# Load files (A1) ----
+# Load files (A1/E1) ----
 
 out_path <-
   "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/repeat_screening_analysis/"
@@ -63,6 +63,20 @@ out8b_2050 <- readRDS(paste0(out_path, "a1_out8b_monit_0_screen_10b_2050_071020.
 out8b_2050 <- out8b_2050[[1]]
 out8b_2060 <- readRDS(paste0(out_path, "a1_out8b_monit_0_screen_10b_2060_071020.rds"))
 out8b_2060 <- out8b_2060[[1]]
+
+## Vary number of repeat screening events for a 10-year frequency and without rescreening
+# 10% screening coverage!
+out8b_2020_cov10 <- readRDS(paste0(out_path, "e1_out3_screen_2020_monit_0_191120.rds"))
+out8b_2020_cov10 <- out8b_2020_cov10[[1]]
+out8b_2030_cov10 <- readRDS(paste0(out_path, "e1_out8b_monit_0_screen_10b_2030_191120.rds"))
+out8b_2030_cov10 <- out8b_2030_cov10[[1]]
+out8b_2040_cov10 <- readRDS(paste0(out_path, "e1_out8b_monit_0_screen_10b_2040_191120.rds"))
+out8b_2040_cov10 <- out8b_2040_cov10[[1]]
+out8b_2050_cov10 <- readRDS(paste0(out_path, "e1_out8b_monit_0_screen_10b_2050_191120.rds"))
+out8b_2050_cov10 <- out8b_2050_cov10[[1]]
+out8b_2060_cov10 <- readRDS(paste0(out_path, "e1_out8b_monit_0_screen_10b_2060_191120.rds"))
+out8b_2060_cov10 <- out8b_2060_cov10[[1]]
+
 
 # Vary number of repeat screening events for a 5-year frequency and without rescreening
 out9b_2030 <- readRDS(paste0(out_path, "a1_out9b_monit_0_screen_5b_2030_121020.rds"))
@@ -534,7 +548,7 @@ grid.arrange(p1,p2,ncol =1)
 # Would need to add earlier timesteps and indicate timing of screening in plot
 
 
-## Compare number/duration of repeat screening events for 10 year frequency ----
+## Compare number/duration of repeat screening events for 5/10 year frequency ----
 deaths_averted_by_duration_sq_long <- plot_hbv_deaths_averted(counterfactual_object = out2,
                                                       scenario_objects = list(out3, out8b_2030, out8b_2040,
                                                                               out8b_2050, out8b_2060, out8b),
@@ -829,6 +843,170 @@ ggplot(df_deaths_by_interactions2) +
 # 95% prediction ellipse (A prediction ellipse is a region for predicting the location of a new observation
 # under the assumption that the population is bivariate normal)
 # Need to change ellipse not to go below 0!
+
+
+# Add 10% screening coverage (for 10 yearly frequency)
+deaths_averted_by_duration_sq_long_cov <- plot_hbv_deaths_averted(counterfactual_object = out2,
+                                                               scenario_objects = list(out3, out8b_2030, out8b_2040,
+                                                                                       out8b_2050, out8b_2060,
+                                                                                       out8b_2020_cov10, out8b_2030_cov10,
+                                                                                       out8b_2040_cov10,
+                                                                                       out8b_2050_cov10, out8b_2060_cov10),
+                                                               counterfactual_label = "no treatment programme",
+                                                               x_axis = "screening")
+
+
+# Plot deaths averted against interactions directly
+interactions_sq_cov <- rbind(
+  cbind(scenario = "screen_2020_monit_0",
+        gather(out3$interactions[[16]]$total_interactions[-c(1:3)],
+               key = "sim", value = "value")),
+  cbind(scenario = "monit_0_screen_10b_2030",
+        gather(out8b_2030$interactions[[16]]$total_interactions[-c(1:3)],
+               key = "sim", value = "value")),
+  cbind(scenario = "monit_0_screen_10b_2040",
+        gather(out8b_2040$interactions[[16]]$total_interactions[-c(1:3)],
+               key = "sim", value = "value")),
+  cbind(scenario = "monit_0_screen_10b_2050",
+        gather(out8b_2050$interactions[[16]]$total_interactions[-c(1:3)],
+               key = "sim", value = "value")),
+  cbind(scenario = "monit_0_screen_10b_2060",
+        gather(out8b_2060$interactions[[16]]$total_interactions[-c(1:3)],
+               key = "sim", value = "value")),
+  cbind(scenario = "screen_2020_monit_0_cov10",
+        gather(out8b_2020_cov10$interactions[[16]]$total_interactions[-c(1:3)],
+               key = "sim", value = "value")),
+  cbind(scenario = "monit_0_screen_10b_2030_cov10",
+        data.frame(sim=rownames(out8b_2030_cov10$interactions[[16]]$total_interactions),
+        value=out8b_2030_cov10$interactions[[16]]$total_interactions$`total_screened + total_assessed + total_treated`)),
+  cbind(scenario = "monit_0_screen_10b_2040_cov10",
+        data.frame(sim=rownames(out8b_2040_cov10$interactions[[16]]$total_interactions),
+                   value=out8b_2040_cov10$interactions[[16]]$total_interactions$`total_screened + total_assessed + total_treated`)),
+  cbind(scenario = "monit_0_screen_10b_2050_cov10",
+        data.frame(sim=rownames(out8b_2050_cov10$interactions[[16]]$total_interactions),
+                   value=out8b_2050_cov10$interactions[[16]]$total_interactions$`total_screened + total_assessed + total_treated`)),
+  cbind(scenario = "monit_0_screen_10b_2060_cov10",
+        data.frame(sim=rownames(out8b_2060_cov10$interactions[[16]]$total_interactions),
+                   value=out8b_2060_cov10$interactions[[16]]$total_interactions$`total_screened + total_assessed + total_treated`))
+  )
+
+#levels(interactions$scenario) <- scenario_labels
+#interactions <- arrange(interactions, scenario)
+colnames(interactions_sq_cov)[3] <- "interactions"
+interactions_sq_cov$sim <- gsub("[^0-9]", "", interactions_sq_cov$sim)
+
+df_deaths_by_interactions_cov <- subset(deaths_averted_by_duration_sq_long_cov,
+                                        by_year == 2100 & type == "number_averted")
+df_deaths_by_interactions_cov$sim <- gsub("[^0-9]", "", df_deaths_by_interactions_cov$sim)
+df_deaths_by_interactions_cov$scenario <- as.character(df_deaths_by_interactions_cov$scenario)
+df_deaths_by_interactions_cov <- df_deaths_by_interactions_cov %>%
+  left_join(interactions_sq_cov, by = c("scenario", "sim"))
+
+df_deaths_by_interactions_summary_cov <- df_deaths_by_interactions_cov %>%
+  group_by(scenario) %>%
+  summarise(median_deaths = median(value),
+            median_int = median(interactions))
+
+# Separate by time and coverage
+df_deaths_by_interactions_cov$year <- factor(df_deaths_by_interactions_cov$scenario)
+levels(df_deaths_by_interactions_cov$year) <- list("2020 90%" = "screen_2020_monit_0",
+                                                   "2020 10%"="screen_2020_monit_0_cov10",
+                                                   "2030 90%"="monit_0_screen_10b_2030",
+                                                   "2030 10%"="monit_0_screen_10b_2030_cov10",
+                                                   "2040 90%"="monit_0_screen_10b_2040",
+                                                   "2040 10%"= "monit_0_screen_10b_2040_cov10",
+                                                   "2050 90%" = "monit_0_screen_10b_2050",
+                                                   "2050 10%" = "monit_0_screen_10b_2050_cov10",
+                                                   "2060 90%" = "monit_0_screen_10b_2060",
+                                                   "2060 10%" = "monit_0_screen_10b_2060_cov10")
+df_deaths_by_interactions_cov$year <- as.character(df_deaths_by_interactions_cov$year)
+df_deaths_by_interactions_cov <- separate(df_deaths_by_interactions_cov,
+                                          col = year, into = c("year", "cov"), sep = " ")
+df_deaths_by_interactions_cov$deaths_averted_per_interaction <- df_deaths_by_interactions_cov$value/
+  df_deaths_by_interactions_cov$interactions
+
+
+ggplot(df_deaths_by_interactions_cov) +
+  stat_ellipse(geom = "polygon",
+               aes(interactions, value, group = scenario, fill= scenario), alpha = 0.2) +
+  #geom_point(data = df,
+  #           aes(x=interactions, y = value, group = scenario, colour= scenario), alpha = 0.5) +
+  geom_point(data = df_deaths_by_interactions_summary_cov,
+             aes(x = median_int, y = median_deaths, colour = scenario), size = 6) +
+  labs(colour = "Number of\nscreening\ncampaigns", fill = "Number of\nscreening\ncampaigns") +
+  scale_fill_viridis_d(labels = c("screen_2020_monit_0" = "1 (2020)",
+                                  "monit_0_screen_10b_2030" = "2 (2020-2030)",
+                                  "monit_0_screen_10b_2040" = "3 (2020-2040)",
+                                  "monit_0_screen_10b_2050" = "4 (2020-2050)",
+                                  "monit_0_screen_10b_2060" = "5 (2020-2060)",
+                                  "monit_0_screen_10b" = "9 (2020-2100)")) +
+  scale_colour_viridis_d(labels = c("screen_2020_monit_0" = "1 (2020)",
+                                    "monit_0_screen_10b_2030" = "2 (2020-2030)",
+                                    "monit_0_screen_10b_2040" = "3 (2020-2040)",
+                                    "monit_0_screen_10b_2050" = "4 (2020-2050)",
+                                    "monit_0_screen_10b_2060" = "5 (2020-2060)",
+                                    "monit_0_screen_10b" = "9 (2020-2100)")) +
+  ylab("Cumulative number of\nHBV-related deaths averted") +
+  xlab("Incremental number of clinical interactions") +
+  labs(title = paste0("Repeat screening strategies (every 10 years)\ncompared to no treatment programme")) +
+  theme_bw() +
+  xlim(0,8000000) +
+  ylim(0,11000) +
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        legend.title = element_text(size = 14),
+        legend.text = element_text(size = 13),
+        title = element_text(size = 15))
+
+# Plot against time
+ggplot(df_deaths_by_interactions_cov) +
+  stat_summary(aes(x = year, y = value, group =scenario, colour = cov),
+               fun = "median", geom = "point", size = 6) +
+  stat_summary(aes(x = year, y = value, group =scenario, colour = cov),
+               fun.min = function(x) quantile(x, 0.025),
+               fun.max = function(x) quantile(x, 0.975),
+               geom = "errorbar", width = 0.5) +
+  labs(colour = "Screening\ncoverage") +
+  scale_colour_viridis_d(end = 0.9) +
+  facet_wrap(~cov, scales = "free") +
+  ylab("Cumulative number of\nHBV-related deaths averted") +
+  xlab("End year of screening") +
+  labs(title = paste0("Repeat screening strategies (every 10 years from 2020)\ncompared to no treatment programme")) +
+  theme_bw() +
+  expand_limits(y = 0) +
+#  xlim(0,8000000) +
+#  ylim(0,11000) +
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        legend.title = element_text(size = 14),
+        strip.text = element_blank(),
+        legend.text = element_text(size = 13),
+        title = element_text(size = 15))
+
+ggplot(df_deaths_by_interactions_cov) +
+  stat_summary(aes(x = year, y = deaths_averted_per_interaction*10000, group =scenario, colour = cov),
+               fun = "median", geom = "point", size = 6) +
+  stat_summary(aes(x = year, y = deaths_averted_per_interaction*10000, group =scenario, colour = cov),
+               fun.min = function(x) quantile(x, 0.025),
+               fun.max = function(x) quantile(x, 0.975),
+               geom = "errorbar", width = 0.5) +
+  labs(colour = "Screening\ncoverage") +
+  scale_colour_viridis_d(end = 0.9) +
+  facet_wrap(~cov, scales = "free") +
+  ylab("HBV-related deaths averted\nper 10,000 interactions") +
+  xlab("End year of screening") +
+  labs(title = paste0("Repeat screening strategies (every 10 years from 2020)\ncompared to no treatment programme")) +
+  theme_bw() +
+  expand_limits(y = 0) +
+  #  xlim(0,8000000) +
+  #  ylim(0,11000) +
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        legend.title = element_text(size = 14),
+        strip.text = element_blank(),
+        legend.text = element_text(size = 13),
+        title = element_text(size = 15))
+
 
 ## Cumulative number of HBsAg tests over time ----
 tests <- as.data.frame(sapply(lapply(out10b$interactions, "[[", "total_screened"), "[", 4:186))

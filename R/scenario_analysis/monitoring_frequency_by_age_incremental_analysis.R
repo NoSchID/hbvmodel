@@ -1013,7 +1013,7 @@ freq_interactions$total_cost <- freq_interactions$hbsag_tests*2.4+
  freq_interactions$monitoring_assessments*35.8+
   freq_interactions$treatment_initiations*57.1
 # Add upfront Fibroscan cost:
-#freq_interactions$total_cost <- freq_interactions$total_cost+127700
+freq_interactions$total_cost <- freq_interactions$total_cost+20*127700
 
 # Shevanthi original values:
 # HBsAg 10.38, clinical assessment 120, monitoring 15.77, treatment person-year 66.44
@@ -1373,6 +1373,60 @@ ggplot(data = incremental_df_ly_freq) +
         legend.title = element_text(size = 14))
 # All those lines that would not intersect with the dashed WTP line are cost-effective
 
+# Minimal deaths averted vs interactions plot for IVHEM ----
+ggplot(data = subset(incremental_df_freq, scenario %in% c("Status quo", "No monitoring",
+                                                          "Every 10 years", "Every 5 years", "Every 3 years",
+                                                          "Every 2 years",
+                                                          "Every 1 year"))) +
+#  geom_line(aes(y = deaths_averted, x = interactions, group = sim),
+#            colour = "grey", alpha = 0.3) +
+#  geom_point(aes(y = deaths_averted, x= interactions,
+#                 group = scenario, colour = scenario), alpha = 0.15) +
+  stat_ellipse(data = subset(incremental_df_freq, scenario %in% c("No monitoring",
+                                                                  "Every 10 years", "Every 5 years", "Every 3 years",
+                                                                  "Every 2 years",
+                                                                  "Every 1 year")),
+               aes(y=deaths_averted,x=interactions/1000,
+                   group = reorder(scenario, deaths_averted), fill= reorder(scenario, deaths_averted)),
+               geom = "polygon",
+               alpha = 0.2) +
+  geom_line(data = subset(incremental_df_freq_summary, scenario %in% c("Status quo",
+                                                                       "Every 10 years", "Every 5 years", "Every 3 years",
+                                                                       "Every 2 years",
+                                                                       "Every 1 year")),
+            aes(x = median_interactions/1000,
+                y = median_deaths_averted), size = 1) +
+  geom_point(data = subset(incremental_df_freq_summary, scenario %in% c("Status quo", "No monitoring",
+                                                                        "Every 10 years", "Every 5 years", "Every 3 years",
+                                                                        "Every 2 years",
+                                                                        "Every 1 year")),
+             aes(x = median_interactions/1000,
+                 y = median_deaths_averted,
+                 group = reorder(scenario, median_deaths_averted),
+                 colour = reorder(scenario, median_deaths_averted)),
+             size = 7) +
+  geom_point(data = subset(incremental_df_freq_summary, scenario %in% c("Status quo", "No monitoring",
+                                                                        "Every 10 years", "Every 5 years", "Every 3 years",
+                                                                        "Every 2 years",
+                                                                        "Every 1 year")),
+             aes(x = median_interactions/1000,
+                 y = median_deaths_averted,
+                 group = reorder(scenario, median_deaths_averted)),
+             size = 7, shape = 1, colour = "black") +
+  scale_fill_manual(values = viridis(6, option = "D")) +  # rev(brewer.pal(6,"RdYlBu"))
+  scale_colour_manual("Monitoring frequency",
+                      values = c("black", viridis(6, option = "D")),
+                      labels = c("Status quo" = "No screening and\ntreatment")) +
+  guides(fill=FALSE) +
+  xlab("Incremental total resources utilised\n(thousands)") +
+  ylab("Incremental HBV-related deaths averted") +
+  theme_classic() +
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        legend.text = element_text(size = 14),
+        legend.title = element_text(size = 14)) +
+  coord_flip()
+
 # Calculate probability of each strategy being non-dominated ----
 # For LY saved and cost:
 dominance_prob_list <- list()
@@ -1434,6 +1488,58 @@ ggplot(icer_result[icer_result$scenario != "Status quo",]) +
   geom_pointrange(aes(x = reorder(scenario, icer_median), y = icer_median, ymin = icer_lower, ymax =icer_upper),
                   size=1.2, position = position_dodge(width = 0.3), col = "turquoise") +
   ylim(0,38953) +
+  theme_bw() +
+  coord_flip()
+
+# For LY saved and interactions:
+dominance_prob_list_int <- list()
+
+for(i in 1:183) {
+  print(i)
+  dominance_prob_list_int[[i]] <- incremental_df_ly_freq[which(incremental_df_ly_freq$sim==
+                                                             unique(incremental_df_ly_freq$sim)[i]),]
+  dominance_prob_list_int[[i]] <- assign_dominated_strategies(dominance_prob_list_int[[i]],
+                                                          exposure="interactions",
+                                                          outcome="ly_saved")
+}
+dominance_prob_int_df <- do.call("rbind", dominance_prob_list_int)
+dominance_prob_int_result <- group_by(dominance_prob_int_df, scenario, dominated) %>%
+  tally() %>%
+  spread(key = "dominated", value = "n") %>%
+  replace_na(list(No = 0, Yes = 0))
+dominance_prob_int_result$prob_non_dominated <- dominance_prob_int_result$No/
+  (dominance_prob_int_result$Yes+dominance_prob_int_result$No)
+
+ggplot(dominance_prob_int_result) +
+  geom_col(aes(x=reorder(scenario, desc(prob_non_dominated)), y = prob_non_dominated)) +
+  theme_bw()
+
+# Calculate "ICER" by simulation => Incremental interactions per effectiveness ratio
+# All but no monitoring have >50% prob of being non-dominated => exclude
+
+iier_list <- list()
+
+for(i in 1:183) {
+  print(i)
+  iier_list[[i]] <- incremental_df_ly_freq[which(incremental_df_ly_freq$scenario != "No monitoring" &
+                                                   incremental_df_ly_freq$sim==
+                                                   unique(incremental_df_ly_freq$sim)[i]),]
+  iier_list[[i]] <- calculate_icer_per_sim(iier_list[[i]],
+                                           exposure="interactions",
+                                           outcome="ly_saved")
+}
+iier_df <- do.call("rbind", iier_list)
+iier_result <- group_by(iier_df, scenario, comparator) %>%
+  arrange(sim,total_cost) %>%
+  summarise(iier_median = median(icer),
+            iier_lower = quantile(icer, 0.025),
+            iier_upper = quantile(icer, 0.975)) %>%
+  arrange(iier_median)
+
+ggplot(iier_result[iier_result$scenario != "Status quo",]) +
+  geom_pointrange(aes(x = reorder(scenario, iier_median), y = iier_median, ymin = iier_lower, ymax =iier_upper),
+                  size=1.2, position = position_dodge(width = 0.3), col = "turquoise") +
+  ylim(0,1075) +
   theme_bw() +
   coord_flip()
 
