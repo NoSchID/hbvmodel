@@ -1008,12 +1008,10 @@ freq_interactions$interactions <- freq_interactions$hbsag_tests+
   freq_interactions$treatment_initiations
 
 # TEST: Transform into cost with approximated time on treatment
-freq_interactions$total_cost <- freq_interactions$hbsag_tests*2.4+
-  freq_interactions$clinical_assessments*35.8+
- freq_interactions$monitoring_assessments*35.8+
+freq_interactions$total_cost <- freq_interactions$hbsag_tests*6.6+
+  freq_interactions$clinical_assessments*72.3+
+  freq_interactions$monitoring_assessments*35.8+
   freq_interactions$treatment_initiations*57.1
-# Add upfront Fibroscan cost:
-freq_interactions$total_cost <- freq_interactions$total_cost+20*127700
 
 # Shevanthi original values:
 # HBsAg 10.38, clinical assessment 120, monitoring 15.77, treatment person-year 66.44
@@ -1021,8 +1019,8 @@ freq_interactions$total_cost <- freq_interactions$total_cost+20*127700
 # HBsAg 1.86, clinical assessment 22.5, monitoring 22.5, treatment person-year 52.5
 # New costing estimates:
 # HBsAg: 2.4 or 8.3
-# Clinical assessment: 35.8 + upfront cost of 127700, or 11.1
-# Monitoring: same as clinical assessment (don't double-count upfront cost)
+# Clinical assessment: 72.3 (includes Fibroscan machine and maintenance assuming 1 for 3500 assessments), or 11.1
+# Monitoring: clinical assessment - upfront cost = 35.8
 # Treatment: 57.1
 
 freq_cohort_deaths_averted <-

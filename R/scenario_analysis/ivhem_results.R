@@ -144,6 +144,15 @@ deaths_averted_by_age5 <-
 #  mutate(value = value.x+value.y) %>%
 #  select(-value.x, -value.y)
 
+# Add 45-60+60-65 together (3 and 4)
+deaths_averted_by_age3x <- left_join((filter(deaths_averted_by_age3, by_year == 2100 &
+         type == "number_averted") %>%
+           select(scenario, sim, value)),
+         (filter(deaths_averted_by_age4, by_year == 2100 &
+                   type == "number_averted") %>%
+            select(scenario, sim, value)), by = c("scenario", "sim")) %>%
+  mutate(value = value.x+value.y) %>%
+  select(-value.x, -value.y)
 
 deaths_averted_by_age_all_scenarios <- rbind(
   data.frame(age_group = "15-30",
@@ -152,12 +161,8 @@ deaths_averted_by_age_all_scenarios <- rbind(
   data.frame(age_group = "30-45",
              filter(deaths_averted_by_age2, by_year == 2100 &
                       type == "number_averted") %>% select(scenario, sim, value)),
-  data.frame(age_group = "45-60",
-             filter(deaths_averted_by_age3, by_year == 2100 &
-                      type == "number_averted") %>% select(scenario, sim, value)),
-  data.frame(age_group = "60-65",
-             filter(deaths_averted_by_age4, by_year == 2100 &
-                      type == "number_averted") %>% select(scenario, sim, value))
+  data.frame(age_group = "45-65",
+             deaths_averted_by_age3x)
   )
 
 deaths_averted_by_age_all_scenarios_prop <- rbind(
@@ -222,6 +227,16 @@ ly_saved_by_age4 <-
 #  mutate(value = value.x+value.y) %>%
 #  select(-value.x, -value.y)
 
+# Add 45-60+60-65 together (3 and 4)
+ly_saved_by_age3x <- left_join((filter(ly_saved_by_age3,
+                                              type == "number_averted") %>%
+                                       select(counterfactual, sim, value)),
+                                    (filter(ly_saved_by_age4,
+                                              type == "number_averted") %>%
+                                       select(counterfactual, sim, value)), by = c("counterfactual", "sim")) %>%
+  mutate(value = value.x+value.y) %>%
+  select(-value.x, -value.y)
+
 
 ly_saved_by_age_all_scenarios <- rbind(
   data.frame(age_group = "15-30",
@@ -230,13 +245,10 @@ ly_saved_by_age_all_scenarios <- rbind(
   data.frame(age_group = "30-45",
              filter(ly_saved_by_age2,
                       type == "number_averted") %>% select(counterfactual, sim, value)),
-  data.frame(age_group = "45-60",
-             filter(ly_saved_by_age3,
-                      type == "number_averted") %>% select(counterfactual, sim, value)),
-  data.frame(age_group = "60-65",
-             filter(ly_saved_by_age4,
-                      type == "number_averted") %>% select(counterfactual, sim, value))
+  data.frame(age_group = "45-65",
+             ly_saved_by_age3x)
 )
+
 colnames(ly_saved_by_age_all_scenarios)[colnames(ly_saved_by_age_all_scenarios)=="counterfactual"] <- "scenario"
 ly_saved_by_age <- subset(ly_saved_by_age_all_scenarios, scenario == "screen_2020_monit_0")
 
@@ -257,12 +269,9 @@ carriers_by_age_group_2020 <-
         data.frame(age_group = "30-45",
                    sim = rownames(total_carriers_by_age_2020[,which(ages==30): which(ages==45-da)]),
                    carriers = rowSums(total_carriers_by_age_2020[,which(ages==30): which(ages==45-da)])),
-        data.frame(age_group = "45-60",
-                   sim = rownames(total_carriers_by_age_2020[,which(ages==45): which(ages==60)]),
-                   carriers = rowSums(total_carriers_by_age_2020[,which(ages==45): which(ages==60)])),
-        data.frame(age_group = "60-65",
-                   sim = rownames(total_carriers_by_age_2020[,which(ages==60): which(ages==65-da)]),
-              carriers = rowSums(total_carriers_by_age_2020[,which(ages==60): which(ages==65-da)]))
+        data.frame(age_group = "45-65",
+                   sim = rownames(total_carriers_by_age_2020[,which(ages==45): which(ages==65-da)]),
+                   carriers = rowSums(total_carriers_by_age_2020[,which(ages==45): which(ages==65-da)]))
   )
 
 # Total interactions by age and type (counting treatment initiation only)
@@ -277,17 +286,16 @@ interactions_by_age <- rbind(
              hbsag_tests = unlist(a5_out3$interactions[[16]]$total_screened[,-c(1:3)]),
              clinical_assessments = unlist(a5_out3$interactions[[16]]$total_assessed[,-c(1:3)]),
              treatment_initiations = unlist(a5_out3$interactions[[16]]$total_treated[,-c(1:3)])),
-  data.frame(age_group = "45-60",
+  data.frame(age_group = "45-65",
              sim = names(a2_out3$interactions[[16]]$total_screened[,-c(1:3)]),
-             hbsag_tests = unlist(a2_out3$interactions[[16]]$total_screened[,-c(1:3)]),
-             clinical_assessments = unlist(a2_out3$interactions[[16]]$total_assessed[,-c(1:3)]),
-             treatment_initiations = unlist(a2_out3$interactions[[16]]$total_treated[,-c(1:3)])),
-  data.frame(age_group = "60-65",
-             sim = names(a6_out3$interactions[[16]]$total_screened[,-c(1:3)]),
-             hbsag_tests = unlist(a6_out3$interactions[[16]]$total_screened[,-c(1:3)]),
-             clinical_assessments = unlist(a6_out3$interactions[[16]]$total_assessed[,-c(1:3)]),
-             treatment_initiations = unlist(a6_out3$interactions[[16]]$total_treated[,-c(1:3)]))
+             hbsag_tests = unlist(a2_out3$interactions[[16]]$total_screened[,-c(1:3)])+
+               unlist(a6_out3$interactions[[16]]$total_screened[,-c(1:3)]),
+             clinical_assessments = unlist(a2_out3$interactions[[16]]$total_assessed[,-c(1:3)])+
+               unlist(a6_out3$interactions[[16]]$total_assessed[,-c(1:3)]),
+             treatment_initiations = unlist(a2_out3$interactions[[16]]$total_treated[,-c(1:3)])+
+    unlist(a6_out3$interactions[[16]]$total_treated[,-c(1:3)]))
 )
+
 interactions_by_age <- interactions_by_age %>%
   mutate(total_interactions = hbsag_tests + clinical_assessments + treatment_initiations)
 interactions_by_age <- gather(interactions_by_age, key = "interaction_type", value = "value",

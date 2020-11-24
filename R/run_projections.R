@@ -9,7 +9,7 @@ source(here("R/imperial_model_interventions.R"))
 #load(here("calibration", "input", "accepted_parmsets_123_180520.Rdata")) # params_mat_targets5
 load(here("calibration", "input", "accepted_parmsets_kmeans_170820.Rdata")) # params_mat_accepted_kmeans
 
-sim <- apply(params_mat_accepted_kmeans[1:2,],1,
+sim2 <- apply(params_mat_accepted_kmeans[1:2,],1,
              function(x)
                run_model(sim_duration = runtime, default_parameter_list = parameter_list,
                          parms_to_change =
@@ -48,15 +48,15 @@ sim <- apply(params_mat_accepted_kmeans[1:2,],1,
                                 screening_years = c(2020),
                                 screening_coverage = 0.9,
                                 apply_treat_it = 0,
-                                prop_negative_to_remove_from_rescreening = 0,
-                                apply_screen_not_treat = 1,
-                                monitoring_rate = 1,
+                                prop_negative_to_remove_from_rescreening = 1,
+                                apply_screen_not_treat = 0,
+                                monitoring_rate = 0,
                                 apply_repeat_screen = 0,
                                 min_age_to_screen = 15,
                                 max_age_to_screen = 30-da,
                                 min_age_to_repeat_screen = 15,
                                 max_age_to_repeat_screen = 60,
-                                repeat_screening_years = seq(2030,2100, by = 10)),
+                                repeat_screening_years = c(2030)),
                          drop_timesteps_before = 1960,
                          scenario = "vacc_screen"))
 
@@ -64,7 +64,31 @@ out <- code_model_output(sim[[1]])
 outpath <- out
 
 
-out <- lapply(sim, code_model_output)
+out2 <- lapply(sim2, code_model_output)
+
+##
+# Population outcomes
+years_to_extract <- seq(2025,2100, by = 5)
+
+# Healthcare interactions and person-time on treatment
+interactions <- list()
+
+  for (j in years_to_extract) {
+    interactions[[j-2024]] <- summarise_healthcare_interactions(out2, scenario_label = "label",
+                                                                from_year = 2020, by_year = j)
+  }
+interactions[sapply(interactions, is.null)] <- NULL
+
+interactions1 <- interactions
+
+interactions1[[16]]$total_screened+t(interactions1[[16]]$total_assessed)
+
+cbind(data.frame(from_year = from_year,
+                 by_year = by_year,
+                 scenario = scenario_label),
+      total_screened+total_assessed+total_treated)
+
+##
 
 load(here("output", "sims_output_scenario_vacc_130120.RData"))
 out <- out_vacc
