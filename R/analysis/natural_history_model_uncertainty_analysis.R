@@ -21,7 +21,6 @@ disease_outcomes_by_age <- readRDS("C:/Users/Nora Schmit/Documents/Model develop
 prior <- params_mat
 posterior <- params_mat_accepted_kmeans
 
-
 # Comparison of prior and posterios (initially run in run_calibration_local.R) ----
 # Table of median, 2.5th and 97.5th quantile of priors and posteriors
 posterior_summary <- gather(params_mat_accepted_kmeans, key = "parameter", value = "sim") %>%
@@ -626,3 +625,110 @@ fviz_pca_ind(pca, geom.ind = "point", pointshape = 21,
              legend.title = "Proportion of new chronic infections\ndue to MTCT in 2040") +
   ggtitle("2D PCA-plot from 30 feature dataset") +
   theme(plot.title = element_text(hjust = 0.5))
+
+# Proportion of treatment eligibility and of cirrhosis by age ----
+
+# % of treatment eligible carriers with cirrhosis by age in 2020
+timeind <- which(compartments_by_age$time==2020)
+prop_cirr_by_age <- (do.call("rbind", lapply(compartments_by_age$cc_female, function(x) x[timeind,])) +
+                       do.call("rbind", lapply(compartments_by_age$cc_male, function(x) x[timeind,])) +
+                       do.call("rbind", lapply(compartments_by_age$dcc_female, function(x) x[timeind,])) +
+                       do.call("rbind", lapply(compartments_by_age$dcc_male, function(x) x[timeind,])))/
+  (do.call("rbind", lapply(compartments_by_age$cc_female, function(x) x[timeind,])) +
+     do.call("rbind", lapply(compartments_by_age$cc_male, function(x) x[timeind,])) +
+     do.call("rbind", lapply(compartments_by_age$dcc_female, function(x) x[timeind,])) +
+     do.call("rbind", lapply(compartments_by_age$dcc_male, function(x) x[timeind,]))+
+     do.call("rbind", lapply(compartments_by_age$ir_female, function(x) x[timeind,]))+
+     do.call("rbind", lapply(compartments_by_age$ir_male, function(x) x[timeind,]))+
+     do.call("rbind", lapply(compartments_by_age$enchb_female, function(x) x[timeind,]))+
+     do.call("rbind", lapply(compartments_by_age$enchb_male, function(x) x[timeind,])))
+prop_cirr_by_age$sim <- rownames(prop_cirr_by_age)
+prop_cirr_by_age <- gather(prop_cirr_by_age, key = "age", value = "prop",-sim)
+prop_cirr_by_age$age <- rep(ages, each = 183)
+
+n_cirr <- do.call("rbind", lapply(compartments_by_age$cc_female, function(x) x[timeind,])) +
+  do.call("rbind", lapply(compartments_by_age$cc_male, function(x) x[timeind,])) +
+  do.call("rbind", lapply(compartments_by_age$dcc_female, function(x) x[timeind,])) +
+  do.call("rbind", lapply(compartments_by_age$dcc_male, function(x) x[timeind,]))
+n_eligible <- do.call("rbind", lapply(compartments_by_age$cc_female, function(x) x[timeind,])) +
+  do.call("rbind", lapply(compartments_by_age$cc_male, function(x) x[timeind,])) +
+  do.call("rbind", lapply(compartments_by_age$dcc_female, function(x) x[timeind,])) +
+  do.call("rbind", lapply(compartments_by_age$dcc_male, function(x) x[timeind,]))+
+  do.call("rbind", lapply(compartments_by_age$ir_female, function(x) x[timeind,]))+
+  do.call("rbind", lapply(compartments_by_age$ir_male, function(x) x[timeind,]))+
+  do.call("rbind", lapply(compartments_by_age$enchb_female, function(x) x[timeind,]))+
+  do.call("rbind", lapply(compartments_by_age$enchb_male, function(x) x[timeind,]))
+n_it <- do.call("rbind", lapply(compartments_by_age$it_female, function(x) x[timeind,])) +
+  do.call("rbind", lapply(compartments_by_age$it_male, function(x) x[timeind,]))
+
+n_dcc <-   do.call("rbind", lapply(compartments_by_age$dcc_female, function(x) x[timeind,])) +
+  do.call("rbind", lapply(compartments_by_age$dcc_male, function(x) x[timeind,]))
+
+n_carriers <- (do.call("rbind", lapply(lapply(carriers_by_age, "[[", "carriers_female"),function(x) x[timeind,]))+
+                 do.call("rbind", lapply(lapply(carriers_by_age, "[[", "carriers_male"),function(x) x[timeind,])))
+
+quantile(apply(n_cirr[,which(ages==15):which(ages==30-da)], 1,sum)/
+           apply(n_eligible[,which(ages==15):which(ages==30-da)], 1,sum), prob=c(0.5,0.025,0.975))
+
+quantile(apply(n_cirr[,which(ages==45):which(ages==65-da)], 1,sum)/
+           apply(n_eligible[,which(ages==45):which(ages==65-da)], 1,sum), prob=c(0.5,0.025,0.975))
+
+quantile((apply(n_cirr[,which(ages==45):which(ages==65-da)], 1,sum)/
+            apply(n_eligible[,which(ages==45):which(ages==65-da)], 1,sum))/
+           (apply(n_cirr[,which(ages==15):which(ages==30-da)], 1,sum)/
+              apply(n_eligible[,which(ages==15):which(ages==30-da)], 1,sum)), prob=c(0.5,0.025,0.975))
+# Prop cirrhosis among treatment eligible is not significantly higher in 45-65 year olds than in
+# 15-30 year olds
+
+# with IT counting as eligible:
+quantile(apply(n_cirr[,which(ages==15):which(ages==30-da)], 1,sum)/
+           apply(n_eligible[,which(ages==15):which(ages==30-da)], 1,sum), prob=c(0.5,0.025,0.975))
+
+quantile(apply(n_cirr[,which(ages==45):which(ages==65-da)], 1,sum)/
+           (apply(n_eligible[,which(ages==45):which(ages==65-da)], 1,sum)+apply(n_it[,which(ages==45):which(ages==65-da)], 1,sum)),
+         prob=c(0.5,0.025,0.975))
+
+# DCC only
+quantile(apply(n_dcc[,which(ages==15):which(ages==30-da)], 1,sum)/
+           apply(n_eligible[,which(ages==15):which(ages==30-da)], 1,sum), prob=c(0.5,0.025,0.975))
+
+quantile(apply(n_dcc[,which(ages==45):which(ages==65-da)], 1,sum)/
+           apply(n_eligible[,which(ages==45):which(ages==65-da)], 1,sum), prob=c(0.5,0.025,0.975))
+
+quantile((apply(n_dcc[,which(ages==45):which(ages==65-da)], 1,sum)/
+            apply(n_eligible[,which(ages==45):which(ages==65-da)], 1,sum))/
+           (apply(n_dcc[,which(ages==15):which(ages==30-da)], 1,sum)/
+              apply(n_eligible[,which(ages==15):which(ages==30-da)], 1,sum)), prob=c(0.5,0.025,0.975))
+# Neither is prop DCC
+
+quantile(apply(n_cirr[,which(ages==15):which(ages==30-da)], 1,sum)/
+           apply(n_carriers[,which(ages==15):which(ages==30-da)], 1,sum), prob=c(0.5,0.025,0.975))
+
+quantile(apply(n_cirr[,which(ages==45):which(ages==65-da)], 1,sum)/
+           apply(n_carriers[,which(ages==45):which(ages==65-da)], 1,sum), prob=c(0.5,0.025,0.975))
+
+prop_cirr_carrier_by_age <- (do.call("rbind", lapply(compartments_by_age$cc_female, function(x) x[timeind,])) +
+                               do.call("rbind", lapply(compartments_by_age$cc_male, function(x) x[timeind,])) +
+                               do.call("rbind", lapply(compartments_by_age$dcc_female, function(x) x[timeind,])) +
+                               do.call("rbind", lapply(compartments_by_age$dcc_male, function(x) x[timeind,])))/
+  (do.call("rbind", lapply(lapply(carriers_by_age, "[[", "carriers_female"),function(x) x[timeind,]))+
+     do.call("rbind", lapply(lapply(carriers_by_age, "[[", "carriers_male"),function(x) x[timeind,])))
+prop_cirr_carrier_by_age$sim <- rownames(prop_cirr_carrier_by_age)
+prop_cirr_carrier_by_age <- gather(prop_cirr_carrier_by_age, key = "age", value = "prop",-sim)
+prop_cirr_carrier_by_age$age <- rep(ages, each = 183)
+
+ggplot(prop_cirr_by_age, aes(x=age, y = prop)) +
+  geom_line(aes(group = sim), col = "grey") +
+  stat_summary(fun=median, geom="line", col = "red") +
+  geom_vline(xintercept=15) +
+  geom_vline(xintercept=30) +
+  geom_vline(xintercept=45) +
+  geom_vline(xintercept=65)
+
+ggplot(prop_cirr_carrier_by_age, aes(x=age, y = prop)) +
+  geom_line(aes(group = sim), col = "grey") +
+  stat_summary(fun=median, geom="line", col = "red") +
+  geom_vline(xintercept=15) +
+  geom_vline(xintercept=30) +
+  geom_vline(xintercept=45) +
+  geom_vline(xintercept=65)

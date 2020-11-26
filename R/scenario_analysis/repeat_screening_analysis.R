@@ -15,7 +15,7 @@ f <- function(x) {
   r
 }
 
-# Load files (A1/E1) ----
+# Load files (A1/E1 (10% coverage)/EA1 (50% screening coverage)) ----
 
 out_path <-
   "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/repeat_screening_analysis/"
@@ -128,6 +128,28 @@ out8b_2030_cov10_monit5 <- readRDS(paste0(out_path, "e1_out8b_monit_5_screen_10b
 out8b_2030_cov10_monit5 <- out8b_2030_cov10_monit5[[1]]
 out8b_2040_cov10_monit5 <- readRDS(paste0(out_path, "e1_out8b_monit_5_screen_10b_2040_201120.rds"))
 out8b_2040_cov10_monit5 <- out8b_2040_cov10_monit5[[1]]
+
+# 50% screening coverage!
+out8b_2020_cov50 <- readRDS(paste0(out_path, "ea1_out3_screen_2020_monit_0_251120.rds"))
+out8b_2020_cov50 <- out8b_2020_cov50[[1]]
+out8b_2030_cov50 <- readRDS(paste0(out_path, "ea1_out8b_monit_0_screen_10b_2030_251120.rds"))
+out8b_2030_cov50 <- out8b_2030_cov50[[1]]
+out8b_2040_cov50 <- readRDS(paste0(out_path, "ea1_out8b_monit_0_screen_10b_2040_251120.rds"))
+out8b_2040_cov50 <- out8b_2040_cov50[[1]]
+# 10-yearly monitoring
+out8b_2020_cov50_monit10 <- readRDS(paste0(out_path, "ea1_out4_screen_2020_monit_10_251120.rds"))
+out8b_2020_cov50_monit10 <- out8b_2020_cov50_monit10[[1]]
+out8b_2030_cov50_monit10 <- readRDS(paste0(out_path, "ea1_out8b_monit_10_screen_10b_2030_251120.rds"))
+out8b_2030_cov50_monit10 <- out8b_2030_cov50_monit10[[1]]
+out8b_2040_cov50_monit10 <- readRDS(paste0(out_path, "ea1_out8b_monit_10_screen_10b_2040_251120.rds"))
+out8b_2040_cov50_monit10 <- out8b_2040_cov50_monit10[[1]]
+# 5-yearly monitoring
+out8b_2020_cov50_monit5 <- readRDS(paste0(out_path, "ea1_out5_screen_2020_monit_5_251120.rds"))
+out8b_2020_cov50_monit5 <- out8b_2020_cov50_monit5[[1]]
+out8b_2030_cov50_monit5 <- readRDS(paste0(out_path, "ea1_out8b_monit_5_screen_10b_2030_251120.rds"))
+out8b_2030_cov50_monit5 <- out8b_2030_cov50_monit5[[1]]
+out8b_2040_cov50_monit5 <- readRDS(paste0(out_path, "ea1_out8b_monit_5_screen_10b_2040_251120.rds"))
+out8b_2040_cov50_monit5 <- out8b_2040_cov50_monit5[[1]]
 
 # Vary number of repeat screening events for a 5-year frequency and without rescreening
 out9b_2030 <- readRDS(paste0(out_path, "a1_out9b_monit_0_screen_5b_2030_121020.rds"))
@@ -1324,7 +1346,16 @@ equity_deaths_averted <- plot_hbv_deaths_averted(counterfactual_object = out2,
                                                                          out8b_2030_cov10_monit5,
                                                                          out8b_2040_cov10,
                                                                          out8b_2040_cov10_monit10,
-                                                                         out8b_2040_cov10_monit5),
+                                                                         out8b_2040_cov10_monit5,
+                                                                         out8b_2020_cov50,
+                                                                         out8b_2020_cov50_monit10,
+                                                                         out8b_2020_cov50_monit5,
+                                                                         out8b_2030_cov50,
+                                                                         out8b_2030_cov50_monit10,
+                                                                         out8b_2030_cov50_monit5,
+                                                                         out8b_2040_cov50,
+                                                                         out8b_2040_cov50_monit10,
+                                                                         out8b_2040_cov50_monit5),
                                                  outcome_to_plot = "number_averted",
                                                  counterfactual_label = "no treatment")
 equity_deaths_averted$sim <- gsub("[^0-9]", "", equity_deaths_averted$sim)
@@ -1338,14 +1369,20 @@ equity_deaths_averted$monitoring_frequency[equity_deaths_averted$scenario %in%
                                                "monit_10_screen_10b_2040",
                                                "screen_2020_monit_10_cov10",
                                                "monit_10_screen_10b_2030_cov10",
-                                               "monit_10_screen_10b_2040_cov10")] <- "Every 10 years"
+                                               "monit_10_screen_10b_2040_cov10",
+                                               "screen_2020_monit_10_cov50",
+                                               "monit_10_screen_10b_2030_cov50",
+                                               "monit_10_screen_10b_2040_cov50")] <- "Every 10 years"
 equity_deaths_averted$monitoring_frequency[equity_deaths_averted$scenario %in%
                                              c("screen_2020_monit_5",
                                                "monit_5_screen_10b_2030",
                                                "monit_5_screen_10b_2040",
                                                "screen_2020_monit_5_cov10",
                                                "monit_5_screen_10b_2030_cov10",
-                                               "monit_5_screen_10b_2040_cov10")] <-
+                                               "monit_5_screen_10b_2040_cov10",
+                                               "screen_2020_monit_5_cov50",
+                                               "monit_5_screen_10b_2030_cov50",
+                                               "monit_5_screen_10b_2040_cov50")] <-
   "Every 5 years"
 
 equity_deaths_averted$end_repeat_screen <- "10% 2020"
@@ -1370,6 +1407,19 @@ equity_deaths_averted$end_repeat_screen[equity_deaths_averted$scenario %in%
                                             "monit_10_screen_10b_2040",
                                             "monit_5_screen_10b_2040")] <-
   "90% 2040"
+equity_deaths_averted$end_repeat_screen[equity_deaths_averted$scenario %in%
+                                          c("screen_2020_monit_0_cov50",
+                                            "screen_2020_monit_10_cov50",
+                                            "screen_2020_monit_5_cov50")] <- "50% 2020"
+equity_deaths_averted$end_repeat_screen[equity_deaths_averted$scenario %in%
+                                          c("monit_0_screen_10b_2030_cov50",
+                                            "monit_10_screen_10b_2030_cov50",
+                                            "monit_5_screen_10b_2030_cov50")] <- "50% 2030"
+equity_deaths_averted$end_repeat_screen[equity_deaths_averted$scenario %in%
+                                          c("monit_0_screen_10b_2040_cov50",
+                                            "monit_10_screen_10b_2040_cov50",
+                                            "monit_5_screen_10b_2040_cov50")] <-
+  "50% 2040"
 
 # LY saved (cohort) only for 90% coverage so far
 equity_ly_saved1 <- plot_ly_gained_cohort(counterfactual_object = out1,
@@ -1434,22 +1484,69 @@ equity_ly_saved$end_repeat_screen[equity_ly_saved$scenario %in%
 # Barchart of deaths averted - all very similar
 # Increase going from 2020-no monitoring to 2030-10 yearly monitoring is larger than
 # to 2040-no monitoring
+
+equity_deaths_averted %>%
+  group_by(end_repeat_screen, monitoring_frequency) %>%
+  summarise(median(value))
+
 ggplot(equity_deaths_averted,
        aes(x=end_repeat_screen, y = value,
            fill = reorder(monitoring_frequency, -value))) +
   stat_summary(fun= median,position=position_dodge(width=0.95),
                geom="bar")+
-  stat_summary(fun.min = function(x) quantile(x,0.025),
-               fun.max = function(x) quantile(x,0.975),
-               position=position_dodge(width=0.95),
-               geom="errorbar", width = 0.5, alpha = 0.25)+
-  ylim(0,17500) +
-  theme_bw()
+  geom_segment(aes(x="10% 2040", y=1368, xend="90% 2040", yend=1368)) +
+#  stat_summary(fun.min = function(x) quantile(x,0.025),
+#               fun.max = function(x) quantile(x,0.975),
+#               position=position_dodge(width=0.95),
+#               geom="errorbar", width = 0.5)+
+#  ylim(0,15000) +
+  theme_bw() +
+  theme(axis.text.x=element_text(angle=90, hjust = 1))
+#  scale_colour_manual(values = c("black", "blue", "red"))
 # On the median, shows that all simulations with 10% coverage get nowhere near the 90% effect of any scenario.
 # For 90% coverage: 2020 screen with 10/5 yearly monitoring has about the same effect as
 # 2040 repeat screen without monitoring.
 # 2030 repeat screen with 5 yearly monitoring has nearly the same effect as 2040 repeat screen with 5-yearly
 # monitoring. Note errorbars are completely overlapping for all
+# 50% coverage 2020-2040 is about the same as 90% coverage in 2020! Is this due to declining
+# carrier numbers over time (but then if infections go down so do deaths)? Or rather more HBV deaths to
+# be averted in absolute terms? Check deaths averted per (untreated) carrier!
+
+# SLOPE CHART TEST
+#equity_deaths_averted2 <- separate(data = equity_deaths_averted,
+#                                   col = end_repeat_screen, into = c("cov", "end_year"), sep = " ")
+#equity_deaths_averted2$cov_monit <- paste(equity_deaths_averted2$cov, equity_deaths_averted2$monitoring_frequency)
+#equity_deaths_averted2 <- select(equity_deaths_averted2, sim, end_year, cov_monit, value) %>%
+#  pivot_wider(names_from = end_year,
+#              values_from = value) %>%
+#  group_by(cov_monit) %>%
+#  summarise(median_2020 = median(`2020`),
+#            median_2030 = median(`2030`),
+#            median_2040 = median(`2040`))
+#equity_deaths_averted2_long <- pivot_longer(equity_deaths_averted2,
+#                                            !cov_monit, names_to = "end_year", values_to = "median")#
+#
+#equity_deaths_averted2_long$end_year[equity_deaths_averted2_long$end_year=="median_2020"] <- 1
+#equity_deaths_averted2_long$end_year[equity_deaths_averted2_long$end_year=="median_2030"] <- 2
+#equity_deaths_averted2_long$end_year[equity_deaths_averted2_long$end_year=="median_2040"] <- 3##
+
+#test <- filter(equity_deaths_averted2_long, cov_monit %in%
+#                 c("90% Every 10 years", "90% Every 5 years", "90% No monitoring")) %>%
+#  select(end_year, median, cov_monit)
+#comb <- combn(nrow(test), 2)
+#connections <- data.frame(
+#  from = test[comb[1, ], 1:2],
+#  to   = test[comb[2, ], 1:3]
+#)
+#names(connections) <- c("x1", "y1", "x2", "y2", "label")
+#ggplot(test) +
+#  geom_segment(data=connections, aes(x=x1, y=y1, xend=x2, yend=y2), col="grey") +
+#  geom_point(aes(end_year, median, col = cov_monit), size=5) +
+#  scale_x_discrete(labels = c("1" = "2020",
+#                              "2" = "2020-2030",
+#                              "3" = "2020-2040")) +
+#  ylim(0,8200)
+
 
 # Barchart of LY saved for 90% coverage
 ggplot(equity_ly_saved,
@@ -1466,12 +1563,15 @@ ggplot(equity_ly_saved,
 
 # With cost-effectiveness
 equity_deaths_df <- equity_deaths_averted %>%
-  filter(end_repeat_screen %in% c("90% 2020", "90% 2030", "90% 2040")) %>%
+  filter(end_repeat_screen %in% c("90% 2020", "90% 2030", "90% 2040",
+                                  "50% 2020", "50% 2030", "50% 2040")) %>%
   select(scenario, sim, value) %>%
   pivot_wider(names_from = "scenario", values_from = "value") %>%
   select(-sim)
 intervention_labels <- colnames(equity_deaths_df)
 equity_deaths_df <- cbind(as.matrix(equity_deaths_df), rep(0,183))
+
+# ADD 50% COVERAGE HERE
 
 equity_int_df <- cbind(unlist(out3$interactions[[16]]$total_interactions[,-c(1:3)]),
                        unlist(out4$interactions[[16]]$total_interactions[,-c(1:3)]),
@@ -1604,4 +1704,5 @@ quantile((out2$timeseries$total_chronic_infections_rate[
 
 # out8b
 # out8b_2040
+
 

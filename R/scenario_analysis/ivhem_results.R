@@ -972,3 +972,85 @@ grid.arrange(px1, px2, ncol = 2)
 
 
 
+
+# Not in poster: compare cost-effectiveness of screening 15-65 vs 30-65 year olds ----
+
+# No monitoring, without discounting:
+
+# LY saved
+ly_saved_by_age_all_scenarios$sim <- paste0("X", gsub("[^0-9]", "", ly_saved_by_age_all_scenarios$sim))
+ly_saved_by_age_wide <- pivot_wider(ly_saved_by_age_all_scenarios,
+                               names_from = "age_group",
+                               values_from = "value")
+ly_saved_by_age_wide$age15to65 <- ly_saved_by_age_wide$`15-30`+
+  ly_saved_by_age_wide$`30-45`+
+  ly_saved_by_age_wide$`45-65`
+ly_saved_by_age_wide$age30to65 <- ly_saved_by_age_wide$`30-45`+
+  ly_saved_by_age_wide$`45-65`
+ly_saved_by_age_wide <- ly_saved_by_age_wide[, -c(3:5)]
+ly_saved_by_age_long <- gather(ly_saved_by_age_wide, key = "age_group", value = "ly_saved",
+                               -scenario, -sim) %>%
+  filter(scenario %in% c("screen_2020_monit_0"))
+
+# TO ADD WITH DISCOUNTING
+
+# Costs
+cost_by_age_long <- rbind(
+  data.frame(scenario = "screen_2020_monit_0",
+             age_group = "age15to65",
+             sim = names(a1_out3$interactions[[16]]$total_interactions[,-c(1:3)]),
+             tests = unlist(a1_out3$interactions[[16]]$total_screened[,-c(1:3)])+
+               unlist(a6_out3$interactions[[16]]$total_screened[,-c(1:3)]),
+             assessments = unlist(a1_out3$interactions[[16]]$total_assessed[,-c(1:3)])+
+               unlist(a6_out3$interactions[[16]]$total_assessed[,-c(1:3)]),
+             years_of_treatment = unlist(a1_out3$py_on_treatment[[16]])+
+               unlist(a6_out3$py_on_treatment[[16]])),
+  data.frame(scenario = "screen_2020_monit_0",
+             age_group = "age30to65",
+             sim = names(a5_out3$interactions[[16]]$total_interactions[,-c(1:3)]),
+             tests = unlist(a5_out3$interactions[[16]]$total_screened[,-c(1:3)])+
+               unlist(a2_out3$interactions[[16]]$total_screened[,-c(1:3)])+
+               unlist(a6_out3$interactions[[16]]$total_screened[,-c(1:3)]),
+             assessments = unlist(a5_out3$interactions[[16]]$total_assessed[,-c(1:3)])+
+               unlist(a2_out3$interactions[[16]]$total_assessed[,-c(1:3)])+
+               unlist(a6_out3$interactions[[16]]$total_assessed[,-c(1:3)]),
+             years_of_treatment = unlist(a5_out3$py_on_treatment[[16]])+
+               unlist(a2_out3$py_on_treatment[[16]])+
+               unlist(a6_out3$py_on_treatment[[16]]))
+)
+cost_by_age_long$total_cost <- cost_by_age_long$tests*8.3 +
+  cost_by_age_long$assessments*84.4 +
+  cost_by_age_long$years_of_treatment*60
+
+testdf <- cbind(cost_by_age_long[,c(2,3,7)], ly_saved_by_age_long[,4])
+colnames(testdf)[1] <- "scenario"
+
+icer_list <- list()
+
+for(i in 1:183) {
+  print(i)
+  icer_list[[i]] <- testdf[which(testdf$sim==unique(testdf$sim)[i]),]
+  icer_list[[i]] <- calculate_icer_per_sim(icer_list[[i]],
+                                           exposure="total_cost",
+                                           outcome="ly_saved")
+}
+icer_df <- do.call("rbind", icer_list)
+icer_result <- group_by(icer_df, scenario, comparator) %>%
+  arrange(sim,total_cost) %>%
+  summarise(icer_median = median(icer),
+            icer_lower = quantile(icer, 0.025),
+            icer_upper = quantile(icer, 0.975)) %>%
+  arrange(icer_median)
+
+
+
+obj <- bcea(e=cbind(ly_saved_by_age_long$ly_saved[ly_saved_by_age_long$age_group=="age15to65"],
+             ly_saved_by_age_long$ly_saved[ly_saved_by_age_long$age_group=="age30to65"],
+             rep(0,183)),
+     c=cbind(cost_by_age_long$total_cost[cost_by_age_long$age_group=="age15to65"],
+             cost_by_age_long$total_cost[cost_by_age_long$age_group=="age30to65"],
+             rep(0,183)))
+
+ceef.plot(obj,ref=3,interventions=c("age15to65", "age30to65", "none"),
+                 graph="base")
+
