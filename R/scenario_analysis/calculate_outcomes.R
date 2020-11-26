@@ -529,7 +529,7 @@ extract_life_years_lived <- function(output_files, scenario_label, from_year, by
 
 }
 
-# Extract years of life lost YLL (for all simulations)
+# Extract years of life lost YLL and DALYs (for all simulations)
 extract_yll_and_dalys <- function(output_files, scenario_label, from_year, by_year, sex_to_return = "both",
                           disability_weight_dcc=0.178, disability_weight_hcc=0.54) {
 
@@ -585,12 +585,14 @@ extract_yll_and_dalys <- function(output_files, scenario_label, from_year, by_ye
   # Life expectancy already in units of years
   # Steps: extract HBV deaths in each year of interest, multiply by respective life expectency
   # and sum across ages and timesteps for each simulation
+  # Note the incident death is BY the given timestep, so we need to multiply this by life-expectancy
+  # in the previous timestep
   yll_female <- sapply(lapply(lapply(inc_hbv_deathsf, function(x) x[which(timevec == from_year+da):which(timevec == by_year),]),
-         `*`, life_expectancy_female[which(life_expectancy_female$time==from_year+da):
-                                       which(life_expectancy_female$time==by_year),-1]), sum)
+         `*`, life_expectancy_female[which(life_expectancy_female$time==from_year):
+                                       which(life_expectancy_female$time==by_year-da),-1]), sum)
   yll_male <- sapply(lapply(lapply(inc_hbv_deathsm, function(x) x[which(timevec == from_year+da):which(timevec == by_year),]),
-                  `*`, life_expectancy_male[which(life_expectancy_male$time==from_year+da):
-                                                which(life_expectancy_male$time==by_year),-1]), sum)
+                  `*`, life_expectancy_male[which(life_expectancy_male$time==from_year):
+                                                which(life_expectancy_male$time==by_year-da),-1]), sum)
   yll <- yll_female+yll_male
 
   yll_output_female <- as.data.frame(t(yll_female))
@@ -663,7 +665,6 @@ extract_yll_and_dalys <- function(output_files, scenario_label, from_year, by_ye
   }
 
 }
-
 
 # Function to compare scenarios
 # Can take as input the output from the following functions:
@@ -890,6 +891,121 @@ extract_cohort_life_years_lived <- function(output_files, scenario_label, sex_to
     }
 
   }
+
+
+}
+
+# Function to calculate years of life lost and DALYs in the screened and treated cohort
+extract_cohort_yll_and_dalys <- function(output_files, scenario_label, sex_to_return = "both",
+                                         disability_weight_dcc=0.178, disability_weight_hcc=0.54) {
+
+    # Calculate YLL and DALYs until 2100
+    last_timestep <- 2100
+    # Extract full output from simulations
+    out <- lapply(output_files, "[[", "full_output")
+    timevec <- out[[1]]$time
+    sim_names <- names(output_files)
+
+    # Extract cumulative number of HBV-related deaths (from cirrhosis and HCC),
+    # person-time in DCC and HCC compartments
+    cum_hbv_deathsf <- list()
+    cum_hbv_deathsm <- list()
+    dcc_prevf <- list()
+    dcc_prevm <- list()
+    hcc_prevf <- list()
+    hcc_prevm <- list()
+    for (i in 1:length(out)) {
+      cum_hbv_deathsf[[i]] <- out[[i]][,grepl("^cum_screened_hbv_deathsf.",names(out[[i]]))] +
+        out[[i]][,grepl("^cum_treated_hbv_deathsf.",names(out[[i]]))]
+      cum_hbv_deathsm[[i]] <- out[[i]][,grepl("^cum_screened_hbv_deathsm.",names(out[[i]]))] +
+        out[[i]][,grepl("^cum_treated_hbv_deathsm.",names(out[[i]]))]
+      dcc_prevf[[i]] <- out[[i]][,grepl("^S_DCCf.",names(out[[i]]))] +
+        out[[i]][,grepl("^T_DCCf.",names(out[[i]]))]
+      dcc_prevm[[i]] <- out[[i]][,grepl("^S_DCCm.",names(out[[i]]))] +
+        out[[i]][,grepl("^T_DCCm.",names(out[[i]]))]
+      hcc_prevf[[i]] <- out[[i]][,grepl("^S_HCCf.",names(out[[i]]))] +
+        out[[i]][,grepl("^T_HCCf.",names(out[[i]]))]
+      hcc_prevm[[i]] <- out[[i]][,grepl("^S_HCCm.",names(out[[i]]))] +
+        out[[i]][,grepl("^T_HCCm.",names(out[[i]]))]
+    }
+
+    # Remove out
+    rm(out)
+    gc()
+
+    # Turn into incidence: new cases since the last timestep (i.e. incidence BY timestep)
+    inc_hbv_deathsf <- lapply(cum_hbv_deathsf, calculate_incident_numbers)
+    inc_hbv_deathsm <- lapply(cum_hbv_deathsm, calculate_incident_numbers)
+
+    # Calculate total years of life lost between from_year and by_year
+    # Life expectancy already in units of years
+    # Steps: extract HBV deaths in each year of interest, multiply by respective life expectency
+    # and sum across ages and timesteps for each simulation
+    yll_female <- sapply(lapply(lapply(inc_hbv_deathsf, function(x) x[2:which(timevec == last_timestep),]),
+                                `*`, life_expectancy_female[which(life_expectancy_female$time==timevec[[1]]):
+                                                              which(life_expectancy_female$time==last_timestep-da),-1]), sum)
+    yll_male <- sapply(lapply(lapply(inc_hbv_deathsm, function(x) x[2:which(timevec == last_timestep),]),
+                              `*`, life_expectancy_male[which(life_expectancy_male$time==timevec[[1]]):
+                                                          which(life_expectancy_male$time==last_timestep-da),-1]), sum)
+    yll <- yll_female+yll_male
+
+    yll_output_female <- as.data.frame(t(yll_female))
+    colnames(yll_output_female) <- sim_names
+    yll_output_male <- as.data.frame(t(yll_male))
+    colnames(yll_output_male) <- sim_names
+    yll_output <- as.data.frame(t(yll))
+    colnames(yll_output) <- sim_names
+
+    # Calculate disability-adjusted years of life (years of life lost to disability)
+    # between from_year and by_year
+    # Steps: extract number in each compartment at each timestep of interest,
+    # sum across ages and timesteps, multiply by da to convert to years, multiply by respective
+    # disability weight
+
+    yld_female <- sapply(lapply(dcc_prevf, function(x) x[1:which(timevec == last_timestep-da),]),sum)*
+      dt*disability_weight_dcc +
+      sapply(lapply(hcc_prevf, function(x) x[1:which(timevec == last_timestep-da),]),sum)*
+      dt*disability_weight_hcc
+
+    yld_male <- sapply(lapply(dcc_prevm, function(x) x[1:which(timevec == last_timestep-da),]),sum)*
+      dt*disability_weight_dcc +
+      sapply(lapply(hcc_prevm, function(x) x[1:which(timevec == last_timestep-da),]),sum)*
+      dt*disability_weight_hcc
+
+    daly_female <- as.data.frame(t(yll_female+yld_female))
+    colnames(daly_female) <- sim_names
+    daly_male <- as.data.frame(t(yll_male+yld_male))
+    colnames(daly_male) <- sim_names
+
+    daly <- as.data.frame(t(yll_female+yld_female+yll_male+yld_male))
+    colnames(daly) <- sim_names
+
+
+    if (sex_to_return == "both") {
+      res_total <- list(yll = data.frame(scenario = scenario_label,
+                              yll = yll_output),
+                        data.frame(scenario = scenario_label,
+                                   daly = daly))
+
+      return(res_total)
+    } else if (sex_to_return == "male") {
+      res_male <- list(yll = data.frame(scenario = scenario_label,
+                                         yll_male = yll_output_male),
+                        data.frame(scenario = scenario_label,
+                                   daly_male = daly_male))
+
+
+      return(res_male)
+    } else if (sex_to_return == "female") {
+      res_fema;e <- list(yll = data.frame(scenario = scenario_label,
+                                         yll_female = yll_output_female),
+                        data.frame(scenario = scenario_label,
+                                   daly_female = daly_female))
+
+      return(res_female)
+    } else {
+      print("sex_to_return has to be male, female or both")
+    }
 
 
 }
