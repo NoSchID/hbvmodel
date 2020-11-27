@@ -897,7 +897,7 @@ extract_cohort_life_years_lived <- function(output_files, scenario_label, sex_to
 
 # Function to calculate years of life lost and DALYs in the screened and treated cohort
 extract_cohort_yll_and_dalys <- function(output_files, scenario_label, sex_to_return = "both",
-                                         disability_weight_dcc=0.178, disability_weight_hcc=0.54) {
+                                         from_year, disability_weight_dcc=0.178, disability_weight_hcc=0.54) {
 
     # Calculate YLL and DALYs until 2100
     last_timestep <- 2100
@@ -941,11 +941,11 @@ extract_cohort_yll_and_dalys <- function(output_files, scenario_label, sex_to_re
     # Life expectancy already in units of years
     # Steps: extract HBV deaths in each year of interest, multiply by respective life expectency
     # and sum across ages and timesteps for each simulation
-    yll_female <- sapply(lapply(lapply(inc_hbv_deathsf, function(x) x[2:which(timevec == last_timestep),]),
-                                `*`, life_expectancy_female[which(life_expectancy_female$time==timevec[[1]]):
+    yll_female <- sapply(lapply(lapply(inc_hbv_deathsf, function(x) x[which(timevec == from_year+da):which(timevec == last_timestep),]),
+                                `*`, life_expectancy_female[which(life_expectancy_female$time==from_year):
                                                               which(life_expectancy_female$time==last_timestep-da),-1]), sum)
-    yll_male <- sapply(lapply(lapply(inc_hbv_deathsm, function(x) x[2:which(timevec == last_timestep),]),
-                              `*`, life_expectancy_male[which(life_expectancy_male$time==timevec[[1]]):
+    yll_male <- sapply(lapply(lapply(inc_hbv_deathsm, function(x) x[which(timevec == from_year+da):which(timevec == last_timestep),]),
+                              `*`, life_expectancy_male[which(life_expectancy_female$time==from_year):
                                                           which(life_expectancy_male$time==last_timestep-da),-1]), sum)
     yll <- yll_female+yll_male
 
@@ -962,14 +962,15 @@ extract_cohort_yll_and_dalys <- function(output_files, scenario_label, sex_to_re
     # sum across ages and timesteps, multiply by da to convert to years, multiply by respective
     # disability weight
 
-    yld_female <- sapply(lapply(dcc_prevf, function(x) x[1:which(timevec == last_timestep-da),]),sum)*
+    yld_female <- sapply(lapply(dcc_prevf, function(x) x[which(timevec == from_year):
+                                                           which(timevec == last_timestep-da),]),sum)*
       dt*disability_weight_dcc +
-      sapply(lapply(hcc_prevf, function(x) x[1:which(timevec == last_timestep-da),]),sum)*
+      sapply(lapply(hcc_prevf, function(x) x[which(timevec == from_year):which(timevec == last_timestep-da),]),sum)*
       dt*disability_weight_hcc
 
-    yld_male <- sapply(lapply(dcc_prevm, function(x) x[1:which(timevec == last_timestep-da),]),sum)*
+    yld_male <- sapply(lapply(dcc_prevm, function(x) x[which(timevec == from_year):which(timevec == last_timestep-da),]),sum)*
       dt*disability_weight_dcc +
-      sapply(lapply(hcc_prevm, function(x) x[1:which(timevec == last_timestep-da),]),sum)*
+      sapply(lapply(hcc_prevm, function(x) x[which(timevec == from_year):which(timevec == last_timestep-da),]),sum)*
       dt*disability_weight_hcc
 
     daly_female <- as.data.frame(t(yll_female+yld_female))
@@ -984,14 +985,14 @@ extract_cohort_yll_and_dalys <- function(output_files, scenario_label, sex_to_re
     if (sex_to_return == "both") {
       res_total <- list(yll = data.frame(scenario = scenario_label,
                               yll = yll_output),
-                        data.frame(scenario = scenario_label,
+                        daly = data.frame(scenario = scenario_label,
                                    daly = daly))
 
       return(res_total)
     } else if (sex_to_return == "male") {
       res_male <- list(yll = data.frame(scenario = scenario_label,
                                          yll_male = yll_output_male),
-                        data.frame(scenario = scenario_label,
+                        daly=data.frame(scenario = scenario_label,
                                    daly_male = daly_male))
 
 
@@ -999,7 +1000,7 @@ extract_cohort_yll_and_dalys <- function(output_files, scenario_label, sex_to_re
     } else if (sex_to_return == "female") {
       res_fema;e <- list(yll = data.frame(scenario = scenario_label,
                                          yll_female = yll_output_female),
-                        data.frame(scenario = scenario_label,
+                        daly=data.frame(scenario = scenario_label,
                                    daly_female = daly_female))
 
       return(res_female)

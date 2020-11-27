@@ -2700,6 +2700,10 @@ run_one_screening_scenario_on_cluster <- function(..., default_parameter_list, c
   cohort_size <- extract_cohort_size(out, label)
   cohort_size_at_outcome <- extract_cohort_size_at_outcome(out, label)  # returns remaining cohort
   # population size in 2100, when cohort outcomes above are evaluated
+  cohort_yll_and_dalys <- extract_cohort_yll_and_dalys(out, label, from_year = 2020)
+  cohort_yll <- cohort_yll_and_dalys$yll
+  cohort_dalys <- cohort_yll_and_dalys$daly
+
 
   # Population outcomes
   years_to_extract <- seq(2025,2100, by = 5)
@@ -2712,13 +2716,20 @@ run_one_screening_scenario_on_cluster <- function(..., default_parameter_list, c
     }
   cum_hbv_deaths[sapply(cum_hbv_deaths, is.null)] <- NULL
 
-  # Life years
+  # Life years, YLL and DALYS
   ly <- list()
+  yll_and_dalys <- list()
   for (j in years_to_extract) {
     ly[[j-2024]] <- extract_life_years_lived(out, scenario_label = label,
                                              from_year = 2020, by_year = j)
+    yll_and_dalys[[j-2024]] <- extract_yll_and_dalys(out, scenario_label = label,
+                                                     from_year = 2020, by_year = j)
   }
   ly[sapply(ly, is.null)] <- NULL
+  yll_and_dalys[sapply(yll_and_dalys, is.null)] <- NULL
+
+  yll <- lapply(yll_and_dalys, "[[", "yll")
+  dalys <- lapply(yll_and_dalys, "[[", "daly")
 
   # Healthcare interactions and person-time on treatment
   interactions <- list()
@@ -2774,8 +2785,14 @@ run_one_screening_scenario_on_cluster <- function(..., default_parameter_list, c
                cohort_ly = cohort_ly,
                cohort_size = cohort_size,
                cohort_size_at_outcome = cohort_size_at_outcome,
+               cohort_yll = cohort_yll,
+               cohort_dalys = cohort_dalys,
+               cohort_size = cohort_size,
+               cohort_size_at_outcome = cohort_size_at_outcome,
                cum_hbv_deaths = cum_hbv_deaths,
                ly = ly,
+               yll = yll,
+               dalys = dalys,
                interactions = interactions,
                py_on_treatment =  py_on_treatment,  # Excludes T_R compartment
                #screened_pop_female = screened_pop_female,
@@ -2916,6 +2933,9 @@ run_one_screening_scenario_on_cluster_not_parallel <- function(..., default_para
   cohort_size <- extract_cohort_size(out, label)
   cohort_size_at_outcome <- extract_cohort_size_at_outcome(out, label)  # returns remaining cohort
   # population size in 2100, when cohort outcomes above are evaluated
+  cohort_yll_and_dalys <- extract_cohort_yll_and_dalys(out, label, from_year = 2020)
+  cohort_yll <- cohort_yll_and_dalys$yll
+  cohort_dalys <- cohort_yll_and_dalys$daly
 
   # Population outcomes
   years_to_extract <- seq(2025,2100, by = 5)
@@ -2928,13 +2948,20 @@ run_one_screening_scenario_on_cluster_not_parallel <- function(..., default_para
   }
   cum_hbv_deaths[sapply(cum_hbv_deaths, is.null)] <- NULL
 
-  # Life years
+  # Life years, YLL and DALYS
   ly <- list()
+  yll_and_dalys <- list()
   for (j in years_to_extract) {
     ly[[j-2024]] <- extract_life_years_lived(out, scenario_label = label,
                                              from_year = 2020, by_year = j)
+    yll_and_dalys[[j-2024]] <- extract_yll_and_dalys(out, scenario_label = label,
+                                                     from_year = 2020, by_year = j)
   }
   ly[sapply(ly, is.null)] <- NULL
+  yll_and_dalys[sapply(yll_and_dalys, is.null)] <- NULL
+
+  yll <- lapply(yll_and_dalys, "[[", "yll")
+  dalys <- lapply(yll_and_dalys, "[[", "daly")
 
   # Healthcare interactions and person-time on treatment
   interactions <- list()
@@ -2988,10 +3015,14 @@ run_one_screening_scenario_on_cluster_not_parallel <- function(..., default_para
   extracted_outcomes <- list(cohort_age_at_death = cohort_age_at_death,
                              cohort_cum_hbv_deaths = cohort_cum_hbv_deaths,
                              cohort_ly = cohort_ly,
+                             cohort_yll = cohort_yll,
+                             cohort_dalys = cohort_dalys,
                              cohort_size = cohort_size,
                              cohort_size_at_outcome = cohort_size_at_outcome,
                              cum_hbv_deaths = cum_hbv_deaths,
                              ly = ly,
+                             yll = yll,
+                             dalys = dalys,
                              interactions = interactions,
                              py_on_treatment =  py_on_treatment,  # Excludes T_R compartment
                              #screened_pop_female = screened_pop_female,
@@ -3005,6 +3036,7 @@ run_one_screening_scenario_on_cluster_not_parallel <- function(..., default_para
 
   return(outlist)
 }
+
 
 # Scenario can be specified
 run_one_scenario <- function(..., default_parameter_list, calibrated_parameter_sets,
