@@ -296,6 +296,8 @@ interactions_by_age <- rbind(
     unlist(a6_out3$interactions[[16]]$total_treated[,-c(1:3)]))
 )
 
+
+
 interactions_by_age <- interactions_by_age %>%
   mutate(total_interactions = hbsag_tests + clinical_assessments + treatment_initiations)
 interactions_by_age <- gather(interactions_by_age, key = "interaction_type", value = "value",

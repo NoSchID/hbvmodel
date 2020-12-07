@@ -8,8 +8,9 @@ source(here("R/imperial_model_interventions.R"))
 
 #load(here("calibration", "input", "accepted_parmsets_123_180520.Rdata")) # params_mat_targets5
 load(here("calibration", "input", "accepted_parmsets_kmeans_170820.Rdata")) # params_mat_accepted_kmeans
+load(here("analysis_input", "scenario_a1_parms.Rdata"))
 
-sim2 <- apply(params_mat_accepted_kmeans[1:2,],1,
+sim <- apply(params_mat_accepted_kmeans[1,],1,
              function(x)
                run_model(sim_duration = runtime, default_parameter_list = parameter_list,
                          parms_to_change =
@@ -50,22 +51,20 @@ sim2 <- apply(params_mat_accepted_kmeans[1:2,],1,
                                 apply_treat_it = 0,
                                 prop_negative_to_remove_from_rescreening = 1,
                                 apply_screen_not_treat = 0,
-                                monitoring_rate = 0,
+                                monitoring_rate = 1/10,
                                 apply_repeat_screen = 0,
-                                min_age_to_screen = 15,
-                                max_age_to_screen = 60-da,
+                                min_age_to_screen = 30,
+                                max_age_to_screen = 30,
                                 min_age_to_repeat_screen = 15,
                                 max_age_to_repeat_screen = 60,
                                 repeat_screening_years = c(2030)),
                          drop_timesteps_before = 1960,
-                         scenario = "vacc"))
+                         scenario = "vacc_screen"))
 
 out <- code_model_output(sim[[1]])
 outpath <- out
 
 out2 <- lapply(sim2, code_model_output)
-
-#################
 
 load(here("output", "sims_output_scenario_vacc_130120.RData"))
 out <- out_vacc

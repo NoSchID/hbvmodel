@@ -1154,13 +1154,14 @@ calculate_cohort_number_averted <- function(counterfactual_metric, scenario_metr
 # Plotted outcome is "proportion_averted" by default, can be switched to "number_averted"
 plot_hbv_deaths_averted_cohort <- function(counterfactual_object, scenario_objects,
                                            counterfactual_label = "",
+                                           outcome_to_avert = "cohort_cum_hbv_deaths",
                                            outcome_to_plot = "proportion_averted") {
 
   cohort_deaths_averted <- list()
 
   for (i in 1:length(scenario_objects)) {
-    cohort_deaths_averted[[i]] <- calculate_cohort_number_averted(counterfactual_object$cohort_cum_hbv_deaths,
-                                                                  scenario_objects[[i]]$cohort_cum_hbv_deaths, summarise = FALSE)
+    cohort_deaths_averted[[i]] <- calculate_cohort_number_averted(counterfactual_object[[outcome_to_avert]],
+                                                                  scenario_objects[[i]][[outcome_to_avert]], summarise = FALSE)
   }
 
   cohort_deaths_averted <- do.call("rbind", cohort_deaths_averted)
@@ -1190,10 +1191,16 @@ plot_hbv_deaths_averted_cohort <- function(counterfactual_object, scenario_objec
 
 
   # Choose y axis label based on outcome to plot (proportion or number)
-  if (outcome_to_plot == "proportion_averted") {
+  if (outcome_to_plot == "proportion_averted" & outcome_to_avert == "cohort_cum_hbv_deaths") {
     y_axis_label <- "Proportion of HBV-related deaths averted"
-  } else if (outcome_to_plot == "number_averted") {
+  } else if (outcome_to_plot == "number_averted" & outcome_to_avert == "cohort_cum_hbv_deaths") {
     y_axis_label <- "Number of HBV-related deaths averted"
+  } else if (outcome_to_plot == "proportion_averted" & outcome_to_avert == "cohort_dalys") {
+    y_axis_label <- "Proportion of DALYs averted"
+  } else if (outcome_to_plot == "number_averted" & outcome_to_avert == "cohort_dalys") {
+    y_axis_label <- "Number of DALYs averted"
+  } else {
+    y_axis_label <- " "
   }
 
   print(ggplot(cohort_deaths_averted_long[cohort_deaths_averted_long$type == outcome_to_plot,]) +
@@ -1296,9 +1303,10 @@ plot_ly_gained_cohort <- function(counterfactual_object, scenario_objects,
 ## HBV deaths averted and LY saved ----
 # Calculate HBV deaths averted on the population level
 # Currently for 2030, 2050 and 2100 fixed
-
+# Can also be used for DALYs averted
 plot_hbv_deaths_averted <- function(counterfactual_object, scenario_objects,
                                     counterfactual_label = "",
+                                    outcome_to_avert = "cum_hbv_deaths",
                                     outcome_to_plot = "proportion_averted",
                                     x_axis = "monitoring", timepoints = c(2030,2050,2100)) {
 
@@ -1310,14 +1318,14 @@ plot_hbv_deaths_averted <- function(counterfactual_object, scenario_objects,
   deaths_averted <- list()
 
   for (i in 1:length(scenario_objects)) {
-    deaths_averted[[i]] <- rbind(calculate_number_averted(counterfactual_object$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==timepoints[1])]],
-                                                          scenario_objects[[i]]$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==timepoints[1])]],
+    deaths_averted[[i]] <- rbind(calculate_number_averted(counterfactual_object[[outcome_to_avert]][[which(seq(2025,2100, by = 5)==timepoints[1])]],
+                                                          scenario_objects[[i]][[outcome_to_avert]][[which(seq(2025,2100, by = 5)==timepoints[1])]],
                                                           summarise = FALSE),
-                                 calculate_number_averted(counterfactual_object$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==timepoints[2])]],
-                                                          scenario_objects[[i]]$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==timepoints[2])]],
+                                 calculate_number_averted(counterfactual_object[[outcome_to_avert]][[which(seq(2025,2100, by = 5)==timepoints[2])]],
+                                                          scenario_objects[[i]][[outcome_to_avert]][[which(seq(2025,2100, by = 5)==timepoints[2])]],
                                                           summarise = FALSE),
-                                 calculate_number_averted(counterfactual_object$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==timepoints[3])]],
-                                                          scenario_objects[[i]]$cum_hbv_deaths[[which(seq(2025,2100, by = 5)==timepoints[3])]],
+                                 calculate_number_averted(counterfactual_object[[outcome_to_avert]][[which(seq(2025,2100, by = 5)==timepoints[3])]],
+                                                          scenario_objects[[i]][[outcome_to_avert]][[which(seq(2025,2100, by = 5)==timepoints[3])]],
                                                           summarise = FALSE))
 
   }
@@ -1350,10 +1358,16 @@ plot_hbv_deaths_averted <- function(counterfactual_object, scenario_objects,
     grepl("monit_0_screen_1$", levels(deaths_averted_long$scenario))] <- "1 year"
 
   # Choose y axis label based on outcome to plot (proportion or number)
-  if (outcome_to_plot == "proportion_averted") {
+  if (outcome_to_plot == "proportion_averted" & outcome_to_avert == "cum_hbv_deaths") {
     y_axis_label <- "Proportion of HBV-related deaths averted"
-  } else if (outcome_to_plot == "number_averted") {
+  } else if (outcome_to_plot == "number_averted" & outcome_to_avert == "cum_hbv_deaths") {
     y_axis_label <- "Number of HBV-related deaths averted"
+  } else if (outcome_to_plot == "proportion_averted" & outcome_to_avert == "dalys") {
+    y_axis_label <- "Proportion of DALYs averted"
+  } else if (outcome_to_plot == "number_averted" & outcome_to_avert == "dalys") {
+    y_axis_label <- "Number of DALYs averted"
+  } else {
+    y_axis_label <- " "
   }
 
   # Chose x axis label based on monitoring or screening impact analysis

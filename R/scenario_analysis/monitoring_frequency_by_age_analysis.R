@@ -32,6 +32,10 @@ out2 <- out2[[1]]
 out3 <- readRDS(paste0(out_path, "a1_out3_screen_2020_monit_0_201020.rds"))
 out3 <- out3[[1]]
 
+# Test: perfect treatment efficacy with perfect uptake of yearly monitoring
+out6_test <- readRDS(paste0(out_path, "a1_testsim_perfect_treatment_071220.rds"))
+out6_test <- out6_test[[1]]
+
 # Monitoring all age groups
 out4 <- readRDS(paste0(out_path, "a1_out4_screen_2020_monit_10_290920.rds"))
 out4 <- out4[[1]]
@@ -131,6 +135,23 @@ sub_age_groups2 <- names(scenario_labels)[c(5,8,10,13)]
 sub_age_groups3 <- names(scenario_labels)[c(6,9,11,14)]
 # 15-45, 45+
 sub_age_groups_all <- names(scenario_labels)[c(3,4)]
+
+# TEST: PERFECT TREATMENT EFFICACY ----
+# Compare effect of treatment with yearly monitoring to no treatment in the cohort
+test_deaths_averted <- plot_hbv_deaths_averted_cohort(counterfactual_object = out1,
+                                 scenario_objects = list(out3,
+                                                         out6,
+                                                         out6_test),
+                                 outcome_to_plot = "proportion_averted",
+                                 counterfactual_label = "no treatment")
+test_deaths_averted %>% filter(type=="proportion_averted") %>%
+  group_by(scenario) %>%
+  summarise(median = median(value),
+            lower = quantile(value, 0.025),
+            upper = quantile(value, 0.975))
+# Compared to the same cohort without HBV treatment, the programme with yearly monitoring
+# would avert 91% (79-97%) of HBV-related deaths if treated states experienced no HBV-related
+# mortality. The missing % could likely be averted by monitoring every 6 months.
 
 # 1) Comparing monitoring to no treatment ----
 # Average age at death ----

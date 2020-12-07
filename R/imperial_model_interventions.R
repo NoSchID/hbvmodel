@@ -2580,7 +2580,7 @@ run_one_screening_scenario_on_cluster <- function(..., default_parameter_list, c
                                        parms_to_change = list(...), years_of_test, monitoring_rate,
                                        prop_negative_to_remove_from_rescreening = 0,
                                        apply_repeat_screen = 0, years_of_repeat_test = 2015,
-                                       min_age_to_repeat_screen = 15, max_age_to_repeat_screen = 60,
+                                       min_age_to_repeat_screen = 15, max_age_to_repeat_screen = 65-da,
                                        drop_timesteps_before = NULL,
                                        label, scenario = "vacc_screen") {
 
@@ -2813,7 +2813,7 @@ run_one_screening_scenario_on_cluster_not_parallel <- function(..., default_para
                                                   parms_to_change = list(...), years_of_test, monitoring_rate,
                                                   prop_negative_to_remove_from_rescreening = 0,
                                                   apply_repeat_screen = 0, years_of_repeat_test = 2015,
-                                                  min_age_to_repeat_screen = 15, max_age_to_repeat_screen = 60,
+                                                  min_age_to_repeat_screen = 15, max_age_to_repeat_screen = 65-da,
                                                   drop_timesteps_before = NULL,
                                                   label, scenario = "vacc_screen") {
 
