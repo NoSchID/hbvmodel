@@ -523,6 +523,13 @@ ever_inf_1990 <- do.call("rbind",
   do.call("rbind",
           lapply(compartments_by_age$ever_inf_male, function(x) x[which(compartments_by_age$time==1990),]))
 
+eag_pos_2020 <- sapply(compartments_by_age$eag_positive, function(x) x[which(compartments_by_age$time==2020),
+                                                      which(seq(0,99.5,0.5)==25),])/
+(sapply(lapply(carriers_by_age, "[[", "carriers_female"), function(x) x[which(carriers_by_age[[1]]$time==2020),
+                                                       which(seq(0,99.5,0.5)==25),])+
+  sapply(lapply(carriers_by_age, "[[", "carriers_male"), function(x) x[which(carriers_by_age[[1]]$time==2020),
+                                                                    which(seq(0,99.5,0.5)==25),]))
+
 pop_female <- lapply(carriers_by_age, "[[", "pop_female")
 pop_male <- lapply(carriers_by_age, "[[", "pop_male")
 
@@ -593,6 +600,7 @@ plot(x = prop_ever_infected$value[prop_ever_infected$age == 50],
 # PCA
 pca_obj <- data.frame(
   prop_ever_inf = prop_ever_infected$value[prop_ever_infected$age == 50],
+  eag_pos = eag_pos_2020,
   prop_mtct = chronic_infection_incidence$prop_mtct$value[chronic_infection_incidence$prop_mtct$time == 2040],
   b1 = params_mat_accepted_kmeans$b1,
   b3 = params_mat_accepted_kmeans$b3,
@@ -625,6 +633,55 @@ fviz_pca_ind(pca, geom.ind = "point", pointshape = 21,
              legend.title = "Proportion of new chronic infections\ndue to MTCT in 2040") +
   ggtitle("2D PCA-plot from 30 feature dataset") +
   theme(plot.title = element_text(hjust = 0.5))
+
+# k-means cluster
+library(factoextra)
+cluster_obj <- as.matrix(scale(pca_obj))
+
+fviz_nbclust(cluster_obj, kmeans, method = "silhouette")
+
+km.res <- kmeans(cluster_obj, 2, nstart = 100)
+print(km.res)
+km.res$size
+km.res$center
+km.res$cluster
+
+plot_obj <- data.frame(prop_mtct = pca_obj$prop_mtct,
+                       prop_ever_inf = pca_obj$prop_ever_inf,
+                       prop_eag = pca_obj$eag_pos,
+                       b1 = pca_obj$b1,
+                       b3= pca_obj$b3,
+                       alpha = pca_obj$alpha,
+                         cluster = km.res$cluster)
+
+plot_obj_long <- gather(plot_obj, key = "variable", value = "value", -cluster)
+
+ggplot(plot_obj) +
+  geom_boxplot(aes(x = cluster, y = prop_mtct, group = cluster))
+
+ggplot(plot_obj) +
+  geom_point(aes(x = prop_mtct, y = prop_ever_inf, group = as.factor(cluster), colour = as.factor(cluster)))
+
+ggplot(plot_obj) +
+  geom_point(aes(x = prop_mtct, y = b3, group = as.factor(cluster), colour = as.factor(cluster)))
+
+ggplot(plot_obj) +
+  geom_point(aes(x = prop_mtct, y = alpha, group = as.factor(cluster), colour = as.factor(cluster)))
+
+ggplot(plot_obj) +
+  geom_point(aes(x = prop_mtct, y = prop_eag, group = as.factor(cluster), colour = as.factor(cluster)))
+
+
+ggplot(plot_obj) +
+  geom_boxplot(aes(x = cluster, y = prop_eag, group = cluster))
+
+ggplot(plot_obj_long[plot_obj_long$variable != "alpha",]) +
+  geom_path(aes(x=variable, y = value, group = as.factor(cluster), colour = as.factor(cluster)),
+            lineend = "round", linejoin = "round")
+
+
+# Scatterplot matrix/correlation matrix
+pairs(pca_obj, pch=19)
 
 # Proportion of treatment eligibility and of cirrhosis by age ----
 

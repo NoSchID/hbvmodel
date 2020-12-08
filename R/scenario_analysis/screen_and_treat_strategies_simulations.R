@@ -12,7 +12,7 @@ source(here("R/scenario_analysis/calculate_outcomes.R"))
 
 # UPDATED SCENARIOS 22/09/20
 
-# Age group scenarios: 15-60 (A1), 45-60 (A2), 30-60 (A3), 15-30-da (A4), 30-45-da (A5)
+# Age group scenarios: 15-65 (A1), 45-60 (A2), 30-60 (A3), 15-30-da (A4), 30-45-da (A5)
 
 # ASSUMPTION A1 SIMULATIONS - CHANGED TO 65 on 27/11/20
 scenario_a1_parms <- parameter_list
@@ -134,7 +134,9 @@ scenario_e1_parms$apply_treat_it <- 0
 scenario_ea1_parms <- parameter_list
 scenario_ea1_parms$screening_coverage <- 0.5
 scenario_ea1_parms$min_age_to_screen <- 15
-scenario_ea1_parms$max_age_to_screen <- 60
+scenario_ea1_parms$max_age_to_screen <- 65-da
+scenario_ea1_parms$min_age_to_repeat_screen <- 15
+scenario_ea1_parms$max_age_to_repeat_screen <- 65-da
 scenario_ea1_parms$prop_to_vaccinate <- 0
 scenario_ea1_parms$link_to_care_prob <- 0.8
 scenario_ea1_parms$treatment_initiation_prob <- 1
