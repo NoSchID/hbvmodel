@@ -1315,61 +1315,6 @@ repeat_screen_pop <- function(timestep, pop, parameters){
   })
 }
 
-# Event function: trigger a lifetime monitoring event (as opposed to monitoring rate)
-trigger_monitoring_event <- function(timestep, pop, parameters) {
-  with (as.list(pop),{
-
-    # Define indices for age groupts to screen
-    ages_to_monitor <- which(ages %in% parameters$age_to_monitor_once)
-
-    # Select state variables array
-    total_pop <- array(unlist(pop[1:(2 * n_infectioncat * n_agecat)]),dim=c(n_agecat,n_infectioncat,2))
-
-    # Want to model the following transitions, on-eoff
-    #monitoring_rate * monitoring_prob * treatment_initiation_prob_it * pop[index$ages_all,IT_S,i] # to IT_T
-    #monitoring_rate * monitoring_prob * treatment_initiation_prob * pop[index$ages_all,IR_S,i]  # CHB_T
-    #monitoring_rate * monitoring_prob * treatment_initiation_prob * pop[index$ages_all,ENCHB_S,i]  # CHB_T
-    #monitoring_rate * monitoring_prob * treatment_initiation_prob * pop[index$ages_all,CC_S,i]  # CC_T
-    #monitoring_rate * monitoring_prob * treatment_initiation_prob  * pop[index$ages_all,DCC_S,i] #DCC_T
-
-    #V_S <- 10                        # Vaccinated after screening
-    #IT_S <- 11                        # Chronic infection: immune tolerant
-    #IR_S <- 12                        # Chronic infection: immune reactive
-    #IC_S <- 13                        # Chronic infection: inactive carrier
-    #ENCHB_S <- 14                     # Chronic infection: HBeAg-negative CHB
-    #CC_S <- 15                        # Chronic disease: compensated cirrhosis
-    #DCC_S <- 16                       # Chronic disease: decompensated cirrhosis
-    #HCC_S <- 17                       # Chronic disease: hepatocellular carcinoma
-    #R_S <- 18                        # Immune
-    # Ever treated compartments
-    #IT_T <- 19                        # Optional treated IT compartment
-    #CHB_T <- 20                       # Treated IR and ENCHB
-    #CC_T <- 21                        # Treated CC
-    #DCC_T <- 22                       # Treated DCC
-    #HCC_T <- 23                       # HCC developing in treated
-    #R_T <- 24                         # Recovered after treatment
-
-    # Calculate population to monitor+move to treatment in each compartment
-    pop_to_treat_it <- parameters$monitoring_prob *
-      total_pop[ages_to_monitor,11,1:2]
-    pop_to_treat_ir <- parameters$monitoring_prob *
-      total_pop[ages_to_monitor,12,1:2]
-    pop_to_treat_enchb <- parameters$monitoring_prob *
-      total_pop[ages_to_monitor,14,1:2]
-    pop_to_treat_cc <- parameters$monitoring_prob *
-      total_pop[ages_to_monitor,15,1:2]
-    pop_to_treat_dcc <- parameters$monitoring_prob *
-      total_pop[ages_to_monitor,16,1:2]
-
-    # New parms: age_to_monitor_once
-
-    # Need to: Move population to treat out of screened and into treated cohort
-    # Also need to count monitoring events in non-treatable compartments (maybe in other function?)
-
-    })
-
-}
-
 event_func <- function(timestep, pop, parameters){
 
 #    if(timestep >= 1950-parameters$sim_starttime & timestep <= 1950.5-parameters$sim_starttime) {
