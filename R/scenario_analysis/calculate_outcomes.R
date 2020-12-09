@@ -73,7 +73,8 @@ calculate_screening_interactions <- function(output_file, scenario_label) {
 }
 
 # For monitoring, need to add record of vaccination of susceptibles!
-calculate_monitoring_interactions <- function(output_file, from_year, by_year, scenario_label) {
+calculate_monitoring_interactions <- function(output_file, from_year, by_year, scenario_label,
+                                              lifetime_monitoring_treatment_initiation_prob = 1) {
 
   # Monitoring and treatment
 
@@ -99,7 +100,10 @@ calculate_monitoring_interactions <- function(output_file, from_year, by_year, s
 
   # Number of treatment initiations as a result of monitoring
   # Sum those monitoring events in treatment eligible compartments and multiply by treatment initiation probability
-  cum_monitoring_treatment_initiations <-
+
+  if(output_file$input_parameters$apply_lifetime_monitoring == 0) {
+
+   cum_monitoring_treatment_initiations <-
     ((apply(monitored_ir[which(output_file$time == by_year),],1,sum)-
         apply(monitored_ir[which(output_file$time == from_year),],1,sum)) +
        (apply(monitored_enchb[which(output_file$time == by_year),],1,sum)-
@@ -117,6 +121,30 @@ calculate_monitoring_interactions <- function(output_file, from_year, by_year, s
       output_file$input_parameters$treatment_initiation_prob
   } else if (output_file$input_parameters$apply_treat_it == 0) {
     cum_monitoring_treatment_initiations_it <- 0
+  }
+
+  } else if(output_file$input_parameters$apply_lifetime_monitoring == 1) {
+
+    cum_monitoring_treatment_initiations <-
+      ((apply(monitored_ir[which(output_file$time == by_year),],1,sum)-
+          apply(monitored_ir[which(output_file$time == from_year),],1,sum)) +
+         (apply(monitored_enchb[which(output_file$time == by_year),],1,sum)-
+            apply(monitored_enchb[which(output_file$time == from_year),],1,sum)) +
+         (apply(monitored_cc[which(output_file$time == by_year),],1,sum)-
+            apply(monitored_cc[which(output_file$time == from_year),],1,sum)) +
+         (apply(monitored_dcc[which(output_file$time == by_year),],1,sum)-
+            apply(monitored_dcc[which(output_file$time == from_year),],1,sum))) *
+      lifetime_monitoring_treatment_initiation_prob
+
+    if (output_file$input_parameters$apply_treat_it == 1) {
+      cum_monitoring_treatment_initiations_it <-
+        (apply(monitored_it[which(output_file$time == by_year),],1,sum)-
+           apply(monitored_it[which(output_file$time == from_year),],1,sum)) *
+        lifetime_monitoring_treatment_initiation_prob
+    } else if (output_file$input_parameters$apply_treat_it == 0) {
+      cum_monitoring_treatment_initiations_it <- 0
+    }
+
   }
 
 
