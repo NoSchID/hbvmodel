@@ -701,6 +701,12 @@ out6a <- out6a[[1]]
 out6 <- readRDS(paste0(out_path, "a1_out6_screen_2020_monit_1_301120.rds"))
 out6 <- out6[[1]]
 
+# Once in a lifetime monitoring at different ages
+out_lt_monit_30 <- readRDS(paste0(out_path, "a1_out_screen_2020_monit_lifetime_30_101220.rds"))
+out_lt_monit_30 <- out_lt_monit_30[[1]]
+out_lt_monit_45 <- readRDS(paste0(out_path, "a1_out_screen_2020_monit_lifetime_45_101220.rds"))
+out_lt_monit_45 <- out_lt_monit_45[[1]]
+
 # Monitoring different age groups until they age out (yearly)
 monit_out1 <- readRDS(paste0(out_path, "a1_monit_out1_201020.rds"))
 monit_out1 <- monit_out1[[1]]
@@ -829,6 +835,24 @@ freq_interactions <- rbind(
                             gather(out3$interactions[[16]]$total_assessed[-c(1:3)]-out3$interactions[[16]]$total_assessed[-c(1:3)],
                                    key = "sim", value = "monitoring_assessments"), by = "sim"),
                   gather(out3$interactions[[16]]$total_treated[-c(1:3)],
+                         key = "sim", value = "treatment_initiations"), by = "sim")),
+  cbind(scenario = "At age 30",
+        left_join(left_join(left_join(gather(out_lt_monit_30$interactions[[16]]$total_screened[-c(1:3)],
+                                             key = "sim", value = "hbsag_tests"),
+                                      gather(out3$interactions[[16]]$total_assessed[-c(1:3)],   # stays the same
+                                             key = "sim", value = "clinical_assessments"), by = "sim"),
+                            gather(out_lt_monit_30$interactions[[16]]$total_assessed[-c(1:3)]-out3$interactions[[16]]$total_assessed[-c(1:3)],
+                                   key = "sim", value = "monitoring_assessments"), by = "sim"),
+                  gather(out_lt_monit_30$interactions[[16]]$total_treated[-c(1:3)],
+                         key = "sim", value = "treatment_initiations"), by = "sim")),
+  cbind(scenario = "At age 45",
+        left_join(left_join(left_join(gather(out_lt_monit_45$interactions[[16]]$total_screened[-c(1:3)],
+                                             key = "sim", value = "hbsag_tests"),
+                                      gather(out3$interactions[[16]]$total_assessed[-c(1:3)],   # stays the same
+                                             key = "sim", value = "clinical_assessments"), by = "sim"),
+                            gather(out_lt_monit_45$interactions[[16]]$total_assessed[-c(1:3)]-out3$interactions[[16]]$total_assessed[-c(1:3)],
+                                   key = "sim", value = "monitoring_assessments"), by = "sim"),
+                  gather(out_lt_monit_45$interactions[[16]]$total_treated[-c(1:3)],
                          key = "sim", value = "treatment_initiations"), by = "sim")),
   cbind(scenario = "Every 30 years",
         left_join(left_join(left_join(gather(out4d$interactions[[16]]$total_screened[-c(1:3)],
@@ -963,6 +987,12 @@ freq_interactions_py_on_treatment <- rbind(
   data.frame(scenario = "No monitoring",
              sim = names(out3$py_on_treatment[[16]]),
              py_on_treatment = out3$py_on_treatment[[16]]),
+  data.frame(scenario = "At age 30",
+             sim = names(out_lt_monit_30$py_on_treatment[[16]]),
+             py_on_treatment = out_lt_monit_30$py_on_treatment[[16]]),
+  data.frame(scenario = "At age 45",
+             sim = names(out_lt_monit_45$py_on_treatment[[16]]),
+             py_on_treatment = out_lt_monit_45$py_on_treatment[[16]]),
   data.frame(scenario = "Every 30 years",
              sim = names(out4d$py_on_treatment[[16]]),
              py_on_treatment = out4d$py_on_treatment[[16]]),
@@ -1010,7 +1040,8 @@ freq_interactions_py_on_treatment <- rbind(
 # Outcome 1: DALYs
 freq_dalys_averted <-
   plot_hbv_deaths_averted(counterfactual_object = out2,
-                                scenario_objects = list(out3,out4,out5,out5a,
+                                scenario_objects = list(out3, out_lt_monit_30,
+                                                        out_lt_monit_45,out4,out5,out5a,
                                                         out4d, out4c, out4b, out4a,
                                                          out5b,out5c,out5d,
                                                          out6,out6a,out6b,out6c),
@@ -1022,6 +1053,8 @@ freq_dalys_averted <- subset(freq_dalys_averted, type == "number_averted" & by_y
 freq_dalys_averted$sim <- gsub("[^0-9]", "", freq_dalys_averted$sim)
 
 monitoring_freq_label <- list("No monitoring"="screen_2020_monit_0",
+                              "At age 30"="screen_2020_monit_lifetime_30",
+                              "At age 45"="screen_2020_monit_lifetime_45",
                               "Every 30 years"="screen_2020_monit_30",
                               "Every 25 years"="screen_2020_monit_25",
                               "Every 20 years"="screen_2020_monit_20",
@@ -1039,7 +1072,7 @@ monitoring_freq_label <- list("No monitoring"="screen_2020_monit_0",
 freq_dalys_averted$scenario <- factor(freq_dalys_averted$scenario)
 levels(freq_dalys_averted$scenario) <- monitoring_freq_label
 
-# Cohort DALYS
+# Cohort DALYS (to add lifetime monitoring)
 freq_dalys_averted_cohort <-
   plot_hbv_deaths_averted_cohort(counterfactual_object = out1,
                                  scenario_objects = list(out3,out4,out5,out5a,
@@ -1059,7 +1092,8 @@ levels(freq_dalys_averted_cohort$scenario) <- monitoring_freq_label
 # Outcome 2: HBV-related deaths
 freq_hbv_deaths_averted <-
   plot_hbv_deaths_averted(counterfactual_object = out2,
-                          scenario_objects = list(out3,out4,out5,out5a,
+                          scenario_objects = list(out3,out_lt_monit_30, out_lt_monit_45,
+                                                  out4,out5,out5a,
                                                   out4d, out4c, out4b, out4a,
                                                   out5b,out5c,out5d,
                                                   out6,out6a,out6b,out6c),
@@ -1073,6 +1107,7 @@ freq_hbv_deaths_averted$scenario <- factor(freq_hbv_deaths_averted$scenario)
 levels(freq_hbv_deaths_averted$scenario) <- monitoring_freq_label
 
 # Extra outcome: Proportion of HBV-related deaths in the cohort
+# (to add lifetime monitoring)
 freq_hbv_deaths_averted_cohort <-
   plot_hbv_deaths_averted_cohort(counterfactual_object = out1,
                           scenario_objects = list(out3,out4,out5,out5a,
@@ -1131,6 +1166,10 @@ assemble_discounted_interactions_for_monitoring_frequencies <- function(scenario
 freq_interactions_disc <- rbind(
   cbind(scenario = "No monitoring",
         assemble_discounted_interactions_for_monitoring_frequencies(out3)),
+  cbind(scenario = "At age 30",
+        assemble_discounted_interactions_for_monitoring_frequencies(out_lt_monit_30)),
+  cbind(scenario = "At age 45",
+        assemble_discounted_interactions_for_monitoring_frequencies(out_lt_monit_45)),
   cbind(scenario = "Every 30 years",
         assemble_discounted_interactions_for_monitoring_frequencies(out4d)),
   cbind(scenario = "Every 25 years",
@@ -1165,6 +1204,16 @@ freq_interactions_disc <- rbind(
 freq_interactions_py_on_treatment_disc <- rbind(
   data.frame(scenario = "No monitoring",
              discount_outcome_2020_to_2100(scenario_object=out3,
+                                           object_to_subtract=NULL,
+                                           outcome="py_on_treatment",
+                                           yearly_discount_rate=annual_discounting_rate)),
+  data.frame(scenario = "At age 30",
+             discount_outcome_2020_to_2100(scenario_object=out_lt_monit_30,
+                                           object_to_subtract=NULL,
+                                           outcome="py_on_treatment",
+                                           yearly_discount_rate=annual_discounting_rate)),
+  data.frame(scenario = "At age 45",
+             discount_outcome_2020_to_2100(scenario_object=out_lt_monit_45,
                                            object_to_subtract=NULL,
                                            outcome="py_on_treatment",
                                            yearly_discount_rate=annual_discounting_rate)),
@@ -1249,6 +1298,16 @@ freq_hbv_deaths_averted_disc <- rbind(
                                       object_to_subtract=out3,
                                       outcome="cum_hbv_deaths",
                                       yearly_discount_rate=annual_discounting_rate)),
+  cbind(scenario = "At age 30",
+        discount_outcome_2020_to_2100(scenario_object=out2,
+                                      object_to_subtract=out_lt_monit_30,
+                                      outcome="cum_hbv_deaths",
+                                      yearly_discount_rate=annual_discounting_rate)),
+  cbind(scenario = "At age 45",
+        discount_outcome_2020_to_2100(scenario_object=out2,
+                                      object_to_subtract=out_lt_monit_45,
+                                      outcome="cum_hbv_deaths",
+                                      yearly_discount_rate=annual_discounting_rate)),
   cbind(scenario = "Every 30 years",
         discount_outcome_2020_to_2100(scenario_object=out2,
                                       object_to_subtract=out4d,
@@ -1328,6 +1387,16 @@ freq_dalys_averted_disc <- rbind(
   cbind(scenario = "No monitoring",
         discount_outcome_2020_to_2100(scenario_object=out2,
                                       object_to_subtract=out3,
+                                      outcome="dalys",
+                                      yearly_discount_rate=annual_discounting_rate)),
+  cbind(scenario = "At age 30",
+        discount_outcome_2020_to_2100(scenario_object=out2,
+                                      object_to_subtract=out_lt_monit_30,
+                                      outcome="dalys",
+                                      yearly_discount_rate=annual_discounting_rate)),
+  cbind(scenario = "At age 45",
+        discount_outcome_2020_to_2100(scenario_object=out2,
+                                      object_to_subtract=out_lt_monit_45,
                                       outcome="dalys",
                                       yearly_discount_rate=annual_discounting_rate)),
   cbind(scenario = "Every 30 years",
@@ -1463,12 +1532,17 @@ colnames(freq_df_disc_outcomes)[colnames(freq_df_disc_outcomes)=="ly_saved"] <- 
 
 # A) No discounting ----
 
+# Exclude strategies that have no clinical relevance (monitor > every 10/15 years)
+freq_df2 <- subset(freq_df, !(scenario %in% c("Every 30 years", "Every 25 years",
+                   "Every 20 years", "Every 15 years", #"Every 10 years",
+                   "Every 9 years", "Every 8 years", "Every 7 years", "Every 6 years")))
+
 dominance_prob_list <- list()
 
 for(i in 1:183) {
   print(i)
-  dominance_prob_list[[i]] <- freq_df[which(freq_df$sim==
-                                                             unique(freq_df$sim)[i]),]
+  dominance_prob_list[[i]] <- freq_df2[which(freq_df2$sim==
+                                                             unique(freq_df2$sim)[i]),]
   dominance_prob_list[[i]] <- assign_dominated_strategies(dominance_prob_list[[i]],
                                                           exposure="total_cost",
                                                           outcome="dalys_averted")
@@ -1487,19 +1561,21 @@ ggplot(dominance_prob_result) +
   geom_col(aes(x=reorder(scenario, desc(prob_non_dominated)), y = prob_non_dominated)) +
   theme_bw()
 
+# Lifetime monitoring at age 30 or age 45 are dominated irrespective of
+# whether every 15 years is included.
+# If monitoring frequencies after lifetime monitoring start at every 5 years, at age 30 is
+# not dominated.
+
 # Calculate ICER by simulation
 # Previous plot shows no strategies are dominated, so including all
-#freq_df2 <- freq_df
-#freq_df <- subset(freq_df, scenario %in% c("No monitoring",
-#                                           "Every 10 years",
-#                                           "Every 5 years", "Every 1 year"))
+freq_df2 <- subset(freq_df2, !(scenario %in% c("At age 45", "At age 30")))
 
 icer_list <- list()
 
 for(i in 1:183) {
   print(i)
-  icer_list[[i]] <- freq_df[which(freq_df$sim==
-                                                   unique(freq_df$sim)[i]),]
+  icer_list[[i]] <- freq_df2[which(freq_df2$sim==
+                                                   unique(freq_df2$sim)[i]),]
   icer_list[[i]] <- calculate_icer_per_sim(icer_list[[i]],
                                            exposure="total_cost",
                                            outcome="dalys_averted")
@@ -1513,6 +1589,12 @@ icer_result <- group_by(icer_df, scenario, comparator) %>%
   arrange(icer_median)
 icer_result
 
+# Including lifetime monitoring strategies, every 10 years and then yearly
+# from every 5 years, every 10 years would be the most cost-effective strategy under the WTP
+# on average and would dominate the lifetime monitoring strategies. Even
+# if every 10 years if not considered feasible and would be excluded, 5-yearly monitoring
+# would have low probability of being cost-effective, but in this case at age 30 would not
+# be dominated and would represent the most cost-effective strategy under the WTP.
 
 # Histograms of ICER
 # Manually remove outer quantiles from every 1 year scenario with limits but need to do the same for all
@@ -1539,10 +1621,16 @@ ggplot(icer_result[icer_result$scenario != "Status quo",]) +
 # B) Discounting of costs and outcomes ----
 dominance_prob_list <- list()
 
+freq_df_disc2 <- freq_df_disc
+# Exclude strategies that have no clinical relevance (monitor > every 10/15 years)
+freq_df_disc2 <- subset(freq_df_disc, !(scenario %in% c("Every 30 years", "Every 25 years",
+                                              "Every 20 years", "Every 15 years",# "Every 10 years",
+                                              "Every 9 years", "Every 8 years", "Every 7 years", "Every 6 years")))
+
 for(i in 1:183) {
   print(i)
-  dominance_prob_list[[i]] <- freq_df_disc[which(freq_df_disc$sim==
-                                                   unique(freq_df_disc$sim)[i]),]
+  dominance_prob_list[[i]] <- freq_df_disc2[which(freq_df_disc2$sim==
+                                                   unique(freq_df_disc2$sim)[i]),]
   dominance_prob_list[[i]] <- assign_dominated_strategies(dominance_prob_list[[i]],
                                                           exposure="total_cost",
                                                           outcome="dalys_averted")
@@ -1562,19 +1650,18 @@ ggplot(dominance_prob_result) +
   theme_bw()
 
 # Calculate ICER by simulation
-# Previous plot shows no strategies are dominated, so including all
-freq_df_disc <- freq_df_discx
-freq_df_disc <- subset(freq_df_disc, scenario %in% c("No treatment", "No monitoring",
-                                                     "Every 15 years",
-                                                     "Every 10 years",
-                                                     "Every 5 years", "Every 1 year"))
+# Including all, lifetime monitoring strategies are dominated
+# Excluding all regular frequencies > every 10 years, plus 6-9 years, lifetime monitoring strategies are dominated
+# Excluding all regular frequencies > every 5 years, only at age 45 has < 50% prop_non_dominated
+freq_df_disc2 <- subset(freq_df_disc2, !(scenario %in% c("At age 30", "At age 45")))
+#freq_df_disc2 <- subset(freq_df_disc2, !(scenario %in% c("At age 45")))
 
 icer_list <- list()
 
 for(i in 1:183) {
   print(i)
-  icer_list[[i]] <- freq_df_disc[which(freq_df_disc$sim==
-                                         unique(freq_df_disc$sim)[i]),]
+  icer_list[[i]] <- freq_df_disc2[which(freq_df_disc2$sim==
+                                         unique(freq_df_disc2$sim)[i]),]
   icer_list[[i]] <- calculate_icer_per_sim(icer_list[[i]],
                                            exposure="total_cost",
                                            outcome="dalys_averted")
@@ -1588,6 +1675,59 @@ icer_result_disc <- group_by(icer_df, scenario, comparator) %>%
   arrange(icer_median)
 icer_result_disc
 
+# Cost-effectiveness acceptability curve for different scenarios
+acceptability1 <- 0
+acceptability2 <- 0
+acceptability3 <- 0
+acceptability4 <- 0
+acceptability5 <- 0
+scenario1 <- "No monitoring"
+scenario2 <- "Every 30 years"
+#scenario2 <- "Every 10 years"
+#scenario2 <- "At age 30"
+scenario3 <- "Every 15 years"
+#scenario3 <- "Every 5 years"
+scenario4 <- "Every 10 years"
+#scenario4 <- "Every 4 years"
+scenario5 <- "Every 5 years"
+
+for (i in 1:752) {
+  acceptability1[i] <-
+    length(which(icer_df[icer_df$scenario==scenario1,]$icer<=i))/183
+  acceptability2[i] <-
+    length(which(icer_df[icer_df$scenario==scenario2,]$icer<=i))/183
+  acceptability3[i] <-
+    length(which(icer_df[icer_df$scenario==scenario3,]$icer<=i))/183
+  acceptability4[i] <-
+    length(which(icer_df[icer_df$scenario==scenario4,]$icer<=i))/183
+  acceptability5[i] <-
+    length(which(icer_df[icer_df$scenario==scenario5,]$icer<=i))/183
+}
+acceptability_curve <- data.frame(scenario = rep(c(scenario1,scenario2,
+                                                   scenario3, scenario4,
+                                                   scenario5),
+                                                 each = 752),
+                                  wtp = rep(1:752, times=5),
+                                  prob_cost_effective = c(acceptability1,
+                                                          acceptability2,
+                                                          acceptability3, acceptability4,
+                                                          acceptability5))
+
+ggplot(acceptability_curve) +
+  geom_line(aes(x=wtp, y = prob_cost_effective*100,
+                group = reorder(scenario, -prob_cost_effective),
+                colour = reorder(scenario, -prob_cost_effective))) +
+  geom_vline(xintercept=391, linetype="dashed") +
+  geom_vline(xintercept=518, linetype="dashed") +
+  ylab("Probability cost-effective (%)") +
+  xlab("Willingness to pay (USD/DALY averted)") +
+  labs(colour = "Monitoring scenario") +
+  theme_bw() +
+  ylim(0,100) +
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        legend.text = element_text(size = 14),
+        legend.title = element_text(size = 14))
 
 # C) Discount only costs ----
 dominance_prob_list <- list()
@@ -1642,22 +1782,33 @@ icer_result_disc_cost
 
 # Analysis: calculate incremental impact (no costs, no discounting) ----
 
+# Don't think this one is correct!
+
 # Incremental DALYs averted for every 5 years monitoring interval
 diff_list <- list()
 
 freq_df_subs <- subset(freq_df, scenario %in% c("No monitoring",
-                                                "Every 30 years", "Every 25 years",
-                                                "Every 20 years","Every 15 years",
+                                                "Every 30 years",
+                                                "At age 30", "At age 45",
+                                                #"Every 25 years",
+                                                #"Every 20 years",
+                                                "Every 15 years",
                                                 "Every 10 years","Every 5 years",
                                                 "Every 1 year"))
 
 for(i in 1:183) {
   print(i)
   diff_list[[i]] <- freq_df_subs[which(freq_df_subs$sim==
-                                    unique(freq_df_subs$sim)[i]),]
-  diff_list[[i]] <- calculate_icer_per_sim(diff_list[[i]],
-                                           exposure="total_cost",
-                                           outcome="dalys_averted")
+                                         unique(freq_df_subs$sim)[i]),]
+#  diff_list[[i]] <- calculate_icer_per_sim(diff_list[[i]],
+#                                           exposure="total_cost",
+#                                           outcome="dalys_averted")
+  diff_list[[i]] <- arrange(diff_list[[i]], dalys_averted)
+  diff_list[[i]]$diff_outcome <- c(diff_list[[i]][,"dalys_averted"][1],
+                                      diff(diff_list[[i]][,"dalys_averted"]))
+  diff_list[[i]]$comparator <- lag(diff_list[[i]]$scenario)
+
+
 }
 diff_df <- do.call("rbind", diff_list)
 
@@ -1671,11 +1822,11 @@ diff_result
 
 # Plot incremental DALYs averted between each 2 strategies
 diff_df$scenario <- factor(as.character(diff_df$scenario),
-                           levels = c("No monitoring", "Every 30 years", "Every 25 years",
-                                      "Every 20 years", "Every 15 years", "Every 10 years",
+                           levels = c("No monitoring", "At age 30", "Every 30 years",
+                                     "At age 45", "Every 15 years", "Every 10 years",
                                       "Every 5 years", "Every 1 year"))
 
-ggplot(subset(diff_df, scenario != "No monitoring" & scenario != "Every 30 years"),
+ggplot(subset(diff_df, scenario != "No monitoring"),
        aes(x= scenario, y = diff_outcome)) +
     geom_point(alpha=0.2) +
  #   geom_line(aes(x= scenario, y = diff_outcome, group = sim),alpha=0.05) +
@@ -1885,7 +2036,10 @@ ggplot(subset(diff_df_cohort_deaths2, scenario != "Every 15 years" & scenario !=
 # cohort without any treatment compared to monitoring every 10 years
 
 # Forest plot ----
-freq_df_daly_summary <- subset(freq_df, scenario %in% c("No monitoring", "Every 30 years", "Every 25 years",
+freq_df_daly_summary <- subset(freq_df, scenario %in% c("No monitoring",
+                                                        "At age 30", "At age 45",
+                                                        "Every 30 years",
+                                                        "Every 25 years",
                                 "Every 20 years", "Every 15 years", "Every 10 years",
                                 "Every 5 years", "Every 1 year")) %>%
   group_by(scenario) %>%
@@ -2064,6 +2218,50 @@ ggplot(data = subset(freq_df, scenario %in%
                axis.title = element_text(size = 15),
                legend.text = element_text(size = 14),
                legend.title = element_text(size = 14))
+
+# Plot with discounting
+freq_df_disc_median <- group_by(freq_df_disc, scenario) %>%
+  summarise(deaths_averted = median(deaths_averted),
+            total_interactions = median(total_interactions),
+            dalys_averted = median(dalys_averted),
+            total_cost = median(total_cost))
+
+ggplot(data = freq_df_disc) +
+  geom_line(aes(x = dalys_averted, y = total_cost, group = sim),
+            colour = "grey", alpha = 0.3) +
+  geom_point(aes(x = dalys_averted, y = total_cost,
+                 group = reorder(scenario, total_cost),
+                 colour = reorder(scenario, total_cost)), alpha = 0.15) +
+  stat_ellipse(data = subset(freq_df_disc, !(scenario %in%
+                               c("No treatment"))),
+               aes(x = dalys_averted, y = total_cost,
+                   group = reorder(scenario, total_cost), fill= reorder(scenario, total_cost)),
+               geom = "polygon",
+               alpha = 0.2) +
+  geom_line(data = subset(freq_df_disc_median, !(scenario %in% c("At age 30", "At age 45"))),
+            aes(x = dalys_averted, y = total_cost), size = 1) +
+  geom_point(data = freq_df_disc_median,
+             aes(x = dalys_averted, y = total_cost,
+                 group = reorder(scenario, total_cost), colour = reorder(scenario, total_cost)),
+             size = 5) +
+  geom_point(data = freq_df_disc_median,
+             aes(x = dalys_averted, y = total_cost,
+                 group =reorder(scenario, total_cost), colour = reorder(scenario, total_cost)),
+             size = 5, shape = 1, colour = "black") +
+  #  scale_fill_manual(values = rev(brewer.pal(11,"RdYlBu"))) +
+  #  scale_colour_manual("Monitoring frequency",
+  #                      values = c("black", rev(brewer.pal(11,"RdYlBu")))) +
+  guides(fill=FALSE) +
+  geom_abline(slope=391, intercept = 0, linetype = "dashed") +
+  geom_abline(slope=518, intercept = 0, linetype = "dashed") +
+  ylab("Incremental total cost (USD 2019)") +
+  xlab("Incremental DALYs averted") +
+  labs(colour="Monitoring frequencies") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        legend.text = element_text(size = 14),
+        legend.title = element_text(size = 14))
 
 
 # Minimal deaths averted vs interactions plot for IVHEM ----

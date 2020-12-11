@@ -31,9 +31,15 @@ out2n <- readRDS(paste0(out_path, "out2_status_quo_301120.rds"))
 out2n <- out2n[[1]]
 out1n <- readRDS(paste0(out_path_monit, "a1_out1_status_quo_cohort_301120.rds"))
 out1n <- out1n[[1]]
-# No repeat screening (2020 only)
+# No repeat screening (2020 only) 90% coverage
 out3n <- readRDS(paste0(out_path_monit, "a1_out3_screen_2020_monit_0_011220.rds"))
 out3n <- out3n[[1]]
+
+# 2020 screen with 10-yearly monitoring, 90% coverage
+out4 <- readRDS(paste0(out_path_monit, "a1_out4_screen_2020_monit_10_301120.rds"))
+out4 <- out4[[1]]
+out5 <- readRDS(paste0(out_path_monit, "a1_out5_screen_2020_monit_5_301120.rds"))
+out5 <- out5[[1]]
 
 # With repeat screening & 90% cov
 out8b_2030n <- readRDS(paste0(out_path, "a1_out8b_monit_0_screen_10b_2030_041220.rds"))
@@ -49,11 +55,21 @@ out8b_2030_monit10n <- out8b_2030_monit10n[[1]]
 out8b_2040_monit10n <- readRDS(paste0(out_path, "a1_out8b_monit_10_screen_10b_2040_071220.rds"))
 out8b_2040_monit10n <- out8b_2040_monit10n[[1]]
 
-# 2020 screen with 10-yearly monitoring
-out4 <- readRDS(paste0(out_path_monit, "a1_out4_screen_2020_monit_10_301120.rds"))
-out4 <- out4[[1]]
-out5 <- readRDS(paste0(out_path_monit, "a1_out5_screen_2020_monit_5_301120.rds"))
-out5 <- out5[[1]]
+# No repeat screening (2020 only), 50% coverage
+out3_cov50n <- readRDS(paste0(out_path, "ea1_out3_screen_2020_monit_0_091220.rds"))
+out3_cov50n <- out3_cov50n[[1]]
+# 2020 screen with 10-yearly monitoring, 50% coverage
+out4_cov50n <- readRDS(paste0(out_path, "ea1_out4_screen_2020_monit_10_091220.rds"))
+out4_cov50n <- out4_cov50n[[1]]
+# With repeat screening & 50% coverage
+out8b_2030_cov50n <- readRDS(paste0(out_path, "ea1_out8b_monit_0_screen_10b_2030_101220.rds"))
+out8b_2030_cov50n <- out8b_2030_cov50n[[1]]
+out8b_2040_cov50n <- readRDS(paste0(out_path, "ea1_out8b_monit_0_screen_10b_2040_091220.rds"))
+out8b_2040_cov50n <- out8b_2040_cov50n[[1]]
+out8b_2030_monit10_cov50n <- readRDS(paste0(out_path, "ea1_out8b_monit_10_screen_10b_2030_101220.rds"))
+out8b_2030_monit10_cov50n <- out8b_2030_monit10_cov50n[[1]]
+out8b_2040_monit10_cov50n <- readRDS(paste0(out_path, "ea1_out8b_monit_10_screen_10b_2040_091220.rds"))
+out8b_2040_monit10_cov50n <- out8b_2040_monit10_cov50n[[1]]
 
 # OLD FILES
 
@@ -949,6 +965,536 @@ icer_result <- group_by(icer_df, scenario, comparator) %>%
             icer_upper = quantile(icer, 0.975)) %>%
   arrange(icer_median)
 icer_result
+
+# CER plot
+ggplot(subset(incremental_df_disc, scenario != "No treatment")) +
+  stat_ellipse(aes(x = dalys_averted, y = total_cost,
+                   group = reorder(scenario, total_cost),
+                   fill= reorder(scenario, total_cost)),
+               geom = "polygon",
+               alpha = 0.2) +
+  geom_point(data= group_by(incremental_df_disc, scenario) %>% summarise(dalys_averted=median(dalys_averted),
+                                                                         total_cost = median(total_cost)),
+             aes(x=dalys_averted, y = total_cost, group = reorder(scenario, total_cost),
+                 colour = reorder(scenario, total_cost)), size = 5) +
+  scale_fill_manual(values = rev(brewer.pal(7,"RdYlBu"))) +
+  scale_colour_manual("Scenarios",
+                      labels = c("screen_2020_monit_0" = "2020 screen, no monitoring",
+                                 "screen_2020_monit_10" = "2020 screen, monitor every 10 years",
+                                 "monit_0_screen_10b_2030" = "2020+2030 screen, no monitoring",
+                                 "monit_0_screen_10b_2040" = "2020+2030+2040 screen, no monitoring",
+                                 "monit_10_screen_10b_2030" = "2020+2030 screen, monitor every 10 years",
+                                 "monit_10_screen_10b_2040" = "2020+2030+2040 screen, monitor every 10 years"),
+                      values = c("black", rev(brewer.pal(7,"RdYlBu")))) +
+  ylab("Total cost (USD 2019)") +
+  xlab("DALYs averted") +
+  guides(fill=FALSE) +
+  geom_abline(slope=391, linetype = "dashed") +
+  geom_abline(slope=518, linetype = "dashed") +
+  theme_bw()
+
+
+# For 50% coverage and no monitoring, compare monitoring vs repeat screen (no discounting) ----
+interactions <- rbind(
+  cbind(scenario = "screen_2020_monit_0",
+        left_join(left_join(left_join(gather(out3n$interactions[[16]]$total_screened[-c(1:3)],
+                                             key = "sim", value = "hbsag_tests"),
+                                      gather(out3n$interactions[[16]]$total_assessed[-c(1:3)],
+                                             key = "sim", value = "clinical_assessments"), by = "sim"),
+                            gather(out3n$interactions[[16]]$total_assessed[-c(1:3)]-out3n$interactions[[16]]$total_assessed[-c(1:3)],
+                                   key = "sim", value = "monitoring_assessments"), by = "sim"),
+                  gather(out3n$interactions[[16]]$total_treated[-c(1:3)],
+                         key = "sim", value = "treatment_initiations"), by = "sim")),
+  cbind(scenario = "screen_2020_monit_0_cov50",
+        left_join(left_join(left_join(gather(out3_cov50n$interactions[[16]]$total_screened[-c(1:3)],
+                                             key = "sim", value = "hbsag_tests"),
+                                      gather(out3_cov50n$interactions[[16]]$total_assessed[-c(1:3)],
+                                             key = "sim", value = "clinical_assessments"), by = "sim"),
+                            gather(out3_cov50n$interactions[[16]]$total_assessed[-c(1:3)]-out3_cov50n$interactions[[16]]$total_assessed[-c(1:3)],
+                                   key = "sim", value = "monitoring_assessments"), by = "sim"),
+                  gather(out3_cov50n$interactions[[16]]$total_treated[-c(1:3)],
+                         key = "sim", value = "treatment_initiations"), by = "sim")),
+  cbind(scenario = "monit_0_screen_10b_2030_cov50",
+        left_join(left_join(left_join(gather(out8b_2030_cov50n$interactions[[16]]$total_screened[-c(1:3)],
+                                             key = "sim", value = "hbsag_tests"),
+                                      gather(out8b_2030_cov50n$interactions[[16]]$total_assessed[-c(1:3)],
+                                             key = "sim", value = "clinical_assessments"), by = "sim"),
+                            gather(out8b_2030_cov50n$interactions[[16]]$total_assessed[-c(1:3)]-out8b_2030_cov50n$interactions[[16]]$total_assessed[-c(1:3)],
+                                   key = "sim", value = "monitoring_assessments"), by = "sim"),
+                  gather(out8b_2030_cov50n$interactions[[16]]$total_treated[-c(1:3)],
+                         key = "sim", value = "treatment_initiations"), by = "sim")),
+  cbind(scenario = "monit_0_screen_10b_2040_cov50",
+        left_join(left_join(left_join(gather(out8b_2040_cov50n$interactions[[16]]$total_screened[-c(1:3)],
+                                             key = "sim", value = "hbsag_tests"),
+                                      gather(out8b_2040_cov50n$interactions[[16]]$total_assessed[-c(1:3)],
+                                             key = "sim", value = "clinical_assessments"), by = "sim"),
+                            gather(out8b_2040_cov50n$interactions[[16]]$total_assessed[-c(1:3)]-out8b_2040_cov50n$interactions[[16]]$total_assessed[-c(1:3)],
+                                   key = "sim", value = "monitoring_assessments"), by = "sim"),
+                  gather(out8b_2040_cov50n$interactions[[16]]$total_treated[-c(1:3)],
+                         key = "sim", value = "treatment_initiations"), by = "sim")),
+  cbind(scenario = "screen_2020_monit_10_cov50",
+        left_join(left_join(left_join(gather(out4_cov50n$interactions[[16]]$total_screened[-c(1:3)],
+                                             key = "sim", value = "hbsag_tests"),
+                                      gather(out3_cov50n$interactions[[16]]$total_assessed[-c(1:3)],
+                                             key = "sim", value = "clinical_assessments"), by = "sim"),
+                            gather(out4_cov50n$interactions[[16]]$total_assessed[-c(1:3)]-out3_cov50n$interactions[[16]]$total_assessed[-c(1:3)],
+                                   key = "sim", value = "monitoring_assessments"), by = "sim"),
+                  gather(out4_cov50n$interactions[[16]]$total_treated[-c(1:3)],
+                         key = "sim", value = "treatment_initiations"), by = "sim")),
+  cbind(scenario = "monit_10_screen_10b_2030_cov50",
+        left_join(left_join(left_join(gather(out8b_2030_monit10_cov50n$interactions[[16]]$total_screened[-c(1:3)],
+                                             key = "sim", value = "hbsag_tests"),
+                                      gather(out8b_2030_cov50n$interactions[[16]]$total_assessed[-c(1:3)],
+                                             key = "sim", value = "clinical_assessments"), by = "sim"),
+                            gather(out8b_2030_monit10_cov50n$interactions[[16]]$total_assessed[-c(1:3)]-
+                                     out8b_2030_cov50n$interactions[[16]]$total_assessed[-c(1:3)],
+                                   key = "sim", value = "monitoring_assessments"), by = "sim"),
+                  gather(out8b_2030_monit10_cov50n$interactions[[16]]$total_treated[-c(1:3)],
+                         key = "sim", value = "treatment_initiations"), by = "sim")),
+  cbind(scenario = "monit_10_screen_10b_2040_cov50",
+        left_join(left_join(left_join(gather(out8b_2040_monit10_cov50n$interactions[[16]]$total_screened[-c(1:3)],
+                                             key = "sim", value = "hbsag_tests"),
+                                      gather(out8b_2040_cov50n$interactions[[16]]$total_assessed[-c(1:3)],
+                                             key = "sim", value = "clinical_assessments"), by = "sim"),
+                            gather(out8b_2040_monit10_cov50n$interactions[[16]]$total_assessed[-c(1:3)]-
+                                     out8b_2040_cov50n$interactions[[16]]$total_assessed[-c(1:3)],
+                                   key = "sim", value = "monitoring_assessments"), by = "sim"),
+                  gather(out8b_2040_monit10_cov50n$interactions[[16]]$total_treated[-c(1:3)],
+                         key = "sim", value = "treatment_initiations"), by = "sim"))
+)
+
+
+py_on_treatment <- rbind(
+  data.frame(scenario = "screen_2020_monit_0",
+             sim = names(out3n$py_on_treatment[[16]]),
+             py_on_treatment = out3n$py_on_treatment[[16]]),
+  data.frame(scenario = "screen_2020_monit_0_cov50",
+             sim = names(out3_cov50n$py_on_treatment[[16]]),
+             py_on_treatment = out3_cov50n$py_on_treatment[[16]]),
+  data.frame(scenario = "monit_0_screen_10b_2030_cov50",
+             sim = names(out8b_2030_cov50n$py_on_treatment[[16]]),
+             py_on_treatment = out8b_2030_cov50n$py_on_treatment[[16]]),
+  data.frame(scenario = "monit_0_screen_10b_2040_cov50",
+             sim = names(out8b_2040_cov50n$py_on_treatment[[16]]),
+             py_on_treatment = out8b_2040_cov50n$py_on_treatment[[16]]),
+  data.frame(scenario = "screen_2020_monit_10_cov50",
+             sim = names(out4_cov50n$py_on_treatment[[16]]),
+             py_on_treatment = out4_cov50n$py_on_treatment[[16]]),
+  data.frame(scenario = "monit_10_screen_10b_2030_cov50",
+             sim = names(out8b_2030_monit10_cov50n$py_on_treatment[[16]]),
+             py_on_treatment = out8b_2030_monit10_cov50n$py_on_treatment[[16]]),
+  data.frame(scenario = "monit_10_screen_10b_2040_cov50",
+             sim = names(out8b_2040_monit10_cov50n$py_on_treatment[[16]]),
+             py_on_treatment = out8b_2040_monit10_cov50n$py_on_treatment[[16]])
+)
+
+# Outcome 1: DALYs
+dalys_averted <-
+  plot_hbv_deaths_averted(counterfactual_object = out2n,
+                          scenario_objects = list(out3n, out3_cov50n,out8b_2030_cov50n,
+                                                  out8b_2040_cov50n,
+                                                  out4_cov50n, out8b_2030_monit10_cov50n,
+                                                  out8b_2040_monit10_cov50n),
+                          outcome_to_avert = "dalys",
+                          outcome_to_plot = "number_averted",
+                          counterfactual_label = "no treatment")
+dalys_averted <- subset(dalys_averted, type == "number_averted" & by_year == 2100) %>%
+  select(scenario, sim, value)
+dalys_averted$sim <- gsub("[^0-9]", "", dalys_averted$sim)
+
+# For cohort DALYS, would need to compare repeat screens to a different out1 (with repeat screen)
+
+# Outcome 2: HBV-related deaths
+deaths_averted <-
+  plot_hbv_deaths_averted(counterfactual_object = out2n,
+                          scenario_objects = list(out3n, out3_cov50n,out8b_2030_cov50n,
+                                                  out8b_2040_cov50n,
+                                                  out4_cov50n, out8b_2030_monit10_cov50n,
+                                                  out8b_2040_monit10_cov50n),
+                          outcome_to_avert = "cum_hbv_deaths",
+                          outcome_to_plot = "number_averted",
+                          counterfactual_label = "no treatment")
+deaths_averted <- subset(deaths_averted, type == "number_averted" & by_year == 2100) %>%
+  select(scenario, sim, value)
+deaths_averted$sim <- gsub("[^0-9]", "", deaths_averted$sim)
+
+# Combine into dataframe (No discounting)
+incremental_df <- create_incremental_plot_df(interactions_df=interactions,
+                                             py_on_treatment_df=py_on_treatment,
+                                             deaths_averted_df=deaths_averted,
+                                             ly_saved_df = dalys_averted, # replace LY by DALYs
+                                             hbsag_test_cost = 8.3,
+                                             clinical_assessment_cost = 84.4,
+                                             monitoring_assessment_cost = 40.1,
+                                             treatment_py_cost = 60,
+                                             ref_label = "No treatment")
+colnames(incremental_df)[colnames(incremental_df)=="ly_saved"] <- "dalys_averted"
+
+
+# Find dominated strategies and ICERs
+dominance_prob_list <- list()
+
+for(i in 1:183) {
+  print(i)
+  dominance_prob_list[[i]] <- incremental_df[which(incremental_df$sim==
+                                                     unique(incremental_df$sim)[i]),]
+  dominance_prob_list[[i]] <- assign_dominated_strategies(dominance_prob_list[[i]],
+                                                          exposure="total_cost",
+                                                          outcome="dalys_averted")
+}
+dominance_prob_df <- do.call("rbind", dominance_prob_list)
+dominance_prob_result <- group_by(dominance_prob_df, scenario, dominated) %>%
+  tally() %>%
+  spread(key = "dominated", value = "n") %>%
+  replace_na(list(No = 0, Yes = 0))
+dominance_prob_result$prob_non_dominated <- dominance_prob_result$No/
+  (dominance_prob_result$Yes+dominance_prob_result$No)
+# Any less than 50% chance of being non-dominated?
+any(dominance_prob_result$prob_non_dominated<0.5)
+
+ggplot(dominance_prob_result) +
+  geom_col(aes(x=reorder(scenario, desc(prob_non_dominated)), y = prob_non_dominated)) +
+  theme_bw()
+
+# Only 2020 screen with no monitoring and 2030 and 2040 screens with 10-yearly monitoring
+# has >50% probability of being non-dominated. (same as for 90% cov)
+# What if additionally adding the one-time screen without monitoring at 90% coverage?
+# Then the only non-dominated strategies are the one-time 90% coverage and the 2040
+# repeat screen with 10-yearly monitoring at 50% coverage!
+
+#incremental_df_non_dom <- subset(incremental_df, scenario %in% c("screen_2020_monit_0_cov50",
+#                                                                 "monit_10_screen_10b_2030_cov50",
+#                                                                 "monit_10_screen_10b_2040_cov50"))
+
+incremental_df_non_dom <- subset(incremental_df, scenario %in% c("screen_2020_monit_0",
+                                                                 "monit_10_screen_10b_2040_cov50"))
+
+icer_list <- list()
+for(i in 1:183) {
+  print(i)
+  icer_list[[i]] <- incremental_df_non_dom[which(incremental_df_non_dom$sim==
+                                                   unique(incremental_df_non_dom$sim)[i]),]
+  icer_list[[i]] <- calculate_icer_per_sim(icer_list[[i]],
+                                           exposure="total_cost",
+                                           outcome="dalys_averted")
+}
+icer_df <- do.call("rbind", icer_list)
+icer_result <- group_by(icer_df, scenario, comparator) %>%
+  arrange(sim,total_cost) %>%
+  summarise(icer_median = median(icer),
+            icer_lower = quantile(icer, 0.025),
+            icer_upper = quantile(icer, 0.975)) %>%
+  arrange(icer_median)
+icer_result
+# This suggests that monitoring becomes more cost-effective if there are also repeat screens?
+# If 90% coverage one-time is included, the 2040 50% cov with 10-yearly monitoring
+# is less likely to still be cost-effective.
+
+ggplot(subset(incremental_df, scenario != "No treatment")) +
+  stat_ellipse(aes(x = dalys_averted, y = total_cost,
+                   group = reorder(scenario, total_cost),
+                   fill= reorder(scenario, total_cost)),
+               geom = "polygon",
+               alpha = 0.2) +
+  geom_point(data= group_by(incremental_df, scenario) %>% summarise(dalys_averted=median(dalys_averted),
+                                                                    total_cost = median(total_cost)),
+             aes(x=dalys_averted, y = total_cost, group = reorder(scenario, total_cost),
+                 colour = reorder(scenario, total_cost)), size = 5) +
+  scale_fill_manual(values = rev(brewer.pal(7,"RdYlBu"))) +
+  scale_colour_manual("Scenarios",
+                      labels = c("screen_2020_monit_0" = "2020 screen, no monitoring",
+                                 "screen_2020_monit_10" = "2020 screen, monitor every 10 years",
+                                 "monit_0_screen_10b_2030" = "2020+2030 screen, no monitoring",
+                                 "monit_0_screen_10b_2040" = "2020+2030+2040 screen, no monitoring",
+                                 "monit_10_screen_10b_2030" = "2020+2030 screen, monitor every 10 years",
+                                 "monit_10_screen_10b_2040" = "2020+2030+2040 screen, monitor every 10 years"),
+                      values = c("black", rev(brewer.pal(7,"RdYlBu")))) +
+  ylab("Total cost (USD 2019)") +
+  xlab("DALYs averted") +
+  guides(fill=FALSE) +
+  geom_abline(slope=391, linetype = "dashed") +
+  geom_abline(slope=518, linetype = "dashed") +
+  theme_bw()
+
+# Most cost-effective startegy <WTP again was 2040 repeat screen+10-yearly monitoring.
+# With 90% coverage, 2030 repeat screen and 10-yearly monitoring were almost identical in
+# cost and effect, but with 50% coverage the repeat screen has more cost and effect
+# because there are not as many people to monitor in the cohort. It is at the second stage (2040)
+# that they are pretty much the same again.
+
+# With one-time 90% coverage included, this strategy dominates 2020 screens
+# with 50% coverage (with/without monitoring) and 2030 repeat screen without monitoring.
+# 2040 with monitoring dominates 2040 without monitoring and 2030 with monitoring.
+
+# For 50% coverage and no monitoring, compare monitoring vs repeat screen (with discounting) ----
+annual_discounting_rate <- 0.03
+
+assemble_discounted_interactions_for_screening_strategies <- function(scenario_object,
+                                                                      discount_rate = annual_discounting_rate,
+                                                                      assessment_object) {
+  # Compares monitoring to out3 and everything else to status quo
+  # at discount rate of 3%
+  out <- left_join(
+    left_join(
+      left_join(discount_outcome_2020_to_2100(scenario_object=scenario_object,
+                                              object_to_subtract=NULL,
+                                              outcome="interactions",
+                                              interaction_outcome="total_screened",
+                                              yearly_discount_rate=discount_rate,
+                                              interaction_colname = "hbsag_tests"),
+                discount_outcome_2020_to_2100(scenario_object=assessment_object,
+                                              object_to_subtract=NULL,
+                                              outcome="interactions",
+                                              interaction_outcome="total_assessed",
+                                              yearly_discount_rate=discount_rate,
+                                              interaction_colname = "clinical_assessments")),
+      discount_outcome_2020_to_2100(scenario_object=scenario_object,
+                                    object_to_subtract=assessment_object,
+                                    outcome="interactions",
+                                    interaction_outcome="total_assessed",
+                                    yearly_discount_rate=discount_rate,
+                                    interaction_colname = "monitoring_assessments")),
+    discount_outcome_2020_to_2100(scenario_object=scenario_object,
+                                  object_to_subtract=NULL,
+                                  outcome="interactions",
+                                  interaction_outcome="total_treated",
+                                  yearly_discount_rate=discount_rate,
+                                  interaction_colname = "treatment_initiations"))
+
+  return(out)
+}
+
+interactions_disc <- rbind(
+  cbind(scenario = "screen_2020_monit_0",
+        assemble_discounted_interactions_for_screening_strategies(out3n, assessment_object = out3n)),
+  cbind(scenario = "screen_2020_monit_0_cov50",
+        assemble_discounted_interactions_for_screening_strategies(out3_cov50n,
+                                                                  assessment_object = out3_cov50n)),
+  cbind(scenario = "monit_0_screen_10b_2030_cov50",
+        assemble_discounted_interactions_for_screening_strategies(out8b_2030_cov50n,
+                                                                  assessment_object = out8b_2030_cov50n)),
+  cbind(scenario = "monit_0_screen_10b_2040_cov50",
+        assemble_discounted_interactions_for_screening_strategies(out8b_2040_cov50n,
+                                                                  assessment_object = out8b_2040_cov50n)),
+  cbind(scenario = "screen_2020_monit_10_cov50",
+        assemble_discounted_interactions_for_screening_strategies(out4_cov50n,
+                                                                  assessment_object = out3_cov50n)),
+  cbind(scenario = "monit_10_screen_10b_2030_cov50",
+        assemble_discounted_interactions_for_screening_strategies(out8b_2030_monit10_cov50n,
+                                                                  assessment_object = out8b_2030_cov50n)),
+  cbind(scenario = "monit_10_screen_10b_2040_cov50",
+        assemble_discounted_interactions_for_screening_strategies(out8b_2040_monit10_cov50n,
+                                                                  assessment_object = out8b_2040_cov50n))
+)
+
+py_on_treatment_disc <- rbind(
+  data.frame(scenario = "screen_2020_monit_0",
+             discount_outcome_2020_to_2100(scenario_object=out3n,
+                                           object_to_subtract=NULL,
+                                           outcome="py_on_treatment",
+                                           yearly_discount_rate=annual_discounting_rate)),
+  data.frame(scenario = "screen_2020_monit_0_cov50",
+             discount_outcome_2020_to_2100(scenario_object=out3_cov50n,
+                                           object_to_subtract=NULL,
+                                           outcome="py_on_treatment",
+                                           yearly_discount_rate=annual_discounting_rate)),
+  data.frame(scenario = "monit_0_screen_10b_2030_cov50",
+             discount_outcome_2020_to_2100(scenario_object=out8b_2030_cov50n,
+                                           object_to_subtract=NULL,
+                                           outcome="py_on_treatment",
+                                           yearly_discount_rate=annual_discounting_rate)),
+  data.frame(scenario = "monit_0_screen_10b_2040_cov50",
+             discount_outcome_2020_to_2100(scenario_object=out8b_2040_cov50n,
+                                           object_to_subtract=NULL,
+                                           outcome="py_on_treatment",
+                                           yearly_discount_rate=annual_discounting_rate)),
+  data.frame(scenario = "screen_2020_monit_10_cov50",
+             discount_outcome_2020_to_2100(scenario_object=out4_cov50n,
+                                           object_to_subtract=NULL,
+                                           outcome="py_on_treatment",
+                                           yearly_discount_rate=annual_discounting_rate)),
+  data.frame(scenario = "monit_10_screen_10b_2030_cov50",
+             discount_outcome_2020_to_2100(scenario_object=out8b_2030_monit10_cov50n,
+                                           object_to_subtract=NULL,
+                                           outcome="py_on_treatment",
+                                           yearly_discount_rate=annual_discounting_rate)),
+  data.frame(scenario = "monit_10_screen_10b_2040_cov50",
+             discount_outcome_2020_to_2100(scenario_object=out8b_2040_monit10_cov50n,
+                                           object_to_subtract=NULL,
+                                           outcome="py_on_treatment",
+                                           yearly_discount_rate=annual_discounting_rate))
+)
+py_on_treatment_disc$sim <- gsub("[^0-9]", "", py_on_treatment_disc$sim)
+
+dalys_averted_disc <- rbind(
+  cbind(scenario = "screen_2020_monit_0",
+        discount_outcome_2020_to_2100(scenario_object=out2n,
+                                      object_to_subtract=out3n,
+                                      outcome="dalys",
+                                      yearly_discount_rate=annual_discounting_rate)),
+  cbind(scenario = "screen_2020_monit_0_cov50",
+        discount_outcome_2020_to_2100(scenario_object=out2n,
+                                      object_to_subtract=out3_cov50n,
+                                      outcome="dalys",
+                                      yearly_discount_rate=annual_discounting_rate)),
+  data.frame(scenario = "monit_0_screen_10b_2030_cov50",
+             discount_outcome_2020_to_2100(scenario_object=out2n,
+                                           object_to_subtract=out8b_2030_cov50n,
+                                           outcome="dalys",
+                                           yearly_discount_rate=annual_discounting_rate)),
+  data.frame(scenario = "monit_0_screen_10b_2040_cov50",
+             discount_outcome_2020_to_2100(scenario_object=out2n,
+                                           object_to_subtract=out8b_2040_cov50n,
+                                           outcome="dalys",
+                                           yearly_discount_rate=annual_discounting_rate)),
+  data.frame(scenario = "screen_2020_monit_10_cov50",
+             discount_outcome_2020_to_2100(scenario_object=out2n,
+                                           object_to_subtract=out4_cov50n,
+                                           outcome="dalys",
+                                           yearly_discount_rate=annual_discounting_rate)),
+  data.frame(scenario = "monit_10_screen_10b_2030_cov50",
+             discount_outcome_2020_to_2100(scenario_object=out2n,
+                                           object_to_subtract=out8b_2030_monit10_cov50n,
+                                           outcome="dalys",
+                                           yearly_discount_rate=annual_discounting_rate)),
+  data.frame(scenario = "monit_10_screen_10b_2040_cov50",
+             discount_outcome_2020_to_2100(scenario_object=out2n,
+                                           object_to_subtract=out8b_2040_monit10_cov50n,
+                                           outcome="dalys",
+                                           yearly_discount_rate=annual_discounting_rate))
+)
+dalys_averted_disc$sim <- gsub("[^0-9]", "", dalys_averted_disc$sim)
+colnames(dalys_averted_disc)[colnames(dalys_averted_disc) == "dalys"] <-
+  "value"
+
+deaths_averted_disc <- rbind(
+  cbind(scenario = "screen_2020_monit_0",
+        discount_outcome_2020_to_2100(scenario_object=out2n,
+                                      object_to_subtract=out3n,
+                                      outcome="cum_hbv_deaths",
+                                      yearly_discount_rate=annual_discounting_rate)),
+  cbind(scenario = "screen_2020_monit_0_cov50",
+        discount_outcome_2020_to_2100(scenario_object=out2n,
+                                      object_to_subtract=out3_cov50n,
+                                      outcome="cum_hbv_deaths",
+                                      yearly_discount_rate=annual_discounting_rate)),
+  data.frame(scenario = "monit_0_screen_10b_2030_cov50",
+             discount_outcome_2020_to_2100(scenario_object=out2n,
+                                           object_to_subtract=out8b_2030_cov50n,
+                                           outcome="cum_hbv_deaths",
+                                           yearly_discount_rate=annual_discounting_rate)),
+  data.frame(scenario = "monit_0_screen_10b_2040_cov50",
+             discount_outcome_2020_to_2100(scenario_object=out2n,
+                                           object_to_subtract=out8b_2040_cov50n,
+                                           outcome="cum_hbv_deaths",
+                                           yearly_discount_rate=annual_discounting_rate)),
+  data.frame(scenario = "screen_2020_monit_10_cov50",
+             discount_outcome_2020_to_2100(scenario_object=out2n,
+                                           object_to_subtract=out4_cov50n,
+                                           outcome="cum_hbv_deaths",
+                                           yearly_discount_rate=annual_discounting_rate)),
+  data.frame(scenario = "monit_10_screen_10b_2030_cov50",
+             discount_outcome_2020_to_2100(scenario_object=out2n,
+                                           object_to_subtract=out8b_2030_monit10_cov50n,
+                                           outcome="cum_hbv_deaths",
+                                           yearly_discount_rate=annual_discounting_rate)),
+  data.frame(scenario = "monit_10_screen_10b_2040_cov50",
+             discount_outcome_2020_to_2100(scenario_object=out2n,
+                                           object_to_subtract=out8b_2040_monit10_cov50n,
+                                           outcome="cum_hbv_deaths",
+                                           yearly_discount_rate=annual_discounting_rate))
+)
+deaths_averted_disc$sim <- gsub("[^0-9]", "", deaths_averted_disc$sim)
+colnames(deaths_averted_disc)[colnames(deaths_averted_disc) == "cum_hbv_deaths"] <-
+  "value"
+
+# Combine into dataframe (No discounting)
+incremental_df_disc <- create_incremental_plot_df(interactions_df=interactions_disc,
+                                                  py_on_treatment_df=py_on_treatment_disc,
+                                                  deaths_averted_df=deaths_averted_disc,
+                                                  ly_saved_df = dalys_averted_disc, # replace LY by DALYs
+                                                  hbsag_test_cost = 8.3,
+                                                  clinical_assessment_cost = 84.4,
+                                                  monitoring_assessment_cost = 40.1,
+                                                  treatment_py_cost = 60,
+                                                  ref_label = "No treatment")
+colnames(incremental_df_disc)[colnames(incremental_df_disc)=="ly_saved"] <- "dalys_averted"
+
+# Find dominated strategies and ICERs
+dominance_prob_list <- list()
+
+for(i in 1:183) {
+  print(i)
+  dominance_prob_list[[i]] <- incremental_df_disc[which(incremental_df_disc$sim==
+                                                          unique(incremental_df_disc$sim)[i]),]
+  dominance_prob_list[[i]] <- assign_dominated_strategies(dominance_prob_list[[i]],
+                                                          exposure="total_cost",
+                                                          outcome="dalys_averted")
+}
+dominance_prob_df <- do.call("rbind", dominance_prob_list)
+dominance_prob_result <- group_by(dominance_prob_df, scenario, dominated) %>%
+  tally() %>%
+  spread(key = "dominated", value = "n") %>%
+  replace_na(list(No = 0, Yes = 0))
+dominance_prob_result$prob_non_dominated <- dominance_prob_result$No/
+  (dominance_prob_result$Yes+dominance_prob_result$No)
+# Any less than 50% chance of being non-dominated?
+any(dominance_prob_result$prob_non_dominated<0.5)
+
+ggplot(dominance_prob_result) +
+  geom_col(aes(x=reorder(scenario, desc(prob_non_dominated)), y = prob_non_dominated)) +
+  theme_bw()
+
+
+incremental_df_non_dom_disc <- subset(incremental_df_disc, scenario %in% c("screen_2020_monit_0",
+                                                                           "monit_10_screen_10b_2040_cov50"))
+# Even the 2040 repeat screen with monitoring has nearly 50% probability of being dominated!
+
+icer_list <- list()
+for(i in 1:183) {
+  print(i)
+  icer_list[[i]] <- incremental_df_non_dom_disc[which(incremental_df_non_dom_disc$sim==
+                                                        unique(incremental_df_non_dom_disc$sim)[i]),]
+  icer_list[[i]] <- calculate_icer_per_sim(icer_list[[i]],
+                                           exposure="total_cost",
+                                           outcome="dalys_averted")
+}
+icer_df <- do.call("rbind", icer_list)
+icer_result <- group_by(icer_df, scenario, comparator) %>%
+  arrange(sim,total_cost) %>%
+  summarise(icer_median = median(icer),
+            icer_lower = quantile(icer, 0.025),
+            icer_upper = quantile(icer, 0.975)) %>%
+  arrange(icer_median)
+icer_result
+
+# CER plot
+ggplot(subset(incremental_df_disc, scenario != "No treatment")) +
+  stat_ellipse(aes(x = dalys_averted, y = total_cost,
+                   group = reorder(scenario, total_cost),
+                   fill= reorder(scenario, total_cost)),
+               geom = "polygon",
+               alpha = 0.2) +
+  geom_point(data= group_by(incremental_df_disc, scenario) %>% summarise(dalys_averted=median(dalys_averted),
+                                                                    total_cost = median(total_cost)),
+             aes(x=dalys_averted, y = total_cost, group = reorder(scenario, total_cost),
+                 colour = reorder(scenario, total_cost)), size = 5) +
+  scale_fill_manual(values = rev(brewer.pal(7,"RdYlBu"))) +
+  scale_colour_manual("Scenarios",
+                      labels = c("screen_2020_monit_0" = "90% 2020 screen,\nno monitoring",
+                                 "screen_2020_monit_0_cov50" = "50% 2020 screen,\nno monitoring",
+                                 "screen_2020_monit_10_cov50" = "50% 2020 screen,\nmonitor every 10 years",
+                                 "monit_0_screen_10b_2030_cov50" = "50% 2020+2030 screen,\nno monitoring",
+                                 "monit_0_screen_10b_2040_cov50" = "50% 2020+2030+2040 screen,\nno monitoring",
+                                 "monit_10_screen_10b_2030_cov50" = "50% 2020+2030 screen,\nmonitor every 10 years",
+                                 "monit_10_screen_10b_2040_cov50" = "50% 2020+2030+2040 screen,\nmonitor every 10 years"),
+                      values = c("black", rev(brewer.pal(7,"RdYlBu")))) +
+  ylab("Total cost (USD 2019)") +
+  xlab("DALYs averted") +
+  guides(fill=FALSE) +
+  geom_abline(slope=391, linetype = "dashed") +
+  geom_abline(slope=518, linetype = "dashed") +
+  theme_bw()
 
 
 # Compare repeat screens, screening coverage and monitoring ----
