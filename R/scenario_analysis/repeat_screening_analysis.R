@@ -1111,3 +1111,71 @@ testdf$prev <- apply(out2$timeseries$number_infected[which(out2$timeseries$numbe
 plot(x=testdf$prev, y = testdf$new_deaths_averted_median, xlim = c(0,120000))
 
 
+
+## Plot prevalence of untreated carriers and HBV deaths by age after treatment ----
+
+# Full output for 2020 screen without monitoring
+out3f <- readRDS(paste0("C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/kmeans_full_output/",
+                        "a1_out3_screen_2020_monit_0_full_output_131220.rds"))
+out3f <- out3f[[1]]
+
+# Number of carriers in 2020
+carriers_2020 <- do.call("rbind", lapply(out3f$carriers_female, function(x) x[(which(out3f$time==2020)),]))+
+  do.call("rbind", lapply(out3f$carriers_male, function(x) x[(which(out3f$time==2020)),]))
+
+
+carriers_2020_grouped <- data.frame(age_group = rep(c("Age 15-30", "Age 30-45", "Age 45-65"), each = 183),
+                                  value = c(rowSums(carriers_2020[,which(ages==15):which(ages==30-da)]),
+                                            rowSums(carriers_2020[,which(ages==30):which(ages==45-da)]),
+                                            rowSums(carriers_2020[,which(ages==45):which(ages==65-da)])))
+
+carriers_2020 <- gather(carriers_2020, key = "age", value = "value")
+carriers_2020$age <- rep(seq(0,99.5,by=0.5), each = 183)
+
+ggplot(carriers_2020) +
+  stat_summary(aes(x=age, y = value), fun=median, geom = "bar")
+
+ggplot(carriers_2020_grouped) +
+  stat_summary(aes(x=age_group, y = value), fun=median, geom = "bar")
+
+# Number of carriers in 2030
+carriers_2030 <- do.call("rbind", lapply(out3f$carriers_female, function(x) x[(which(out3f$time==2030)),]))+
+  do.call("rbind", lapply(out3f$carriers_male, function(x) x[(which(out3f$time==2030)),]))
+
+treated_carriers_2030 <- do.call("rbind", lapply(out3f$treated_carriers_female, function(x) x[(which(out3f$time==2030)),]))+
+  do.call("rbind", lapply(out3f$treated_carriers_male, function(x) x[(which(out3f$time==2030)),]))
+
+carriers_2030_grouped <- data.frame(age_group = rep(c("Age 15-30", "Age 30-45", "Age 45-65"), each = 183),
+                                    value = c(rowSums(carriers_2030[,which(ages==15):which(ages==30-da)]),
+                                              rowSums(carriers_2030[,which(ages==30):which(ages==45-da)]),
+                                              rowSums(carriers_2030[,which(ages==45):which(ages==65-da)])))
+treated_carriers_2030_grouped <- data.frame(age_group = rep(c("Age 15-30", "Age 30-45", "Age 45-65"), each = 183),
+                                    value = c(rowSums(treated_carriers_2030[,which(ages==15):which(ages==30-da)]),
+                                              rowSums(treated_carriers_2030[,which(ages==30):which(ages==45-da)]),
+                                              rowSums(treated_carriers_2030[,which(ages==45):which(ages==65-da)])))
+
+
+carriers_2030 <- gather(carriers_2030, key = "age", value = "value")
+carriers_2030$age <- rep(seq(0,99.5,by=0.5), each = 183)
+
+treated_carriers_2030 <- gather(treated_carriers_2030, key = "age", value = "value")
+treated_carriers_2030$age <- rep(seq(0,99.5,by=0.5), each = 183)
+
+ggplot(carriers_2030) +
+  stat_summary(aes(x=age, y = value), fun=median, geom = "bar") +
+  stat_summary(data=treated_carriers_2030, aes(x=age, y = value), fun=median,
+               geom = "bar", fill="red")
+
+ggplot(carriers_2030_grouped) +
+  stat_summary(aes(x=age_group, y = value), fun=median, geom = "bar") +
+  stat_summary(data=treated_carriers_2030_grouped,
+               aes(x=age_group, y = value), fun=median, geom = "bar", fill="red")
+
+# Combined plot to see decline in numbers
+comb_carriers <- rbind(cbind(carriers_2020_grouped, time = "2020"),
+                       cbind(carriers_2030_grouped, time = "2030"))
+
+ggplot(comb_carriers) +
+  stat_summary(aes(x=age_group, y = value, fill = time), fun=median, geom = "bar",
+               position = "dodge")
+# Need to look at carriers who can still be targeted in screening (those not in cohort)

@@ -1493,10 +1493,10 @@ freq_df_disc <- create_incremental_plot_df(interactions_df=freq_interactions_dis
                                            py_on_treatment_df=freq_interactions_py_on_treatment_disc,
                                            deaths_averted_df=freq_hbv_deaths_averted_disc,
                                            ly_saved_df = freq_dalys_averted_disc, # replace LY by DALYs
-                                           hbsag_test_cost = 8.3,
-                                           clinical_assessment_cost = 84.4,
-                                           monitoring_assessment_cost = 40.1,
-                                           treatment_py_cost = 60,
+                                           hbsag_test_cost = 7.45, #8.3,
+                                           clinical_assessment_cost = 42.75, #84.4,
+                                           monitoring_assessment_cost = 20.6, #40.1,
+                                           treatment_py_cost = 47.1, #60,
                                            scenario_labels_obj = scenario_labels,
                                            ref_label = "No treatment")
 colnames(freq_df_disc)[colnames(freq_df_disc)=="ly_saved"] <- "dalys_averted"
@@ -1624,7 +1624,7 @@ dominance_prob_list <- list()
 freq_df_disc2 <- freq_df_disc
 # Exclude strategies that have no clinical relevance (monitor > every 10/15 years)
 freq_df_disc2 <- subset(freq_df_disc, !(scenario %in% c("Every 30 years", "Every 25 years",
-                                              "Every 20 years", "Every 15 years",# "Every 10 years",
+                                              "Every 20 years", "Every 15 years", "Every 10 years",
                                               "Every 9 years", "Every 8 years", "Every 7 years", "Every 6 years")))
 
 for(i in 1:183) {
@@ -1654,7 +1654,7 @@ ggplot(dominance_prob_result) +
 # Excluding all regular frequencies > every 10 years, plus 6-9 years, lifetime monitoring strategies are dominated
 # Excluding all regular frequencies > every 5 years, only at age 45 has < 50% prop_non_dominated
 freq_df_disc2 <- subset(freq_df_disc2, !(scenario %in% c("At age 30", "At age 45")))
-#freq_df_disc2 <- subset(freq_df_disc2, !(scenario %in% c("At age 45")))
+freq_df_disc2 <- subset(freq_df_disc2, !(scenario %in% c("At age 45")))
 
 icer_list <- list()
 

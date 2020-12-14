@@ -1898,6 +1898,23 @@ code_model_output <- function(output) {
                                        out_screen_hccm+
                                        out_screen_rm))
 
+  screened_carriers_female <- data.frame(pop = (
+                                         out_screen_itf +
+                                         out_screen_irf +
+                                         out_screen_icf+
+                                         out_screen_enchbf+
+                                         out_screen_ccf+
+                                         out_screen_dccf+
+                                         out_screen_hccf))
+  screened_carriers_male <- data.frame(pop = (
+                                       out_screen_itm +
+                                       out_screen_irm +
+                                       out_screen_icm+
+                                       out_screen_enchbm+
+                                       out_screen_ccm+
+                                       out_screen_dccm+
+                                       out_screen_hccm))
+
   treated_carriers_female <- data.frame(pop = (out_treat_itf+
                                             out_treat_chbf+
                                             out_treat_ccf+
@@ -2192,6 +2209,8 @@ code_model_output <- function(output) {
                    "treated_pop_male" = treated_pop_male,
                   "treated_carriers_female" = treated_carriers_female,  # to remove
                   "treated_carriers_male" = treated_carriers_male,      # to remove
+                  "screened_carriers_female" = screened_carriers_female,  # to remove
+                  "screened_carriers_male" = screened_carriers_male,      # to remove
                    "negative_pop_female" = negative_pop_female,      # those identified as HBsAg-negative upon screening
                    "negative_pop_male" = negative_pop_male,
                    "infectioncat_total" = infectioncat_total,
@@ -2841,6 +2860,8 @@ run_one_screening_scenario_on_cluster <- function(..., default_parameter_list, c
                               carriers_male = lapply(out, "[[", "carriers_male"),
                               treated_carriers_female = lapply(out, "[[", "treated_carriers_female"),
                               treated_carriers_male = lapply(out, "[[", "treated_carriers_male"),
+                              screened_carriers_female = lapply(out, "[[", "screened_carriers_female"),
+                              screened_carriers_male = lapply(out, "[[", "screened_carriers_male"),
                               pop_female = lapply(out, "[[", "pop_female"),
                               pop_male = lapply(out, "[[", "pop_male"),
                               hbv_deaths_female = lapply(out, "[[", "hbv_deaths_female"),
