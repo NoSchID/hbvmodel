@@ -116,8 +116,9 @@ calculate_monitoring_interactions <- function(output_file, from_year, by_year, s
 
   if (output_file$input_parameters$apply_treat_it == 1) {
     cum_monitoring_treatment_initiations_it <-
-      (apply(monitored_it[which(output_file$time == by_year),],1,sum)-
-         apply(monitored_it[which(output_file$time == from_year),],1,sum)) *
+      (apply(monitored_it[which(output_file$time == by_year),which(ages==31):which(ages == 100-da)],1,sum)-
+         apply(monitored_it[which(output_file$time == from_year),
+                            which(ages==31):which(ages == 100-da)],1,sum)) *
       output_file$input_parameters$treatment_initiation_prob
   } else if (output_file$input_parameters$apply_treat_it == 0) {
     cum_monitoring_treatment_initiations_it <- 0
@@ -138,8 +139,9 @@ calculate_monitoring_interactions <- function(output_file, from_year, by_year, s
 
     if (output_file$input_parameters$apply_treat_it == 1) {
       cum_monitoring_treatment_initiations_it <-
-        (apply(monitored_it[which(output_file$time == by_year),],1,sum)-
-           apply(monitored_it[which(output_file$time == from_year),],1,sum)) *
+        (apply(monitored_it[which(output_file$time == by_year),which(ages==31):which(ages == 100-da)],1,sum)-
+           apply(monitored_it[which(output_file$time == from_year),
+                              which(ages==31):which(ages == 100-da)],1,sum)) *
         lifetime_monitoring_treatment_initiation_prob
     } else if (output_file$input_parameters$apply_treat_it == 0) {
       cum_monitoring_treatment_initiations_it <- 0

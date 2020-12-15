@@ -574,12 +574,15 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
       # Count monitoring interactions (includes all compartments who may have been screened - not reflecting treatment)
 
       if(apply_lifetime_monitoring == 0) {
+        dcum_monitored_it[index$ages_all,i] <- monitoring_rate * monitoring_prob * pop[index$ages_all,IT_S,i]
 
-        if (apply_treat_it == 1) {
-          dcum_monitored_it[index$ages_all,i] <- monitoring_rate * monitoring_prob * pop[index$ages_all,IT_S,i]
-        } else if(apply_treat_it == 0) {
-          dcum_monitored_it[index$ages_all,i] <- 0 * pop[index$ages_all,IT_S,i]
-        }
+        # Mistake in previous version: IT should be monitored regardless of whether they are treated
+        # as we would otherwise not pick up those who progressed from IT
+        #if (apply_treat_it == 1) {
+        #  dcum_monitored_it[index$ages_all,i] <- monitoring_rate * monitoring_prob * pop[index$ages_all,IT_S,i]
+        #} else if(apply_treat_it == 0) {
+        #  dcum_monitored_it[index$ages_all,i] <- 0 * pop[index$ages_all,IT_S,i]
+        #}
         dcum_monitored_ir[index$ages_all,i] <- monitoring_rate * monitoring_prob * pop[index$ages_all,IR_S,i]
         dcum_monitored_ic[index$ages_all,i] <- monitoring_rate * monitoring_prob * pop[index$ages_all,IC_S,i]
         dcum_monitored_enchb[index$ages_all,i] <- monitoring_rate * monitoring_prob * pop[index$ages_all,ENCHB_S,i]
@@ -590,11 +593,13 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
 
         } else if(apply_lifetime_monitoring == 1) {
 
-          if (apply_treat_it == 1) {
-            dcum_monitored_it[index$ages_all,i] <- lifetime_monitoring_event_rate * pop[index$ages_all,IT_S,i]
-          } else if(apply_treat_it == 0) {
-            dcum_monitored_it[index$ages_all,i] <- 0 * pop[index$ages_all,IT_S,i]
-          }
+           dcum_monitored_it[index$ages_all,i] <- lifetime_monitoring_event_rate * pop[index$ages_all,IT_S,i]
+
+         # if (apply_treat_it == 1) {
+        #    dcum_monitored_it[index$ages_all,i] <- lifetime_monitoring_event_rate * pop[index$ages_all,IT_S,i]
+        #  } else if(apply_treat_it == 0) {
+        #    dcum_monitored_it[index$ages_all,i] <- 0 * pop[index$ages_all,IT_S,i]
+        #  }
           dcum_monitored_ir[index$ages_all,i] <- lifetime_monitoring_event_rate * pop[index$ages_all,IR_S,i]
           dcum_monitored_ic[index$ages_all,i] <- lifetime_monitoring_event_rate * pop[index$ages_all,IC_S,i]
           dcum_monitored_enchb[index$ages_all,i] <- lifetime_monitoring_event_rate * pop[index$ages_all,ENCHB_S,i]
