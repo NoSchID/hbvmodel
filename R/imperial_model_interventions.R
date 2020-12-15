@@ -2207,10 +2207,10 @@ code_model_output <- function(output) {
                    "screened_pop_male" = screened_pop_male,
                    "treated_pop_female" = treated_pop_female,
                    "treated_pop_male" = treated_pop_male,
-                  "treated_carriers_female" = treated_carriers_female,  # to remove
-                  "treated_carriers_male" = treated_carriers_male,      # to remove
-                  "screened_carriers_female" = screened_carriers_female,  # to remove
-                  "screened_carriers_male" = screened_carriers_male,      # to remove
+                  #"treated_carriers_female" = treated_carriers_female,  # to remove
+                  #"treated_carriers_male" = treated_carriers_male,      # to remove
+                  #"screened_carriers_female" = screened_carriers_female,  # to remove
+                  #"screened_carriers_male" = screened_carriers_male,      # to remove
                    "negative_pop_female" = negative_pop_female,      # those identified as HBsAg-negative upon screening
                    "negative_pop_male" = negative_pop_male,
                    "infectioncat_total" = infectioncat_total,
@@ -2220,12 +2220,12 @@ code_model_output <- function(output) {
                    "pop_total" = pop_total,
                   "hbv_deaths_female" = hbv_deaths_female, # to remove
                   "hbv_deaths_male" = hbv_deaths_male, # to remove
-                  "screened_hbv_deaths_female" = screened_hbv_deaths_female, # to remove
-                  "screened_hbv_deaths_male" = screened_hbv_deaths_male, # to remove
-                  "treated_hbv_deaths_female" = treated_hbv_deaths_female, # to remove
-                  "treated_hbv_deaths_male" = treated_hbv_deaths_male, # to remove
-                  "negative_hbv_deaths_female" = negative_hbv_deaths_female, # to remove
-                  "negative_hbv_deaths_male" = negative_hbv_deaths_male, # to remove
+                 # "screened_hbv_deaths_female" = screened_hbv_deaths_female, # to remove
+                 # "screened_hbv_deaths_male" = screened_hbv_deaths_male, # to remove
+                 # "treated_hbv_deaths_female" = treated_hbv_deaths_female, # to remove
+                 # "treated_hbv_deaths_male" = treated_hbv_deaths_male, # to remove
+                 # "negative_hbv_deaths_female" = negative_hbv_deaths_female, # to remove
+                  #"negative_hbv_deaths_male" = negative_hbv_deaths_male, # to remove
                   #"deaths_total_group5" = deaths_total_group5,
                   #"births_group5" =  births_group5,
                   # "incident_infections" = incident_infections,                  # all infections
@@ -2853,30 +2853,31 @@ run_one_screening_scenario_on_cluster <- function(..., default_parameter_list, c
   outlist <- list("screen" = extracted_outcomes)
   names(outlist) <- label
 
-  #return(outlist)
+  return(outlist)
 
-  extracted_outcomes2 <- list(time = out[[1]]$time,
-                              carriers_female = lapply(out, "[[", "carriers_female"),
-                              carriers_male = lapply(out, "[[", "carriers_male"),
-                              treated_carriers_female = lapply(out, "[[", "treated_carriers_female"),
-                              treated_carriers_male = lapply(out, "[[", "treated_carriers_male"),
-                              screened_carriers_female = lapply(out, "[[", "screened_carriers_female"),
-                              screened_carriers_male = lapply(out, "[[", "screened_carriers_male"),
-                              pop_female = lapply(out, "[[", "pop_female"),
-                              pop_male = lapply(out, "[[", "pop_male"),
-                              hbv_deaths_female = lapply(out, "[[", "hbv_deaths_female"),
-                              hbv_deaths_male = lapply(out, "[[", "hbv_deaths_male"),
-                              screened_hbv_deaths_female = lapply(out, "[[", "screened_hbv_deaths_female"),
-                              screened_hbv_deaths_male = lapply(out, "[[", "screened_hbv_deaths_male"),
-                              treated_hbv_deaths_female = lapply(out, "[[", "treated_hbv_deaths_female"),
-                              treated_hbv_deaths_male = lapply(out, "[[", "treated_hbv_deaths_male"),
-                              negative_hbv_deaths_female = lapply(out, "[[", "negative_hbv_deaths_female"),
-                              negative_hbv_deaths_male = lapply(out, "[[", "negative_hbv_deaths_male"))
+  # Alternative output:
+  #extracted_outcomes2 <- list(time = out[[1]]$time,
+  #                            carriers_female = lapply(out, "[[", "carriers_female"),
+  #                            carriers_male = lapply(out, "[[", "carriers_male"),
+  #                            treated_carriers_female = lapply(out, "[[", "treated_carriers_female"),
+  #                            treated_carriers_male = lapply(out, "[[", "treated_carriers_male"),
+  #                            screened_carriers_female = lapply(out, "[[", "screened_carriers_female"),
+  #                            screened_carriers_male = lapply(out, "[[", "screened_carriers_male"),
+  #                            pop_female = lapply(out, "[[", "pop_female"),
+  #                            pop_male = lapply(out, "[[", "pop_male"),
+  #                            hbv_deaths_female = lapply(out, "[[", "hbv_deaths_female"),
+  #                            hbv_deaths_male = lapply(out, "[[", "hbv_deaths_male"),
+  #                            screened_hbv_deaths_female = lapply(out, "[[", "screened_hbv_deaths_female"),
+  #                            screened_hbv_deaths_male = lapply(out, "[[", "screened_hbv_deaths_male"),
+  #                            treated_hbv_deaths_female = lapply(out, "[[", "treated_hbv_deaths_female"),
+  #                            treated_hbv_deaths_male = lapply(out, "[[", "treated_hbv_deaths_male"),
+  #                            negative_hbv_deaths_female = lapply(out, "[[", "negative_hbv_deaths_female"),
+  #                            negative_hbv_deaths_male = lapply(out, "[[", "negative_hbv_deaths_male"))
 
-  outlist2 <- list("screen" = extracted_outcomes2)
-  names(outlist2) <- label
+  #outlist2 <- list("screen" = extracted_outcomes2)
+  #names(outlist2) <- label
 
-  return(outlist2)
+  #return(outlist2)
 
 
 }

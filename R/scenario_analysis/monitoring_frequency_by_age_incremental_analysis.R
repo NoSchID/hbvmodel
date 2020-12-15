@@ -1782,6 +1782,57 @@ icer_result_disc_cost
 
 # Analysis: calculate incremental impact (no costs, no discounting) ----
 
+# DALYs averted per different interactions
+freq_df$dalys_averted_per_monitoring <- freq_df$dalys_averted/freq_df$monitoring_assessments
+freq_df$dalys_averted_per_py_on_treatment <- freq_df$dalys_averted/freq_df$py_on_treatment
+freq_df$dalys_averted_per_treatment_initiation <- freq_df$dalys_averted/freq_df$treatment_initiations
+freq_df$dalys_averted_per_hbsag_test <-freq_df$dalys_averted/freq_df$hbsag_tests
+freq_df$dalys_averted_per_assessment <-freq_df$dalys_averted/freq_df$clinical_assessments
+
+ggplot(subset(freq_df, scenario != "No treatment")) +
+  geom_boxplot(aes(x=reorder(scenario,dalys_averted),
+                   y = dalys_averted))+
+  theme(axis.text.x=element_text(angle=90, hjust=1)) +
+  ylab("DALYs averted compared to no treatment") +
+  xlab("Monitoring frequency") +
+  ylim(0,400000)
+
+ggplot(subset(freq_df, scenario != "No treatment")) +
+  geom_boxplot(aes(x=reorder(scenario,treatment_initiations),
+                   y = treatment_initiations))+
+  theme(axis.text.x=element_text(angle=90, hjust=1)) +
+  ylab("DALYs averted compared to no treatment") +
+  xlab("Monitoring frequency") +
+  ylim(0,30000)
+
+ggplot(subset(freq_df,scenario != "No monitoring" &
+                scenario != "No treatment")) +
+  geom_boxplot(aes(x=reorder(scenario,-dalys_averted_per_monitoring),
+                   y = dalys_averted_per_monitoring*1000))+
+  theme(axis.text.x=element_text(angle=90, hjust=1)) +
+  ylab("DALYs averted per\n1,000 monitoring assessments") +
+  xlab("Monitoring frequency") +
+  ylim(0,7000)
+
+ggplot(subset(freq_df,scenario != "No monitoring" &
+                scenario != "No treatment")) +
+  geom_boxplot(aes(x=reorder(scenario,-dalys_averted_per_treatment_initiation),
+                   y = dalys_averted_per_treatment_initiation))+
+  theme(axis.text.x=element_text(angle=90, hjust=1)) +
+  ylab("DALYs averted per\nperson initiated on treatment") +
+  xlab("Monitoring frequency") +
+  ylim(0,21)
+
+
+ggplot(subset(freq_df,scenario != "No monitoring" &
+                scenario != "No treatment")) +
+  geom_boxplot(aes(x=reorder(scenario,-dalys_averted_per_py_on_treatment),
+                   y = dalys_averted_per_py_on_treatment*1000)) +
+  theme(axis.text.x=element_text(angle=90, hjust=1)) +
+  ylab("DALYs averted per\n1,000 person-years on treatment") +
+  xlab("Monitoring frequency") +
+  ylim(0,800)
+
 # Don't think this one is correct!
 
 # Incremental DALYs averted for every 5 years monitoring interval
@@ -1934,6 +1985,18 @@ freq_df_cohort_subs <- subset(freq_df_cohort, scenario %in% c("No monitoring",
                                                 "Every 10 years","Every 5 years",
                                                 "Every 1 year"))
 
+# Doubling frequencies
+freq_df_cohort_subs <- subset(freq_df_cohort, scenario %in% c("No monitoring",
+                                                "Every 30 years",
+                                                #"At age 30", "At age 45",
+                                                #"Every 25 years",
+                                                "Every 20 years",
+                                                #"Every 15 years",
+                                                "Every 10 years",
+                                                "Every 5 years",
+                                                "Every 2 years"))
+
+
 diff_list <- list()
 for(i in 1:183) {
   print(i)
@@ -1958,6 +2021,36 @@ diff_df_cohort_deaths$scenario <- factor(as.character(diff_df_cohort_deaths$scen
                            levels = c("No monitoring", "Every 30 years", "Every 25 years",
                                       "Every 20 years", "Every 15 years", "Every 10 years",
                                       "Every 5 years", "Every 1 year"))
+
+diff_df_cohort_deaths$scenario <- factor(as.character(diff_df_cohort_deaths$scenario),
+                                         levels = c("No monitoring",
+                                                    "Every 30 years",
+                                                    #"At age 30", "At age 45",
+                                                    #"Every 25 years",
+                                                    "Every 20 years",
+                                                    #"Every 15 years",
+                                                    "Every 10 years",
+                                                    "Every 5 years",
+                                                    "Every 2 years"))
+
+# Order all:
+diff_df_cohort_deaths$scenario <- factor(as.character(diff_df_cohort_deaths$scenario),
+                                         levels = c("No monitoring", "At age 30",
+                                                    "Every 30 years",
+                                                    "At age 45",
+                                                    "Every 25 years",
+                                                    "Every 20 years",
+                                                    "Every 15 years",
+                                                    "Every 10 years",
+                                                    "Every 9 years",
+                                                    "Every 8 years",
+                                                    "Every 7 years",
+                                                    "Every 6 years",
+                                                    "Every 5 years",
+                                                    "Every 4 years",
+                                                    "Every 3 years",
+                                                    "Every 2 years",
+                                                    "Every 1 year"))
 
 ggplot(subset(diff_df_cohort_deaths, scenario != "No monitoring" & scenario != "Every 30 years"),
        aes(x= scenario, y = diff_outcome)) +
