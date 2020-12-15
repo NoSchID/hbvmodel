@@ -29,6 +29,21 @@ scenario_a1_parms$apply_bdvacc <- 0
 scenario_a1_parms$apply_treat_it <- 0
 #save(scenario_a1_parms, file= here("analysis_input", "scenario_a1_parms.Rdata"))
 
+# ASSUMPTION A1 SIMULATIONS WITH IT TREATED
+scenario_a1_it_parms <- parameter_list
+scenario_a1_it_parms$screening_coverage <- 0.9
+scenario_a1_it_parms$min_age_to_screen <- 15
+scenario_a1_it_parms$max_age_to_screen <- 65-da
+scenario_a1_it_parms$min_age_to_repeat_screen <- 15
+scenario_a1_it_parms$max_age_to_repeat_screen <- 65-da
+scenario_a1_it_parms$prop_to_vaccinate <- 0
+scenario_a1_it_parms$link_to_care_prob <- 0.8
+scenario_a1_it_parms$treatment_initiation_prob <- 1
+scenario_a1_it_parms$monitoring_prob <- 0.8
+scenario_a1_it_parms$apply_bdvacc <- 0
+scenario_a1_it_parms$apply_treat_it <- 1
+#save(scenario_a1_it_parms, file= here("analysis_input", "scenario_a1_it_parms.Rdata"))
+
 # ASSUMPTION A2 SIMULATIONS
 scenario_a2_parms <- parameter_list
 scenario_a2_parms$screening_coverage <- 0.9

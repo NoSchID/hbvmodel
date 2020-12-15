@@ -1493,10 +1493,10 @@ freq_df_disc <- create_incremental_plot_df(interactions_df=freq_interactions_dis
                                            py_on_treatment_df=freq_interactions_py_on_treatment_disc,
                                            deaths_averted_df=freq_hbv_deaths_averted_disc,
                                            ly_saved_df = freq_dalys_averted_disc, # replace LY by DALYs
-                                           hbsag_test_cost = 7.45, #8.3,
-                                           clinical_assessment_cost = 42.75, #84.4,
-                                           monitoring_assessment_cost = 20.6, #40.1,
-                                           treatment_py_cost = 47.1, #60,
+                                           hbsag_test_cost = 8.3,
+                                           clinical_assessment_cost = 84.4,
+                                           monitoring_assessment_cost = 40.1,
+                                           treatment_py_cost = 60,
                                            scenario_labels_obj = scenario_labels,
                                            ref_label = "No treatment")
 colnames(freq_df_disc)[colnames(freq_df_disc)=="ly_saved"] <- "dalys_averted"
