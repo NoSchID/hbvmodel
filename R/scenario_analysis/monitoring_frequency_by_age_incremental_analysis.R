@@ -1,9 +1,6 @@
 # Incremental analysis of different monitoring strategies
 # Varying frequency and age group
 
-# What is the optimal monitoring frequency for different age groups?
-# Exploring this from a cohort perspective, assuming 15-60 year olds have been screened (A1)
-
 require(here)  # for setting working directory
 require(ggplot2)
 require(tidyr)
@@ -394,18 +391,18 @@ assign_dominated_strategies <- function(df, exposure, outcome) {
   # Need to artificially repeat value twice in e and c:
   # Effectiveness (outcome) matrix:
   outcome_matrix <- rbind(as.matrix(select(df, scenario, sim, outcome) %>%
-                    spread(key="scenario", value = outcome)%>%
-                    select(-sim)),
-        as.matrix(select(df, scenario, sim,outcome) %>%
-                    spread(key="scenario", value =outcome)%>%
-                    select(-sim)))
+                                      spread(key="scenario", value = outcome)%>%
+                                      select(-sim)),
+                          as.matrix(select(df, scenario, sim,outcome) %>%
+                                      spread(key="scenario", value =outcome)%>%
+                                      select(-sim)))
   # Cost (exposure) matrix:
   exposure_matrix <- rbind(as.matrix(select(df, scenario, sim, exposure) %>%
-                                      spread(key="scenario", value = exposure)%>%
-                                      select(-sim)),
-                          as.matrix(select(df, scenario, sim,exposure) %>%
-                                      spread(key="scenario", value =exposure)%>%
-                                      select(-sim)))
+                                       spread(key="scenario", value = exposure)%>%
+                                       select(-sim)),
+                           as.matrix(select(df, scenario, sim,exposure) %>%
+                                       spread(key="scenario", value =exposure)%>%
+                                       select(-sim)))
   # Assign numbers to each scenario
   interventions_df <- data.frame(scenario = c(colnames(select(df, scenario, sim, outcome) %>%
                                                          spread(key="scenario", value = outcome)%>%
@@ -416,12 +413,12 @@ assign_dominated_strategies <- function(df, exposure, outcome) {
 
 
   ceef <- capture.output(ceef.plot.median(bcea(e=outcome_matrix,
-                                                c=exposure_matrix,
-                                                ref=1,
-                                                interventions=interventions_df$numbers,
-                                                Kmax=100000000000000,
-                                                plot=FALSE),
-                                           graph="base", relative = FALSE, return_dominated_only = TRUE))
+                                               c=exposure_matrix,
+                                               ref=1,
+                                               interventions=interventions_df$numbers,
+                                               Kmax=100000000000000,
+                                               plot=FALSE),
+                                          graph="base", relative = FALSE, return_dominated_only = TRUE))
 
   # Extracted numbers of dominated interventions
   dominated_numbers <- unlist(regmatches(ceef, gregexpr("[[:digit:]]+", ceef)))[-1]
@@ -456,23 +453,23 @@ calculate_icer_per_sim <- function(df, exposure, outcome) {
 # Function to find dominated and extended dominated strategies on cost-effectiveness frontier
 find_dominated_strategies <- function(df, exposure, outcome) {
   plot <- ceef.plot.median(bcea(e=cbind(matrix(rep(0, 183)),
-                                 as.matrix(select(df, scenario, sim, outcome) %>%
-                                             filter(sim != "X") %>%
-                                             spread(key="scenario", value = outcome)%>%
-                                             select(-sim))),
-                         c=cbind(matrix(rep(0, 183)),
-                                 as.matrix(select(df, scenario, sim, exposure) %>%
-                                             filter(sim != "X") %>%
-                                             spread(key="scenario", value = exposure)%>%
-                                             select(-sim))),
-                         ref=1,
-                         interventions=c("No monitoring", colnames(select(df, scenario, sim, outcome) %>%
-                                                                     filter(sim != "X") %>%
-                                                                     spread(key="scenario", value = outcome)%>%
-                                                                     select(-sim))),
-                         Kmax=1000000000,
-                         plot=FALSE),
-                    graph="base", relative = FALSE)
+                                        as.matrix(select(df, scenario, sim, outcome) %>%
+                                                    filter(sim != "X") %>%
+                                                    spread(key="scenario", value = outcome)%>%
+                                                    select(-sim))),
+                                c=cbind(matrix(rep(0, 183)),
+                                        as.matrix(select(df, scenario, sim, exposure) %>%
+                                                    filter(sim != "X") %>%
+                                                    spread(key="scenario", value = exposure)%>%
+                                                    select(-sim))),
+                                ref=1,
+                                interventions=c("No monitoring", colnames(select(df, scenario, sim, outcome) %>%
+                                                                            filter(sim != "X") %>%
+                                                                            spread(key="scenario", value = outcome)%>%
+                                                                            select(-sim))),
+                                Kmax=1000000000,
+                                plot=FALSE),
+                           graph="base", relative = FALSE)
   return(plot)
 }
 
@@ -496,10 +493,10 @@ create_incremental_plot_df <- function(interactions_df, py_on_treatment_df,
   if (ref_label == "No treatment") {
 
     # Previously, included treatment initiation as an interactions rather than monitoring (as represented by PY)
- #   interactions$total_interactions <- interactions$hbsag_tests+
-#      interactions$clinical_assessments+
-#      interactions$monitoring_assessments+
-#      interactions$treatment_initiations
+    #   interactions$total_interactions <- interactions$hbsag_tests+
+    #      interactions$clinical_assessments+
+    #      interactions$monitoring_assessments+
+    #      interactions$treatment_initiations
     interactions$sim <- gsub("[^0-9]", "", interactions$sim)
 
     # Combine interactions and assign costs:
@@ -507,7 +504,7 @@ create_incremental_plot_df <- function(interactions_df, py_on_treatment_df,
                               by=c("scenario", "sim")) %>%
       mutate(total_interactions = hbsag_tests+clinical_assessments+monitoring_assessments+
                py_on_treatment*1,   # monitoring on treatment once a year. Includes treatment initiation.
-            screening_cost = hbsag_tests*hbsag_test_cost,
+             screening_cost = hbsag_tests*hbsag_test_cost,
              assessment_cost = clinical_assessments*clinical_assessment_cost,
              monitoring_cost = monitoring_assessments*monitoring_assessment_cost,
              treatment_cost = py_on_treatment*treatment_py_cost,
@@ -515,19 +512,19 @@ create_incremental_plot_df <- function(interactions_df, py_on_treatment_df,
 
   } else {
 
-#  interactions$total_interactions <- interactions$monitoring_assessments+
-#    interactions$treatment_initiations
-  interactions$sim <- gsub("[^0-9]", "", interactions$sim)
+    #  interactions$total_interactions <- interactions$monitoring_assessments+
+    #    interactions$treatment_initiations
+    interactions$sim <- gsub("[^0-9]", "", interactions$sim)
 
-  # Combine interactions and assign costs based on Shevanthi's Gambia paper:
-  # $15.77 per monitoring assessment and $66.44 per person-year of treatment
-  interactions <- left_join(interactions, py_on_treatment_df,
-                            by=c("scenario", "sim")) %>%
-    mutate(total_interactions = monitoring_assessments+
-            py_on_treatment*1, # represents treatment initiation + monitoring on treatment ONCE a year
-            monitoring_cost = monitoring_assessments*monitoring_assessment_cost,
-            treatment_cost = py_on_treatment*treatment_py_cost,
-            total_cost = monitoring_cost+treatment_cost)
+    # Combine interactions and assign costs based on Shevanthi's Gambia paper:
+    # $15.77 per monitoring assessment and $66.44 per person-year of treatment
+    interactions <- left_join(interactions, py_on_treatment_df,
+                              by=c("scenario", "sim")) %>%
+      mutate(total_interactions = monitoring_assessments+
+               py_on_treatment*1, # represents treatment initiation + monitoring on treatment ONCE a year
+             monitoring_cost = monitoring_assessments*monitoring_assessment_cost,
+             treatment_cost = py_on_treatment*treatment_py_cost,
+             total_cost = monitoring_cost+treatment_cost)
 
   }
 
@@ -625,7 +622,7 @@ discount_outcome_2020_to_2100 <- function(scenario_object,object_to_subtract,
         cum_outcome <- do.call("rbind", lapply(scenario_object[[outcome]], "[[", interaction_outcome))[,-c(1:3)]-
           do.call("rbind", lapply(object_to_subtract[[outcome]], "[[", interaction_outcome))[,-c(1:3)]
       }
-        inc_outcome <- data.frame(rbind(cum_outcome[1,], apply(cum_outcome,2,diff)))
+      inc_outcome <- data.frame(rbind(cum_outcome[1,], apply(cum_outcome,2,diff)))
     }
 
     # Calculate the yearly discount rate, then take the mean for every 5 years.
@@ -648,9 +645,9 @@ discount_outcome_2020_to_2100 <- function(scenario_object,object_to_subtract,
     return(discounted_cum_outcome)
 
 
-   }  else {
-      print("Years are not from 2020 to 2100.")
-    }
+  }  else {
+    print("Years are not from 2020 to 2100.")
+  }
 
 
 }
@@ -666,6 +663,19 @@ out1 <- readRDS(paste0(out_path, "a1_out1_status_quo_cohort_301120.rds"))
 out1 <- out1[[1]]
 out2 <- readRDS(paste0(out_path, "out2_status_quo_301120.rds"))
 out2 <- out2[[1]]
+
+# FILES FOR ANALYSIS ACROSS ALL AGES
+
+# No IT treatment
+
+# New files with correct counting of monitoring events (for analysis of
+# cost-effectiveness of IT treatment)
+out3n <- readRDS(paste0(out_path, "a1_out3_screen_2020_monit_0_201220.rds"))
+out3n <- out3n[[1]]
+out5n <- readRDS(paste0(out_path, "a1_out5_screen_2020_monit_5_201220.rds"))
+out5n <- out5n[[1]]
+out6an <- readRDS(paste0(out_path, "a1_out6a_screen_2020_monit_2_181220.rds"))
+out6an <- out6an[[1]]
 
 # No monitoring
 out3 <- readRDS(paste0(out_path, "a1_out3_screen_2020_monit_0_011220.rds"))
@@ -701,96 +711,61 @@ out6a <- out6a[[1]]
 out6 <- readRDS(paste0(out_path, "a1_out6_screen_2020_monit_1_301120.rds"))
 out6 <- out6[[1]]
 
-# Once in a lifetime monitoring at different ages
+# Once in a lifetime monitoring at different ages (replaced with new sims with IT)
 out_lt_monit_30 <- readRDS(paste0(out_path, "a1_out_screen_2020_monit_lifetime_30_101220.rds"))
 out_lt_monit_30 <- out_lt_monit_30[[1]]
 out_lt_monit_45 <- readRDS(paste0(out_path, "a1_out_screen_2020_monit_lifetime_45_101220.rds"))
 out_lt_monit_45 <- out_lt_monit_45[[1]]
 
-# Monitoring different age groups until they age out (yearly)
-monit_out1 <- readRDS(paste0(out_path, "a1_monit_out1_201020.rds"))
-monit_out1 <- monit_out1[[1]]
-monit_out2 <- readRDS(paste0(out_path, "a1_monit_out2_201020.rds"))
-monit_out2 <- monit_out2[[1]]
-monit_out3 <- readRDS(paste0(out_path, "a1_monit_out3_240920.rds"))
-monit_out3 <- monit_out3[[1]]
-monit_out4 <- readRDS(paste0(out_path, "a1_monit_out4_240920.rds"))
-monit_out4 <- monit_out4[[1]]
-monit_out5 <- readRDS(paste0(out_path, "a1_monit_out5_240920.rds"))
-monit_out5 <- monit_out5[[1]]
+# FILES FOR AGE-SPECIFIC ANALYSIS
+# IT is treated
 
-# Monitoring different age groups until they age out (every 5 years)
-monit_out6 <- readRDS(paste0(out_path, "a1_monit_out6_201020.rds"))
-monit_out6 <- monit_out6[[1]]
-monit_out7 <- readRDS(paste0(out_path, "a1_monit_out7_201020.rds"))
+# No monitoring/All age monitoring
+out3_it <- readRDS(paste0(out_path, "a1_it_out3_screen_2020_monit_0_161220.rds"))
+out3_it <- out3_it[[1]]
+out5_it <- readRDS(paste0(out_path, "a1_it_out5_screen_2020_monit_5_161220.rds"))
+out5_it <- out5_it[[1]]
+out6a_it <- readRDS(paste0(out_path, "a1_it_out6a_screen_2020_monit_2_161220.rds"))
+out6a_it <- out6a_it[[1]]
+
+# Monitoring different age groups while they are of given age (IT always treated)
+monit_out7 <- readRDS(paste0(out_path, "a1_it_monit_out7_161220.rds"))
 monit_out7 <- monit_out7[[1]]
-monit_out8 <- readRDS(paste0(out_path, "a1_monit_out8_240920.rds"))
-monit_out8 <- monit_out8[[1]]
-monit_out9 <- readRDS(paste0(out_path, "a1_monit_out9_240920.rds"))
+
+monit_out17 <- readRDS(paste0(out_path, "a1_it_monit_out17_161220.rds"))
+monit_out17 <- monit_out17[[1]]
+
+monit_out2a <- readRDS(paste0(out_path, "a1_it_monit_out2a_171220.rds"))
+monit_out2a <- monit_out2a[[1]]
+
+monit_out9 <- readRDS(paste0(out_path, "a1_it_monit_out9_171220.rds"))
 monit_out9 <- monit_out9[[1]]
-monit_out10 <- readRDS(paste0(out_path, "a1_monit_out10_240920.rds"))
+
+monit_out18 <- readRDS(paste0(out_path, "a1_it_monit_out18_171220.rds"))
+monit_out18 <- monit_out18[[1]]
+
+monit_out4a <- readRDS(paste0(out_path, "a1_it_monit_out4a_171220.rds"))
+monit_out4a <- monit_out4a[[1]]
+
+monit_out10 <- readRDS(paste0(out_path, "a1_it_monit_out10_171220.rds"))
 monit_out10 <- monit_out10[[1]]
 
-# Monitoring different age groups until they age out
-# (combining different frequencies at different ages)
-# monit_out11 = 3 yearly frequency in 15-30 year olds and 5-yearly frequency in other groups
-# monit_out12 = yearly frequency in 15-30 year olds and 5-yearly frequency in other groups
-# monit_out13 = 3 yearly frequency in 45+ year olds and 5-yearly frequency in other groups
-# monit_out14 = yearly frequency in 45+ year olds and 5-yearly frequency in other groups
-# monit_out15 = 3 yearly frequency in 15-45 year olds and 5-yearly frequency in other groups
-# monit_out16 = yearly frequency in 15-45 year olds and 5-yearly frequency in other groups
-monit_out11 <- readRDS(paste0(out_path, "a1_monit_out11_261020.rds"))
-monit_out11 <- monit_out11[[1]]
-monit_out12 <- readRDS(paste0(out_path, "a1_monit_out12_261020.rds"))
-monit_out12 <- monit_out12[[1]]
-monit_out13 <- readRDS(paste0(out_path, "a1_monit_out13_281020.rds"))
-monit_out13 <- monit_out13[[1]]
-monit_out14 <- readRDS(paste0(out_path, "a1_monit_out14_271020.rds"))
-monit_out14 <- monit_out14[[1]]
-monit_out15 <- readRDS(paste0(out_path, "a1_monit_out15_291020.rds"))
-monit_out15 <- monit_out15[[1]]
-monit_out16 <- readRDS(paste0(out_path, "a1_monit_out16_301020.rds"))
-monit_out16 <- monit_out16[[1]]
+monit_out5a <- readRDS(paste0(out_path, "a1_it_monit_out5a_161220.rds"))
+monit_out5a <- monit_out5a[[1]]
 
+monit_out6 <- readRDS(paste0(out_path, "a1_it_monit_out6_201220.rds"))
+monit_out6 <- monit_out6[[1]]
 
-# Labels of age groups being monitored
-# sim1, sim6 = 15-30
-# sim2, sim7 = 15-45
-# sim3, sim8 = 30-45
-# sim4, sim 9 = 30+
-# sim5, sim10 = 45+
+monit_out1a <- readRDS(paste0(out_path, "a1_it_monit_out1a_191220.rds"))
+monit_out1a <- monit_out1a[[1]]
 
-# Monitoring different age cohorts until they die (every year)
-# A2 = screen and treat 45-60 year olds. A3 = screen and treat 30-60 year olds
-# A4 = screen and treat 15-30 year olds. A5 = screen and treat 30-45 year olds
-a2_out3 <- readRDS(paste0(out_path, "a2_out3_screen_2020_monit_0_161020.rds"))
-a2_out3 <- a2_out3[[1]]
-a2_out5 <- readRDS(paste0(out_path, "a2_out5_screen_2020_monit_5_161020.rds"))
-a2_out5 <- a2_out5[[1]]
-a2_out6 <- readRDS(paste0(out_path, "a2_out6_screen_2020_monit_1_161020.rds"))
-a2_out6 <- a2_out6[[1]]
-a3_out3 <- readRDS(paste0(out_path, "a3_out3_screen_2020_monit_0_161020.rds"))
-a3_out3 <- a3_out3[[1]]
-a3_out5 <- readRDS(paste0(out_path, "a3_out5_screen_2020_monit_5_161020.rds"))
-a3_out5 <- a3_out5[[1]]
-a3_out6 <- readRDS(paste0(out_path, "a3_out6_screen_2020_monit_1_161020.rds"))
-a3_out6 <- a3_out6[[1]]
-# Added to explore intensification of monitoring in 45+ birth cohort vs all ages only:
-a2_out6b <- readRDS(paste0(out_path, "a2_out6b_screen_2020_monit_3_231020.rds"))  # 3 year freq.
-a2_out6b <- a2_out6b[[1]]
-a4_out3 <- readRDS(paste0(out_path, "a4_out3_screen_2020_monit_0_231020.rds"))
-a4_out3 <- a4_out3[[1]]
-a4_out5 <- readRDS(paste0(out_path, "a4_out5_screen_2020_monit_5_231020.rds"))
-a4_out5 <- a4_out5[[1]]
-a5_out3 <- readRDS(paste0(out_path, "a5_out3_screen_2020_monit_0_231020.rds"))
-a5_out3 <- a5_out3[[1]]
-a5_out5 <- readRDS(paste0(out_path, "a5_out5_screen_2020_monit_5_231020.rds"))
-a5_out5 <- a5_out5[[1]]
-# Intensification in 30+ birth cohort:
-a5_out6b <- readRDS(paste0(out_path, "a5_out6b_screen_2020_monit_3_261020.rds"))
-a5_out6b <- a5_out6b[[1]]
-a5_out6 <- readRDS(paste0(out_path, "a5_out6_screen_2020_monit_1_271020.rds"))
-a5_out6 <- a5_out6[[1]]
+# Lifetime monitoring events at specific age with IT treatment
+out_it_lt_monit_30 <- readRDS(paste0(out_path, "a1_it_out_screen_2020_monit_lifetime_30_191220.rds"))
+out_it_lt_monit_30 <- out_it_lt_monit_30[[1]]
+out_it_lt_monit_45 <- readRDS(paste0(out_path, "a1_it_out_screen_2020_monit_lifetime_45_191220.rds"))
+out_it_lt_monit_45 <- out_it_lt_monit_45[[1]]
+out_it_lt_monit_30_45 <- readRDS(paste0(out_path, "a1_it_out_screen_2020_monit_lifetime_30_45_181220.rds"))
+out_it_lt_monit_30_45 <- out_it_lt_monit_30_45[[1]]
 
 scenario_labels <- list("No treatment" = "status_quo_cohort",
                         "No monitoring" = "screen_2020_monit_0",
@@ -807,24 +782,7 @@ scenario_labels <- list("No treatment" = "status_quo_cohort",
                         "5-yearly 30+"="screen_2020_monit_sim9",
                         "5-yearly 45+"="screen_2020_monit_sim10")
 
-# Subset yearly frequencies
-sub_yearly <- names(scenario_labels)[4:9]
-# Subset 5-yearly frequencies
-sub_5yearly <- names(scenario_labels)[c(3,10:14)]
-# Selection for plot
-sub_mixed <- names(scenario_labels)[c(3,4,5,8,10,13)]
-# Since the best are 5-yearly 45+, 5-yearly 30+ and 5-yearly all ages, chose here <30, >30 and all
-
-# Age group comparisons
-sub_age_groups1 <- names(scenario_labels)[c(5,7,9,10,12,14)]
-# 15-30, 30-45, 45+
-sub_age_groups2 <- names(scenario_labels)[c(5,8,10,13)]
-# 15-30, 30+
-sub_age_groups3 <- names(scenario_labels)[c(6,9,11,14)]
-# 15-45, 45+
-sub_age_groups_all <- names(scenario_labels)[c(3,4)]
-
-# 1) Cost-effectiveness of monitoring frequencies across all ages ----
+## 1) Cost-effectiveness of monitoring frequencies across all ages ----
 # Create data frame with all interactions and outcomes of interest (no discounting) ----
 freq_interactions <- rbind(
   cbind(scenario = "No monitoring",
@@ -1040,14 +998,14 @@ freq_interactions_py_on_treatment <- rbind(
 # Outcome 1: DALYs
 freq_dalys_averted <-
   plot_hbv_deaths_averted(counterfactual_object = out2,
-                                scenario_objects = list(out3, out_lt_monit_30,
-                                                        out_lt_monit_45,out4,out5,out5a,
-                                                        out4d, out4c, out4b, out4a,
-                                                         out5b,out5c,out5d,
-                                                         out6,out6a,out6b,out6c),
-                                outcome_to_avert = "dalys",
-                                 outcome_to_plot = "number_averted",
-                                 counterfactual_label = "no treatment")
+                          scenario_objects = list(out3, out_lt_monit_30,
+                                                  out_lt_monit_45,out4,out5,out5a,
+                                                  out4d, out4c, out4b, out4a,
+                                                  out5b,out5c,out5d,
+                                                  out6,out6a,out6b,out6c),
+                          outcome_to_avert = "dalys",
+                          outcome_to_plot = "number_averted",
+                          counterfactual_label = "no treatment")
 freq_dalys_averted <- subset(freq_dalys_averted, type == "number_averted" & by_year == 2100) %>%
   select(scenario, sim, value)
 freq_dalys_averted$sim <- gsub("[^0-9]", "", freq_dalys_averted$sim)
@@ -1110,13 +1068,13 @@ levels(freq_hbv_deaths_averted$scenario) <- monitoring_freq_label
 # (to add lifetime monitoring)
 freq_hbv_deaths_averted_cohort <-
   plot_hbv_deaths_averted_cohort(counterfactual_object = out1,
-                          scenario_objects = list(out3,out4,out5,out5a,
-                                                  out4d, out4c, out4b, out4a,
-                                                  out5b,out5c,out5d,
-                                                  out6,out6a,out6b,out6c),
-                          outcome_to_avert = "cohort_cum_hbv_deaths",
-                          outcome_to_plot = "number_averted",
-                          counterfactual_label = "no treatment")
+                                 scenario_objects = list(out3,out4,out5,out5a,
+                                                         out4d, out4c, out4b, out4a,
+                                                         out5b,out5c,out5d,
+                                                         out6,out6a,out6b,out6c),
+                                 outcome_to_avert = "cohort_cum_hbv_deaths",
+                                 outcome_to_plot = "number_averted",
+                                 counterfactual_label = "no treatment")
 freq_hbv_deaths_averted_cohort <- subset(freq_hbv_deaths_averted_cohort,
                                          type == "proportion_averted") %>%
   select(scenario, sim, value)
@@ -1130,35 +1088,36 @@ annual_discounting_rate <- 0.03
 
 # This function is made for this specific analysis:
 assemble_discounted_interactions_for_monitoring_frequencies <- function(scenario_object,
-                                                                        discount_rate = annual_discounting_rate) {
+                                                                        discount_rate = annual_discounting_rate,
+                                                                        no_monitoring_object = out3) {
   # Compares monitoring to out3 and everything else to status quo
-  # at discount rate of 3%
+  # at given discount rate
   out <- left_join(
     left_join(
       left_join(discount_outcome_2020_to_2100(scenario_object=scenario_object,
-                                                                     object_to_subtract=NULL,
-                                                                     outcome="interactions",
-                                                                     interaction_outcome="total_screened",
-                                                                     yearly_discount_rate=discount_rate,
-                                                                     interaction_colname = "hbsag_tests"),
-                                       discount_outcome_2020_to_2100(scenario_object=out3,
-                                                                     object_to_subtract=NULL,
-                                                                     outcome="interactions",
-                                                                     interaction_outcome="total_assessed",
-                                                                     yearly_discount_rate=discount_rate,
-                                                                     interaction_colname = "clinical_assessments")),
-                             discount_outcome_2020_to_2100(scenario_object=scenario_object,
-                                                           object_to_subtract=out3,
-                                                           outcome="interactions",
-                                                           interaction_outcome="total_assessed",
-                                                           yearly_discount_rate=discount_rate,
-                                                           interaction_colname = "monitoring_assessments")),
-                   discount_outcome_2020_to_2100(scenario_object=scenario_object,
-                                                 object_to_subtract=NULL,
-                                                 outcome="interactions",
-                                                 interaction_outcome="total_treated",
-                                                 yearly_discount_rate=discount_rate,
-                                                 interaction_colname = "treatment_initiations"))
+                                              object_to_subtract=NULL,
+                                              outcome="interactions",
+                                              interaction_outcome="total_screened",
+                                              yearly_discount_rate=discount_rate,
+                                              interaction_colname = "hbsag_tests"),
+                discount_outcome_2020_to_2100(scenario_object=no_monitoring_object,
+                                              object_to_subtract=NULL,
+                                              outcome="interactions",
+                                              interaction_outcome="total_assessed",
+                                              yearly_discount_rate=discount_rate,
+                                              interaction_colname = "clinical_assessments")),
+      discount_outcome_2020_to_2100(scenario_object=scenario_object,
+                                    object_to_subtract=no_monitoring_object,
+                                    outcome="interactions",
+                                    interaction_outcome="total_assessed",
+                                    yearly_discount_rate=discount_rate,
+                                    interaction_colname = "monitoring_assessments")),
+    discount_outcome_2020_to_2100(scenario_object=scenario_object,
+                                  object_to_subtract=NULL,
+                                  outcome="interactions",
+                                  interaction_outcome="total_treated",
+                                  yearly_discount_rate=discount_rate,
+                                  interaction_colname = "treatment_initiations"))
 
   return(out)
 }
@@ -1198,7 +1157,7 @@ freq_interactions_disc <- rbind(
         assemble_discounted_interactions_for_monitoring_frequencies(out6a)),
   cbind(scenario = "Every 1 year",
         assemble_discounted_interactions_for_monitoring_frequencies(out6))
-  )
+)
 
 # Discount person-years on treatment
 freq_interactions_py_on_treatment_disc <- rbind(
@@ -1534,15 +1493,15 @@ colnames(freq_df_disc_outcomes)[colnames(freq_df_disc_outcomes)=="ly_saved"] <- 
 
 # Exclude strategies that have no clinical relevance (monitor > every 10/15 years)
 freq_df2 <- subset(freq_df, !(scenario %in% c("Every 30 years", "Every 25 years",
-                   "Every 20 years", "Every 15 years", #"Every 10 years",
-                   "Every 9 years", "Every 8 years", "Every 7 years", "Every 6 years")))
+                                              "Every 20 years", "Every 15 years", #"Every 10 years",
+                                              "Every 9 years", "Every 8 years", "Every 7 years", "Every 6 years")))
 
 dominance_prob_list <- list()
 
 for(i in 1:183) {
   print(i)
   dominance_prob_list[[i]] <- freq_df2[which(freq_df2$sim==
-                                                             unique(freq_df2$sim)[i]),]
+                                               unique(freq_df2$sim)[i]),]
   dominance_prob_list[[i]] <- assign_dominated_strategies(dominance_prob_list[[i]],
                                                           exposure="total_cost",
                                                           outcome="dalys_averted")
@@ -1575,7 +1534,7 @@ icer_list <- list()
 for(i in 1:183) {
   print(i)
   icer_list[[i]] <- freq_df2[which(freq_df2$sim==
-                                                   unique(freq_df2$sim)[i]),]
+                                     unique(freq_df2$sim)[i]),]
   icer_list[[i]] <- calculate_icer_per_sim(icer_list[[i]],
                                            exposure="total_cost",
                                            outcome="dalys_averted")
@@ -1624,13 +1583,13 @@ dominance_prob_list <- list()
 freq_df_disc2 <- freq_df_disc
 # Exclude strategies that have no clinical relevance (monitor > every 10/15 years)
 freq_df_disc2 <- subset(freq_df_disc, !(scenario %in% c("Every 30 years", "Every 25 years",
-                                              "Every 20 years", "Every 15 years", "Every 10 years",
-                                              "Every 9 years", "Every 8 years", "Every 7 years", "Every 6 years")))
+                                                        "Every 20 years", "Every 15 years", "Every 10 years",
+                                                        "Every 9 years", "Every 8 years", "Every 7 years", "Every 6 years")))
 
 for(i in 1:183) {
   print(i)
   dominance_prob_list[[i]] <- freq_df_disc2[which(freq_df_disc2$sim==
-                                                   unique(freq_df_disc2$sim)[i]),]
+                                                    unique(freq_df_disc2$sim)[i]),]
   dominance_prob_list[[i]] <- assign_dominated_strategies(dominance_prob_list[[i]],
                                                           exposure="total_cost",
                                                           outcome="dalys_averted")
@@ -1661,7 +1620,7 @@ icer_list <- list()
 for(i in 1:183) {
   print(i)
   icer_list[[i]] <- freq_df_disc2[which(freq_df_disc2$sim==
-                                         unique(freq_df_disc2$sim)[i]),]
+                                          unique(freq_df_disc2$sim)[i]),]
   icer_list[[i]] <- calculate_icer_per_sim(icer_list[[i]],
                                            exposure="total_cost",
                                            outcome="dalys_averted")
@@ -1735,7 +1694,7 @@ dominance_prob_list <- list()
 for(i in 1:183) {
   print(i)
   dominance_prob_list[[i]] <- freq_df_disc_cost[which(freq_df_disc_cost$sim==
-                                                   unique(freq_df_disc_cost$sim)[i]),]
+                                                        unique(freq_df_disc_cost$sim)[i]),]
   dominance_prob_list[[i]] <- assign_dominated_strategies(dominance_prob_list[[i]],
                                                           exposure="total_cost",
                                                           outcome="dalys_averted")
@@ -1760,13 +1719,13 @@ ggplot(dominance_prob_result) +
 icer_list <- list()
 
 freq_df_disc_cost2 <- subset(freq_df_disc_cost,
-                               scenario != "No monitoring")
+                             scenario != "No monitoring")
 
 
 for(i in 1:183) {
   print(i)
   icer_list[[i]] <- freq_df_disc_cost2[which(freq_df_disc_cost2$sim==
-                                         unique(freq_df_disc_cost2$sim)[i]),]
+                                               unique(freq_df_disc_cost2$sim)[i]),]
   icer_list[[i]] <- calculate_icer_per_sim(icer_list[[i]],
                                            exposure="total_cost",
                                            outcome="dalys_averted")
@@ -1851,12 +1810,12 @@ for(i in 1:183) {
   print(i)
   diff_list[[i]] <- freq_df_subs[which(freq_df_subs$sim==
                                          unique(freq_df_subs$sim)[i]),]
-#  diff_list[[i]] <- calculate_icer_per_sim(diff_list[[i]],
-#                                           exposure="total_cost",
-#                                           outcome="dalys_averted")
+  #  diff_list[[i]] <- calculate_icer_per_sim(diff_list[[i]],
+  #                                           exposure="total_cost",
+  #                                           outcome="dalys_averted")
   diff_list[[i]] <- arrange(diff_list[[i]], dalys_averted)
   diff_list[[i]]$diff_outcome <- c(diff_list[[i]][,"dalys_averted"][1],
-                                      diff(diff_list[[i]][,"dalys_averted"]))
+                                   diff(diff_list[[i]][,"dalys_averted"]))
   diff_list[[i]]$comparator <- lag(diff_list[[i]]$scenario)
 
 
@@ -1874,16 +1833,16 @@ diff_result
 # Plot incremental DALYs averted between each 2 strategies
 diff_df$scenario <- factor(as.character(diff_df$scenario),
                            levels = c("No monitoring", "At age 30", "Every 30 years",
-                                     "At age 45", "Every 15 years", "Every 10 years",
+                                      "At age 45", "Every 15 years", "Every 10 years",
                                       "Every 5 years", "Every 1 year"))
 
 ggplot(subset(diff_df, scenario != "No monitoring"),
        aes(x= scenario, y = diff_outcome)) +
-    geom_point(alpha=0.2) +
- #   geom_line(aes(x= scenario, y = diff_outcome, group = sim),alpha=0.05) +
-    stat_summary(fun.min = function(x) quantile(x,0.025),
-                 fun.max = function(x) quantile(x,0.975),
-                 geom = "errorbar") +
+  geom_point(alpha=0.2) +
+  #   geom_line(aes(x= scenario, y = diff_outcome, group = sim),alpha=0.05) +
+  stat_summary(fun.min = function(x) quantile(x,0.025),
+               fun.max = function(x) quantile(x,0.975),
+               geom = "errorbar") +
   stat_summary(fun = median, geom = "point", col = "red", size = 3) +
   stat_summary(fun = median, colour="red", geom="line", aes(group = 1)) +
   ylab("Incremental DALYs averted compared to\nprevious monitoring frequency") +
@@ -1901,7 +1860,7 @@ ggplot(subset(freq_df_subs),
                fun.max = function(x) quantile(x,0.975),
                geom = "errorbar") +
   stat_summary(fun = median, geom = "point", col = "red", size = 3) +
-#  stat_summary(fun = median, colour="red", geom="line", aes(group = 1)) +
+  #  stat_summary(fun = median, colour="red", geom="line", aes(group = 1)) +
   ylab("DALYs averted in each scenario") +
   theme_bw() +
   ylim(0,361000)
@@ -1910,18 +1869,18 @@ ggplot(subset(freq_df_subs),
 
 # Zoom in on yearly increase from every 10 to every 1 year
 freq_df_subs2 <- subset(freq_df, scenario %in% c("Every 15 years",
-                                                "Every 10 years","Every 9 years",
-                                                "Every 8 years","Every 7 years",
-                                                "Every 6 years","Every 5 years",
-                                                "Every 4 years",
-                                                "Every 3 years",
-                                                "Every 2 years",
-                                                "Every 1 year"))
+                                                 "Every 10 years","Every 9 years",
+                                                 "Every 8 years","Every 7 years",
+                                                 "Every 6 years","Every 5 years",
+                                                 "Every 4 years",
+                                                 "Every 3 years",
+                                                 "Every 2 years",
+                                                 "Every 1 year"))
 
 for(i in 1:183) {
   print(i)
   diff_list[[i]] <- freq_df_subs2[which(freq_df_subs2$sim==
-                                         unique(freq_df_subs2$sim)[i]),]
+                                          unique(freq_df_subs2$sim)[i]),]
   diff_list[[i]] <- calculate_icer_per_sim(diff_list[[i]],
                                            exposure="total_cost",
                                            outcome="dalys_averted")
@@ -1938,14 +1897,14 @@ diff_result2
 
 # Plot incremental DALYs averted between each 2 strategies
 diff_df2$scenario <- factor(as.character(diff_df2$scenario),
-                           levels = c("Every 15 years", "Every 10 years",
-                                      "Every 9 years",
-                                      "Every 8 years","Every 7 years",
-                                      "Every 6 years","Every 5 years",
-                                      "Every 4 years",
-                                      "Every 3 years",
-                                      "Every 2 years",
-                                      "Every 1 year"))
+                            levels = c("Every 15 years", "Every 10 years",
+                                       "Every 9 years",
+                                       "Every 8 years","Every 7 years",
+                                       "Every 6 years","Every 5 years",
+                                       "Every 4 years",
+                                       "Every 3 years",
+                                       "Every 2 years",
+                                       "Every 1 year"))
 
 ggplot(subset(diff_df2, scenario != "Every 15 years" & scenario != "Every 10 years"),
        aes(x= scenario, y = diff_outcome)) +
@@ -1968,40 +1927,40 @@ ggplot(subset(diff_df2, scenario != "Every 15 years" & scenario != "Every 10 yea
 # so in status quo, NOT compared to the previous strategy.
 
 freq_df_cohort <- create_incremental_plot_df(interactions_df=freq_interactions,
-                                      py_on_treatment_df=freq_interactions_py_on_treatment,
-                                      deaths_averted_df=freq_hbv_deaths_averted_cohort,
-                                      ly_saved_df = freq_dalys_averted_cohort, # replace LY by DALYs
-                                      hbsag_test_cost = 8.3,
-                                      clinical_assessment_cost = 84.4,
-                                      monitoring_assessment_cost = 40.1,
-                                      treatment_py_cost = 60,
-                                      scenario_labels_obj = scenario_labels,
-                                      ref_label = "No treatment")
+                                             py_on_treatment_df=freq_interactions_py_on_treatment,
+                                             deaths_averted_df=freq_hbv_deaths_averted_cohort,
+                                             ly_saved_df = freq_dalys_averted_cohort, # replace LY by DALYs
+                                             hbsag_test_cost = 8.3,
+                                             clinical_assessment_cost = 84.4,
+                                             monitoring_assessment_cost = 40.1,
+                                             treatment_py_cost = 60,
+                                             scenario_labels_obj = scenario_labels,
+                                             ref_label = "No treatment")
 colnames(freq_df_cohort)[colnames(freq_df_cohort)=="ly_saved"] <- "dalys_averted"
 
 freq_df_cohort_subs <- subset(freq_df_cohort, scenario %in% c("No monitoring",
-                                                "Every 30 years", "Every 25 years",
-                                                "Every 20 years","Every 15 years",
-                                                "Every 10 years","Every 5 years",
-                                                "Every 1 year"))
+                                                              "Every 30 years", "Every 25 years",
+                                                              "Every 20 years","Every 15 years",
+                                                              "Every 10 years","Every 5 years",
+                                                              "Every 1 year"))
 
 # Doubling frequencies
 freq_df_cohort_subs <- subset(freq_df_cohort, scenario %in% c("No monitoring",
-                                                "Every 30 years",
-                                                #"At age 30", "At age 45",
-                                                #"Every 25 years",
-                                                "Every 20 years",
-                                                #"Every 15 years",
-                                                "Every 10 years",
-                                                "Every 5 years",
-                                                "Every 2 years"))
+                                                              "Every 30 years",
+                                                              #"At age 30", "At age 45",
+                                                              #"Every 25 years",
+                                                              "Every 20 years",
+                                                              #"Every 15 years",
+                                                              "Every 10 years",
+                                                              "Every 5 years",
+                                                              "Every 2 years"))
 
 
 diff_list <- list()
 for(i in 1:183) {
   print(i)
   diff_list[[i]] <- freq_df_cohort_subs[which(freq_df_cohort_subs$sim==
-                                         unique(freq_df_cohort_subs$sim)[i]),]
+                                                unique(freq_df_cohort_subs$sim)[i]),]
   diff_list[[i]] <- calculate_icer_per_sim(diff_list[[i]],
                                            exposure="total_cost",
                                            outcome="deaths_averted")
@@ -2018,9 +1977,9 @@ diff_result_cohort_deaths
 
 # Plot incremental DALYs averted between each 2 strategies
 diff_df_cohort_deaths$scenario <- factor(as.character(diff_df_cohort_deaths$scenario),
-                           levels = c("No monitoring", "Every 30 years", "Every 25 years",
-                                      "Every 20 years", "Every 15 years", "Every 10 years",
-                                      "Every 5 years", "Every 1 year"))
+                                         levels = c("No monitoring", "Every 30 years", "Every 25 years",
+                                                    "Every 20 years", "Every 15 years", "Every 10 years",
+                                                    "Every 5 years", "Every 1 year"))
 
 diff_df_cohort_deaths$scenario <- factor(as.character(diff_df_cohort_deaths$scenario),
                                          levels = c("No monitoring",
@@ -2078,18 +2037,18 @@ ggplot(subset(freq_df_cohort_subs),
 
 # Zoom in on yearly increase from every 10 to every 1 year
 freq_df_cohort_subs2 <- subset(freq_df_cohort, scenario %in% c("Every 15 years",
-                                                 "Every 10 years","Every 9 years",
-                                                 "Every 8 years","Every 7 years",
-                                                 "Every 6 years","Every 5 years",
-                                                 "Every 4 years",
-                                                 "Every 3 years",
-                                                 "Every 2 years",
-                                                 "Every 1 year"))
+                                                               "Every 10 years","Every 9 years",
+                                                               "Every 8 years","Every 7 years",
+                                                               "Every 6 years","Every 5 years",
+                                                               "Every 4 years",
+                                                               "Every 3 years",
+                                                               "Every 2 years",
+                                                               "Every 1 year"))
 
 for(i in 1:183) {
   print(i)
   diff_list[[i]] <- freq_df_cohort_subs2[which(freq_df_cohort_subs2$sim==
-                                          unique(freq_df_cohort_subs2$sim)[i]),]
+                                                 unique(freq_df_cohort_subs2$sim)[i]),]
   diff_list[[i]] <- calculate_icer_per_sim(diff_list[[i]],
                                            exposure="total_cost",
                                            outcome="deaths_averted")
@@ -2106,14 +2065,14 @@ diff_result_cohort_deaths2
 
 # Plot incremental DALYs averted between each 2 strategies
 diff_df_cohort_deaths2$scenario <- factor(as.character(diff_df_cohort_deaths2$scenario),
-                            levels = c("Every 15 years", "Every 10 years",
-                                       "Every 9 years",
-                                       "Every 8 years","Every 7 years",
-                                       "Every 6 years","Every 5 years",
-                                       "Every 4 years",
-                                       "Every 3 years",
-                                       "Every 2 years",
-                                       "Every 1 year"))
+                                          levels = c("Every 15 years", "Every 10 years",
+                                                     "Every 9 years",
+                                                     "Every 8 years","Every 7 years",
+                                                     "Every 6 years","Every 5 years",
+                                                     "Every 4 years",
+                                                     "Every 3 years",
+                                                     "Every 2 years",
+                                                     "Every 1 year"))
 
 ggplot(subset(diff_df_cohort_deaths2, scenario != "Every 15 years" & scenario != "Every 10 years"),
        aes(x= scenario, y = diff_outcome)) +
@@ -2133,8 +2092,8 @@ freq_df_daly_summary <- subset(freq_df, scenario %in% c("No monitoring",
                                                         "At age 30", "At age 45",
                                                         "Every 30 years",
                                                         "Every 25 years",
-                                "Every 20 years", "Every 15 years", "Every 10 years",
-                                "Every 5 years", "Every 1 year")) %>%
+                                                        "Every 20 years", "Every 15 years", "Every 10 years",
+                                                        "Every 5 years", "Every 1 year")) %>%
   group_by(scenario) %>%
   summarise(median = median(dalys_averted),
             lower = quantile(dalys_averted, 0.025),
@@ -2207,9 +2166,9 @@ ggplot(data = freq_df) +
              aes(x = deaths_averted, y = total_interactions,
                  group = reorder(scenario, total_interactions), colour = reorder(scenario, total_interactions)),
              size = 5, shape = 1, colour = "black") +
-# scale_fill_manual(values = rev(brewer.pal(13,"RdYlBu"))) +
-# scale_colour_manual("Monitoring frequency",
-#                      values = c("black", rev(brewer.pal(13,"RdYlBu")))) +
+  # scale_fill_manual(values = rev(brewer.pal(13,"RdYlBu"))) +
+  # scale_colour_manual("Monitoring frequency",
+  #                      values = c("black", rev(brewer.pal(13,"RdYlBu")))) +
   guides(fill=FALSE) +
   xlab("Incremental total clinical interactions") +
   ylab("Incremental HBV-related deaths averted") +
@@ -2248,9 +2207,9 @@ ggplot(data = freq_df) +
              aes(x = dalys_averted, y = total_cost,
                  group =reorder(scenario, total_cost), colour = reorder(scenario, total_cost)),
              size = 5, shape = 1, colour = "black") +
-#  scale_fill_manual(values = rev(brewer.pal(11,"RdYlBu"))) +
-#  scale_colour_manual("Monitoring frequency",
-#                      values = c("black", rev(brewer.pal(11,"RdYlBu")))) +
+  #  scale_fill_manual(values = rev(brewer.pal(11,"RdYlBu"))) +
+  #  scale_colour_manual("Monitoring frequency",
+  #                      values = c("black", rev(brewer.pal(11,"RdYlBu")))) +
   guides(fill=FALSE) +
   geom_abline(slope=391, intercept = 0, linetype = "dashed") +
   geom_abline(slope=518, intercept = 0, linetype = "dashed") +
@@ -2268,49 +2227,49 @@ ggplot(data = subset(freq_df, scenario %in%
                        c("No treatment", "No monitoring", "Every 30 years", "Every 25 years",
                          "Every 20 years", "Every 15 years", "Every 10 years",
                          "Every 5 years", "Every 1 year"))) +
-         geom_line(aes(x = dalys_averted, y = total_cost, group = sim),
-                   colour = "grey", alpha = 0.3) +
-         geom_point(aes(x = dalys_averted, y = total_cost,
-                        group = reorder(scenario, total_cost),
-                        colour = reorder(scenario, total_cost)), alpha = 0.15) +
-         stat_ellipse(data = subset(freq_df, scenario %in%
-                                      c("No monitoring", "Every 30 years", "Every 25 years",
-                                        "Every 20 years", "Every 15 years", "Every 10 years",
-                                        "Every 5 years", "Every 1 year")),
-                      aes(x = dalys_averted, y = total_cost,
-                          group = reorder(scenario, total_cost), fill= reorder(scenario, total_cost)),
-                      geom = "polygon",
-                      alpha = 0.2) +
-         geom_line(data = subset(freq_df_median, scenario %in% c("No treatment", "No monitoring", "Every 30 years", "Every 25 years",
-                                                            "Every 20 years", "Every 15 years", "Every 10 years",
-                                                            "Every 5 years", "Every 1 year")),
-                   aes(x = dalys_averted, y = total_cost), size = 1) +
-         geom_point(data = subset(freq_df_median, scenario %in% c("No treatment", "No monitoring", "Every 30 years", "Every 25 years",
-                                                                  "Every 20 years", "Every 15 years", "Every 10 years",
-                                                                  "Every 5 years", "Every 1 year")),
-                    aes(x = dalys_averted, y = total_cost,
-                        group = reorder(scenario, total_cost), colour = reorder(scenario, total_cost)),
-                    size = 5) +
-         geom_point(data = subset(freq_df_median, scenario %in% c("No treatment", "No monitoring", "Every 30 years", "Every 25 years",
-                                                                  "Every 20 years", "Every 15 years", "Every 10 years",
-                                                                  "Every 5 years", "Every 1 year")),
-                    aes(x = dalys_averted, y = total_cost,
-                        group =reorder(scenario, total_cost), colour = reorder(scenario, total_cost)),
-                    size = 5, shape = 1, colour = "black") +
-         #  scale_fill_manual(values = rev(brewer.pal(11,"RdYlBu"))) +
-         #  scale_colour_manual("Monitoring frequency",
-         #                      values = c("black", rev(brewer.pal(11,"RdYlBu")))) +
-         guides(fill=FALSE) +
-         geom_abline(slope=391, intercept = 0, linetype = "dashed") +
-         geom_abline(slope=518, intercept = 0, linetype = "dashed") +
-         xlab("Incremental total cost (USD 2019)") +
-         ylab("Incremental DALYs averted") +
-         labs(colour="Monitoring frequencies") +
-         theme_bw() +
-         theme(axis.text = element_text(size = 15),
-               axis.title = element_text(size = 15),
-               legend.text = element_text(size = 14),
-               legend.title = element_text(size = 14))
+  geom_line(aes(x = dalys_averted, y = total_cost, group = sim),
+            colour = "grey", alpha = 0.3) +
+  geom_point(aes(x = dalys_averted, y = total_cost,
+                 group = reorder(scenario, total_cost),
+                 colour = reorder(scenario, total_cost)), alpha = 0.15) +
+  stat_ellipse(data = subset(freq_df, scenario %in%
+                               c("No monitoring", "Every 30 years", "Every 25 years",
+                                 "Every 20 years", "Every 15 years", "Every 10 years",
+                                 "Every 5 years", "Every 1 year")),
+               aes(x = dalys_averted, y = total_cost,
+                   group = reorder(scenario, total_cost), fill= reorder(scenario, total_cost)),
+               geom = "polygon",
+               alpha = 0.2) +
+  geom_line(data = subset(freq_df_median, scenario %in% c("No treatment", "No monitoring", "Every 30 years", "Every 25 years",
+                                                          "Every 20 years", "Every 15 years", "Every 10 years",
+                                                          "Every 5 years", "Every 1 year")),
+            aes(x = dalys_averted, y = total_cost), size = 1) +
+  geom_point(data = subset(freq_df_median, scenario %in% c("No treatment", "No monitoring", "Every 30 years", "Every 25 years",
+                                                           "Every 20 years", "Every 15 years", "Every 10 years",
+                                                           "Every 5 years", "Every 1 year")),
+             aes(x = dalys_averted, y = total_cost,
+                 group = reorder(scenario, total_cost), colour = reorder(scenario, total_cost)),
+             size = 5) +
+  geom_point(data = subset(freq_df_median, scenario %in% c("No treatment", "No monitoring", "Every 30 years", "Every 25 years",
+                                                           "Every 20 years", "Every 15 years", "Every 10 years",
+                                                           "Every 5 years", "Every 1 year")),
+             aes(x = dalys_averted, y = total_cost,
+                 group =reorder(scenario, total_cost), colour = reorder(scenario, total_cost)),
+             size = 5, shape = 1, colour = "black") +
+  #  scale_fill_manual(values = rev(brewer.pal(11,"RdYlBu"))) +
+  #  scale_colour_manual("Monitoring frequency",
+  #                      values = c("black", rev(brewer.pal(11,"RdYlBu")))) +
+  guides(fill=FALSE) +
+  geom_abline(slope=391, intercept = 0, linetype = "dashed") +
+  geom_abline(slope=518, intercept = 0, linetype = "dashed") +
+  xlab("Incremental total cost (USD 2019)") +
+  ylab("Incremental DALYs averted") +
+  labs(colour="Monitoring frequencies") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        legend.text = element_text(size = 14),
+        legend.title = element_text(size = 14))
 
 # Plot with discounting
 freq_df_disc_median <- group_by(freq_df_disc, scenario) %>%
@@ -2326,7 +2285,7 @@ ggplot(data = freq_df_disc) +
                  group = reorder(scenario, total_cost),
                  colour = reorder(scenario, total_cost)), alpha = 0.15) +
   stat_ellipse(data = subset(freq_df_disc, !(scenario %in%
-                               c("No treatment"))),
+                                               c("No treatment"))),
                aes(x = dalys_averted, y = total_cost,
                    group = reorder(scenario, total_cost), fill= reorder(scenario, total_cost)),
                geom = "polygon",
@@ -2362,10 +2321,10 @@ ggplot(data = subset(incremental_df_freq, scenario %in% c("Status quo", "No moni
                                                           "Every 10 years", "Every 5 years", "Every 3 years",
                                                           "Every 2 years",
                                                           "Every 1 year"))) +
-#  geom_line(aes(y = deaths_averted, x = interactions, group = sim),
-#            colour = "grey", alpha = 0.3) +
-#  geom_point(aes(y = deaths_averted, x= interactions,
-#                 group = scenario, colour = scenario), alpha = 0.15) +
+  #  geom_line(aes(y = deaths_averted, x = interactions, group = sim),
+  #            colour = "grey", alpha = 0.3) +
+  #  geom_point(aes(y = deaths_averted, x= interactions,
+  #                 group = scenario, colour = scenario), alpha = 0.15) +
   stat_ellipse(data = subset(incremental_df_freq, scenario %in% c("No monitoring",
                                                                   "Every 10 years", "Every 5 years", "Every 3 years",
                                                                   "Every 2 years",
@@ -2411,14 +2370,14 @@ ggplot(data = subset(incremental_df_freq, scenario %in% c("Status quo", "No moni
         legend.title = element_text(size = 14)) +
   coord_flip()
 
-# Calculate probability of each strategy being non-dominated ----
+# Calculate probability of each strategy being non-dominated (no discounting) ----
 # For LY saved and cost:
 dominance_prob_list <- list()
 
 for(i in 1:183) {
   print(i)
   dominance_prob_list[[i]] <- incremental_df_ly_freq[which(incremental_df_ly_freq$sim==
-                                                        unique(incremental_df_ly_freq$sim)[i]),]
+                                                             unique(incremental_df_ly_freq$sim)[i]),]
   dominance_prob_list[[i]] <- assign_dominated_strategies(dominance_prob_list[[i]],
                                                           exposure="total_cost",
                                                           outcome="ly_saved")
@@ -2443,10 +2402,10 @@ icer_list <- list()
 for(i in 1:183) {
   print(i)
   icer_list[[i]] <- incremental_df_ly_freq[which(incremental_df_ly_freq$sim==
-                                                             unique(incremental_df_ly_freq$sim)[i]),]
+                                                   unique(incremental_df_ly_freq$sim)[i]),]
   icer_list[[i]] <- calculate_icer_per_sim(icer_list[[i]],
-                                                          exposure="total_cost",
-                                                          outcome="ly_saved")
+                                           exposure="total_cost",
+                                           outcome="ly_saved")
 }
 icer_df <- do.call("rbind", icer_list)
 icer_result <- group_by(icer_df, scenario, comparator) %>%
@@ -2481,10 +2440,10 @@ dominance_prob_list_int <- list()
 for(i in 1:183) {
   print(i)
   dominance_prob_list_int[[i]] <- incremental_df_ly_freq[which(incremental_df_ly_freq$sim==
-                                                             unique(incremental_df_ly_freq$sim)[i]),]
+                                                                 unique(incremental_df_ly_freq$sim)[i]),]
   dominance_prob_list_int[[i]] <- assign_dominated_strategies(dominance_prob_list_int[[i]],
-                                                          exposure="interactions",
-                                                          outcome="ly_saved")
+                                                              exposure="interactions",
+                                                              outcome="ly_saved")
 }
 dominance_prob_int_df <- do.call("rbind", dominance_prob_list_int)
 dominance_prob_int_result <- group_by(dominance_prob_int_df, scenario, dominated) %>%
@@ -2527,761 +2486,171 @@ ggplot(iier_result[iier_result$scenario != "Status quo",]) +
   theme_bw() +
   coord_flip()
 
-# 2) Incremental benefits and interactions between a set of strategies (monitoring by age) ----
-## Approach 1 (by age): monitoring given age group from entry until aging out ----
-# Incrementally intensive strategies are: 15-30 years, 15-45 years, 15+ (all ages)
-
-# INCREMENTAL INTERACTIONS IN EACH SCENARIO BY 2100 COMPARED TO NO MONITORING
-# out3, monit_out6, monit_out7, out5 (5 yearly)
-
-# Order could be:
-# 5-yearly in 15-30 => yearly in 15-30 (better or worse?) => if better:
-# yearly in 15-30 + 5-yearly in 30-45 => yearly in 15-30 + yearly in 30-45 etc
-# Right now, going from Yearly 15-30 to 5-yearly 15-45, which makes no sense
-# Can I derive the increment for this from my current simulations?
-# However, interesting observation that going from yearly monitoring in 15-45
-# to monitoring 5-yearly across all ages leads to more deaths averted at a lower cost!
-
-# Create data frame with all interactions and outcomes of interest
-interactions1 <- rbind(
+## 2) Compare cost-effectiveness of adding IT as a category to treat ----
+interactions_test_it <- rbind(
+  cbind(scenario = "screen_2020_monit_0",
+        left_join(left_join(left_join(gather(out3n$interactions[[16]]$total_screened[-c(1:3)],
+                                             key = "sim", value = "hbsag_tests"),
+                                      gather(out3n$interactions[[16]]$total_assessed[-c(1:3)],
+                                             key = "sim", value = "clinical_assessments"), by = "sim"),
+                            gather(out3n$interactions[[16]]$total_assessed[-c(1:3)]-out3n$interactions[[16]]$total_assessed[-c(1:3)],
+                                   key = "sim", value = "monitoring_assessments"), by = "sim"),
+                  gather(out3n$interactions[[16]]$total_treated[-c(1:3)],
+                         key = "sim", value = "treatment_initiations"), by = "sim")),
   cbind(scenario = "screen_2020_monit_5",
-        left_join(gather(out5$interactions[[16]]$total_assessed[-c(1:3)]-out3$interactions[[16]]$total_assessed[-c(1:3)],
-                         key = "sim", value = "monitoring_assessments"),
-                  gather(out5$interactions[[16]]$total_treated[-c(1:3)]-out3$interactions[[16]]$total_treated[-c(1:3)],
+        left_join(left_join(left_join(gather(out5n$interactions[[16]]$total_screened[-c(1:3)],
+                                             key = "sim", value = "hbsag_tests"),
+                                      gather(out3n$interactions[[16]]$total_assessed[-c(1:3)],   # stays the same
+                                             key = "sim", value = "clinical_assessments"), by = "sim"),
+                            gather(out5n$interactions[[16]]$total_assessed[-c(1:3)]-out3n$interactions[[16]]$total_assessed[-c(1:3)],
+                                   key = "sim", value = "monitoring_assessments"), by = "sim"),
+                  gather(out5n$interactions[[16]]$total_treated[-c(1:3)],
                          key = "sim", value = "treatment_initiations"), by = "sim")),
-  cbind(scenario = "screen_2020_monit_1",
-        left_join(gather(out6$interactions[[16]]$total_assessed[-c(1:3)]-out3$interactions[[16]]$total_assessed[-c(1:3)],
-                         key = "sim", value = "monitoring_assessments"),
-                  gather(out6$interactions[[16]]$total_treated[-c(1:3)]-out3$interactions[[16]]$total_treated[-c(1:3)],
+  cbind(scenario = "screen_2020_monit_2",
+        left_join(left_join(left_join(gather(out6an$interactions[[16]]$total_screened[-c(1:3)],
+                                             key = "sim", value = "hbsag_tests"),
+                                      gather(out3n$interactions[[16]]$total_assessed[-c(1:3)],   # stays the same
+                                             key = "sim", value = "clinical_assessments"), by = "sim"),
+                            gather(out6an$interactions[[16]]$total_assessed[-c(1:3)]-out3n$interactions[[16]]$total_assessed[-c(1:3)],
+                                   key = "sim", value = "monitoring_assessments"), by = "sim"),
+                  gather(out6an$interactions[[16]]$total_treated[-c(1:3)],
                          key = "sim", value = "treatment_initiations"), by = "sim")),
-  cbind(scenario = "screen_2020_monit_sim1",
-        left_join(gather(monit_out1$interactions[[16]]$total_assessed[-c(1:3)]-out3$interactions[[16]]$total_assessed[-c(1:3)],
-                         key = "sim", value = "monitoring_assessments"),
-                  gather(monit_out1$interactions[[16]]$total_treated[-c(1:3)]-out3$interactions[[16]]$total_treated[-c(1:3)],
+  cbind(scenario = "screen_2020_monit_0_it",
+        left_join(left_join(left_join(gather(out3_it$interactions[[16]]$total_screened[-c(1:3)],
+                                             key = "sim", value = "hbsag_tests"),
+                                      gather(out3_it$interactions[[16]]$total_assessed[-c(1:3)],
+                                             key = "sim", value = "clinical_assessments"), by = "sim"),
+                            gather(out3_it$interactions[[16]]$total_assessed[-c(1:3)]-out3_it$interactions[[16]]$total_assessed[-c(1:3)],
+                                   key = "sim", value = "monitoring_assessments"), by = "sim"),
+                  gather(out3_it$interactions[[16]]$total_treated[-c(1:3)],
                          key = "sim", value = "treatment_initiations"), by = "sim")),
-  cbind(scenario = "screen_2020_monit_sim2",
-        left_join(gather(monit_out2$interactions[[16]]$total_assessed[-c(1:3)]-out3$interactions[[16]]$total_assessed[-c(1:3)],
-                         key = "sim", value = "monitoring_assessments"),
-                  gather(monit_out2$interactions[[16]]$total_treated[-c(1:3)]-out3$interactions[[16]]$total_treated[-c(1:3)],
+  cbind(scenario = "screen_2020_monit_5_it",
+        left_join(left_join(left_join(gather(out5_it$interactions[[16]]$total_screened[-c(1:3)],
+                                             key = "sim", value = "hbsag_tests"),
+                                      gather(out3_it$interactions[[16]]$total_assessed[-c(1:3)],   # stays the same
+                                             key = "sim", value = "clinical_assessments"), by = "sim"),
+                            gather(out5_it$interactions[[16]]$total_assessed[-c(1:3)]-out3_it$interactions[[16]]$total_assessed[-c(1:3)],
+                                   key = "sim", value = "monitoring_assessments"), by = "sim"),
+                  gather(out5_it$interactions[[16]]$total_treated[-c(1:3)],
                          key = "sim", value = "treatment_initiations"), by = "sim")),
-  cbind(scenario = "screen_2020_monit_sim6",
-        left_join(gather(monit_out6$interactions[[16]]$total_assessed[-c(1:3)]-out3$interactions[[16]]$total_assessed[-c(1:3)],
-                         key = "sim", value = "monitoring_assessments"),
-                  gather(monit_out6$interactions[[16]]$total_treated[-c(1:3)]-out3$interactions[[16]]$total_treated[-c(1:3)],
-                         key = "sim", value = "treatment_initiations"), by = "sim")),
-  cbind(scenario = "screen_2020_monit_sim7",
-        left_join(gather(monit_out7$interactions[[16]]$total_assessed[-c(1:3)]-out3$interactions[[16]]$total_assessed[-c(1:3)],
-                         key = "sim", value = "monitoring_assessments"),
-                  gather(monit_out7$interactions[[16]]$total_treated[-c(1:3)]-out3$interactions[[16]]$total_treated[-c(1:3)],
-                         key = "sim", value = "treatment_initiations"), by = "sim"))
-)
+  cbind(scenario = "screen_2020_monit_2_it",
+        left_join(left_join(left_join(gather(out6a_it$interactions[[16]]$total_screened[-c(1:3)],
+                                             key = "sim", value = "hbsag_tests"),
+                                      gather(out3_it$interactions[[16]]$total_assessed[-c(1:3)],   # stays the same
+                                             key = "sim", value = "clinical_assessments"), by = "sim"),
+                            gather(out6a_it$interactions[[16]]$total_assessed[-c(1:3)]-out3_it$interactions[[16]]$total_assessed[-c(1:3)],
+                                   key = "sim", value = "monitoring_assessments"), by = "sim"),
+                  gather(out6a_it$interactions[[16]]$total_treated[-c(1:3)],
+                         key = "sim", value = "treatment_initiations"), by = "sim")))
+
+ggplot(interactions_test_it) +
+  geom_boxplot(aes(x=scenario, y = monitoring_assessments))
+ggplot(interactions_test_it) +
+  geom_boxplot(aes(x=scenario, y = treatment_initiations))
+# Monitoring assessments almost the same but treatment initiations are substantially
+# higher if treating IT!
 
 # Extract person-years on treatment
-interactions1_py_on_treatment <- rbind(
+py_on_treatment_test_it <- rbind(
+  data.frame(scenario = "screen_2020_monit_0",
+             sim = names(out3n$py_on_treatment[[16]]),
+             py_on_treatment = out3n$py_on_treatment[[16]]),
   data.frame(scenario = "screen_2020_monit_5",
-             sim = names(out5$py_on_treatment[[16]]-out3$py_on_treatment[[16]]),
-             py_on_treatment = out5$py_on_treatment[[16]]-out3$py_on_treatment[[16]]),
-  data.frame(scenario = "screen_2020_monit_1",
-             sim = names(out6$py_on_treatment[[16]]-out3$py_on_treatment[[16]]),
-             py_on_treatment= out6$py_on_treatment[[16]]-out3$py_on_treatment[[16]]),
-  data.frame(scenario = "screen_2020_monit_sim1",
-             sim = names(monit_out1$py_on_treatment[[16]]-out3$py_on_treatment[[16]]),
-             py_on_treatment = monit_out1$py_on_treatment[[16]]-out3$py_on_treatment[[16]]),
-  data.frame(scenario = "screen_2020_monit_sim2",
-             sim = names(monit_out2$py_on_treatment[[16]]-out3$py_on_treatment[[16]]),
-             py_on_treatment = monit_out2$py_on_treatment[[16]]-out3$py_on_treatment[[16]]),
-  data.frame(scenario = "screen_2020_monit_sim6",
-             sim = names(monit_out6$py_on_treatment[[16]]-out3$py_on_treatment[[16]]),
-             py_on_treatment = monit_out6$py_on_treatment[[16]]-out3$py_on_treatment[[16]]),
-  data.frame(scenario = "screen_2020_monit_sim7",
-             sim = names(monit_out7$py_on_treatment[[16]]-out3$py_on_treatment[[16]]),
-             py_on_treatment = monit_out7$py_on_treatment[[16]]-out3$py_on_treatment[[16]]))
-
-# Outcome 1: HBV related deaths averted
-cohort_deaths_averted_long <-
-  plot_hbv_deaths_averted_cohort(counterfactual_object = out3,
-                                 scenario_objects = list(out5,
-                                                         out6,
-                                                         monit_out1,
-                                                         monit_out2,
-                                                         monit_out6,
-                                                         monit_out7),
-                                 outcome_to_plot = "number_averted",
-                                 counterfactual_label = "treatment programme without monitoring")
-#levels(cohort_deaths_averted_long$scenario) <- scenario_labels
-cohort_deaths_averted_long <- subset(cohort_deaths_averted_long, type == "number_averted") %>%
-  select(scenario, sim, value)
-cohort_deaths_averted_long$sim <- gsub("[^0-9]", "", cohort_deaths_averted_long$sim)
-
-# Outcome 2: Life-years saved
-cohort_ly_gained_long <-
-  plot_ly_gained_cohort(counterfactual_object = out3,
-                        scenario_objects = list(out5,
-                                                out6,
-                                                monit_out1,
-                                                monit_out2,
-                                                monit_out6,
-                                                monit_out7),
-                        outcome_to_plot = "number_averted",
-                        counterfactual_label = "treatment programme without monitoring")
-colnames(cohort_ly_gained_long)[1:2] <- c("scenario", "counterfactual")
-
-cohort_ly_gained_long <- subset(cohort_ly_gained_long, type == "number_averted") %>%
-  select(scenario, sim, value)
-cohort_ly_gained_long$sim <- gsub("[^0-9]", "", cohort_ly_gained_long$sim)
-
-# Combine into full dataframe
-df1 <- create_incremental_plot_df(interactions_df=interactions1,
-                                          py_on_treatment_df=interactions1_py_on_treatment,
-                                          deaths_averted_df=cohort_deaths_averted_long,
-                                          ly_saved_df = cohort_ly_gained_long,
-                                  scenario_labels_obj = scenario_labels,
-                                  ref_label = "No monitoring")
-
-# Use BCEA package to find dominated and extended dominated strategies
-find_dominated_strategies(df1, "total_interactions", "deaths_averted")
-find_dominated_strategies(df1,"total_cost", "deaths_averted")
-find_dominated_strategies(df1,"total_interactions", "ly_saved")
-find_dominated_strategies(df1, "total_cost", "ly_saved")
-# Deaths averted and interactions: Yearly 15-45 (A), Yearly 15-30 (E)
-# Deaths averted and cost: Yearly 15-45 (A), Yearly 15-30 (E), 5-yearly 15-45 (E), 5-yearly 15-30 (E),
-# LY saved and interactions: Yearly 15-45 (A), Yearly 15-30 (E)
-# LY saved and cost: Yearly 15-45 (A), Yearly 15-30 (E)
-
-# Add labels for this to dataframe
-df1$frontier_interactions <- "Include"
-df1$frontier_interactions[df1$scenario %in% c("Yearly 15-45", "Yearly 15-30")] <- "Dominated"
-df1$frontier_deaths_averted_cost <- "Include"
-df1$frontier_deaths_averted_cost[df1$scenario %in% c("Yearly 15-45", "Yearly 15-30",
-                                                     "5-yearly 15-45", "5-yearly 15-30")] <- "Dominated"
-df1$frontier_ly_saved_cost <- "Include"
-df1$frontier_ly_saved_cost[df1$scenario %in% c("Yearly 15-45", "Yearly 15-30")] <-
-  "Dominated"
-
-levels(df1$scenario) <- list("No monitoring" = "No monitoring",
-                             "15-30,\nevery 5 years" = "5-yearly 15-30",
-                             "15-30,\nevery 1 year" = "Yearly 15-30",
-                             "15-45,\nevery 5 years" = "5-yearly 15-45",
-                             "All ages,\nevery 5 years" = "5-yearly all ages",
-                             "All ages,\nevery 1 year" = "Yearly all ages",
-                             "15-45,\nevery 1 year" = "Yearly 15-45")
-
-df1_summary <- df1 %>%
-  group_by(scenario, frequency, age_group, frontier_interactions, frontier_deaths_averted_cost, frontier_ly_saved_cost) %>%
-  summarise(median_deaths_averted = median(deaths_averted),
-            median_ly_saved = median(ly_saved),
-            median_interactions = median(total_interactions),
-            median_cost = median(total_cost))
-
-# Plots ----
-
-# Plot: interactions vs deaths averted (INCL)
-ggplot(df1) +
-  geom_line(data= subset(df1, frontier_interactions== "Include"),
-            aes(x = deaths_averted, y= total_interactions,
-                group = sim), colour = "grey", alpha = 0.3) +
-  stat_ellipse(data=subset(df1, scenario != "No monitoring"),
-               aes(x=deaths_averted,y=total_interactions,
-                   group = reorder(scenario, deaths_averted),
-                   fill= reorder(scenario, deaths_averted)),
-               geom = "polygon", na.rm = FALSE, alpha = 0.2) +
-  geom_point(aes(x = deaths_averted, y = total_interactions,
-                 group =reorder(scenario, deaths_averted), colour = reorder(scenario, deaths_averted)),
-             alpha = 0.15) +
-  # Overlay median
-  geom_line(data = subset(df1_summary, frontier_interactions == "Include"),
-            aes(y = median_interactions,
-                x = median_deaths_averted), size = 1) +
-  geom_point(data = df1_summary,
-             aes(y = median_interactions,
-                 x = median_deaths_averted,
-                 group = reorder(scenario, median_deaths_averted),
-                 colour = reorder(scenario, median_deaths_averted)), size = 5) +
-  geom_point(data = df1_summary,
-             aes(y = median_interactions,
-                 x = median_deaths_averted,
-                 group = reorder(scenario, median_deaths_averted)),
-             size = 5, shape = 1, colour = "black") +
-  scale_fill_manual("Monitoring strategies\nstarting at entry\ninto cohort",
-                    values=rev(brewer.pal(6,"RdYlBu"))) +
-  scale_colour_manual("Monitoring strategies\nstarting at entry\ninto cohort",
-                      values=c("black", rev(brewer.pal(6,"RdYlBu")))) +
-  guides(fill=FALSE) +
-  xlab("Incremental HBV-related deaths averted") +
-  ylab("Incremental number of clinical interactions") +
-  xlim(-150,7200) +
-  #  ylim(0,2500000) +
-  theme_bw() +
-  theme(axis.text = element_text(size = 15),
-        axis.title = element_text(size = 15),
-        legend.text = element_text(size = 12),
-        title = element_text(size = 15))
-
-# Plot: interactions vs deaths averted (separated by frequency)
-ggplot(df1) +
-  geom_line(aes(x = deaths_averted, y= total_interactions,
-                group = sim), colour = "grey", alpha = 0.5) +
-  geom_point(aes(x = deaths_averted, y = total_interactions,
-                 group =reorder(scenario, deaths_averted), colour = reorder(scenario, deaths_averted)), alpha = 0.4) +
-  stat_ellipse(geom = "polygon",
-               aes(x=deaths_averted,y=total_interactions,
-                   group = reorder(scenario, deaths_averted), fill= reorder(scenario, deaths_averted)), alpha = 0.3) +
-  # Overlay median
-  geom_line(data = df1_summary,
-            aes(y = median_interactions,
-                x = median_deaths_averted), size = 1) +
-  geom_point(data = df1_summary,
-             aes(y = median_interactions,
-                 x = median_deaths_averted,
-                 group = reorder(scenario, median_deaths_averted),
-                 colour = reorder(scenario, median_deaths_averted)), size = 5) +
-  geom_point(data = df1_summary,
-             aes(y = median_interactions,
-                 x = median_deaths_averted,
-                 group = reorder(scenario, median_deaths_averted)),
-             size = 5, shape = 1, colour = "black") +
-  facet_wrap(~frequency) +
-  scale_fill_brewer("Monitoring strategies\nstarting at entry\ninto cohort", palette="RdYlBu") +
-  scale_colour_brewer("Monitoring strategies\nstarting at entry\ninto cohort",
-                      palette="RdYlBu") +
-  xlab("Incremental HBV-related deaths averted") +
-  ylab("Incremental number of clinical interactions") +
-  xlim(-150,7200) +
-  #  ylim(0,2500000) +
-  theme_bw() +
-  theme(axis.text = element_text(size = 15),
-        axis.title = element_text(size = 15),
-        legend.text = element_text(size = 12),
-        title = element_text(size = 15))
-
-# Plot: cost vs deaths averted (INCL)
-ggplot(df1) +
-  geom_line(data= subset(df1, frontier_deaths_averted_cost== "Include"),
-            aes(x = deaths_averted, y= total_cost,
-                group = sim), colour = "grey", alpha = 0.3) +
-  stat_ellipse(data=subset(df1, scenario != "No monitoring"),
-               aes(x=deaths_averted,y=total_cost,
-                   group = reorder(scenario, deaths_averted),
-                   fill= reorder(scenario, deaths_averted)),
-               geom = "polygon", na.rm = FALSE, alpha = 0.2) +
-  geom_point(aes(x = deaths_averted, y = total_cost,
-                 group =reorder(scenario, deaths_averted), colour = reorder(scenario, deaths_averted)),
-             alpha = 0.15) +
-  # Overlay median
-  geom_line(data = subset(df1_summary, frontier_deaths_averted_cost == "Include"),
-            aes(y = median_cost,
-                x = median_deaths_averted), size = 1) +
-  geom_point(data = df1_summary,
-             aes(y = median_cost,
-                 x = median_deaths_averted,
-                 group = reorder(scenario, median_deaths_averted),
-                 colour = reorder(scenario, median_deaths_averted)), size = 5) +
-  geom_point(data = df1_summary,
-             aes(y = median_cost,
-                 x = median_deaths_averted,
-                 group = reorder(scenario, median_deaths_averted)),
-             size = 5, shape = 1, colour = "black") +
-  scale_fill_manual("Monitoring strategies\nstarting at entry\ninto cohort",
-                    values=rev(brewer.pal(6,"RdYlBu"))) +
-  scale_colour_manual("Monitoring strategies\nstarting at entry\ninto cohort",
-                      values=c("black", rev(brewer.pal(6,"RdYlBu")))) +
-  guides(fill=FALSE) +
-  xlab("Incremental HBV-related deaths averted") +
-  ylab("Incremental cost (USD)") +
-  xlim(-150,7200) +
-  #  ylim(0,2500000) +
-  theme_bw() +
-  theme(axis.text = element_text(size = 15),
-        axis.title = element_text(size = 15),
-        legend.text = element_text(size = 12),
-        title = element_text(size = 15))
-
-# Plot: interactions vs LY saved (INCL)
-ggplot(df1) +
-  geom_line(data= subset(df1, frontier_interactions== "Include"),
-            aes(x = ly_saved, y= total_interactions,
-                group = sim), colour = "grey", alpha = 0.3) +
-  stat_ellipse(data=subset(df1, scenario != "No monitoring"),
-               aes(x=ly_saved,y=total_interactions,
-                   group = reorder(scenario, ly_saved),
-                   fill= reorder(scenario, ly_saved)),
-               geom = "polygon", na.rm = FALSE, alpha = 0.2) +
-  geom_point(aes(x = ly_saved, y = total_interactions,
-                 group =reorder(scenario, ly_saved), colour = reorder(scenario, ly_saved)),
-             alpha = 0.15) +
-  # Overlay median
-  geom_line(data = subset(df1_summary, frontier_interactions == "Include"),
-            aes(y = median_interactions,
-                x = median_ly_saved), size = 1) +
-  geom_point(data = df1_summary,
-             aes(y = median_interactions,
-                 x = median_ly_saved,
-                 group = reorder(scenario, median_ly_saved),
-                 colour = reorder(scenario, median_ly_saved)), size = 5) +
-  geom_point(data = df1_summary,
-             aes(y = median_interactions,
-                 x = median_ly_saved,
-                 group = reorder(scenario, median_ly_saved)),
-             size = 5, shape = 1, colour = "black") +
-  scale_fill_manual("Monitoring strategies\nstarting at entry\ninto cohort",
-                    values=rev(brewer.pal(6,"RdYlBu"))) +
-  scale_colour_manual("Monitoring strategies\nstarting at entry\ninto cohort",
-                      values=c("black", rev(brewer.pal(6,"RdYlBu")))) +
-  guides(fill=FALSE) +
-  xlab("Incremental life-years saved") +
-  ylab("Incremental number of clinical interactions") +
-  #  ylim(0,2500000) +
-  theme_bw() +
-  theme(axis.text = element_text(size = 15),
-        axis.title = element_text(size = 15),
-        legend.text = element_text(size = 12),
-        title = element_text(size = 15))
-
-# Plot: cost vs LY saved (INCL)
-ggplot(df1) +
-  geom_line(data= subset(df1, frontier_ly_saved_cost= "Include"),
-            aes(x = ly_saved, y= total_cost,
-                group = sim), colour = "grey", alpha = 0.3) +
-  stat_ellipse(data=subset(df1, scenario != "No monitoring"),
-               aes(x=ly_saved,y=total_cost,
-                   group = reorder(scenario, ly_saved),
-                   fill= reorder(scenario, ly_saved)),
-               geom = "polygon", na.rm = FALSE, alpha = 0.2) +
-  geom_point(aes(x = ly_saved, y = total_cost,
-                 group =reorder(scenario, ly_saved), colour = reorder(scenario, ly_saved)),
-             alpha = 0.15) +
-  # Overlay median
-  geom_line(data = subset(df1_summary, frontier_ly_saved_cost == "Include"),
-            aes(y = median_cost,
-                x = median_ly_saved), size = 1) +
-  geom_point(data = df1_summary,
-             aes(y = median_cost,
-                 x = median_ly_saved,
-                 group = reorder(scenario, median_ly_saved),
-                 colour = reorder(scenario, median_ly_saved)), size = 5) +
-  geom_point(data = df1_summary,
-             aes(y = median_cost,
-                 x = median_ly_saved,
-                 group = reorder(scenario, median_ly_saved)),
-             size = 5, shape = 1, colour = "black") +
-  scale_fill_manual("Monitoring strategies\nstarting at entry\ninto cohort",
-                    values=rev(brewer.pal(6,"RdYlBu"))) +
-  scale_colour_manual("Monitoring strategies\nstarting at entry\ninto cohort",
-                      values=c("black", rev(brewer.pal(6,"RdYlBu")))) +
-  guides(fill=FALSE) +
-  xlab("Incremental life-years saved") +
-  ylab("Incremental cost (USD)") +
-  #  ylim(0,2500000) +
-  theme_bw() +
-  theme(axis.text = element_text(size = 15),
-        axis.title = element_text(size = 15),
-        legend.text = element_text(size = 12),
-        title = element_text(size = 15))
-
-## Intensification from approach 1: focused in 15-30 / 15-45 / 45+ year olds or unfocused across all ages ----
-# Reference = No monitoring. Strategies to compare:
-# Monitor all ages every 5 years.
-# Intensification in young people: Monitor 15-30 year olds 3/1 years and everyone else every 5 years.
-# Intensification at older age: Monitor 45+ year olds 3/1 years and everyone else every 5 years.
-# Unfocused intensification: Monitor all ages every 3/1 years.
-
-# Extract interactions
-interactions1b <- rbind(
-  cbind(scenario = "5-yearly 15+ (all ages)",
-        left_join(gather(out5$interactions[[16]]$total_assessed[-c(1:3)]-out3$interactions[[16]]$total_assessed[-c(1:3)],
-                         key = "sim", value = "monitoring_assessments"),
-                  gather(out5$interactions[[16]]$total_treated[-c(1:3)]-out3$interactions[[16]]$total_treated[-c(1:3)],
-                         key = "sim", value = "treatment_initiations"), by = "sim")),
-  cbind(scenario = "3-yearly 15+ (all ages)",
-        left_join(gather(out6b$interactions[[16]]$total_assessed[-c(1:3)]-out3$interactions[[16]]$total_assessed[-c(1:3)],
-                         key = "sim", value = "monitoring_assessments"),
-                  gather(out6b$interactions[[16]]$total_treated[-c(1:3)]-out3$interactions[[16]]$total_treated[-c(1:3)],
-                         key = "sim", value = "treatment_initiations"), by = "sim")),
-  cbind(scenario = "Yearly 15+ (all ages)",
-        left_join(gather(out6$interactions[[16]]$total_assessed[-c(1:3)]-out3$interactions[[16]]$total_assessed[-c(1:3)],
-                         key = "sim", value = "monitoring_assessments"),
-                  gather(out6$interactions[[16]]$total_treated[-c(1:3)]-out3$interactions[[16]]$total_treated[-c(1:3)],
-                         key = "sim", value = "treatment_initiations"), by = "sim")),
-  cbind(scenario = "3-yearly 15-30, 5-yearly 30+",
-        left_join(gather(monit_out11$interactions[[16]]$total_assessed[-c(1:3)]-out3$interactions[[16]]$total_assessed[-c(1:3)],
-                         key = "sim", value = "monitoring_assessments"),
-                  gather(monit_out11$interactions[[16]]$total_treated[-c(1:3)]-out3$interactions[[16]]$total_treated[-c(1:3)],
-                         key = "sim", value = "treatment_initiations"), by = "sim")),
-  cbind(scenario = "Yearly 15-30, 5-yearly 30+",
-        left_join(gather(monit_out12$interactions[[16]]$total_assessed[-c(1:3)]-out3$interactions[[16]]$total_assessed[-c(1:3)],
-                         key = "sim", value = "monitoring_assessments"),
-                  gather(monit_out12$interactions[[16]]$total_treated[-c(1:3)]-out3$interactions[[16]]$total_treated[-c(1:3)],
-                         key = "sim", value = "treatment_initiations"), by = "sim")),
-  cbind(scenario = "3-yearly 15-45, 5-yearly 45+",
-        left_join(gather(monit_out15$interactions[[16]]$total_assessed[-c(1:3)]-out3$interactions[[16]]$total_assessed[-c(1:3)],
-                         key = "sim", value = "monitoring_assessments"),
-                  gather(monit_out15$interactions[[16]]$total_treated[-c(1:3)]-out3$interactions[[16]]$total_treated[-c(1:3)],
-                         key = "sim", value = "treatment_initiations"), by = "sim")),
-  cbind(scenario = "Yearly 15-45, 5-yearly 45+",
-        left_join(gather(monit_out16$interactions[[16]]$total_assessed[-c(1:3)]-out3$interactions[[16]]$total_assessed[-c(1:3)],
-                         key = "sim", value = "monitoring_assessments"),
-                  gather(monit_out16$interactions[[16]]$total_treated[-c(1:3)]-out3$interactions[[16]]$total_treated[-c(1:3)],
-                         key = "sim", value = "treatment_initiations"), by = "sim")),
-    cbind(scenario = "3-yearly 45+, 5-yearly 15-45",
-          left_join(gather(monit_out13$interactions[[16]]$total_assessed[-c(1:3)]-out3$interactions[[16]]$total_assessed[-c(1:3)],
-                           key = "sim", value = "monitoring_assessments"),
-                    gather(monit_out13$interactions[[16]]$total_treated[-c(1:3)]-out3$interactions[[16]]$total_treated[-c(1:3)],
-                           key = "sim", value = "treatment_initiations"), by = "sim")),
-  cbind(scenario = "Yearly 45+, 5-yearly 15-45",
-        left_join(gather(monit_out14$interactions[[16]]$total_assessed[-c(1:3)]-out3$interactions[[16]]$total_assessed[-c(1:3)],
-                         key = "sim", value = "monitoring_assessments"),
-                  gather(monit_out14$interactions[[16]]$total_treated[-c(1:3)]-out3$interactions[[16]]$total_treated[-c(1:3)],
-                         key = "sim", value = "treatment_initiations"), by = "sim"))
+             sim = names(out5n$py_on_treatment[[16]]),
+             py_on_treatment = out5n$py_on_treatment[[16]]),
+  data.frame(scenario = "screen_2020_monit_2",
+             sim = names(out6an$py_on_treatment[[16]]),
+             py_on_treatment = out6an$py_on_treatment[[16]]),
+  data.frame(scenario = "screen_2020_monit_0_it",
+             sim = names(out3_it$py_on_treatment[[16]]),
+             py_on_treatment = out3_it$py_on_treatment[[16]]),
+  data.frame(scenario = "screen_2020_monit_5_it",
+             sim = names(out5_it$py_on_treatment[[16]]),
+             py_on_treatment = out5_it$py_on_treatment[[16]]),
+  data.frame(scenario = "screen_2020_monit_2_it",
+             sim = names(out6a_it$py_on_treatment[[16]]),
+             py_on_treatment = out6a_it$py_on_treatment[[16]])
 )
+py_on_treatment_test_it$sim <- gsub("[^0-9]", "", py_on_treatment_test_it$sim)
 
-# Extract person-years on treatment
-interactions1b_py_on_treatment <- rbind(
-  data.frame(scenario = "5-yearly 15+ (all ages)",
-             sim = names(out5$py_on_treatment[[16]]-out3$py_on_treatment[[16]]),
-             py_on_treatment = out5$py_on_treatment[[16]]-out3$py_on_treatment[[16]]),
-  data.frame(scenario = "3-yearly 15+ (all ages)",
-             sim = names(out6b$py_on_treatment[[16]]-out3$py_on_treatment[[16]]),
-             py_on_treatment = out6b$py_on_treatment[[16]]-out3$py_on_treatment[[16]]),
-  data.frame(scenario = "Yearly 15+ (all ages)",
-             sim = names(out6$py_on_treatment[[16]]-out3$py_on_treatment[[16]]),
-             py_on_treatment= out6$py_on_treatment[[16]]-out3$py_on_treatment[[16]]),
-  data.frame(scenario = "3-yearly 15-30, 5-yearly 30+",
-             sim = names(monit_out11$py_on_treatment[[16]]-out3$py_on_treatment[[16]]),
-             py_on_treatment= monit_out11$py_on_treatment[[16]]-out3$py_on_treatment[[16]]),
-  data.frame(scenario = "Yearly 15-30, 5-yearly 30+",
-             sim = names(monit_out12$py_on_treatment[[16]]-out3$py_on_treatment[[16]]),
-             py_on_treatment= monit_out12$py_on_treatment[[16]]-out3$py_on_treatment[[16]]),
-  data.frame(scenario = "3-yearly 15-45, 5-yearly 45+",
-             sim = names(monit_out15$py_on_treatment[[16]]-out3$py_on_treatment[[16]]),
-             py_on_treatment= monit_out15$py_on_treatment[[16]]-out3$py_on_treatment[[16]]),
-  data.frame(scenario = "Yearly 15-45, 5-yearly 45+",
-             sim = names(monit_out16$py_on_treatment[[16]]-out3$py_on_treatment[[16]]),
-             py_on_treatment= monit_out16$py_on_treatment[[16]]-out3$py_on_treatment[[16]]),
-  data.frame(scenario = "3-yearly 45+, 5-yearly 15-45",
-             sim = names(monit_out13$py_on_treatment[[16]]-out3$py_on_treatment[[16]]),
-             py_on_treatment= monit_out13$py_on_treatment[[16]]-out3$py_on_treatment[[16]]),
-  data.frame(scenario = "Yearly 45+, 5-yearly 15-45",
-             sim = names(monit_out14$py_on_treatment[[16]]-out3$py_on_treatment[[16]]),
-             py_on_treatment= monit_out14$py_on_treatment[[16]]-out3$py_on_treatment[[16]])
+ggplot(py_on_treatment_test_it) +
+  geom_boxplot(aes(x=scenario, y = py_on_treatment))
+# PY on treatment also substantially higher if treating IT
 
-  )
+dalys_averted_no_it <-
+  plot_hbv_deaths_averted(counterfactual_object = out2,
+                          scenario_objects = list(out3n,out5n,out6an),
+                          outcome_to_avert = "dalys",
+                          outcome_to_plot = "number_averted",
+                          counterfactual_label = "no treatment")
+dalys_averted_with_it <-
+  plot_hbv_deaths_averted(counterfactual_object = out2,
+                          scenario_objects = list(out3_it,out5_it,out6a_it),
+                          outcome_to_avert = "dalys",
+                          outcome_to_plot = "number_averted",
+                          counterfactual_label = "no treatment")
+dalys_averted_with_it$scenario <- paste0(dalys_averted_with_it$scenario, "_it")
+dalys_averted_test_it <- rbind(dalys_averted_no_it,
+                               dalys_averted_with_it)
+dalys_averted_test_it$sim <- gsub("[^0-9]", "", dalys_averted_test_it$sim)
+colnames(dalys_averted_test_it)[colnames(dalys_averted_test_it) == "dalys"] <-
+  "value"
 
-# Outcome 1: HBV related deaths averted
-cohort_deaths_averted1b <- rbind(
-  cbind(scenario = "5-yearly 15+ (all ages)",
-        out3$cum_hbv_deaths[[16]][-c(1:3)]-out5$cum_hbv_deaths[[16]][-c(1:3)]),
-  cbind(scenario = "3-yearly 15+ (all ages)",
-        out3$cum_hbv_deaths[[16]][-c(1:3)]-out6b$cum_hbv_deaths[[16]][-c(1:3)]),
-  cbind(scenario = "Yearly 15+ (all ages)",
-        out3$cum_hbv_deaths[[16]][-c(1:3)]-out6$cum_hbv_deaths[[16]][-c(1:3)]),
-  cbind(scenario = "3-yearly 15-30, 5-yearly 30+",
-        out3$cum_hbv_deaths[[16]][-c(1:3)]-monit_out11$cum_hbv_deaths[[16]][-c(1:3)]),
-  cbind(scenario = "Yearly 15-30, 5-yearly 30+",
-        out3$cum_hbv_deaths[[16]][-c(1:3)]-monit_out12$cum_hbv_deaths[[16]][-c(1:3)]),
-  cbind(scenario = "3-yearly 15-45, 5-yearly 45+",
-        out3$cum_hbv_deaths[[16]][-c(1:3)]-monit_out15$cum_hbv_deaths[[16]][-c(1:3)]),
-  cbind(scenario = "Yearly 15-45, 5-yearly 45+",
-        out3$cum_hbv_deaths[[16]][-c(1:3)]-monit_out16$cum_hbv_deaths[[16]][-c(1:3)]),
-  cbind(scenario = "3-yearly 45+, 5-yearly 15-45",
-        out3$cum_hbv_deaths[[16]][-c(1:3)]-monit_out13$cum_hbv_deaths[[16]][-c(1:3)]),
-  cbind(scenario = "Yearly 45+, 5-yearly 15-45",
-        out3$cum_hbv_deaths[[16]][-c(1:3)]-monit_out14$cum_hbv_deaths[[16]][-c(1:3)])
-  )
-colnames(cohort_deaths_averted1b)[-1] <- as.numeric(gsub("[^0-9]", "",
-                                                         colnames(cohort_deaths_averted1b)[-1]))
-cohort_deaths_averted1b_long <- gather(cohort_deaths_averted1b, key = "sim",
-                                       value = "deaths_averted", - scenario)
+ggplot(subset(dalys_averted_test_it, by_year==2100 & type == "proportion_averted")) +
+  geom_boxplot(aes(x=scenario, y = value))
+# Only tiny bit higher with IT treatment
 
-# Outcome 2: Life-years saved
+# HBV-related deaths
+deaths_averted_no_it <-
+  plot_hbv_deaths_averted(counterfactual_object = out2,
+                          scenario_objects = list(out3n,out5n,out6an),
+                          outcome_to_avert = "cum_hbv_deaths",
+                          outcome_to_plot = "number_averted",
+                          counterfactual_label = "no treatment")
+deaths_averted_with_it <-
+  plot_hbv_deaths_averted(counterfactual_object = out2,
+                          scenario_objects = list(out3_it,out5_it,out6a_it),
+                          outcome_to_avert = "cum_hbv_deaths",
+                          outcome_to_plot = "number_averted",
+                          counterfactual_label = "no treatment")
+deaths_averted_with_it$scenario <- paste0(deaths_averted_with_it$scenario, "_it")
+deaths_averted_test_it <- rbind(deaths_averted_no_it,
+                                deaths_averted_with_it)
+deaths_averted_test_it$sim <- gsub("[^0-9]", "", deaths_averted_test_it$sim)
+colnames(deaths_averted_test_it)[colnames(deaths_averted_test_it) == "cum_hbv_deaths"] <-
+  "value"
 
-# Life-years saved
-cohort_ly_gained1b <- rbind(
-  cbind(scenario = "5-yearly 15+ (all ages)",
-        out5$ly[[16]][-c(1:3)]-out3$ly[[16]][-c(1:3)]),
-  cbind(scenario = "3-yearly 15+ (all ages)",
-        out6b$ly[[16]][-c(1:3)]-out3$ly[[16]][-c(1:3)]),
-  cbind(scenario = "Yearly 15+ (all ages)",
-        out6$ly[[16]][-c(1:3)]-out3$ly[[16]][-c(1:3)]),
-  cbind(scenario = "3-yearly 15-30, 5-yearly 30+",
-        monit_out11$ly[[16]][-c(1:3)]-out3$ly[[16]][-c(1:3)]),
-  cbind(scenario = "Yearly 15-30, 5-yearly 30+",
-        monit_out12$ly[[16]][-c(1:3)]-out3$ly[[16]][-c(1:3)]),
-  cbind(scenario = "3-yearly 15-45, 5-yearly 45+",
-        monit_out15$ly[[16]][-c(1:3)]-out3$ly[[16]][-c(1:3)]),
-  cbind(scenario = "Yearly 15-45, 5-yearly 45+",
-        monit_out16$ly[[16]][-c(1:3)]-out3$ly[[16]][-c(1:3)]),
-  cbind(scenario = "3-yearly 45+, 5-yearly 15-45",
-        monit_out13$ly[[16]][-c(1:3)]-out3$ly[[16]][-c(1:3)]),
-  cbind(scenario = "Yearly 45+, 5-yearly 15-45",
-        monit_out14$ly[[16]][-c(1:3)]-out3$ly[[16]][-c(1:3)])
-  )
-colnames(cohort_ly_gained1b)[-1] <- as.numeric(gsub("[^0-9]", "",
-                                                    colnames(cohort_ly_gained1b)[-1]))
-cohort_ly_gained1b_long <- gather(cohort_ly_gained1b, key = "sim",
-                                  value = "ly_saved", - scenario)
+ggplot(subset(deaths_averted_test_it, by_year==2100 & type == "proportion_averted")) +
+  geom_boxplot(aes(x=scenario, y = value))
+# Same for deaths
 
-# Combine into full dataframe
-df1b <- create_incremental_plot_df(interactions_df=interactions1b,
-                                   py_on_treatment_df=interactions1b_py_on_treatment,
-                                   deaths_averted_df=cohort_deaths_averted1b_long,
-                                   ly_saved_df = cohort_ly_gained1b_long,
-                                   ref_label = "No monitoring")
+deaths_averted_test_it<- subset(deaths_averted_test_it, type == "number_averted" & by_year == 2100) %>%
+  select(scenario, sim, value)
+dalys_averted_test_it<- subset(dalys_averted_test_it, type == "number_averted" & by_year == 2100) %>%
+  select(scenario, sim, value)
 
-# Find dominated strategies for each combination of exposure and outcome using BCEA package
-find_dominated_strategies(df1b, "total_interactions", "deaths_averted")
-find_dominated_strategies(df1b,"total_cost", "deaths_averted")
-find_dominated_strategies(df1b,"total_interactions", "ly_saved")
-find_dominated_strategies(df1b, "total_cost", "ly_saved")
+# Combine into dataframe
+test_it_df <- create_incremental_plot_df(interactions_df=interactions_test_it,
+                                      py_on_treatment_df=py_on_treatment_test_it,
+                                      deaths_averted_df=deaths_averted_test_it,
+                                      ly_saved_df = dalys_averted_test_it, # replace LY by DALYs
+                                      hbsag_test_cost = 8.3,
+                                      clinical_assessment_cost = 84.4,
+                                      monitoring_assessment_cost = 40.1,
+                                      treatment_py_cost = 60,
+                                      #scenario_labels_obj = scenario_labels,
+                                      ref_label = "No treatment")
+colnames(test_it_df)[colnames(test_it_df)=="ly_saved"] <- "dalys_averted"
 
-# For only the 15-30 intensification (excluding 45+ intensification):
-# Deaths averted & interactions: Yearly 15-30, 5-yearly 30+
-# Deaths & cost: 3-yearly 15-30, 5-yearly 30+; Yearly 15-30, 5-yearly 30+
-# LY & interactions: 5-yearly 15+ (all ages)
-# LY & cost: Yearly 15-30, 5-yearly 30+
-
-group_by(df1b, scenario) %>%
-  summarise(deaths_per_interaction = median(deaths_averted/total_interactions)*10000,
-            deaths_per_cost = median(deaths_averted/total_cost)*10000,
-            ly_per_interaction = median(ly_saved/total_interactions)*10000,
-            ly_per_cost = median(ly_saved/total_cost)*10000)
-
-# Split into different intensification analysis
-df1b_under30 <- subset(df1b, !(scenario %in% c("3-yearly 45+, 5-yearly 15-45", "Yearly 45+, 5-yearly 15-45",
-                                               "3-yearly 15-45, 5-yearly 45+", "Yearly 15-45, 5-yearly 45+")))
-df1b_over45 <-  subset(df1b, !(scenario %in% c("3-yearly 15-30, 5-yearly 30+", "Yearly 15-30, 5-yearly 30+",
-                                               "3-yearly 15-45, 5-yearly 45+", "Yearly 15-45, 5-yearly 45+")))
-
-df1b_45_threshold <-  subset(df1b, !(scenario %in% c("3-yearly 15-30, 5-yearly 30+", "Yearly 15-30, 5-yearly 30+")))
-
-
-# Intensification in 45+ year olds
-find_dominated_strategies(df1b_over45, "total_interactions", "deaths_averted")
-find_dominated_strategies(df1b_over45,"total_cost", "deaths_averted")
-find_dominated_strategies(df1b_over45,"total_interactions", "ly_saved")
-find_dominated_strategies(df1b_over45, "total_cost", "ly_saved")
-# Intensification in 15-30 year olds
-find_dominated_strategies(df1b_under30, "total_interactions", "deaths_averted")
-find_dominated_strategies(df1b_under30,"total_cost", "deaths_averted")
-find_dominated_strategies(df1b_under30,"total_interactions", "ly_saved")
-find_dominated_strategies(df1b_under30, "total_cost", "ly_saved")
-# Compare intensification in 45+ year olds vs < 45 year olds
-find_dominated_strategies(df1b_45_threshold, "total_interactions", "deaths_averted")
-find_dominated_strategies(df1b_45_threshold,"total_cost", "deaths_averted")
-find_dominated_strategies(df1b_45_threshold,"total_interactions", "ly_saved")
-find_dominated_strategies(df1b_45_threshold, "total_cost", "ly_saved")
-
-# Add labels for this to dataframe (45 threshold)
-df1b_45_threshold$frontier_deaths_averted <- "Include"
-df1b_45_threshold$frontier_deaths_averted[df1b_45_threshold$scenario %in% c("3-yearly 15-45, 5-yearly 45+",
-                                                              "Yearly 15-45, 5-yearly 45+",
-                                                              "Yearly 45+, 5-yearly 15-45")] <- "Dominated"
-df1b_45_threshold$frontier_ly_saved <- "Include"
-df1b_45_threshold$frontier_ly_saved[df1b_45_threshold$scenario %in% c("3-yearly 45+, 5-yearly 15-45",
-                                                                      "Yearly 45+, 5-yearly 15-45")] <-
-  "Dominated"
-
-df1b_45_threshold$scenario <- factor(as.character(df1b_45_threshold$scenario))
-
-levels(df1b_45_threshold$scenario) <- list("No monitoring" = "No monitoring",
-                             "15-45 every 3 years &\n45+ every 5 years" = "3-yearly 15-45, 5-yearly 45+",
-                             "45+ every 3 years &\n15-45 every 5 years" = "3-yearly 45+, 5-yearly 15-45",
-                             "All ages,\nevery 3 years" = "3-yearly 15+ (all ages)",
-                             "15-45 every 1 year &\n45+ every 5 years" = "Yearly 15-45, 5-yearly 45+",
-                             "45+ every 1 year &\n15-45 every 5 years" = "Yearly 45+, 5-yearly 15-45",
-                             "All ages,\nevery 5 years" = "5-yearly 15+ (all ages)",
-                             "All ages,\nevery 1 year" = "Yearly 15+ (all ages)"
-
-                             )
-
-df1b_45_threshold_summary <- df1b_45_threshold %>%
-  group_by(scenario, frontier_deaths_averted, frontier_ly_saved) %>%
-  summarise(median_deaths_averted = median(deaths_averted),
-            median_ly_saved = median(ly_saved),
-            median_interactions = median(total_interactions),
-            median_cost = median(total_cost))
-
-# Plots for 45 threshold ----
-# Plot: interactions vs deaths averted (INCL)
-# Note both yearly age-focused strategies and 3-yearly 15-45 are dominated
-ggplot(df1b_45_threshold) +
-  geom_line(data= subset(df1b_45_threshold, frontier_deaths_averted== "Include"),
-            aes(x = deaths_averted, y= total_interactions,
-                group = sim), colour = "grey", alpha = 0.3) +
-  stat_ellipse(data=subset(df1b_45_threshold, scenario != "No monitoring"),
-               aes(x=deaths_averted,y=total_interactions,
-                   group = reorder(scenario, deaths_averted),
-                   fill= reorder(scenario, deaths_averted)),
-               geom = "polygon", na.rm = FALSE, alpha = 0.2) +
-  geom_point(aes(x = deaths_averted, y = total_interactions,
-                 group =reorder(scenario, deaths_averted), colour = reorder(scenario, deaths_averted)),
-             alpha = 0.15) +
-  # Overlay median
-  geom_line(data = subset(df1b_45_threshold_summary, frontier_deaths_averted == "Include"),
-            aes(y = median_interactions,
-                x = median_deaths_averted), size = 1) +
-  geom_point(data = df1b_45_threshold_summary,
-             aes(y = median_interactions,
-                 x = median_deaths_averted,
-                 group = reorder(scenario, median_deaths_averted),
-                 colour = reorder(scenario, median_deaths_averted)), size = 5) +
-  geom_point(data = df1b_45_threshold_summary,
-             aes(y = median_interactions,
-                 x = median_deaths_averted,
-                 group = reorder(scenario, median_deaths_averted)),
-             size = 5, shape = 1, colour = "black") +
-  scale_fill_manual("Monitoring strategies",
-                    values=rev(brewer.pal(7,"RdYlBu"))) +
-  scale_colour_manual("Monitoring strategies",
-                      values=c("black", rev(brewer.pal(7,"RdYlBu")))) +
-  guides(fill=FALSE) +
-  xlab("Incremental HBV-related deaths averted") +
-  ylab("Incremental number of clinical interactions") +
-#  xlim(-150,7200) +
-  #  ylim(0,2500000) +
-  theme_bw() +
-  theme(axis.text = element_text(size = 15),
-        axis.title = element_text(size = 15),
-        legend.text = element_text(size = 12),
-        title = element_text(size = 15))
-
-# Plot: cost vs deaths averted (INCL)
-ggplot(df1b_45_threshold) +
-  geom_line(data= subset(df1b_45_threshold, frontier_deaths_averted== "Include"),
-            aes(x = deaths_averted, y= total_cost,
-                group = sim), colour = "grey", alpha = 0.3) +
-  stat_ellipse(data=subset(df1b_45_threshold, scenario != "No monitoring"),
-               aes(x=deaths_averted,y=total_cost,
-                   group = reorder(scenario, deaths_averted),
-                   fill= reorder(scenario, deaths_averted)),
-               geom = "polygon", na.rm = FALSE, alpha = 0.2) +
-  geom_point(aes(x = deaths_averted, y = total_cost,
-                 group =reorder(scenario, deaths_averted), colour = reorder(scenario, deaths_averted)),
-             alpha = 0.15) +
-  # Overlay median
-  geom_line(data = subset(df1b_45_threshold_summary, frontier_deaths_averted == "Include"),
-            aes(y = median_cost,
-                x = median_deaths_averted), size = 1) +
-  geom_point(data = df1b_45_threshold_summary,
-             aes(y = median_cost,
-                 x = median_deaths_averted,
-                 group = reorder(scenario, median_deaths_averted),
-                 colour = reorder(scenario, median_deaths_averted)), size = 5) +
-  geom_point(data = df1b_45_threshold_summary,
-             aes(y = median_cost,
-                 x = median_deaths_averted,
-                 group = reorder(scenario, median_deaths_averted)),
-             size = 5, shape = 1, colour = "black") +
-  scale_fill_manual("Monitoring strategies",
-                    values=rev(brewer.pal(7,"RdYlBu"))) +
-  scale_colour_manual("Monitoring strategies",
-                      values=c("black", rev(brewer.pal(7,"RdYlBu")))) +
-  guides(fill=FALSE) +
-  xlab("Incremental HBV-related deaths averted") +
-  ylab("Incremental cost (USD)") +
-  #  xlim(-150,7200) +
-  #  ylim(0,2500000) +
-  theme_bw() +
-  theme(axis.text = element_text(size = 15),
-        axis.title = element_text(size = 15),
-        legend.text = element_text(size = 12),
-        title = element_text(size = 15))
-
-# Plot: interactions vs LY saved (INCL)
-ggplot(df1b_45_threshold) +
-  geom_line(data= subset(df1b_45_threshold, frontier_ly_saved== "Include"),
-            aes(x = ly_saved, y= total_interactions,
-                group = sim), colour = "grey", alpha = 0.3) +
-  stat_ellipse(data=subset(df1b_45_threshold, scenario != "No monitoring"),
-               aes(x=ly_saved,y=total_interactions,
-                   group = reorder(scenario, ly_saved),
-                   fill= reorder(scenario, ly_saved)),
-               geom = "polygon", na.rm = FALSE, alpha = 0.2) +
-  geom_point(aes(x = ly_saved, y = total_interactions,
-                 group =reorder(scenario, ly_saved), colour = reorder(scenario, ly_saved)),
-             alpha = 0.15) +
-  # Overlay median
-  geom_line(data = subset(df1b_45_threshold_summary, frontier_ly_saved == "Include"),
-            aes(y = median_interactions,
-                x = median_ly_saved), size = 1) +
-  geom_point(data = df1b_45_threshold_summary,
-             aes(y = median_interactions,
-                 x = median_ly_saved,
-                 group = reorder(scenario, median_ly_saved),
-                 colour = reorder(scenario, median_ly_saved)), size = 5) +
-  geom_point(data = df1b_45_threshold_summary,
-             aes(y = median_interactions,
-                 x = median_ly_saved,
-                 group = reorder(scenario, median_ly_saved)),
-             size = 5, shape = 1, colour = "black") +
-  scale_fill_manual("Monitoring strategies",
-                    values=rev(brewer.pal(7,"RdYlBu"))) +
-  scale_colour_manual("Monitoring strategies",
-                      values=c("black", rev(brewer.pal(7,"RdYlBu")))) +
-  guides(fill=FALSE) +
-  xlab("Incremental life-years saved") +
-  ylab("Incremental number of clinical interactions") +
-  #  xlim(-150,7200) +
-  #  ylim(0,2500000) +
-  theme_bw() +
-  theme(axis.text = element_text(size = 15),
-        axis.title = element_text(size = 15),
-        legend.text = element_text(size = 12),
-        title = element_text(size = 15))
-
-# Plot: cost vs LY saved (INCL)
-ggplot(df1b_45_threshold) +
-  geom_line(data= subset(df1b_45_threshold, frontier_ly_saved== "Include"),
-            aes(x = ly_saved, y= total_cost,
-                group = sim), colour = "grey", alpha = 0.3) +
-  stat_ellipse(data=subset(df1b_45_threshold, scenario != "No monitoring"),
-               aes(x=ly_saved,y=total_cost,
-                   group = reorder(scenario, ly_saved),
-                   fill= reorder(scenario, ly_saved)),
-               geom = "polygon", na.rm = FALSE, alpha = 0.2) +
-  geom_point(aes(x = ly_saved, y = total_cost,
-                 group =reorder(scenario, ly_saved), colour = reorder(scenario, ly_saved)),
-             alpha = 0.15) +
-  # Overlay median
-  geom_line(data = subset(df1b_45_threshold_summary, frontier_ly_saved == "Include"),
-            aes(y = median_cost,
-                x = median_ly_saved), size = 1) +
-  geom_point(data = df1b_45_threshold_summary,
-             aes(y = median_cost,
-                 x = median_ly_saved,
-                 group = reorder(scenario, median_ly_saved),
-                 colour = reorder(scenario, median_ly_saved)), size = 5) +
-  geom_point(data = df1b_45_threshold_summary,
-             aes(y = median_cost,
-                 x = median_ly_saved,
-                 group = reorder(scenario, median_ly_saved)),
-             size = 5, shape = 1, colour = "black") +
-  scale_fill_manual("Monitoring strategies",
-                    values=rev(brewer.pal(7,"RdYlBu"))) +
-  scale_colour_manual("Monitoring strategies",
-                      values=c("black", rev(brewer.pal(7,"RdYlBu")))) +
-  guides(fill=FALSE) +
-  xlab("Incremental life-years saved") +
-  ylab("Incremental cost (USD)") +
-  #  xlim(-150,7200) +
-  #  ylim(0,2500000) +
-  theme_bw() +
-  theme(axis.text = element_text(size = 15),
-        axis.title = element_text(size = 15),
-        legend.text = element_text(size = 12),
-        title = element_text(size = 15))
-
-# Calculate probability of each strategy being non-dominated for 45 threshold ----
-# For deaths averted and interactions:
 dominance_prob_list <- list()
-# Double check the X comes last:
-unique(df1b_45_threshold$sim)[length(unique(df1b_45_threshold$sim))] == "X"
+
 for(i in 1:183) {
   print(i)
-  dominance_prob_list[[i]] <- df1b_45_threshold[which(df1b_45_threshold$sim==
-                                                          unique(df1b_45_threshold$sim)[i]),]
+  dominance_prob_list[[i]] <- test_it_df[which(test_it_df$sim==
+                                               unique(test_it_df$sim)[i]),]
   dominance_prob_list[[i]] <- assign_dominated_strategies(dominance_prob_list[[i]],
-                                                          exposure="total_interactions",
-                                                          outcome="deaths_averted")
+                                                          exposure="total_cost",
+                                                          outcome="dalys_averted")
 }
 dominance_prob_df <- do.call("rbind", dominance_prob_list)
 dominance_prob_result <- group_by(dominance_prob_df, scenario, dominated) %>%
@@ -3290,1559 +2659,587 @@ dominance_prob_result <- group_by(dominance_prob_df, scenario, dominated) %>%
   replace_na(list(No = 0, Yes = 0))
 dominance_prob_result$prob_non_dominated <- dominance_prob_result$No/
   (dominance_prob_result$Yes+dominance_prob_result$No)
+# Any less than 50% chance of being non-dominated?
+any(dominance_prob_result$prob_non_dominated<0.5)
 
 ggplot(dominance_prob_result) +
   geom_col(aes(x=reorder(scenario, desc(prob_non_dominated)), y = prob_non_dominated)) +
   theme_bw()
 
-# TO DO:
-# - order bars by incremental order
-# - add median and CrI of ICER to each (maybe in between bars)
-
-## IGNORE: Intensification from approach 1: with discounting ----
-# Extract interactions
-interactions1b_disc <- rbind(
-  cbind(scenario = "5-yearly 15+ (all ages)",
-        left_join(discount_outcome_2020_to_2100(scenario_object=out5,
-                                                       object_to_subtract=out3,outcome="interactions",
-                                                       interaction_outcome="total_assessed",
-                                                       yearly_discount_rate=0.03),
-                  discount_outcome_2020_to_2100(scenario_object=out5,
-                                                       object_to_subtract=out3,outcome="interactions",
-                                                       interaction_outcome="total_treated",
-                                                       yearly_discount_rate=0.03))),
-  cbind(scenario = "3-yearly 15+ (all ages)",
-        left_join(discount_outcome_2020_to_2100(scenario_object=out6b,
-                                                object_to_subtract=out3,outcome="interactions",
-                                                interaction_outcome="total_assessed",
-                                                yearly_discount_rate=0.03),
-                  discount_outcome_2020_to_2100(scenario_object=out6b,
-                                                object_to_subtract=out3,outcome="interactions",
-                                                interaction_outcome="total_treated",
-                                                yearly_discount_rate=0.03))),
-  cbind(scenario = "Yearly 15+ (all ages)",
-        left_join(discount_outcome_2020_to_2100(scenario_object=out6,
-                                                object_to_subtract=out3,outcome="interactions",
-                                                interaction_outcome="total_assessed",
-                                                yearly_discount_rate=0.03),
-                  discount_outcome_2020_to_2100(scenario_object=out6,
-                                                object_to_subtract=out3,outcome="interactions",
-                                                interaction_outcome="total_treated",
-                                                yearly_discount_rate=0.03))),
-  cbind(scenario = "3-yearly 15-30, 5-yearly 30+",
-        left_join(discount_outcome_2020_to_2100(scenario_object=monit_out11,
-                                                object_to_subtract=out3,outcome="interactions",
-                                                interaction_outcome="total_assessed",
-                                                yearly_discount_rate=0.03),
-                  discount_outcome_2020_to_2100(scenario_object=monit_out11,
-                                                object_to_subtract=out3,outcome="interactions",
-                                                interaction_outcome="total_treated",
-                                                yearly_discount_rate=0.03))),
-  cbind(scenario = "Yearly 15-30, 5-yearly 30+",
-        left_join(discount_outcome_2020_to_2100(scenario_object=monit_out12,
-                                                object_to_subtract=out3,outcome="interactions",
-                                                interaction_outcome="total_assessed",
-                                                yearly_discount_rate=0.03),
-                  discount_outcome_2020_to_2100(scenario_object=monit_out12,
-                                                object_to_subtract=out3,outcome="interactions",
-                                                interaction_outcome="total_treated",
-                                                yearly_discount_rate=0.03))),
-  cbind(scenario = "3-yearly 15-45, 5-yearly 45+",
-        left_join(discount_outcome_2020_to_2100(scenario_object=monit_out15,
-                                                object_to_subtract=out3,outcome="interactions",
-                                                interaction_outcome="total_assessed",
-                                                yearly_discount_rate=0.03),
-                  discount_outcome_2020_to_2100(scenario_object=monit_out15,
-                                                object_to_subtract=out3,outcome="interactions",
-                                                interaction_outcome="total_treated",
-                                                yearly_discount_rate=0.03))),
-  cbind(scenario = "Yearly 15-45, 5-yearly 45+",
-        left_join(discount_outcome_2020_to_2100(scenario_object=monit_out16,
-                                                object_to_subtract=out3,outcome="interactions",
-                                                interaction_outcome="total_assessed",
-                                                yearly_discount_rate=0.03),
-                  discount_outcome_2020_to_2100(scenario_object=monit_out16,
-                                                object_to_subtract=out3,outcome="interactions",
-                                                interaction_outcome="total_treated",
-                                                yearly_discount_rate=0.03))),
-  cbind(scenario = "3-yearly 45+, 5-yearly 15-45",
-        left_join(discount_outcome_2020_to_2100(scenario_object=monit_out13,
-                                                object_to_subtract=out3,outcome="interactions",
-                                                interaction_outcome="total_assessed",
-                                                yearly_discount_rate=0.03),
-                  discount_outcome_2020_to_2100(scenario_object=monit_out13,
-                                                object_to_subtract=out3,outcome="interactions",
-                                                interaction_outcome="total_treated",
-                                                yearly_discount_rate=0.03))),
-  cbind(scenario = "Yearly 45+, 5-yearly 15-45",
-        left_join(discount_outcome_2020_to_2100(scenario_object=monit_out14,
-                                                object_to_subtract=out3,outcome="interactions",
-                                                interaction_outcome="total_assessed",
-                                                yearly_discount_rate=0.03),
-                  discount_outcome_2020_to_2100(scenario_object=monit_out14,
-                                                object_to_subtract=out3,outcome="interactions",
-                                                interaction_outcome="total_treated",
-                                                yearly_discount_rate=0.03)))
-)
-
-colnames(interactions1b_disc)[colnames(interactions1b_disc)=="total_assessed"] <- "monitoring_assessments"
-colnames(interactions1b_disc)[colnames(interactions1b_disc)=="total_treated"] <- "treatment_initiations"
-
-# Extract person-years on treatment
-interactions1b_py_on_treatment_disc <- rbind(
-  data.frame(scenario = "5-yearly 15+ (all ages)",
-             discount_outcome_2020_to_2100(scenario_object=out5,
-                                           object_to_subtract=out3,outcome="py_on_treatment",
-                                           yearly_discount_rate=0.03)),
-  data.frame(scenario = "3-yearly 15+ (all ages)",
-             discount_outcome_2020_to_2100(scenario_object=out6b,
-                                           object_to_subtract=out3,outcome="py_on_treatment",
-                                           yearly_discount_rate=0.03)),
-  data.frame(scenario = "Yearly 15+ (all ages)",
-             discount_outcome_2020_to_2100(scenario_object=out6,
-                                           object_to_subtract=out3,outcome="py_on_treatment",
-                                           yearly_discount_rate=0.03)),
-  data.frame(scenario = "3-yearly 15-30, 5-yearly 30+",
-             discount_outcome_2020_to_2100(scenario_object=monit_out11,
-                                           object_to_subtract=out3,outcome="py_on_treatment",
-                                           yearly_discount_rate=0.03)),
-  data.frame(scenario = "Yearly 15-30, 5-yearly 30+",
-             discount_outcome_2020_to_2100(scenario_object=monit_out12,
-                                           object_to_subtract=out3,outcome="py_on_treatment",
-                                           yearly_discount_rate=0.03)),
-  data.frame(scenario = "3-yearly 15-45, 5-yearly 45+",
-             discount_outcome_2020_to_2100(scenario_object=monit_out15,
-                                           object_to_subtract=out3,outcome="py_on_treatment",
-                                           yearly_discount_rate=0.03)),
-  data.frame(scenario = "Yearly 15-45, 5-yearly 45+",
-             discount_outcome_2020_to_2100(scenario_object=monit_out16,
-                                           object_to_subtract=out3,outcome="py_on_treatment",
-                                           yearly_discount_rate=0.03)),
-  data.frame(scenario = "3-yearly 45+, 5-yearly 15-45",
-             discount_outcome_2020_to_2100(scenario_object=monit_out13,
-                                           object_to_subtract=out3,outcome="py_on_treatment",
-                                           yearly_discount_rate=0.03)),
-  data.frame(scenario = "Yearly 45+, 5-yearly 15-45",
-             discount_outcome_2020_to_2100(scenario_object=monit_out14,
-                                           object_to_subtract=out3,outcome="py_on_treatment",
-                                           yearly_discount_rate=0.03))
-)
-interactions1b_py_on_treatment_disc$sim <- gsub("[^0-9]", "",
-                                                interactions1b_py_on_treatment_disc$sim)
-
-# Outcome 1: HBV related deaths averted
-cohort_deaths_averted1b_disc <- rbind(
-  cbind(scenario = "5-yearly 15+ (all ages)",
-        discount_outcome_2020_to_2100(scenario_object=out3,
-                                      object_to_subtract=out5,outcome="cum_hbv_deaths",
-                                      yearly_discount_rate=0.03)),
-  cbind(scenario = "3-yearly 15+ (all ages)",
-        discount_outcome_2020_to_2100(scenario_object=out3,
-                                      object_to_subtract=out6b,outcome="cum_hbv_deaths",
-                                      yearly_discount_rate=0.03)),
-  cbind(scenario = "Yearly 15+ (all ages)",
-        discount_outcome_2020_to_2100(scenario_object=out3,
-                                      object_to_subtract=out6,outcome="cum_hbv_deaths",
-                                      yearly_discount_rate=0.03)),
-  cbind(scenario = "3-yearly 15-30, 5-yearly 30+",
-        discount_outcome_2020_to_2100(scenario_object=out3,
-                                      object_to_subtract=monit_out11,outcome="cum_hbv_deaths",
-                                      yearly_discount_rate=0.03)),
-  cbind(scenario = "Yearly 15-30, 5-yearly 30+",
-        discount_outcome_2020_to_2100(scenario_object=out3,
-                                      object_to_subtract=monit_out12,outcome="cum_hbv_deaths",
-                                      yearly_discount_rate=0.03)),
-  cbind(scenario = "3-yearly 15-45, 5-yearly 45+",
-        discount_outcome_2020_to_2100(scenario_object=out3,
-                                      object_to_subtract=monit_out15,outcome="cum_hbv_deaths",
-                                      yearly_discount_rate=0.03)),
-  cbind(scenario = "Yearly 15-45, 5-yearly 45+",
-        discount_outcome_2020_to_2100(scenario_object=out3,
-                                      object_to_subtract=monit_out16,outcome="cum_hbv_deaths",
-                                      yearly_discount_rate=0.03)),
-  cbind(scenario = "3-yearly 45+, 5-yearly 15-45",
-        discount_outcome_2020_to_2100(scenario_object=out3,
-                                      object_to_subtract=monit_out13,outcome="cum_hbv_deaths",
-                                      yearly_discount_rate=0.03)),
-  cbind(scenario = "Yearly 45+, 5-yearly 15-45",
-        discount_outcome_2020_to_2100(scenario_object=out3,
-                                      object_to_subtract=monit_out14,outcome="cum_hbv_deaths",
-                                      yearly_discount_rate=0.03))
-)
-cohort_deaths_averted1b_disc$sim <- gsub("[^0-9]", "",
-                                                    cohort_deaths_averted1b_disc$sim)
-colnames(cohort_deaths_averted1b_disc)[colnames(cohort_deaths_averted1b_disc)=="cum_hbv_deaths"] <-
-  "deaths_averted"
-
-# Outcome 2: Life-years saved
-
-# Life-years saved
-cohort_ly_gained1b_disc <- rbind(
-  cbind(scenario = "5-yearly 15+ (all ages)",
-        discount_outcome_2020_to_2100(scenario_object=out5,
-                                      object_to_subtract=out3,outcome="ly",
-                                      yearly_discount_rate=0.03)),
-  cbind(scenario = "3-yearly 15+ (all ages)",
-        discount_outcome_2020_to_2100(scenario_object=out6b,
-                                      object_to_subtract=out3,outcome="ly",
-                                      yearly_discount_rate=0.03)),
-  cbind(scenario = "Yearly 15+ (all ages)",
-        discount_outcome_2020_to_2100(scenario_object=out6,
-                                      object_to_subtract=out3,outcome="ly",
-                                      yearly_discount_rate=0.03)),
-  cbind(scenario = "3-yearly 15-30, 5-yearly 30+",
-        discount_outcome_2020_to_2100(scenario_object=monit_out11,
-                                      object_to_subtract=out3,outcome="ly",
-                                      yearly_discount_rate=0.03)),
-  cbind(scenario = "Yearly 15-30, 5-yearly 30+",
-        discount_outcome_2020_to_2100(scenario_object=monit_out12,
-                                      object_to_subtract=out3,outcome="ly",
-                                      yearly_discount_rate=0.03)),
-  cbind(scenario = "3-yearly 15-45, 5-yearly 45+",
-        discount_outcome_2020_to_2100(scenario_object=monit_out15,
-                                      object_to_subtract=out3,outcome="ly",
-                                      yearly_discount_rate=0.03)),
-  cbind(scenario = "Yearly 15-45, 5-yearly 45+",
-        discount_outcome_2020_to_2100(scenario_object=monit_out16,
-                                      object_to_subtract=out3,outcome="ly",
-                                      yearly_discount_rate=0.03)),
-  cbind(scenario = "3-yearly 45+, 5-yearly 15-45",
-        discount_outcome_2020_to_2100(scenario_object=monit_out13,
-                                      object_to_subtract=out3,outcome="ly",
-                                      yearly_discount_rate=0.03)),
-  cbind(scenario = "Yearly 45+, 5-yearly 15-45",
-        discount_outcome_2020_to_2100(scenario_object=monit_out14,
-                                      object_to_subtract=out3,outcome="ly",
-                                      yearly_discount_rate=0.03))
-)
-cohort_ly_gained1b_disc$sim <- gsub("[^0-9]", "",
-                                                    cohort_ly_gained1b_disc$sim)
-colnames(cohort_ly_gained1b_disc)[colnames(cohort_ly_gained1b_disc)=="ly"] <-
-  "ly_saved"
-
-# Combine into full dataframe
-df1b_disc <- create_incremental_plot_df(interactions_df=interactions1b_disc,
-                                   py_on_treatment_df=interactions1b_py_on_treatment_disc,
-                                   deaths_averted_df=cohort_deaths_averted1b_disc,
-                                   ly_saved_df = cohort_ly_gained1b_disc,
-                                   ref_label = "No monitoring")
-
-find_dominated_strategies(df1b, "total_interactions", "deaths_averted")
-find_dominated_strategies(df1b_disc, "total_interactions", "deaths_averted")
-
-find_dominated_strategies(df1b,"total_cost", "deaths_averted")
-find_dominated_strategies(df1b_disc,"total_cost", "deaths_averted")
-
-find_dominated_strategies(df1b,"total_interactions", "ly_saved")
-find_dominated_strategies(df1b_disc,"total_interactions", "ly_saved")
-
-find_dominated_strategies(df1b, "total_cost", "ly_saved")
-find_dominated_strategies(df1b_disc, "total_cost", "ly_saved")
-
-# Intensify in <45 or >45 year olds
-df1b_disc_45_threshold <-  subset(df1b_disc, !(scenario %in% c("3-yearly 15-30, 5-yearly 30+", "Yearly 15-30, 5-yearly 30+")))
-
-# Compare intensification in 45+ year olds vs < 45 year olds
-find_dominated_strategies(df1b_disc_45_threshold, "total_interactions", "deaths_averted")
-find_dominated_strategies(df1b_disc_45_threshold,"total_cost", "deaths_averted")
-find_dominated_strategies(df1b_disc_45_threshold,"total_interactions", "ly_saved")
-find_dominated_strategies(df1b_disc_45_threshold, "total_cost", "ly_saved")
-
-# Add labels for this to dataframe (45 threshold)
-df1b_disc_45_threshold$frontier_deaths_averted <- "Include"
-df1b_disc_45_threshold$frontier_deaths_averted[df1b_disc_45_threshold$scenario %in% c("3-yearly 15-45, 5-yearly 45+",
-                                                                            "Yearly 15-45, 5-yearly 45+",
-                                                                            "Yearly 45+, 5-yearly 15-45")] <- "Dominated"
-df1b_disc_45_threshold$frontier_ly_saved <- "Include"
-df1b_disc_45_threshold$frontier_ly_saved[df1b_disc_45_threshold$scenario %in% c("3-yearly 45+, 5-yearly 15-45",
-                                                                      "Yearly 45+, 5-yearly 15-45")] <-
-  "Dominated"
-
-df1b_disc_45_threshold$scenario <- factor(as.character(df1b_disc_45_threshold$scenario))
-
-levels(df1b_disc_45_threshold$scenario) <- list("No monitoring" = "No monitoring",
-                                                "All ages,\nevery 5 years" = "5-yearly 15+ (all ages)",
-                                                "45+ every 3 years &\n15-45 every 5 years" = "3-yearly 45+, 5-yearly 15-45",
-                                                "15-45 every 3 years &\n45+ every 5 years" = "3-yearly 15-45, 5-yearly 45+",
-                                                "45+ every 1 year &\n15-45 every 5 years" = "Yearly 45+, 5-yearly 15-45",
-                                                "All ages,\nevery 3 years" = "3-yearly 15+ (all ages)",
-                                           "15-45 every 1 year &\n45+ every 5 years" = "Yearly 15-45, 5-yearly 45+",
-                                           "All ages,\nevery 1 year" = "Yearly 15+ (all ages)"
-
-)
-
-df1b_disc_45_threshold_summary <- df1b_disc_45_threshold %>%
-  group_by(scenario, frontier_deaths_averted, frontier_ly_saved) %>%
-  summarise(median_deaths_averted = median(deaths_averted),
-            median_ly_saved = median(ly_saved),
-            median_interactions = median(total_interactions),
-            median_cost = median(total_cost))
-
-# Plots ----
-# Plot: interactions vs deaths averted (INCL)
-# Note both yearly age-focused strategies and 3-yearly 15-45 are dominated
-ggplot(df1b_disc_45_threshold) +
-  geom_line(data= subset(df1b_disc_45_threshold, frontier_deaths_averted== "Include"),
-            aes(x = deaths_averted, y= total_interactions,
-                group = sim), colour = "grey", alpha = 0.3) +
-  stat_ellipse(data=subset(df1b_disc_45_threshold, scenario != "No monitoring"),
-               aes(x=deaths_averted,y=total_interactions,
-                   group = reorder(scenario, deaths_averted),
-                   fill= reorder(scenario, deaths_averted)),
-               geom = "polygon", na.rm = FALSE, alpha = 0.2) +
-  geom_point(aes(x = deaths_averted, y = total_interactions,
-                 group =reorder(scenario, deaths_averted), colour = reorder(scenario, deaths_averted)),
-             alpha = 0.15) +
-  # Overlay median
-  geom_line(data = subset(df1b_disc_45_threshold_summary, frontier_deaths_averted == "Include"),
-            aes(y = median_interactions,
-                x = median_deaths_averted), size = 1) +
-  geom_point(data = df1b_disc_45_threshold_summary,
-             aes(y = median_interactions,
-                 x = median_deaths_averted,
-                 group = reorder(scenario, median_deaths_averted),
-                 colour = reorder(scenario, median_deaths_averted)), size = 5) +
-  geom_point(data = df1b_disc_45_threshold_summary,
-             aes(y = median_interactions,
-                 x = median_deaths_averted,
-                 group = reorder(scenario, median_deaths_averted)),
-             size = 5, shape = 1, colour = "black") +
-  scale_fill_manual("Monitoring strategies",
-                    values=rev(brewer.pal(7,"RdYlBu"))) +
-  scale_colour_manual("Monitoring strategies",
-                      values=c("black", rev(brewer.pal(7,"RdYlBu")))) +
-  guides(fill=FALSE) +
-  xlab("Incremental HBV-related deaths averted") +
-  ylab("Incremental number of clinical interactions") +
-  #  xlim(-150,7200) +
-  #  ylim(0,2500000) +
-  theme_bw() +
-  theme(axis.text = element_text(size = 15),
-        axis.title = element_text(size = 15),
-        legend.text = element_text(size = 12),
-        title = element_text(size = 15))
-
-# Plot: cost vs deaths averted (INCL)
-ggplot(df1b_disc_45_threshold) +
-  geom_line(data= subset(df1b_disc_45_threshold, frontier_deaths_averted== "Include"),
-            aes(x = deaths_averted, y= total_cost,
-                group = sim), colour = "grey", alpha = 0.3) +
-  stat_ellipse(data=subset(df1b_disc_45_threshold, scenario != "No monitoring"),
-               aes(x=deaths_averted,y=total_cost,
-                   group = reorder(scenario, deaths_averted),
-                   fill= reorder(scenario, deaths_averted)),
-               geom = "polygon", na.rm = FALSE, alpha = 0.2) +
-  geom_point(aes(x = deaths_averted, y = total_cost,
-                 group =reorder(scenario, deaths_averted), colour = reorder(scenario, deaths_averted)),
-             alpha = 0.15) +
-  # Overlay median
-  geom_line(data = subset(df1b_disc_45_threshold_summary, frontier_deaths_averted == "Include"),
-            aes(y = median_cost,
-                x = median_deaths_averted), size = 1) +
-  geom_point(data = df1b_disc_45_threshold_summary,
-             aes(y = median_cost,
-                 x = median_deaths_averted,
-                 group = reorder(scenario, median_deaths_averted),
-                 colour = reorder(scenario, median_deaths_averted)), size = 5) +
-  geom_point(data = df1b_disc_45_threshold_summary,
-             aes(y = median_cost,
-                 x = median_deaths_averted,
-                 group = reorder(scenario, median_deaths_averted)),
-             size = 5, shape = 1, colour = "black") +
-  scale_fill_manual("Monitoring strategies",
-                    values=rev(brewer.pal(7,"RdYlBu"))) +
-  scale_colour_manual("Monitoring strategies",
-                      values=c("black", rev(brewer.pal(7,"RdYlBu")))) +
-  guides(fill=FALSE) +
-  xlab("Incremental HBV-related deaths averted") +
-  ylab("Incremental cost (USD)") +
-  #  xlim(-150,7200) +
-  #  ylim(0,2500000) +
-  theme_bw() +
-  theme(axis.text = element_text(size = 15),
-        axis.title = element_text(size = 15),
-        legend.text = element_text(size = 12),
-        title = element_text(size = 15))
-
-# Plot: interactions vs LY saved (INCL)
-# Note for LY saved ordering by factor level to maintain same colours for each scenario
-ggplot(df1b_disc_45_threshold) +
-  geom_line(data= subset(df1b_disc_45_threshold, frontier_ly_saved== "Include"),
-            aes(x = ly_saved, y= total_interactions,
-                group = sim), colour = "grey", alpha = 0.3) +
-  stat_ellipse(data=subset(df1b_disc_45_threshold, scenario != "No monitoring"),
-               aes(x=ly_saved,y=total_interactions,
-                   group = scenario,
-                   fill= scenario),
-               geom = "polygon", na.rm = FALSE, alpha = 0.2) +
-  geom_point(aes(x = ly_saved, y = total_interactions,
-                 group =scenario, colour = scenario),
-             alpha = 0.15) +
-  # Overlay median
-  geom_line(data = subset(df1b_disc_45_threshold_summary, frontier_ly_saved == "Include"),
-            aes(y = median_interactions,
-                x = median_ly_saved), size = 1) +
-  geom_point(data = df1b_disc_45_threshold_summary,
-             aes(y = median_interactions,
-                 x = median_ly_saved,
-                 group = scenario,
-                 colour =scenario), size = 5) +
-  geom_point(data = df1b_disc_45_threshold_summary,
-             aes(y = median_interactions,
-                 x = median_ly_saved,
-                 group =scenario),
-             size = 5, shape = 1, colour = "black") +
-  scale_fill_manual("Monitoring strategies",
-                    values=rev(brewer.pal(7,"RdYlBu"))) +
-  scale_colour_manual("Monitoring strategies",
-                      values=c("black", rev(brewer.pal(7,"RdYlBu")))) +
-  guides(fill=FALSE) +
-  xlab("Incremental life-years saved") +
-  ylab("Incremental number of clinical interactions") +
-  #  xlim(-150,7200) +
-  #  ylim(0,2500000) +
-  theme_bw() +
-  theme(axis.text = element_text(size = 15),
-        axis.title = element_text(size = 15),
-        legend.text = element_text(size = 12),
-        title = element_text(size = 15))
-
-# Plot: cost vs LY saved (INCL)
-ggplot(df1b_disc_45_threshold) +
-  geom_line(data= subset(df1b_disc_45_threshold, frontier_ly_saved== "Include"),
-            aes(x = ly_saved, y= total_cost,
-                group = sim), colour = "grey", alpha = 0.3) +
-  stat_ellipse(data=subset(df1b_disc_45_threshold, scenario != "No monitoring"),
-               aes(x=ly_saved,y=total_cost,
-                   group = scenario,
-                   fill= scenario),
-               geom = "polygon", na.rm = FALSE, alpha = 0.2) +
-  geom_point(aes(x = ly_saved, y = total_cost,
-                 group =scenario, colour = scenario),
-             alpha = 0.15) +
-  # Overlay median
-  geom_line(data = subset(df1b_disc_45_threshold_summary, frontier_ly_saved == "Include"),
-            aes(y = median_cost,
-                x = median_ly_saved), size = 1) +
-  geom_point(data = df1b_disc_45_threshold_summary,
-             aes(y = median_cost,
-                 x = median_ly_saved,
-                 group = scenario,
-                 colour = scenario), size = 5) +
-  geom_point(data = df1b_disc_45_threshold_summary,
-             aes(y = median_cost,
-                 x = median_ly_saved,
-                 group = scenario),
-             size = 5, shape = 1, colour = "black") +
-  scale_fill_manual("Monitoring strategies",
-                    values=rev(brewer.pal(7,"RdYlBu"))) +
-  scale_colour_manual("Monitoring strategies",
-                      values=c("black", rev(brewer.pal(7,"RdYlBu")))) +
-  guides(fill=FALSE) +
-  xlab("Incremental life-years saved") +
-  ylab("Incremental cost (USD)") +
-  #  xlim(-150,7200) +
-  #  ylim(0,2500000) +
-  theme_bw() +
-  theme(axis.text = element_text(size = 15),
-        axis.title = element_text(size = 15),
-        legend.text = element_text(size = 12),
-        title = element_text(size = 15))
-## Approach 2 (by birth cohort): monitoring given age cohort from entry until death ----
-# Incrementally intensive strategies are: 45+ years, 30+ years, 15+ (all ages)
-# Start with 5-yearly frequency
-# Increment between no monitoring and status quo: out3-out1
-# Increment between monitoring 45+ year olds and no monitoring in any age group: a2_out5-a2_out3
-# Increment between adding 30-45 year old to monitoring vs only 45+ year olds:
-# (a3_out5-a3_out3)-(a2_out5-a2_out3)
-# Increment between adding 30-45 year old to monitoring vs only 30+ year olds:
-#(a1_out5-a1_out3)-(a3_out5-a3_out3)
-
-# Create data frame with all interactions and outcomes of interest
-interactions2 <- rbind(
-  cbind(scenario = "5-yearly 15+ (all ages)",
-        left_join(gather(out5$interactions[[16]]$total_assessed[-c(1:3)]-out3$interactions[[16]]$total_assessed[-c(1:3)],
-                         key = "sim", value = "monitoring_assessments"),
-                  gather(out5$interactions[[16]]$total_treated[-c(1:3)]-out3$interactions[[16]]$total_treated[-c(1:3)],
-                         key = "sim", value = "treatment_initiations"), by = "sim")),
-  cbind(scenario = "Yearly 15+ (all ages)",
-        left_join(gather(out6$interactions[[16]]$total_assessed[-c(1:3)]-out3$interactions[[16]]$total_assessed[-c(1:3)],
-                         key = "sim", value = "monitoring_assessments"),
-                  gather(out6$interactions[[16]]$total_treated[-c(1:3)]-out3$interactions[[16]]$total_treated[-c(1:3)],
-                         key = "sim", value = "treatment_initiations"), by = "sim")),
-  cbind(scenario = "5-yearly 45+",
-        left_join(gather(a2_out5$interactions[[16]]$total_assessed[-c(1:3)]-a2_out3$interactions[[16]]$total_assessed[-c(1:3)],
-                         key = "sim", value = "monitoring_assessments"),
-                  gather(a2_out5$interactions[[16]]$total_treated[-c(1:3)]-a2_out3$interactions[[16]]$total_treated[-c(1:3)],
-                         key = "sim", value = "treatment_initiations"), by = "sim")),
-  cbind(scenario = "5-yearly 30+",
-        left_join(gather(a3_out5$interactions[[16]]$total_assessed[-c(1:3)]-a3_out3$interactions[[16]]$total_assessed[-c(1:3)],
-                         key = "sim", value = "monitoring_assessments"),
-                  gather(a3_out5$interactions[[16]]$total_treated[-c(1:3)]-a3_out3$interactions[[16]]$total_treated[-c(1:3)],
-                         key = "sim", value = "treatment_initiations"), by = "sim")),
-  cbind(scenario = "Yearly 45+",
-        left_join(gather(a2_out6$interactions[[16]]$total_assessed[-c(1:3)]-a2_out3$interactions[[16]]$total_assessed[-c(1:3)],
-                         key = "sim", value = "monitoring_assessments"),
-                  gather(a2_out6$interactions[[16]]$total_treated[-c(1:3)]-a2_out3$interactions[[16]]$total_treated[-c(1:3)],
-                         key = "sim", value = "treatment_initiations"), by = "sim")),
-  cbind(scenario = "Yearly 30+",
-        left_join(gather(a3_out6$interactions[[16]]$total_assessed[-c(1:3)]-a3_out3$interactions[[16]]$total_assessed[-c(1:3)],
-                         key = "sim", value = "monitoring_assessments"),
-                  gather(a3_out6$interactions[[16]]$total_treated[-c(1:3)]-a3_out3$interactions[[16]]$total_treated[-c(1:3)],
-                         key = "sim", value = "treatment_initiations"), by = "sim"))
-)
-
-# Extract person-years on treatment
-interactions2_py_on_treatment <- rbind(
-  data.frame(scenario = "5-yearly 15+ (all ages)",
-             sim = names(out5$py_on_treatment[[16]]-out3$py_on_treatment[[16]]),
-             py_on_treatment = out5$py_on_treatment[[16]]-out3$py_on_treatment[[16]]),
-  data.frame(scenario = "Yearly 15+ (all ages)",
-             sim = names(out6$py_on_treatment[[16]]-out3$py_on_treatment[[16]]),
-             py_on_treatment= out6$py_on_treatment[[16]]-out3$py_on_treatment[[16]]),
-  data.frame(scenario = "5-yearly 45+",
-             sim = names(a2_out5$py_on_treatment[[16]]-a2_out3$py_on_treatment[[16]]),
-             py_on_treatment = a2_out5$py_on_treatment[[16]]-a2_out3$py_on_treatment[[16]]),
-  data.frame(scenario = "5-yearly 30+",
-             sim = names(a3_out5$py_on_treatment[[16]]-a3_out3$py_on_treatment[[16]]),
-             py_on_treatment = a3_out5$py_on_treatment[[16]]-a3_out3$py_on_treatment[[16]]),
-  data.frame(scenario = "Yearly 45+",
-             sim = names(a2_out6$py_on_treatment[[16]]-a2_out3$py_on_treatment[[16]]),
-             py_on_treatment = a2_out6$py_on_treatment[[16]]-a2_out3$py_on_treatment[[16]]),
-  data.frame(scenario = "Yearly 30+",
-             sim = names(a3_out6$py_on_treatment[[16]]-a3_out3$py_on_treatment[[16]]),
-             py_on_treatment = a3_out6$py_on_treatment[[16]]-a3_out3$py_on_treatment[[16]]))
-
-# Outcome 1: HBV related deaths averted
-cohort_deaths_averted2 <- rbind(
-  cbind(scenario = "5-yearly 45+",
-        a2_out3$cum_hbv_deaths[[16]][-c(1:3)]-a2_out5$cum_hbv_deaths[[16]][-c(1:3)]),
-  cbind(scenario = "5-yearly 30+",
-        a3_out3$cum_hbv_deaths[[16]][-c(1:3)]-a3_out5$cum_hbv_deaths[[16]][-c(1:3)]),
-  cbind(scenario = "5-yearly 15+ (all ages)",
-        out3$cum_hbv_deaths[[16]][-c(1:3)]-out5$cum_hbv_deaths[[16]][-c(1:3)]),
-  cbind(scenario = "Yearly 45+",
-        a2_out3$cum_hbv_deaths[[16]][-c(1:3)]-a2_out6$cum_hbv_deaths[[16]][-c(1:3)]),
-  cbind(scenario = "Yearly 30+",
-        a3_out3$cum_hbv_deaths[[16]][-c(1:3)]-a3_out6$cum_hbv_deaths[[16]][-c(1:3)]),
-  cbind(scenario = "Yearly 15+ (all ages)",
-        out3$cum_hbv_deaths[[16]][-c(1:3)]-out6$cum_hbv_deaths[[16]][-c(1:3)]))
-colnames(cohort_deaths_averted2)[-1] <- as.numeric(gsub("[^0-9]", "",
-                                                        colnames(cohort_deaths_averted2)[-1]))
-cohort_deaths_averted2_long <- gather(cohort_deaths_averted2, key = "sim",
-                                      value = "deaths_averted", - scenario)
-
-# Outcome 2: Life-years saved
-
-# Life-years saved
-cohort_ly_gained2 <- rbind(
-  cbind(scenario = "5-yearly 45+",
-        a2_out5$ly[[16]][-c(1:3)]-a2_out3$ly[[16]][-c(1:3)]),
-  cbind(scenario = "5-yearly 30+",
-        a3_out5$ly[[16]][-c(1:3)]-a3_out3$ly[[16]][-c(1:3)]),
-  cbind(scenario = "5-yearly 15+ (all ages)",
-        out5$ly[[16]][-c(1:3)]-out3$ly[[16]][-c(1:3)]),
-  cbind(scenario = "Yearly 45+",
-        a2_out6$ly[[16]][-c(1:3)]-a2_out3$ly[[16]][-c(1:3)]),
-  cbind(scenario = "Yearly 30+",
-        a3_out6$ly[[16]][-c(1:3)]-a3_out3$ly[[16]][-c(1:3)]),
-  cbind(scenario = "Yearly 15+ (all ages)",
-        out6$ly[[16]][-c(1:3)]-out3$ly[[16]][-c(1:3)]))
-colnames(cohort_ly_gained2)[-1] <- as.numeric(gsub("[^0-9]", "",
-                                                   colnames(cohort_ly_gained2)[-1]))
-cohort_ly_gained2_long <- gather(cohort_ly_gained2, key = "sim",
-                                 value = "ly_saved", - scenario)
-
-# Combine into full dataframe
-df2 <- create_incremental_plot_df(interactions_df=interactions2,
-                                  py_on_treatment_df=interactions2_py_on_treatment,
-                                  deaths_averted_df=cohort_deaths_averted2_long,
-                                  ly_saved_df = cohort_ly_gained2_long,
-                                  ref_label = "No monitoring")
-
-# Find dominated strategies for each combination of exposure and outcome using BCEA package
-find_dominated_strategies(df2, "total_interactions", "deaths_averted")
-find_dominated_strategies(df2,"total_cost", "deaths_averted")
-find_dominated_strategies(df2,"total_interactions", "ly_saved")
-find_dominated_strategies(df2, "total_cost", "ly_saved")
-# Deaths averted & interactions, LY saved & any exp.:
-# Yearly 30+, Yearly 45+, 5-yearly 30+, 5-yearly 45+
-# Deaths averted & cost: Yearly 30+, 5-yearly 45+, Yearly 45+
-
-# Add labels to this dataframe
-df2$frontier_deaths_averted_interactions <- "Include"
-df2$frontier_deaths_averted_interactions[df2$scenario %in% c("Yearly 30+", "5-yearly 30+",
-                                                             "5-yearly 45+", "Yearly 45+")] <- "Dominated"
-df2$frontier_deaths_averted_cost <- "Include"
-df2$frontier_deaths_averted_cost[df2$scenario %in% c("Yearly 30+", "5-yearly 45+", "Yearly 45+")] <-
-  "Dominated"
-df2$frontier_ly_saved <- "Include"
-df2$frontier_ly_saved[df2$scenario %in% c("Yearly 30+", "5-yearly 30+",
-                                          "5-yearly 45+", "Yearly 45+")] <- "Dominated"
-
-levels(df2$scenario) <- list("No monitoring" = "No monitoring",
-                              "45+,\nevery 5 years" = "5-yearly 45+",
-                              "30+,\nevery 5 years" = "5-yearly 30+",
-                              "All ages,\nevery 5 years" = "5-yearly 15+ (all ages)",
-                              "All ages,\nevery 1 year" = "Yearly 15+ (all ages)",
-                              "45+,\nevery 1 year" = "Yearly 45+",
-                              "30+,\nevery 1 year" = "Yearly 30+")
-
-df2_summary <- df2 %>%
-  group_by(scenario, frequency, age_group, frontier_deaths_averted_interactions,
-           frontier_deaths_averted_cost, frontier_ly_saved) %>%
-  summarise(median_deaths_averted = median(deaths_averted),
-            median_ly_saved = median(ly_saved),
-            median_interactions = median(total_interactions),
-            median_cost = median(total_cost))
-
-# Plots ----
-# Plot: interactions vs deaths averted (combined) (INCL)
-ggplot(df2) +
-  geom_line(data= subset(df2, frontier_deaths_averted_interactions== "Include"),
-            aes(x = deaths_averted, y= total_interactions,
-                group = sim), colour = "grey", alpha = 0.3) +
-  stat_ellipse(data=subset(df2, scenario != "No monitoring"),
-               aes(x=deaths_averted,y=total_interactions,
-                   group = reorder(scenario, deaths_averted),
-                   fill= reorder(scenario, deaths_averted)),
-               geom = "polygon", na.rm = FALSE, alpha = 0.2) +
-  geom_point(aes(x = deaths_averted, y = total_interactions,
-                 group =reorder(scenario, deaths_averted), colour = reorder(scenario, deaths_averted)),
-             alpha = 0.15) +
-  # Overlay median
-  geom_line(data = subset(df2_summary, frontier_deaths_averted_interactions == "Include"),
-            aes(y = median_interactions,
-                x = median_deaths_averted), size = 1) +
-  geom_point(data = df2_summary,
-             aes(y = median_interactions,
-                 x = median_deaths_averted,
-                 group = reorder(scenario, median_deaths_averted),
-                 colour = reorder(scenario, median_deaths_averted)), size = 5) +
-  geom_point(data = df2_summary,
-             aes(y = median_interactions,
-                 x = median_deaths_averted,
-                 group = reorder(scenario, median_deaths_averted)),
-             size = 5, shape = 1, colour = "black") +
-  scale_fill_manual("Monitoring strategies\nstarting at entry\ninto cohort",
-                    values=rev(brewer.pal(6,"RdYlBu"))) +
-  scale_colour_manual("Monitoring strategies\nstarting at entry\ninto cohort",
-                      values=c("black", rev(brewer.pal(6,"RdYlBu")))) +
-  guides(fill=FALSE) +
-  xlab("Incremental HBV-related deaths averted") +
-  ylab("Incremental number of clinical interactions") +
-  xlim(-150,7200) +
-  #  ylim(0,2500000) +
-  theme_bw() +
-  theme(axis.text = element_text(size = 15),
-        axis.title = element_text(size = 15),
-        legend.text = element_text(size = 12),
-        title = element_text(size = 15))
-
-# Plot: interactions vs deaths averted (separated by birth cohort)
-ggplot(df2) +
-  geom_line(data= df2,
-            aes(x = deaths_averted, y= total_interactions,
-                group = sim), colour = "grey", alpha = 0.5) +
-  geom_point(aes(x = deaths_averted, y = total_interactions,
-                 group =reorder(scenario, deaths_averted), colour = reorder(scenario, deaths_averted)), alpha = 0.4) +
-  stat_ellipse(geom = "polygon",
-               aes(x=deaths_averted,y=total_interactions,
-                   group = reorder(scenario, deaths_averted), fill= reorder(scenario, deaths_averted)), alpha = 0.3) +
-  # Overlay median
-  geom_line(data = df2_summary,
-            aes(y = median_interactions,
-                x = median_deaths_averted), size = 1) +
-  geom_point(data = df2_summary,
-             aes(y = median_interactions,
-                 x = median_deaths_averted,
-                 group = reorder(scenario, median_deaths_averted),
-                 colour = reorder(scenario, median_deaths_averted)), size = 5) +
-  geom_point(data = df2_summary,
-             aes(y = median_interactions,
-                 x = median_deaths_averted,
-                 group = reorder(scenario, median_deaths_averted)),
-             size = 5, shape = 1, colour = "black") +
-  facet_wrap(~age_group) +
-  scale_fill_brewer("Monitoring strategies\nstarting at entry\ninto cohort", palette="RdYlBu") +
-  scale_colour_brewer("Monitoring strategies\nstarting at entry\ninto cohort",
-                      palette="RdYlBu") +
-  xlab("Incremental HBV-related deaths averted") +
-  ylab("Incremental number of clinical interactions") +
-  #xlim(-150,7200) +
-  #  ylim(0,2500000) +
-  theme_bw() +
-  theme(axis.text = element_text(size = 15),
-        axis.title = element_text(size = 15),
-        legend.text = element_text(size = 12),
-        title = element_text(size = 15))
-
-# Plot: interactions vs deaths averted (separate by frequency)
-ggplot(df2) +
-  geom_line(data= df2,
-            aes(x = deaths_averted, y= total_interactions,
-                group = sim), colour = "grey", alpha = 0.5) +
-  geom_point(aes(x = deaths_averted, y = total_interactions,
-                 group =reorder(scenario, deaths_averted), colour = reorder(scenario, deaths_averted)), alpha = 0.4) +
-  stat_ellipse(geom = "polygon",
-               aes(x=deaths_averted,y=total_interactions,
-                   group = reorder(scenario, deaths_averted), fill= reorder(scenario, deaths_averted)), alpha = 0.3) +
-  # Overlay median
-  geom_line(data = df2_summary,
-            aes(y = median_interactions,
-                x = median_deaths_averted), size = 1) +
-  geom_point(data = df2_summary,
-             aes(y = median_interactions,
-                 x = median_deaths_averted,
-                 group = reorder(scenario, median_deaths_averted),
-                 colour = reorder(scenario, median_deaths_averted)), size = 5) +
-  geom_point(data = df2_summary,
-             aes(y = median_interactions,
-                 x = median_deaths_averted,
-                 group = reorder(scenario, median_deaths_averted)),
-             size = 5, shape = 1, colour = "black") +
-  facet_wrap(~frequency) +
-  scale_fill_brewer("Monitoring strategies\nstarting at entry\ninto cohort", palette="RdYlBu") +
-  scale_colour_brewer("Monitoring strategies\nstarting at entry\ninto cohort",
-                      palette="RdYlBu") +
-  xlab("Incremental HBV-related deaths averted") +
-  ylab("Incremental number of clinical interactions") +
-  xlim(-150,7200) +
-  #  ylim(0,2500000) +
-  theme_bw() +
-  theme(axis.text = element_text(size = 15),
-        axis.title = element_text(size = 15),
-        legend.text = element_text(size = 12),
-        title = element_text(size = 15))
-
-# Plot: cost vs deaths averted (INCL)
-ggplot(df2) +
-  geom_line(data= subset(df2, frontier_deaths_averted_cost== "Include"),
-            aes(x = deaths_averted, y= total_cost,
-                group = sim), colour = "grey", alpha = 0.3) +
-  stat_ellipse(data=subset(df2, scenario != "No monitoring"),
-               aes(x=deaths_averted,y=total_cost,
-                   group = reorder(scenario, deaths_averted),
-                   fill= reorder(scenario, deaths_averted)),
-               geom = "polygon", na.rm = FALSE, alpha = 0.2) +
-  geom_point(aes(x = deaths_averted, y = total_cost,
-                 group =reorder(scenario, deaths_averted), colour = reorder(scenario, deaths_averted)),
-             alpha = 0.15) +
-  # Overlay median
-  geom_line(data = subset(df2_summary, frontier_deaths_averted_cost == "Include"),
-            aes(y = median_cost,
-                x = median_deaths_averted), size = 1) +
-  geom_point(data = df2_summary,
-             aes(y = median_cost,
-                 x = median_deaths_averted,
-                 group = reorder(scenario, median_deaths_averted),
-                 colour = reorder(scenario, median_deaths_averted)), size = 5) +
-  geom_point(data = df2_summary,
-             aes(y = median_cost,
-                 x = median_deaths_averted,
-                 group = reorder(scenario, median_deaths_averted)),
-             size = 5, shape = 1, colour = "black") +
-  scale_fill_manual("Monitoring strategies\nstarting at entry\ninto cohort",
-                    values=rev(brewer.pal(6,"RdYlBu"))) +
-  scale_colour_manual("Monitoring strategies\nstarting at entry\ninto cohort",
-                      values=c("black", rev(brewer.pal(6,"RdYlBu")))) +
-  guides(fill=FALSE) +
-  xlab("Incremental HBV-related deaths averted") +
-  ylab("Incremental cost (USD)") +
-  xlim(-150,7200) +
-  #  ylim(0,2500000) +
-  theme_bw() +
-  theme(axis.text = element_text(size = 15),
-        axis.title = element_text(size = 15),
-        legend.text = element_text(size = 12),
-        title = element_text(size = 15))
-
-# Plot: interactions vs LY saved (INCL)
-ggplot(df2) +
-  geom_line(data= subset(df2, frontier_ly_saved== "Include"),
-            aes(x = ly_saved, y= total_interactions,
-                group = sim), colour = "grey", alpha = 0.3) +
-  stat_ellipse(data=subset(df2, scenario != "No monitoring"),
-               aes(x=ly_saved,y=total_interactions,
-                   group = reorder(scenario, ly_saved),
-                   fill= reorder(scenario, ly_saved)),
-               geom = "polygon", na.rm = FALSE, alpha = 0.2) +
-  geom_point(aes(x = ly_saved, y = total_interactions,
-                 group =reorder(scenario, ly_saved), colour = reorder(scenario, ly_saved)),
-             alpha = 0.15) +
-  # Overlay median
-  geom_line(data = subset(df2_summary, frontier_ly_saved == "Include"),
-            aes(y = median_interactions,
-                x = median_ly_saved), size = 1) +
-  geom_point(data = df2_summary,
-             aes(y = median_interactions,
-                 x = median_ly_saved,
-                 group = reorder(scenario, median_ly_saved),
-                 colour = reorder(scenario, median_ly_saved)), size = 5) +
-  geom_point(data = df2_summary,
-             aes(y = median_interactions,
-                 x = median_ly_saved,
-                 group = reorder(scenario, median_ly_saved)),
-             size = 5, shape = 1, colour = "black") +
-  scale_fill_manual("Monitoring strategies\nstarting at entry\ninto cohort",
-                    values=rev(brewer.pal(6,"RdYlBu"))) +
-  scale_colour_manual("Monitoring strategies\nstarting at entry\ninto cohort",
-                      values=c("black", rev(brewer.pal(6,"RdYlBu")))) +
-  guides(fill=FALSE) +
-  xlab("Incremental life-years saved") +
-  ylab("Incremental number of clinical interactions") +
-  #  ylim(0,2500000) +
-  theme_bw() +
-  theme(axis.text = element_text(size = 15),
-        axis.title = element_text(size = 15),
-        legend.text = element_text(size = 12),
-        title = element_text(size = 15))
-
-# Plot: cost vs LY saved (INCL)
-ggplot(df2) +
-  geom_line(data= subset(df2, frontier_ly_saved== "Include"),
-            aes(x = ly_saved, y= total_cost,
-                group = sim), colour = "grey", alpha = 0.3) +
-  stat_ellipse(data=subset(df2, scenario != "No monitoring"),
-               aes(x=ly_saved,y=total_cost,
-                   group = reorder(scenario, ly_saved),
-                   fill= reorder(scenario, ly_saved)),
-               geom = "polygon", na.rm = FALSE, alpha = 0.2) +
-  geom_point(aes(x = ly_saved, y = total_cost,
-                 group =reorder(scenario, ly_saved), colour = reorder(scenario, ly_saved)),
-             alpha = 0.15) +
-  # Overlay median
-  geom_line(data = subset(df2_summary, frontier_ly_saved== "Include"),
-            aes(y = median_cost,
-                x = median_ly_saved), size = 1) +
-  geom_point(data = df2_summary,
-             aes(y = median_cost,
-                 x = median_ly_saved,
-                 group = reorder(scenario, median_ly_saved),
-                 colour = reorder(scenario, median_ly_saved)), size = 5) +
-  geom_point(data = df2_summary,
-             aes(y = median_cost,
-                 x = median_ly_saved,
-                 group = reorder(scenario, median_ly_saved)),
-             size = 5, shape = 1, colour = "black") +
-  scale_fill_manual("Monitoring strategies\nstarting at entry\ninto cohort",
-                    values=rev(brewer.pal(6,"RdYlBu"))) +
-  scale_colour_manual("Monitoring strategies\nstarting at entry\ninto cohort",
-                      values=c("black", rev(brewer.pal(6,"RdYlBu")))) +
-  guides(fill=FALSE) +
-  xlab("Incremental life-years saved") +
-  ylab("Incremental cost (USD)") +
-  #  ylim(0,2500000) +
-  theme_bw() +
-  theme(axis.text = element_text(size = 15),
-        axis.title = element_text(size = 15),
-        legend.text = element_text(size = 12),
-        title = element_text(size = 15))
-
-# Plot: cost vs LY saved (separated by frequency - no dominated strategies)
-ggplot(df2) +
-  geom_line(data= df2,
-            aes(x = ly_saved, y= total_cost,
-                group = sim), colour = "grey", alpha = 0.5) +
-  geom_point(aes(x = ly_saved, y = total_cost,
-                 group =reorder(scenario, ly_saved), colour = reorder(scenario, ly_saved)),
-             alpha = 0.4) +
-  stat_ellipse(geom = "polygon",
-               aes(x=ly_saved,y=total_cost,
-                   group = reorder(scenario, ly_saved),
-                   fill= reorder(scenario, ly_saved)), alpha = 0.3) +
-  # Overlay median
-  geom_line(data = df2_summary,
-            aes(y = median_cost,
-                x = median_ly_saved), size = 1) +
-  geom_point(data = df2_summary,
-             aes(y = median_cost,
-                 x = median_ly_saved,
-                 group = reorder(scenario, median_ly_saved),
-                 colour = reorder(scenario, median_ly_saved)), size = 5) +
-  geom_point(data = df2_summary,
-             aes(y = median_cost,
-                 x = median_ly_saved,
-                 group = reorder(scenario, median_ly_saved)),
-             size = 5, shape = 1, colour = "black") +
-  facet_wrap(~frequency) +
-  geom_abline(intercept =0, slope = 240, linetype = "dashed") +
-  geom_abline(intercept =0, slope = 1460, linetype = "dashed") +
-  geom_abline(intercept =0, slope = 487, linetype = "dashed") +
-  scale_fill_brewer("Monitoring strategies\nstarting at entry\ninto cohort", palette="RdYlBu") +
-  scale_colour_brewer("Monitoring strategies\nstarting at entry\ninto cohort",
-                      palette="RdYlBu") +
-  xlab("Incremental life-years saved") +
-  ylab("Incremental cost (USD)") +
-  # xlim(-150,7200) +
-  #  ylim(0,2500000) +
-  theme_bw() +
-  theme(axis.text = element_text(size = 15),
-        axis.title = element_text(size = 15),
-        legend.text = element_text(size = 12),
-        title = element_text(size = 15))
-
-# This plot shows the increase in deaths averted and # total interactions between each 2 strategies,
-# with "treatment without monitoring" being at 0 (status quo of no treatment is shown as negative to that).
-# The assumption here is that everyone is monitored from the start, but it stops at some age (e.g. 30, 45).
-# Would ideally exclude the lines/points outside the 95% interval
-
-## Intensification from approach 2: focused in 45+/30+ cohort or unfocused across all ages ----
-# Focused on 45+ birth cohort or across all ages
-# Reference = No monitoring. Strategies to compare:
-# Monitor all ages every 5 years.
-# Monitor 45+ cohort every 3/1 years and everyone else every 5 years.
-# Monitor all ages every 3/1 years.
-
-# For deaths averted by the 3+5 yearly strategy in birth cohort compared to no monitoring at all:
-# (a2_out6b-a2_out3)+(a4_out5-a4_out3)+(a5_out5-a5_out3)
-
-# Extract interactions
-interactions2b <- rbind(
-  cbind(scenario = "5-yearly 15+ (all ages)",
-        left_join(gather(out5$interactions[[16]]$total_assessed[-c(1:3)]-out3$interactions[[16]]$total_assessed[-c(1:3)],
-                         key = "sim", value = "monitoring_assessments"),
-                  gather(out5$interactions[[16]]$total_treated[-c(1:3)]-out3$interactions[[16]]$total_treated[-c(1:3)],
-                         key = "sim", value = "treatment_initiations"), by = "sim")),
-  cbind(scenario = "3-yearly 45+, 5-yearly 15-45",
-        left_join(gather((a2_out6b$interactions[[16]]$total_assessed[-c(1:3)]-a2_out3$interactions[[16]]$total_assessed[-c(1:3)])+
-                           (a4_out5$interactions[[16]]$total_assessed[-c(1:3)]-a4_out3$interactions[[16]]$total_assessed[-c(1:3)])+
-                           (a5_out5$interactions[[16]]$total_assessed[-c(1:3)]-a5_out3$interactions[[16]]$total_assessed[-c(1:3)]),
-                         key = "sim", value = "monitoring_assessments"),
-                  gather((a2_out6b$interactions[[16]]$total_treated[-c(1:3)]-a2_out3$interactions[[16]]$total_treated[-c(1:3)])+
-                           (a4_out5$interactions[[16]]$total_treated[-c(1:3)]-a4_out3$interactions[[16]]$total_treated[-c(1:3)])+
-                           (a5_out5$interactions[[16]]$total_treated[-c(1:3)]-a5_out3$interactions[[16]]$total_treated[-c(1:3)]),
-                         key = "sim", value = "treatment_initiations"), by = "sim")),
-  cbind(scenario = "Yearly 45+, 5-yearly 15-45",
-        left_join(gather((a2_out6$interactions[[16]]$total_assessed[-c(1:3)]-a2_out3$interactions[[16]]$total_assessed[-c(1:3)])+
-                           (a4_out5$interactions[[16]]$total_assessed[-c(1:3)]-a4_out3$interactions[[16]]$total_assessed[-c(1:3)])+
-                           (a5_out5$interactions[[16]]$total_assessed[-c(1:3)]-a5_out3$interactions[[16]]$total_assessed[-c(1:3)]),
-                         key = "sim", value = "monitoring_assessments"),
-                  gather((a2_out6$interactions[[16]]$total_treated[-c(1:3)]-a2_out3$interactions[[16]]$total_treated[-c(1:3)])+
-                           (a4_out5$interactions[[16]]$total_treated[-c(1:3)]-a4_out3$interactions[[16]]$total_treated[-c(1:3)])+
-                           (a5_out5$interactions[[16]]$total_treated[-c(1:3)]-a5_out3$interactions[[16]]$total_treated[-c(1:3)]),
-                         key = "sim", value = "treatment_initiations"), by = "sim")),
-  cbind(scenario = "3-yearly 30+, 5-yearly 15-30",
-        left_join(gather((a2_out6b$interactions[[16]]$total_assessed[-c(1:3)]-a2_out3$interactions[[16]]$total_assessed[-c(1:3)])+
-                           (a4_out5$interactions[[16]]$total_assessed[-c(1:3)]-a4_out3$interactions[[16]]$total_assessed[-c(1:3)])+
-                           (a5_out6b$interactions[[16]]$total_assessed[-c(1:3)]-a5_out3$interactions[[16]]$total_assessed[-c(1:3)]),
-                         key = "sim", value = "monitoring_assessments"),
-                  gather((a2_out6b$interactions[[16]]$total_treated[-c(1:3)]-a2_out3$interactions[[16]]$total_treated[-c(1:3)])+
-                           (a4_out5$interactions[[16]]$total_treated[-c(1:3)]-a4_out3$interactions[[16]]$total_treated[-c(1:3)])+
-                           (a5_out6b$interactions[[16]]$total_treated[-c(1:3)]-a5_out3$interactions[[16]]$total_treated[-c(1:3)]),
-                         key = "sim", value = "treatment_initiations"), by = "sim")),
-  cbind(scenario = "Yearly 30+, 5-yearly 15-30",
-        left_join(gather((a2_out6$interactions[[16]]$total_assessed[-c(1:3)]-a2_out3$interactions[[16]]$total_assessed[-c(1:3)])+
-                           (a4_out5$interactions[[16]]$total_assessed[-c(1:3)]-a4_out3$interactions[[16]]$total_assessed[-c(1:3)])+
-                           (a5_out6$interactions[[16]]$total_assessed[-c(1:3)]-a5_out3$interactions[[16]]$total_assessed[-c(1:3)]),
-                         key = "sim", value = "monitoring_assessments"),
-                  gather((a2_out6$interactions[[16]]$total_treated[-c(1:3)]-a2_out3$interactions[[16]]$total_treated[-c(1:3)])+
-                           (a4_out5$interactions[[16]]$total_treated[-c(1:3)]-a4_out3$interactions[[16]]$total_treated[-c(1:3)])+
-                           (a5_out6$interactions[[16]]$total_treated[-c(1:3)]-a5_out3$interactions[[16]]$total_treated[-c(1:3)]),
-                         key = "sim", value = "treatment_initiations"), by = "sim")),
-  cbind(scenario = "3-yearly 15+ (all ages)",
-        left_join(gather(out6b$interactions[[16]]$total_assessed[-c(1:3)]-out3$interactions[[16]]$total_assessed[-c(1:3)],
-                         key = "sim", value = "monitoring_assessments"),
-                  gather(out6b$interactions[[16]]$total_treated[-c(1:3)]-out3$interactions[[16]]$total_treated[-c(1:3)],
-                         key = "sim", value = "treatment_initiations"), by = "sim")),
-  cbind(scenario = "Yearly 15+ (all ages)",
-        left_join(gather(out6$interactions[[16]]$total_assessed[-c(1:3)]-out3$interactions[[16]]$total_assessed[-c(1:3)],
-                         key = "sim", value = "monitoring_assessments"),
-                  gather(out6$interactions[[16]]$total_treated[-c(1:3)]-out3$interactions[[16]]$total_treated[-c(1:3)],
-                         key = "sim", value = "treatment_initiations"), by = "sim"))
-)
-
-# Extract person-years on treatment
-interactions2b_py_on_treatment <- rbind(
-  data.frame(scenario = "5-yearly 15+ (all ages)",
-             sim = names(out5$py_on_treatment[[16]]-out3$py_on_treatment[[16]]),
-             py_on_treatment = out5$py_on_treatment[[16]]-out3$py_on_treatment[[16]]),
-  data.frame(scenario = "3-yearly 45+, 5-yearly 15-45",
-             sim = names(((a2_out6b$py_on_treatment[[16]]-a2_out3$py_on_treatment[[16]])+
-                            (a4_out5$py_on_treatment[[16]]-a4_out3$py_on_treatment[[16]])+
-                            (a5_out5$py_on_treatment[[16]]-a5_out3$py_on_treatment[[16]]))),
-             py_on_treatment =((a2_out6b$py_on_treatment[[16]]-a2_out3$py_on_treatment[[16]])+
-                                 (a4_out5$py_on_treatment[[16]]-a4_out3$py_on_treatment[[16]])+
-                                 (a5_out5$py_on_treatment[[16]]-a5_out3$py_on_treatment[[16]]))),
-  data.frame(scenario = "Yearly 45+, 5-yearly 15-45",
-             sim = names(((a2_out6$py_on_treatment[[16]]-a2_out3$py_on_treatment[[16]])+
-                            (a4_out5$py_on_treatment[[16]]-a4_out3$py_on_treatment[[16]])+
-                            (a5_out5$py_on_treatment[[16]]-a5_out3$py_on_treatment[[16]]))),
-             py_on_treatment =((a2_out6$py_on_treatment[[16]]-a2_out3$py_on_treatment[[16]])+
-                                 (a4_out5$py_on_treatment[[16]]-a4_out3$py_on_treatment[[16]])+
-                                 (a5_out5$py_on_treatment[[16]]-a5_out3$py_on_treatment[[16]]))),
-  data.frame(scenario = "3-yearly 30+, 5-yearly 15-30",
-             sim = names(((a2_out6b$py_on_treatment[[16]]-a2_out3$py_on_treatment[[16]])+
-                            (a4_out5$py_on_treatment[[16]]-a4_out3$py_on_treatment[[16]])+
-                            (a5_out6b$py_on_treatment[[16]]-a5_out3$py_on_treatment[[16]]))),
-             py_on_treatment =((a2_out6b$py_on_treatment[[16]]-a2_out3$py_on_treatment[[16]])+
-                                 (a4_out5$py_on_treatment[[16]]-a4_out3$py_on_treatment[[16]])+
-                                 (a5_out6b$py_on_treatment[[16]]-a5_out3$py_on_treatment[[16]]))),
-  data.frame(scenario = "Yearly 30+, 5-yearly 15-30",
-             sim = names(((a2_out6$py_on_treatment[[16]]-a2_out3$py_on_treatment[[16]])+
-                            (a4_out5$py_on_treatment[[16]]-a4_out3$py_on_treatment[[16]])+
-                            (a5_out6$py_on_treatment[[16]]-a5_out3$py_on_treatment[[16]]))),
-             py_on_treatment =((a2_out6$py_on_treatment[[16]]-a2_out3$py_on_treatment[[16]])+
-                                 (a4_out5$py_on_treatment[[16]]-a4_out3$py_on_treatment[[16]])+
-                                 (a5_out6$py_on_treatment[[16]]-a5_out3$py_on_treatment[[16]]))),
-  data.frame(scenario = "3-yearly 15+ (all ages)",
-             sim = names(out6b$py_on_treatment[[16]]-out3$py_on_treatment[[16]]),
-             py_on_treatment = out6b$py_on_treatment[[16]]-out3$py_on_treatment[[16]]),
-  data.frame(scenario = "Yearly 15+ (all ages)",
-             sim = names(out6$py_on_treatment[[16]]-out3$py_on_treatment[[16]]),
-             py_on_treatment= out6$py_on_treatment[[16]]-out3$py_on_treatment[[16]]))
-
-# Outcome 1: HBV related deaths averted
-cohort_deaths_averted2b <- rbind(
-  cbind(scenario = "5-yearly 15+ (all ages)",
-        out3$cum_hbv_deaths[[16]][-c(1:3)]-out5$cum_hbv_deaths[[16]][-c(1:3)]),
-  cbind(scenario = "3-yearly 45+, 5-yearly 15-45",
-        ((a2_out3$cum_hbv_deaths[[16]][-c(1:3)]-a2_out6b$cum_hbv_deaths[[16]][-c(1:3)])+
-           (a4_out3$cum_hbv_deaths[[16]][-c(1:3)]-a4_out5$cum_hbv_deaths[[16]][-c(1:3)])+
-           (a5_out3$cum_hbv_deaths[[16]][-c(1:3)]-a5_out5$cum_hbv_deaths[[16]][-c(1:3)]))),
-  cbind(scenario = "Yearly 45+, 5-yearly 15-45",
-        ((a2_out3$cum_hbv_deaths[[16]][-c(1:3)]-a2_out6$cum_hbv_deaths[[16]][-c(1:3)])+
-           (a4_out3$cum_hbv_deaths[[16]][-c(1:3)]-a4_out5$cum_hbv_deaths[[16]][-c(1:3)])+
-           (a5_out3$cum_hbv_deaths[[16]][-c(1:3)]-a5_out5$cum_hbv_deaths[[16]][-c(1:3)]))),
-  cbind(scenario = "3-yearly 30+, 5-yearly 15-30",
-        ((a2_out3$cum_hbv_deaths[[16]][-c(1:3)]-a2_out6b$cum_hbv_deaths[[16]][-c(1:3)])+
-           (a4_out3$cum_hbv_deaths[[16]][-c(1:3)]-a4_out5$cum_hbv_deaths[[16]][-c(1:3)])+
-           (a5_out3$cum_hbv_deaths[[16]][-c(1:3)]-a5_out6b$cum_hbv_deaths[[16]][-c(1:3)]))),
-  cbind(scenario = "Yearly 30+, 5-yearly 15-30",
-        ((a2_out3$cum_hbv_deaths[[16]][-c(1:3)]-a2_out6$cum_hbv_deaths[[16]][-c(1:3)])+
-           (a4_out3$cum_hbv_deaths[[16]][-c(1:3)]-a4_out5$cum_hbv_deaths[[16]][-c(1:3)])+
-           (a5_out3$cum_hbv_deaths[[16]][-c(1:3)]-a5_out6$cum_hbv_deaths[[16]][-c(1:3)]))),
-  cbind(scenario = "3-yearly 15+ (all ages)",
-        out3$cum_hbv_deaths[[16]][-c(1:3)]-out6b$cum_hbv_deaths[[16]][-c(1:3)]),
-  cbind(scenario = "Yearly 15+ (all ages)",
-        out3$cum_hbv_deaths[[16]][-c(1:3)]-out6$cum_hbv_deaths[[16]][-c(1:3)]))
-colnames(cohort_deaths_averted2b)[-1] <- as.numeric(gsub("[^0-9]", "",
-                                                        colnames(cohort_deaths_averted2b)[-1]))
-cohort_deaths_averted2b_long <- gather(cohort_deaths_averted2b, key = "sim",
-                                      value = "deaths_averted", - scenario)
-
-# Outcome 2: Life-years saved
-
-# Life-years saved
-cohort_ly_gained2b <- rbind(
-  cbind(scenario = "5-yearly 15+ (all ages)",
-        out5$ly[[16]][-c(1:3)]-out3$ly[[16]][-c(1:3)]),
-  cbind(scenario = "3-yearly 45+, 5-yearly 15-45",
-        ((a2_out6b$ly[[16]][-c(1:3)]-a2_out3$ly[[16]][-c(1:3)])+
-           (a4_out5$ly[[16]][-c(1:3)]-a4_out3$ly[[16]][-c(1:3)])+
-           (a5_out5$ly[[16]][-c(1:3)]-a5_out3$ly[[16]][-c(1:3)]))),
-  cbind(scenario = "Yearly 45+, 5-yearly 15-45",
-        ((a2_out6$ly[[16]][-c(1:3)]-a2_out3$ly[[16]][-c(1:3)])+
-           (a4_out5$ly[[16]][-c(1:3)]-a4_out3$ly[[16]][-c(1:3)])+
-           (a5_out5$ly[[16]][-c(1:3)]-a5_out3$ly[[16]][-c(1:3)]))),
-  cbind(scenario = "3-yearly 30+, 5-yearly 15-30",
-        ((a2_out6b$ly[[16]][-c(1:3)]-a2_out3$ly[[16]][-c(1:3)])+
-           (a4_out5$ly[[16]][-c(1:3)]-a4_out3$ly[[16]][-c(1:3)])+
-           (a5_out6b$ly[[16]][-c(1:3)]-a5_out3$ly[[16]][-c(1:3)]))),
-  cbind(scenario = "Yearly 30+, 5-yearly 15-30",
-        ((a2_out6$ly[[16]][-c(1:3)]-a2_out3$ly[[16]][-c(1:3)])+
-           (a4_out5$ly[[16]][-c(1:3)]-a4_out3$ly[[16]][-c(1:3)])+
-           (a5_out6$ly[[16]][-c(1:3)]-a5_out3$ly[[16]][-c(1:3)]))),
-  cbind(scenario = "3-yearly 15+ (all ages)",
-        out6b$ly[[16]][-c(1:3)]-out3$ly[[16]][-c(1:3)]),
-  cbind(scenario = "Yearly 15+ (all ages)",
-        out6$ly[[16]][-c(1:3)]-out3$ly[[16]][-c(1:3)]))
-colnames(cohort_ly_gained2b)[-1] <- as.numeric(gsub("[^0-9]", "",
-                                                   colnames(cohort_ly_gained2b)[-1]))
-cohort_ly_gained2b_long <- gather(cohort_ly_gained2b, key = "sim",
-                                 value = "ly_saved", - scenario)
-
-# Combine into full dataframe
-df2b <- create_incremental_plot_df(interactions_df=interactions2b,
-                                  py_on_treatment_df=interactions2b_py_on_treatment,
-                                  deaths_averted_df=cohort_deaths_averted2b_long,
-                                  ly_saved_df = cohort_ly_gained2b_long,
-                                  ref_label = "No monitoring")
-
-# Split into different intensification analysis
-df2b_30 <- subset(df2b, !(scenario %in% c("3-yearly 45+, 5-yearly 15-45", "Yearly 45+, 5-yearly 15-45")))
-df2b <-  subset(df2b, !(scenario %in% c("3-yearly 30+, 5-yearly 15-30", "Yearly 30+, 5-yearly 15-30")))
-
-# Intensify in 45+ cohort
-# Find dominated strategies for each combination of exposure and outcome using BCEA package
-find_dominated_strategies(df2b, "total_interactions", "deaths_averted")
-find_dominated_strategies(df2b,"total_cost", "deaths_averted")
-find_dominated_strategies(df2b,"total_interactions", "ly_saved")
-find_dominated_strategies(df2b, "total_cost", "ly_saved")
-# Deaths averted & interactions/cost; LY & interactions/cost:
-# 3-yearly 45+, 5-yearly 15-45; Yearly 45+, 5-yearly 15-45
-
-# Add labels to this dataframe
-df2b$frontier<- "Include"
-df2b$frontier[df2b$scenario %in% c("3-yearly 45+, 5-yearly 15-45",
-                            "Yearly 45+, 5-yearly 15-45")] <- "Dominated"
-
-df2b_summary <- df2b %>%
-  group_by(scenario,frontier) %>%
-  summarise(median_deaths_averted = median(deaths_averted),
-            median_ly_saved = median(ly_saved),
-            median_interactions = median(total_interactions),
-            median_cost = median(total_cost))
-
-# Intensify in 30+ cohort
-# Find dominated strategies for each combination of exposure and outcome using BCEA package
-find_dominated_strategies(df2b_30, "total_interactions", "deaths_averted")
-find_dominated_strategies(df2b_30,"total_cost", "deaths_averted")
-find_dominated_strategies(df2b_30,"total_interactions", "ly_saved")
-find_dominated_strategies(df2b_30, "total_cost", "ly_saved")
-# Deaths averted/LY saved & interactions; LY & cost
-# 3-yearly 30+, 5-yearly 15-30 ; Yearly 30+, 5-yearly 15-30
-# Deaths averted & cost: Yearly 30+, 5-yearly 15-30
-
-# Add labels to this dataframe
-df2b_30$frontier_interactions <- "Include"
-df2b_30$frontier_interactions[df2b_30$scenario %in% c("3-yearly 30+, 5-yearly 15-30",
-                                                      "Yearly 30+, 5-yearly 15-30")] <- "Dominated"
-df2b_30$frontier_ly_saved_cost <- "Include"
-df2b_30$frontier_ly_saved_cost[df2b_30$scenario %in% c("3-yearly 30+, 5-yearly 15-30",
-                                                       "Yearly 30+, 5-yearly 15-30")] <- "Dominated"
-df2b_30$frontier_deaths_averted_cost <- "Include"
-df2b_30$frontier_deaths_averted_cost[df2b_30$scenario %in% c("Yearly 30+, 5-yearly 15-30")] <- "Dominated"
-
-df2b_30_summary <- df2b_30 %>%
-  group_by(scenario,frontier_interactions, frontier_ly_saved_cost, frontier_deaths_averted_cost) %>%
-  summarise(median_deaths_averted = median(deaths_averted),
-            median_ly_saved = median(ly_saved),
-            median_interactions = median(total_interactions),
-            median_cost = median(total_cost))
-
-# Plots for focused intensification in 45+ cohort ----
-# Plot: interactions vs deaths averted
-ggplot(df2b) +
-  geom_line(data= subset(df2b, frontier == "Include"),
-            aes(x = deaths_averted, y= total_interactions,
-                group = sim), colour = "grey", alpha = 0.5) +
-  geom_point(aes(x = deaths_averted, y = total_interactions,
-                 group =reorder(scenario, deaths_averted), colour = reorder(scenario, deaths_averted)),
-             alpha = 0.4) +
-  stat_ellipse(geom = "polygon",
-               aes(x=deaths_averted,y=total_interactions,
-                   group = reorder(scenario, deaths_averted), fill= reorder(scenario, deaths_averted)),
-               alpha = 0.3) +
-  # Overlay median
-  geom_line(data = subset(df2b_summary, frontier == "Include"),
-            aes(y = median_interactions,
-                x = median_deaths_averted), size = 1) +
-  geom_point(data = df2b_summary,
-             aes(y = median_interactions,
-                 x = median_deaths_averted,
-                 group = reorder(scenario, median_deaths_averted),
-                 colour = reorder(scenario, median_deaths_averted)), size = 5) +
-  geom_point(data = df2b_summary,
-             aes(y = median_interactions,
-                 x = median_deaths_averted,
-                 group = reorder(scenario, median_deaths_averted)),
-             size = 5, shape = 1, colour = "black") +
-  scale_fill_brewer("Monitoring strategies\nstarting at entry\ninto cohort", palette="RdYlBu") +
-  scale_colour_brewer("Monitoring strategies\nstarting at entry\ninto cohort",
-                      palette="RdYlBu") +
-  xlab("Incremental HBV-related deaths averted") +
-  ylab("Incremental number of clinical interactions") +
-  #xlim(-150,7200) +
-  #  ylim(0,2500000) +
-  theme_bw() +
-  theme(axis.text = element_text(size = 15),
-        axis.title = element_text(size = 15),
-        legend.text = element_text(size = 12),
-        title = element_text(size = 15))
-
-# Plot: cost vs deaths averted
-ggplot(df2b) +
-  geom_line(data= subset(df2b, frontier == "Include"),
-            aes(x = deaths_averted, y= total_cost,
-                group = sim), colour = "grey", alpha = 0.5) +
-  geom_point(aes(x = deaths_averted, y = total_cost,
-                 group =reorder(scenario, deaths_averted), colour = reorder(scenario, deaths_averted)),
-             alpha = 0.4) +
-  stat_ellipse(geom = "polygon",
-               aes(x=deaths_averted,y=total_cost,
-                   group = reorder(scenario, deaths_averted),
-                   fill= reorder(scenario, deaths_averted)), alpha = 0.3) +
-  # Overlay median
-  geom_line(data = subset(df2b_summary, frontier == "Include"),
-            aes(y = median_cost,
-                x = median_deaths_averted), size = 1) +
-  geom_point(data = df2b_summary,
-             aes(y = median_cost,
-                 x = median_deaths_averted,
-                 group = reorder(scenario, median_deaths_averted),
-                 colour = reorder(scenario, median_deaths_averted)), size = 5) +
-  geom_point(data = df2b_summary,
-             aes(y = median_cost,
-                 x = median_deaths_averted,
-                 group = reorder(scenario, median_deaths_averted)),
-             size = 5, shape = 1, colour = "black") +
-  scale_fill_brewer("Monitoring strategies\nstarting at entry\ninto cohort", palette="RdYlBu") +
-  scale_colour_brewer("Monitoring strategies\nstarting at entry\ninto cohort",
-                      palette="RdYlBu") +
-  xlab("Incremental HBV-related deaths averted") +
-  ylab("Incremental cost (USD)") +
-  xlim(-150,7200) +
-  #  ylim(0,2500000) +
-  theme_bw() +
-  theme(axis.text = element_text(size = 15),
-        axis.title = element_text(size = 15),
-        legend.text = element_text(size = 12),
-        title = element_text(size = 15))
-
-# Plot: interactions vs LY saved
-ggplot(df2b) +
-  geom_line(data= subset(df2b, frontier == "Include"),
-            aes(x = ly_saved, y= total_interactions,
-                group = sim), colour = "grey", alpha = 0.5) +
-  geom_point(aes(x = ly_saved, y = total_interactions,
-                 group =reorder(scenario, ly_saved), colour = reorder(scenario, ly_saved)), alpha = 0.4) +
-  stat_ellipse(geom = "polygon",
-               aes(x=ly_saved,y=total_interactions,
-                   group = reorder(scenario, ly_saved), fill= reorder(scenario, ly_saved)), alpha = 0.3) +
-  # Overlay median
-  geom_line(data = subset(df2b_summary, frontier == "Include"),
-            aes(y = median_interactions,
-                x = median_ly_saved), size = 1) +
-  geom_point(data = df2b_summary,
-             aes(y = median_interactions,
-                 x = median_ly_saved,
-                 group = reorder(scenario, median_ly_saved),
-                 colour = reorder(scenario, median_ly_saved)), size = 5) +
-  geom_point(data = df2b_summary,
-             aes(y = median_interactions,
-                 x = median_ly_saved,
-                 group = reorder(scenario, median_ly_saved)),
-             size = 5, shape = 1, colour = "black") +
-  scale_fill_brewer("Monitoring strategies\nstarting at entry\ninto cohort", palette="RdYlBu") +
-  scale_colour_brewer("Monitoring strategies\nstarting at entry\ninto cohort",
-                      palette="RdYlBu") +
-  xlab("Incremental life-years saved") +
-  ylab("Incremental number of clinical interactions") +
-  #  xlim(-150,7200) +
-  #  ylim(0,2500000) +
-  theme_bw() +
-  theme(axis.text = element_text(size = 15),
-        axis.title = element_text(size = 15),
-        legend.text = element_text(size = 12),
-        title = element_text(size = 15))
-
-# Plot: cost vs LY saved
-ggplot(df2b) +
-  geom_line(data= subset(df2b, frontier == "Include"),
-            aes(x = ly_saved, y= total_cost,
-                group = sim), colour = "grey", alpha = 0.5) +
-  geom_point(aes(x = ly_saved, y = total_cost,
-                 group =reorder(scenario, ly_saved), colour = reorder(scenario, ly_saved)),
-             alpha = 0.4) +
-  stat_ellipse(geom = "polygon",
-               aes(x=ly_saved,y=total_cost,
-                   group = reorder(scenario, ly_saved),
-                   fill= reorder(scenario, ly_saved)), alpha = 0.3) +
-  # Overlay median
-  geom_line(data = subset(df2b_summary, frontier == "Include"),
-            aes(y = median_cost,
-                x = median_ly_saved), size = 1) +
-  geom_point(data = df2b_summary,
-             aes(y = median_cost,
-                 x = median_ly_saved,
-                 group = reorder(scenario, median_ly_saved),
-                 colour = reorder(scenario, median_ly_saved)), size = 5) +
-  geom_point(data = df2b_summary,
-             aes(y = median_cost,
-                 x = median_ly_saved,
-                 group = reorder(scenario, median_ly_saved)),
-             size = 5, shape = 1, colour = "black") +
-  #  geom_abline(intercept =0, slope = 240, linetype = "dashed") +   # WTP: need to compare to status quo?
-  #  geom_abline(intercept =0, slope = 1460, linetype = "dashed") +  # WTP: need to compare to status quo?
-  #  geom_abline(intercept =0, slope = 487, linetype = "dashed") +   # WTP: need to compare to status quo?
-  scale_fill_brewer("Monitoring strategies\nstarting at entry\ninto cohort", palette="RdYlBu") +
-  scale_colour_brewer("Monitoring strategies\nstarting at entry\ninto cohort",
-                      palette="RdYlBu") +
-  xlab("Incremental life-years saved") +
-  ylab("Incremental cost (USD)") +
-  # xlim(-150,7200) +
-  #  ylim(0,2500000) +
-  theme_bw() +
-  theme(axis.text = element_text(size = 15),
-        axis.title = element_text(size = 15),
-        legend.text = element_text(size = 12),
-        title = element_text(size = 15))
-
-## Combine approaches 1 and 2 ----
-combined_df <- rbind(subset(df1[-c(14:16)], scenario != "5-yearly all ages" &
-                              scenario != "Yearly all ages"),
-                     df2[-c(14:16)])
-
-# Find dominated strategies for each combination of exposure and outcome using BCEA package
-find_dominated_strategies(combined_df, "total_interactions", "deaths_averted")
-find_dominated_strategies(combined_df,"total_cost", "deaths_averted")
-find_dominated_strategies(combined_df,"total_interactions", "ly_saved")
-find_dominated_strategies(combined_df, "total_cost", "ly_saved")
-
-# Most strategies are dominated so extract NON-dominated ones:
-# Deaths averted/LY saved & interactions:
-# No monitoring ; 5-yearly 15-30 ; 5-yearly 15-45 ; 5-yearly 15+ (all ages) ; Yearly 15+ (all ages)
-# Deaths averted & cost:
-# No monitoring ; 5-yearly 30+ ; 5-yearly 15+ (all ages) ; Yearly 15+ (all ages)
-# LY saved & cost:
-# No monitoring ; 5-yearly 15-30 ; 5-yearly 15-45 ; 5-yearly 15+ (all ages) ; Yearly 15+ (all ages)
-combined_df$frontier_interactions <- "Include"
-combined_df$frontier_interactions[!(combined_df$scenario %in% c("No monitoring",
-                                                                "5-yearly 15-30",
-                                                                "5-yearly 15-45",
-                                                                "5-yearly 15+ (all ages)",
-                                                                "Yearly 15+ (all ages)"))] <- "Dominated"
-combined_df$frontier_ly_saved_cost <- "Include"
-combined_df$frontier_ly_saved_cost[!(combined_df$scenario %in% c("No monitoring",
-                                                                "5-yearly 15-30",
-                                                                "5-yearly 15-45",
-                                                                "5-yearly 15+ (all ages)",
-                                                                "Yearly 15+ (all ages)"))] <- "Dominated"
-combined_df$frontier_deaths_averted_cost <- "Include"
-combined_df$frontier_deaths_averted_cost[!(combined_df$scenario %in% c("No monitoring",
-                                                                 "5-yearly 30+",
-                                                                 "5-yearly 15+ (all ages)",
-                                                                 "Yearly 15+ (all ages)"))] <- "Dominated"
-
-levels(combined_df$scenario) <- list("No monitoring" = "No monitoring",
-                                     "By age: 15-30,\nevery 5 years" = "5-yearly 15-30",
-                                     "By birth cohort: 45+,\nevery 5 years" = "5-yearly 45+",
-                                     "By age: 15-30,\nevery 1 year" = "Yearly 15-30",
-                                     "By age: 15-45,\nevery 5 years" = "5-yearly 15-45",
-                                     "By birth cohort: 30+,\nevery 5 years" = "5-yearly 30+",
-                                     "All ages,\nevery 5 years" = "5-yearly 15+ (all ages)",
-                                     "All ages,\nevery 1 year" = "Yearly 15+ (all ages)",
-                                     "By birth cohort: 45+,\nevery 1 year" = "Yearly 45+",
-                                     "By age: 15-45,\nevery 1 year" = "Yearly 15-45",
-                                     "By birth cohort: 30+,\nevery 1 year" = "Yearly 30+")
-
-# Summary:
-combined_df_summary <- group_by(combined_df, scenario, frequency, frontier_interactions,
-                                frontier_ly_saved_cost, frontier_deaths_averted_cost) %>%
-  summarise(median_deaths_averted = median(deaths_averted),
-            median_ly_saved = median(ly_saved),
-            median_interactions = median(total_interactions),
-            median_cost = median(total_cost))
-
-# Plots ----
-# Interactions vs deaths averted
-ggplot(combined_df) +
-  geom_line(data= subset(combined_df, frontier_interactions == "Include"),
-            aes(x = deaths_averted, y= total_interactions,
-                group = sim), colour = "grey", alpha = 0.3) +
-  geom_point(aes(x = deaths_averted, y = total_interactions,
-                 group =reorder(scenario, deaths_averted), colour = reorder(scenario, deaths_averted)),
-             alpha = 0.15) +
-  stat_ellipse(data= subset(combined_df,scenario != "No monitoring"),
+# Dominated strategies are screen_2020_monit_0_it and screen_2020_monit_2
+# screen_2020_monit_5 has 25% probability of being dominated
+
+# That means treating IT becomes better if there is also monitoring - this makes sense
+
+# Calculate ICER by simulation
+# Previous plot shows no strategies are dominated, so including all
+test_it_df2 <- subset(test_it_df, !(scenario %in% c("screen_2020_monit_0_it",
+                                                    "screen_2020_monit_2")))
+
+icer_list <- list()
+
+for(i in 1:183) {
+  print(i)
+  icer_list[[i]] <- test_it_df2[which(test_it_df2$sim==
+                                     unique(test_it_df2$sim)[i]),]
+  icer_list[[i]] <- calculate_icer_per_sim(icer_list[[i]],
+                                           exposure="total_cost",
+                                           outcome="dalys_averted")
+}
+icer_df <- do.call("rbind", icer_list)
+icer_result <- group_by(icer_df, scenario, comparator) %>%
+  arrange(sim,total_cost) %>%
+  summarise(icer_median = median(icer),
+            icer_lower = quantile(icer, 0.025),
+            icer_upper = quantile(icer, 0.975)) %>%
+  arrange(icer_median)
+icer_result
+# Most cost-effective is no monitoring, no IT treatment followed by 5-yearly monitoring
+# and no IT treatment.
+# Addition of IT treatment to that is then probably not cost-effective anymore.
+
+# Changed this to corrct count of monitoring when there is no IT treatment
+# but this did not change conclusion!
+
+# That IT treatment without monitoring is dominated is a very clear result (in almost all
+# simulations). Actually the % of simulations cost-effective is also quite
+# considerably lower when adding IT treatment to 5-yearly monitoring.
+
+# Conclusion: Cost-effectiveness of treating IT already depends on how often you
+# monitor, and if we want to keep it general with regards to treatment criteria
+# we may not want to present this analysis explicitly.
+
+test_it_df_median <- group_by(test_it_df, scenario) %>%
+  summarise(deaths_averted = median(deaths_averted),
+            total_interactions = median(total_interactions),
+            dalys_averted = median(dalys_averted),
+            total_cost = median(total_cost))
+
+# DALYS averted vs costs
+# Add different shapes for dominated vs non-dominated
+ggplot(data = test_it_df) +
+  #  geom_line(aes(x = dalys_averted, y = total_cost, group = sim),
+  #            colour = "grey", alpha = 0.3) +
+  geom_point(aes(x = dalys_averted, y = total_cost,
+                 group = reorder(scenario, total_cost),
+                 colour = reorder(scenario, total_cost)), alpha = 0.15) +
+  stat_ellipse(data = subset(test_it_df, scenario != "No treatment"),
+               aes(x = dalys_averted, y = total_cost,
+                   group = reorder(scenario, total_cost),
+                   fill= reorder(scenario, total_cost)),
                geom = "polygon",
-               aes(x=deaths_averted,y=total_interactions,
-                   group = reorder(scenario, deaths_averted), fill= reorder(scenario, deaths_averted)),
                alpha = 0.2) +
-  # Overlay median
-  geom_line(data = subset(combined_df_summary, frontier_interactions == "Include"),
-            aes(y = median_interactions,
-                x = median_deaths_averted), size = 1) +
-  geom_point(data = combined_df_summary,
-             aes(y = median_interactions,
-                 x = median_deaths_averted,
-                 group = reorder(scenario, median_deaths_averted),
-                 colour = reorder(scenario, median_deaths_averted)), size = 5) +
-  geom_point(data = combined_df_summary,
-             aes(y = median_interactions,
-                 x = median_deaths_averted,
-                 group = reorder(scenario, median_deaths_averted)),
+  geom_line(data = subset(test_it_df_median, !(scenario %in% c("screen_2020_monit_0_it",
+                                                             "screen_2020_monit_2"))),
+            aes(x = dalys_averted, y = total_cost), size = 1) +
+  geom_point(data = test_it_df_median,
+             aes(x = dalys_averted, y = total_cost,
+                 group = reorder(scenario, total_cost),
+                 colour = reorder(scenario, total_cost)),
+             size = 5) +
+  geom_point(data = test_it_df_median,
+             aes(x = dalys_averted, y = total_cost,
+                 group =reorder(scenario, total_cost),
+                 colour = reorder(scenario, total_cost)),
              size = 5, shape = 1, colour = "black") +
-  scale_fill_manual(values = rev(brewer.pal(10,"RdYlBu"))) +
-  scale_colour_manual("Monitoring strategies\nstarting at entry\ninto cohort",
-                      values = c("black", rev(brewer.pal(10,"RdYlBu")))) +
+  scale_fill_manual(values = rev(brewer.pal(6,"RdYlBu"))) +
+  scale_colour_manual("Monitoring frequency",
+                      values = c("black", rev(brewer.pal(6,"RdYlBu")))) +
   guides(fill=FALSE) +
-  xlab("Incremental HBV-related deaths averted") +
-  ylab("Incremental number of clinical interactions") +
-  #xlim(-150,7200) +
-  #  ylim(0,2500000) +
+  geom_abline(slope=391, intercept = 0, linetype = "dashed") +
+  geom_abline(slope=518, intercept = 0, linetype = "dashed") +
+  xlab("Incremental total cost (USD 2019)") +
+  ylab("Incremental DALYs averted") +
+  labs(colour="Monitoring frequencies") +
   theme_bw() +
   theme(axis.text = element_text(size = 15),
         axis.title = element_text(size = 15),
-        legend.text = element_text(size = 12),
-        title = element_text(size = 15))
+        legend.text = element_text(size = 14),
+        legend.title = element_text(size = 14))
 
-ggplot(combined_df) +
-  geom_line(data= subset(combined_df, frontier_interactions == "Include"),
-            aes(x = deaths_averted, y= total_interactions,
-                group = sim), colour = "grey", alpha = 0.3) +
-  geom_point(aes(x = deaths_averted, y = total_interactions,
-                 group =reorder(scenario, deaths_averted), colour = reorder(scenario, deaths_averted)),
-             alpha = 0.15) +
-  stat_ellipse(data= subset(combined_df,scenario != "No monitoring"),
+# Cost-effectiveness acceptability curve for different scenarios
+acceptability1 <- 0
+acceptability2 <- 0
+acceptability3 <- 0
+acceptability4 <- 0
+scenario1 <- "screen_2020_monit_0"
+scenario2 <- "screen_2020_monit_5"
+scenario3 <- "screen_2020_monit_5_it"
+scenario4 <- "screen_2020_monit_2_it"
+
+for (i in 1:752) {
+  acceptability1[i] <-
+    length(which(icer_df[icer_df$scenario==scenario1,]$icer<=i))/183
+  acceptability2[i] <-
+    length(which(icer_df[icer_df$scenario==scenario2,]$icer<=i))/183
+  acceptability3[i] <-
+    length(which(icer_df[icer_df$scenario==scenario3,]$icer<=i))/183
+  acceptability4[i] <-
+    length(which(icer_df[icer_df$scenario==scenario4,]$icer<=i))/183
+
+}
+acceptability_curve <- data.frame(scenario = rep(c(scenario1,scenario2,
+                                                   scenario3, scenario4),
+                                                 each = 752),
+                                  wtp = rep(1:752, times=4),
+                                  prob_cost_effective = c(acceptability1,
+                                                          acceptability2,
+                                                          acceptability3,
+                                                          acceptability4))
+
+ggplot(acceptability_curve) +
+  geom_line(aes(x=wtp, y = prob_cost_effective*100,
+                group = reorder(scenario, -prob_cost_effective),
+                colour = reorder(scenario, -prob_cost_effective))) +
+  geom_vline(xintercept=391, linetype="dashed") +
+  geom_vline(xintercept=518, linetype="dashed") +
+  ylab("Probability cost-effective (%)") +
+  xlab("Willingness to pay (USD/DALY averted)") +
+  labs(colour = "Monitoring scenario") +
+  theme_bw() +
+  ylim(0,100) +
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        legend.text = element_text(size = 14),
+        legend.title = element_text(size = 14))
+
+## 3) Cost-effectiveness of different monitoring frequencies by age (with IT treatment) ----
+# Create data frame with all interactions and outcomes of interest (discounting switch) ----
+
+# Need to load function
+annual_discounting_rate <- 0.03  # can be 0
+
+age_interactions <- rbind(
+  cbind(scenario = "screen_2020_monit_0",
+        assemble_discounted_interactions_for_monitoring_frequencies(out3_it,
+                                                                    no_monitoring_object = out3_it)),
+  cbind(scenario = "screen_2020_monit_5",
+        assemble_discounted_interactions_for_monitoring_frequencies(out5_it,
+                                                                    no_monitoring_object = out3_it)),
+  cbind(scenario = "screen_2020_monit_2",
+        assemble_discounted_interactions_for_monitoring_frequencies(out6a_it,
+                                                                    no_monitoring_object = out3_it)),
+  cbind(scenario = "screen_2020_monit_sim7",
+        assemble_discounted_interactions_for_monitoring_frequencies(monit_out7,
+                                                                    no_monitoring_object = out3_it)),
+  cbind(scenario = "screen_2020_monit_sim17",
+        assemble_discounted_interactions_for_monitoring_frequencies(monit_out17,
+                                                                    no_monitoring_object = out3_it)),
+  cbind(scenario = "screen_2020_monit_sim2a",
+        assemble_discounted_interactions_for_monitoring_frequencies(monit_out2a,
+                                                                    no_monitoring_object = out3_it)),
+  cbind(scenario = "screen_2020_monit_sim9",
+        assemble_discounted_interactions_for_monitoring_frequencies(monit_out9,
+                                                                    no_monitoring_object = out3_it)),
+  cbind(scenario = "screen_2020_monit_sim18",
+        assemble_discounted_interactions_for_monitoring_frequencies(monit_out18,
+                                                                    no_monitoring_object = out3_it)),
+  cbind(scenario = "screen_2020_monit_sim4a",
+        assemble_discounted_interactions_for_monitoring_frequencies(monit_out4a,
+                                                                    no_monitoring_object = out3_it)),
+  cbind(scenario = "screen_2020_monit_sim10",
+        assemble_discounted_interactions_for_monitoring_frequencies(monit_out10,
+                                                                    no_monitoring_object = out3_it)),
+  cbind(scenario = "screen_2020_monit_sim5a",
+        assemble_discounted_interactions_for_monitoring_frequencies(monit_out5a,
+                                                                    no_monitoring_object = out3_it)),
+  cbind(scenario = "screen_2020_monit_sim6",
+        assemble_discounted_interactions_for_monitoring_frequencies(monit_out6,
+                                                                    no_monitoring_object = out3_it)),
+  cbind(scenario = "screen_2020_monit_sim1a",
+        assemble_discounted_interactions_for_monitoring_frequencies(monit_out1a,
+                                                                    no_monitoring_object = out3_it)),
+  cbind(scenario = "screen_2020_monit_lifetime_30",
+        assemble_discounted_interactions_for_monitoring_frequencies(out_it_lt_monit_30,
+                                                                    no_monitoring_object = out3_it)),
+  cbind(scenario = "screen_2020_monit_lifetime_45",
+        assemble_discounted_interactions_for_monitoring_frequencies(out_it_lt_monit_45,
+                                                                    no_monitoring_object = out3_it)),
+  cbind(scenario = "screen_2020_monit_lifetime_30_45",
+        assemble_discounted_interactions_for_monitoring_frequencies(out_it_lt_monit_30_45,
+                                                                    no_monitoring_object = out3_it))
+  )
+
+# Person-years on treatment
+age_interactions_py_on_treatment <- rbind(
+  data.frame(scenario = "screen_2020_monit_0",
+             discount_outcome_2020_to_2100(scenario_object=out3_it,
+                                           object_to_subtract=NULL,
+                                           outcome="py_on_treatment",
+                                           yearly_discount_rate=annual_discounting_rate)),
+  data.frame(scenario = "screen_2020_monit_5",
+             discount_outcome_2020_to_2100(scenario_object=out5_it,
+                                           object_to_subtract=NULL,
+                                           outcome="py_on_treatment",
+                                           yearly_discount_rate=annual_discounting_rate)),
+
+  data.frame(scenario = "screen_2020_monit_2",
+             discount_outcome_2020_to_2100(scenario_object=out6a_it,
+                                           object_to_subtract=NULL,
+                                           outcome="py_on_treatment",
+                                           yearly_discount_rate=annual_discounting_rate)),
+  data.frame(scenario = "screen_2020_monit_sim7",
+             discount_outcome_2020_to_2100(scenario_object=monit_out7,
+                                           object_to_subtract=NULL,
+                                           outcome="py_on_treatment",
+                                           yearly_discount_rate=annual_discounting_rate)),
+  data.frame(scenario = "screen_2020_monit_sim17",
+             discount_outcome_2020_to_2100(scenario_object=monit_out17,
+                                           object_to_subtract=NULL,
+                                           outcome="py_on_treatment",
+                                           yearly_discount_rate=annual_discounting_rate)),
+  data.frame(scenario = "screen_2020_monit_sim2a",
+             discount_outcome_2020_to_2100(scenario_object=monit_out2a,
+                                           object_to_subtract=NULL,
+                                           outcome="py_on_treatment",
+                                           yearly_discount_rate=annual_discounting_rate)),
+  data.frame(scenario = "screen_2020_monit_sim9",
+             discount_outcome_2020_to_2100(scenario_object=monit_out9,
+                                           object_to_subtract=NULL,
+                                           outcome="py_on_treatment",
+                                           yearly_discount_rate=annual_discounting_rate)),
+  data.frame(scenario = "screen_2020_monit_sim18",
+             discount_outcome_2020_to_2100(scenario_object=monit_out18,
+                                           object_to_subtract=NULL,
+                                           outcome="py_on_treatment",
+                                           yearly_discount_rate=annual_discounting_rate)),
+  data.frame(scenario = "screen_2020_monit_sim4a",
+             discount_outcome_2020_to_2100(scenario_object=monit_out4a,
+                                           object_to_subtract=NULL,
+                                           outcome="py_on_treatment",
+                                           yearly_discount_rate=annual_discounting_rate)),
+  data.frame(scenario = "screen_2020_monit_sim10",
+             discount_outcome_2020_to_2100(scenario_object=monit_out10,
+                                           object_to_subtract=NULL,
+                                           outcome="py_on_treatment",
+                                           yearly_discount_rate=annual_discounting_rate)),
+  data.frame(scenario = "screen_2020_monit_sim5a",
+             discount_outcome_2020_to_2100(scenario_object=monit_out5a,
+                                           object_to_subtract=NULL,
+                                           outcome="py_on_treatment",
+                                           yearly_discount_rate=annual_discounting_rate)),
+  data.frame(scenario = "screen_2020_monit_sim6",
+             discount_outcome_2020_to_2100(scenario_object=monit_out6,
+                                           object_to_subtract=NULL,
+                                           outcome="py_on_treatment",
+                                           yearly_discount_rate=annual_discounting_rate)),
+  data.frame(scenario = "screen_2020_monit_sim1a",
+             discount_outcome_2020_to_2100(scenario_object=monit_out1a,
+                                           object_to_subtract=NULL,
+                                           outcome="py_on_treatment",
+                                           yearly_discount_rate=annual_discounting_rate)),
+  data.frame(scenario = "screen_2020_monit_lifetime_30",
+             discount_outcome_2020_to_2100(scenario_object=out_it_lt_monit_30,
+                                           object_to_subtract=NULL,
+                                           outcome="py_on_treatment",
+                                           yearly_discount_rate=annual_discounting_rate)),
+  data.frame(scenario = "screen_2020_monit_lifetime_45",
+             discount_outcome_2020_to_2100(scenario_object=out_it_lt_monit_45,
+                                           object_to_subtract=NULL,
+                                           outcome="py_on_treatment",
+                                           yearly_discount_rate=annual_discounting_rate)),
+  data.frame(scenario = "screen_2020_monit_lifetime_30_45",
+             discount_outcome_2020_to_2100(scenario_object=out_it_lt_monit_30_45,
+                                           object_to_subtract=NULL,
+                                           outcome="py_on_treatment",
+                                           yearly_discount_rate=annual_discounting_rate))
+  )
+age_interactions_py_on_treatment$sim <- gsub("[^0-9]", "", age_interactions_py_on_treatment$sim)
+
+# Outcome 1: HBV related deaths averted
+age_hbv_deaths_averted <- rbind(
+  cbind(scenario = "screen_2020_monit_0",
+        discount_outcome_2020_to_2100(scenario_object=out2,
+                                      object_to_subtract=out3_it,
+                                      outcome="cum_hbv_deaths",
+                                      yearly_discount_rate=annual_discounting_rate)),
+  cbind(scenario = "screen_2020_monit_5",
+        discount_outcome_2020_to_2100(scenario_object=out2,
+                                      object_to_subtract=out5_it,
+                                      outcome="cum_hbv_deaths",
+                                      yearly_discount_rate=annual_discounting_rate)),
+  cbind(scenario = "screen_2020_monit_2",
+        discount_outcome_2020_to_2100(scenario_object=out2,
+                                      object_to_subtract=out6a_it,
+                                      outcome="cum_hbv_deaths",
+                                      yearly_discount_rate=annual_discounting_rate)),
+  cbind(scenario = "screen_2020_monit_sim7",
+        discount_outcome_2020_to_2100(scenario_object=out2,
+                                      object_to_subtract=monit_out7,
+                                      outcome="cum_hbv_deaths",
+                                      yearly_discount_rate=annual_discounting_rate)),
+  cbind(scenario = "screen_2020_monit_sim17",
+        discount_outcome_2020_to_2100(scenario_object=out2,
+                                      object_to_subtract=monit_out17,
+                                      outcome="cum_hbv_deaths",
+                                      yearly_discount_rate=annual_discounting_rate)),
+  cbind(scenario = "screen_2020_monit_sim2a",
+        discount_outcome_2020_to_2100(scenario_object=out2,
+                                      object_to_subtract=monit_out2a,
+                                      outcome="cum_hbv_deaths",
+                                      yearly_discount_rate=annual_discounting_rate)),
+  cbind(scenario = "screen_2020_monit_sim9",
+        discount_outcome_2020_to_2100(scenario_object=out2,
+                                      object_to_subtract=monit_out9,
+                                      outcome="cum_hbv_deaths",
+                                      yearly_discount_rate=annual_discounting_rate)),
+  cbind(scenario = "screen_2020_monit_sim18",
+        discount_outcome_2020_to_2100(scenario_object=out2,
+                                      object_to_subtract=monit_out18,
+                                      outcome="cum_hbv_deaths",
+                                      yearly_discount_rate=annual_discounting_rate)),
+  cbind(scenario = "screen_2020_monit_sim4a",
+        discount_outcome_2020_to_2100(scenario_object=out2,
+                                      object_to_subtract=monit_out4a,
+                                      outcome="cum_hbv_deaths",
+                                      yearly_discount_rate=annual_discounting_rate)),
+  cbind(scenario = "screen_2020_monit_sim10",
+        discount_outcome_2020_to_2100(scenario_object=out2,
+                                      object_to_subtract=monit_out10,
+                                      outcome="cum_hbv_deaths",
+                                      yearly_discount_rate=annual_discounting_rate)),
+  cbind(scenario = "screen_2020_monit_sim5a",
+        discount_outcome_2020_to_2100(scenario_object=out2,
+                                      object_to_subtract=monit_out5a,
+                                      outcome="cum_hbv_deaths",
+                                      yearly_discount_rate=annual_discounting_rate)),
+  cbind(scenario = "screen_2020_monit_sim6",
+        discount_outcome_2020_to_2100(scenario_object=out2,
+                                      object_to_subtract=monit_out6,
+                                      outcome="cum_hbv_deaths",
+                                      yearly_discount_rate=annual_discounting_rate)),
+  cbind(scenario = "screen_2020_monit_sim1a",
+        discount_outcome_2020_to_2100(scenario_object=out2,
+                                      object_to_subtract=monit_out1a,
+                                      outcome="cum_hbv_deaths",
+                                      yearly_discount_rate=annual_discounting_rate)),
+  cbind(scenario = "screen_2020_monit_lifetime_30",
+        discount_outcome_2020_to_2100(scenario_object=out2,
+                                      object_to_subtract=out_it_lt_monit_30,
+                                      outcome="cum_hbv_deaths",
+                                      yearly_discount_rate=annual_discounting_rate)),
+  cbind(scenario = "screen_2020_monit_lifetime_45",
+        discount_outcome_2020_to_2100(scenario_object=out2,
+                                      object_to_subtract=out_it_lt_monit_45,
+                                      outcome="cum_hbv_deaths",
+                                      yearly_discount_rate=annual_discounting_rate)),
+  cbind(scenario = "screen_2020_monit_lifetime_30_45",
+        discount_outcome_2020_to_2100(scenario_object=out2,
+                                      object_to_subtract=out_it_lt_monit_30_45,
+                                      outcome="cum_hbv_deaths",
+                                      yearly_discount_rate=annual_discounting_rate))
+)
+age_hbv_deaths_averted$sim <- gsub("[^0-9]", "", age_hbv_deaths_averted$sim)
+colnames(age_hbv_deaths_averted)[colnames(age_hbv_deaths_averted) == "cum_hbv_deaths"] <-
+  "value"
+
+# Outcome 2: DALYS averted
+age_dalys_averted <- rbind(
+  cbind(scenario = "screen_2020_monit_0",
+        discount_outcome_2020_to_2100(scenario_object=out2,
+                                      object_to_subtract=out3_it,
+                                      outcome="dalys",
+                                      yearly_discount_rate=annual_discounting_rate)),
+  cbind(scenario = "screen_2020_monit_5",
+        discount_outcome_2020_to_2100(scenario_object=out2,
+                                      object_to_subtract=out5_it,
+                                      outcome="dalys",
+                                      yearly_discount_rate=annual_discounting_rate)),
+  cbind(scenario = "screen_2020_monit_2",
+        discount_outcome_2020_to_2100(scenario_object=out2,
+                                      object_to_subtract=out6a_it,
+                                      outcome="dalys",
+                                      yearly_discount_rate=annual_discounting_rate)),
+  cbind(scenario = "screen_2020_monit_sim7",
+        discount_outcome_2020_to_2100(scenario_object=out2,
+                                      object_to_subtract=monit_out7,
+                                      outcome="dalys",
+                                      yearly_discount_rate=annual_discounting_rate)),
+  cbind(scenario = "screen_2020_monit_sim17",
+        discount_outcome_2020_to_2100(scenario_object=out2,
+                                      object_to_subtract=monit_out17,
+                                      outcome="dalys",
+                                      yearly_discount_rate=annual_discounting_rate)),
+  cbind(scenario = "screen_2020_monit_sim2a",
+        discount_outcome_2020_to_2100(scenario_object=out2,
+                                      object_to_subtract=monit_out2a,
+                                      outcome="dalys",
+                                      yearly_discount_rate=annual_discounting_rate)),
+  cbind(scenario = "screen_2020_monit_sim9",
+        discount_outcome_2020_to_2100(scenario_object=out2,
+                                      object_to_subtract=monit_out9,
+                                      outcome="dalys",
+                                      yearly_discount_rate=annual_discounting_rate)),
+  cbind(scenario = "screen_2020_monit_sim18",
+        discount_outcome_2020_to_2100(scenario_object=out2,
+                                      object_to_subtract=monit_out18,
+                                      outcome="dalys",
+                                      yearly_discount_rate=annual_discounting_rate)),
+  cbind(scenario = "screen_2020_monit_sim4a",
+        discount_outcome_2020_to_2100(scenario_object=out2,
+                                      object_to_subtract=monit_out4a,
+                                      outcome="dalys",
+                                      yearly_discount_rate=annual_discounting_rate)),
+  cbind(scenario = "screen_2020_monit_sim10",
+        discount_outcome_2020_to_2100(scenario_object=out2,
+                                      object_to_subtract=monit_out10,
+                                      outcome="dalys",
+                                      yearly_discount_rate=annual_discounting_rate)),
+  cbind(scenario = "screen_2020_monit_sim5a",
+        discount_outcome_2020_to_2100(scenario_object=out2,
+                                      object_to_subtract=monit_out5a,
+                                      outcome="dalys",
+                                      yearly_discount_rate=annual_discounting_rate)),
+  cbind(scenario = "screen_2020_monit_sim6",
+        discount_outcome_2020_to_2100(scenario_object=out2,
+                                      object_to_subtract=monit_out6,
+                                      outcome="dalys",
+                                      yearly_discount_rate=annual_discounting_rate)),
+  cbind(scenario = "screen_2020_monit_sim1a",
+        discount_outcome_2020_to_2100(scenario_object=out2,
+                                      object_to_subtract=monit_out1a,
+                                      outcome="dalys",
+                                      yearly_discount_rate=annual_discounting_rate)),
+  cbind(scenario = "screen_2020_monit_lifetime_30",
+        discount_outcome_2020_to_2100(scenario_object=out2,
+                                      object_to_subtract=out_it_lt_monit_30,
+                                      outcome="dalys",
+                                      yearly_discount_rate=annual_discounting_rate)),
+  cbind(scenario = "screen_2020_monit_lifetime_45",
+        discount_outcome_2020_to_2100(scenario_object=out2,
+                                      object_to_subtract=out_it_lt_monit_45,
+                                      outcome="dalys",
+                                      yearly_discount_rate=annual_discounting_rate)),
+  cbind(scenario = "screen_2020_monit_lifetime_30_45",
+        discount_outcome_2020_to_2100(scenario_object=out2,
+                                      object_to_subtract=out_it_lt_monit_30_45,
+                                      outcome="dalys",
+                                      yearly_discount_rate=annual_discounting_rate))
+)
+age_dalys_averted$sim <- gsub("[^0-9]", "", age_dalys_averted$sim)
+colnames(age_dalys_averted)[colnames(age_dalys_averted) == "dalys"] <-
+  "value"
+
+# Combine into full dataframe with costs ----
+age_df <- create_incremental_plot_df(interactions_df=age_interactions,
+                                      py_on_treatment_df=age_interactions_py_on_treatment,
+                                      deaths_averted_df=age_hbv_deaths_averted,
+                                      ly_saved_df = age_dalys_averted, # replace LY by DALYs
+                                      hbsag_test_cost = 8.3,
+                                      clinical_assessment_cost = 84.4,
+                                      monitoring_assessment_cost = 40.1,
+                                      treatment_py_cost = 60,
+                                      #scenario_labels_obj = scenario_labels,
+                                      ref_label = "No treatment")
+colnames(age_df)[colnames(age_df)=="ly_saved"] <- "dalys_averted"
+
+# Analysis: calculate probability of each strategy being non-dominated and ICERs ----
+
+dominance_prob_list <- list()
+
+for(i in 1:183) {
+  print(i)
+  dominance_prob_list[[i]] <- age_df[which(age_df$sim==
+                                               unique(age_df$sim)[i]),]
+  dominance_prob_list[[i]] <- assign_dominated_strategies(dominance_prob_list[[i]],
+                                                          exposure="total_cost",
+                                                          outcome="dalys_averted")
+}
+dominance_prob_df <- do.call("rbind", dominance_prob_list)
+dominance_prob_result <- group_by(dominance_prob_df, scenario, dominated) %>%
+  tally() %>%
+  spread(key = "dominated", value = "n") %>%
+  replace_na(list(No = 0, Yes = 0))
+dominance_prob_result$prob_non_dominated <- dominance_prob_result$No/
+  (dominance_prob_result$Yes+dominance_prob_result$No)
+# Any less than 50% chance of being non-dominated?
+any(dominance_prob_result$prob_non_dominated<0.5)
+
+ggplot(dominance_prob_result) +
+  geom_col(aes(x=reorder(scenario, desc(prob_non_dominated)), y = prob_non_dominated)) +
+  theme_bw() +
+  theme(axis.text.x=element_text(angle = 90, hjust =1))
+
+# Dominated strategies (<50% non-dominated):
+# Only non-dominated strategies are screen_2020_monit_sim7, screen_2020_monit_2,
+# screen_2020_monit_5, screen_2020_monit_sim6, and screen_2020_monit_0
+# screen_2020_monit_0 has > 35% probability of being dominated though.
+# Clear distinction among the others
+# Lifetime monitoring strategies also completely dominated
+
+# Calculate ICER by simulation on non-dominated strategies
+age_df2 <- subset(age_df, scenario %in% c("screen_2020_monit_0", "screen_2020_monit_5",
+                                           "screen_2020_monit_2", "screen_2020_monit_sim7",
+                                          "screen_2020_monit_sim6"))
+
+icer_list <- list()
+
+for(i in 1:183) {
+  print(i)
+  icer_list[[i]] <- age_df2[which(age_df2$sim==
+                                     unique(age_df2$sim)[i]),]
+  icer_list[[i]] <- calculate_icer_per_sim(icer_list[[i]],
+                                           exposure="total_cost",
+                                           outcome="dalys_averted")
+}
+icer_df <- do.call("rbind", icer_list)
+icer_result <- group_by(icer_df, scenario, comparator) %>%
+  arrange(sim,total_cost) %>%
+  summarise(icer_median = median(icer),
+            icer_lower = quantile(icer, 0.025),
+            icer_upper = quantile(icer, 0.975)) %>%
+  arrange(icer_median)
+icer_result
+
+
+# ICER plots ----
+age_df_median <- group_by(age_df, scenario) %>%
+  summarise(deaths_averted = median(deaths_averted),
+            total_interactions = median(total_interactions),
+            dalys_averted = median(dalys_averted),
+            total_cost = median(total_cost))
+
+# DALYS averted vs costs
+# Add different shapes for dominated vs non-dominated
+ggplot(data = age_df) +
+#  geom_line(aes(x = dalys_averted, y = total_cost, group = sim),
+#            colour = "grey", alpha = 0.3) +
+  geom_point(aes(x = dalys_averted, y = total_cost,
+                 group = reorder(scenario, total_cost),
+                 colour = reorder(scenario, total_cost)), alpha = 0.15) +
+  stat_ellipse(data = subset(age_df, scenario != "No treatment"),
+               aes(x = dalys_averted, y = total_cost,
+                   group = reorder(scenario, total_cost),
+                   fill= reorder(scenario, total_cost)),
                geom = "polygon",
-               aes(x=deaths_averted,y=total_interactions,
-                   group = reorder(scenario, deaths_averted), fill= reorder(scenario, deaths_averted)),
                alpha = 0.2) +
-  # Overlay median
-  geom_line(data = subset(combined_df_summary, frontier_interactions == "Include"),
-            aes(y = median_interactions,
-                x = median_deaths_averted), size = 1) +
-  geom_point(data = combined_df_summary,
-             aes(y = median_interactions,
-                 x = median_deaths_averted,
-                 group = reorder(scenario, median_deaths_averted),
-                 colour = reorder(scenario, median_deaths_averted)), size = 5) +
-  geom_point(data = combined_df_summary,
-             aes(y = median_interactions,
-                 x = median_deaths_averted,
-                 group = reorder(scenario, median_deaths_averted)),
+  geom_line(data = subset(age_df_median, scenario %in% c("No treatment", "screen_2020_monit_0", "screen_2020_monit_5",
+                                                  "screen_2020_monit_2", "screen_2020_monit_sim7",
+                                                  "screen_2020_monit_sim6")),
+            aes(x = dalys_averted, y = total_cost), size = 1) +
+  geom_point(data = age_df_median,
+             aes(x = dalys_averted, y = total_cost,
+                 group = reorder(scenario, total_cost),
+                 colour = reorder(scenario, total_cost)),
+             size = 5) +
+  geom_point(data = age_df_median,
+             aes(x = dalys_averted, y = total_cost,
+                 group =reorder(scenario, total_cost),
+                 colour = reorder(scenario, total_cost)),
              size = 5, shape = 1, colour = "black") +
-  geom_point(data = subset(combined_df_summary, frequency == "5-yearly"),
-             aes(y = median_interactions,
-                 x = median_deaths_averted,
-                 group = reorder(scenario, median_deaths_averted),
-                 colour = reorder(scenario, median_deaths_averted)), shape = 17, size = 6) +
-  geom_point(data = subset(combined_df_summary, frequency == "5-yearly"),
-             aes(y = median_interactions,
-                 x = median_deaths_averted,
-                 group = reorder(scenario, median_deaths_averted),
-                 colour = reorder(scenario, median_deaths_averted)), shape = 2, size = 6, colour = "black") +
-  scale_fill_manual(values = rev(brewer.pal(10,"RdYlBu"))) +
-  scale_colour_manual("Monitoring strategies\nstarting at entry\ninto cohort",
-                      values = c("black", rev(brewer.pal(10,"RdYlBu")))) +
+  #  scale_fill_manual(values = rev(brewer.pal(11,"RdYlBu"))) +
+  #  scale_colour_manual("Monitoring frequency",
+  #                      values = c("black", rev(brewer.pal(11,"RdYlBu")))) +
   guides(fill=FALSE) +
-  xlab("Incremental HBV-related deaths averted") +
-  ylab("Incremental number of clinical interactions") +
-  #xlim(-150,7200) +
-  #  ylim(0,2500000) +
+  geom_abline(slope=391, intercept = 0, linetype = "dashed") +
+  geom_abline(slope=518, intercept = 0, linetype = "dashed") +
+  xlab("Incremental total cost (USD 2019)") +
+  ylab("Incremental DALYs averted") +
+  labs(colour="Monitoring frequencies") +
   theme_bw() +
   theme(axis.text = element_text(size = 15),
         axis.title = element_text(size = 15),
-        legend.text = element_text(size = 12),
-        title = element_text(size = 15))
-
-
-# Plot: cost vs deaths averted
-ggplot(combined_df) +
-  geom_line(data= subset(combined_df, frontier_deaths_averted_cost == "Include"),
-            aes(x = deaths_averted, y= total_cost,
-                group = sim), colour = "grey", alpha = 0.5) +
-  geom_point(aes(x = deaths_averted, y = total_cost,
-                 group =reorder(scenario, deaths_averted), colour = reorder(scenario, deaths_averted)),
-             alpha = 0.4) +
-  stat_ellipse(geom = "polygon",
-               aes(x=deaths_averted,y=total_cost,
-                   group = reorder(scenario, deaths_averted),
-                   fill= reorder(scenario, deaths_averted)), alpha = 0.3) +
-  # Overlay median
-  geom_line(data = subset(combined_df_summary, frontier_deaths_averted_cost == "Include"),
-            aes(y = median_cost,
-                x = median_deaths_averted), size = 1) +
-  geom_point(data = combined_df_summary,
-             aes(y = median_cost,
-                 x = median_deaths_averted,
-                 group = reorder(scenario, median_deaths_averted),
-                 colour = reorder(scenario, median_deaths_averted)), size = 5) +
-  geom_point(data = combined_df_summary,
-             aes(y = median_cost,
-                 x = median_deaths_averted,
-                 group = reorder(scenario, median_deaths_averted)),
-             size = 5, shape = 1, colour = "black") +
-  scale_fill_brewer("Monitoring strategies\nstarting at entry\ninto cohort", palette="RdYlBu") +
-  scale_colour_brewer("Monitoring strategies\nstarting at entry\ninto cohort",
-                      palette="RdYlBu") +
-  xlab("Incremental HBV-related deaths averted") +
-  ylab("Incremental cost (USD)") +
-  xlim(-150,7200) +
-  #  ylim(0,2500000) +
-  theme_bw() +
-  theme(axis.text = element_text(size = 15),
-        axis.title = element_text(size = 15),
-        legend.text = element_text(size = 12),
-        title = element_text(size = 15))
-
-# Plot: interactions vs LY saved
-ggplot(combined_df) +
-  geom_line(data= subset(combined_df, frontier_interactions == "Include"),
-            aes(x = ly_saved, y= total_interactions,
-                group = sim), colour = "grey", alpha = 0.5) +
-  geom_point(aes(x = ly_saved, y = total_interactions,
-                 group =reorder(scenario, ly_saved), colour = reorder(scenario, ly_saved)), alpha = 0.4) +
-  stat_ellipse(geom = "polygon",
-               aes(x=ly_saved,y=total_interactions,
-                   group = reorder(scenario, ly_saved), fill= reorder(scenario, ly_saved)), alpha = 0.3) +
-  # Overlay median
-  geom_line(data = subset(combined_df_summary, frontier_interactions == "Include"),
-            aes(y = median_interactions,
-                x = median_ly_saved), size = 1) +
-  geom_point(data = combined_df_summary,
-             aes(y = median_interactions,
-                 x = median_ly_saved,
-                 group = reorder(scenario, median_ly_saved),
-                 colour = reorder(scenario, median_ly_saved)), size = 5) +
-  geom_point(data = combined_df_summary,
-             aes(y = median_interactions,
-                 x = median_ly_saved,
-                 group = reorder(scenario, median_ly_saved)),
-             size = 5, shape = 1, colour = "black") +
-  scale_fill_brewer("Monitoring strategies\nstarting at entry\ninto cohort", palette="RdYlBu") +
-  scale_colour_brewer("Monitoring strategies\nstarting at entry\ninto cohort",
-                      palette="RdYlBu") +
-  xlab("Incremental life-years saved") +
-  ylab("Incremental number of clinical interactions") +
-  #  xlim(-150,7200) +
-  #  ylim(0,2500000) +
-  theme_bw() +
-  theme(axis.text = element_text(size = 15),
-        axis.title = element_text(size = 15),
-        legend.text = element_text(size = 12),
-        title = element_text(size = 15))
-
-# Plot: cost vs LY saved
-ggplot(combined_df) +
-  geom_line(data= subset(combined_df, frontier_ly_saved_cost == "Include"),
-            aes(x = ly_saved, y= total_cost,
-                group = sim), colour = "grey", alpha = 0.5) +
-  geom_point(aes(x = ly_saved, y = total_cost,
-                 group =reorder(scenario, ly_saved), colour = reorder(scenario, ly_saved)),
-             alpha = 0.4) +
-  stat_ellipse(geom = "polygon",
-               aes(x=ly_saved,y=total_cost,
-                   group = reorder(scenario, ly_saved),
-                   fill= reorder(scenario, ly_saved)), alpha = 0.3) +
-  # Overlay median
-  geom_line(data = subset(combined_df_summary, frontier_ly_saved_cost == "Include"),
-            aes(y = median_cost,
-                x = median_ly_saved), size = 1) +
-  geom_point(data = combined_df_summary,
-             aes(y = median_cost,
-                 x = median_ly_saved,
-                 group = reorder(scenario, median_ly_saved),
-                 colour = reorder(scenario, median_ly_saved)), size = 5) +
-  geom_point(data = combined_df_summary,
-             aes(y = median_cost,
-                 x = median_ly_saved,
-                 group = reorder(scenario, median_ly_saved)),
-             size = 5, shape = 1, colour = "black") +
-  scale_fill_brewer("Monitoring strategies\nstarting at entry\ninto cohort", palette="RdYlBu") +
-  scale_colour_brewer("Monitoring strategies\nstarting at entry\ninto cohort",
-                      palette="RdYlBu") +
-  xlab("Incremental life-years saved") +
-  ylab("Incremental cost (USD)") +
-  # xlim(-150,7200) +
-  #  ylim(0,2500000) +
-  theme_bw() +
-  theme(axis.text = element_text(size = 15),
-        axis.title = element_text(size = 15),
-        legend.text = element_text(size = 12),
-        title = element_text(size = 15))
-
-
-
-
-
-
-
-
-
-
-
-
+        legend.text = element_text(size = 14),
+        legend.title = element_text(size = 14))
 
 
