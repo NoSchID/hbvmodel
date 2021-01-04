@@ -6,7 +6,8 @@ library(tidyr)
 library(dplyr)
 library(ggplot2)
 #load(file = here("output", "fits", "best_fits_50_of_100000_wed_domain_weights_210819.Rdata"))  # this was from LSR
-load(here("calibration", "output", "model_fit_output_123_180520.Rdata")) # out_mat
+#load(here("calibration", "output", "model_fit_output_123_180520.Rdata")) # out_mat
+load(here("calibration", "output", "model_fit_output_kmeans_221220.Rdata")) # out_mat
 input_out_mat <- out_mat
 
 ### Function to calculate 95% confidence intervals for all datasets ----
@@ -311,25 +312,28 @@ anti_hbc_studies_double$label <- "Thursz 1995, Bellamy 1998"
 anti_hbc_studies_unique <- anti_hbc_studies[!(anti_hbc_studies$time %in% years_with_several_studies_antihbc),]
 anti_hbc_studies_unique$label <- paste(anti_hbc_studies_unique$paper_first_author, anti_hbc_studies_unique$paper_year)
 antihbc_study_labels <- rbind(anti_hbc_studies_unique, anti_hbc_studies_double)
+antihbc_study_labels$label[antihbc_study_labels$label=="Thursz 1995, Bellamy 1998"] <-
+  "Thursz 1995,\nBellamy 1998"
+antihbc_study_labels$label[1:5] <- paste0("\n", antihbc_study_labels$label[1:5])
 
-tiff(here("output", "fits", "lsr_plots", "antihbc_plot.tiff"), height = 9.4, width = 12, units = 'in', res=300)
+# Datapoints here are mixed, male or female populations and model projection is mixed.
+#tiff(here("output", "fits", "lsr_plots", "antihbc_plot.tiff"), height = 9.4, width = 12, units = 'in', res=300)
 ggplot(data = subset(seromarker_out_mat, outcome == "Anti_HBc_prevalence")) +
-  geom_line(aes(x = age, y = model_median, linetype = "Model", colour = sex), size = 1) +
-  geom_point(aes(x = age, y = data_value, fill = "Data", colour = sex),
+  geom_line(aes(x = age, y = model_median, linetype = "Model"), size = 1) +
+  geom_point(aes(x = age, y = data_value, fill = "Data"), col = "red",
              shape = 4, stroke = 2) +
-  geom_line(aes(x = age, y = model_ci_lower, colour = sex), linetype = "dashed", size = 1) +
-  geom_line(aes(x = age, y = model_ci_upper, colour = sex), linetype = "dashed", size = 1) +
-  #geom_errorbar(aes(x = age, ymax = ci_upper, ymin = ci_lower, colour = sex)) +
-  scale_linetype_manual(name = NULL, values = c("Model" = "solid"), labels = "Model projection") +
-  scale_fill_manual(name = NULL, values = c("Data" = "black"), labels = "Observed prevalence") +
-  scale_colour_manual(values = c("Mixed" = "gray35", "Male" = "navyblue", "Female" = "steelblue")) +
+  geom_ribbon(aes(x=age, ymin=model_ci_lower, ymax=model_ci_upper), alpha = 0.1) +
+  geom_errorbar(aes(x = age, ymax = ci_upper, ymin = ci_lower), col = "red") +
+  scale_linetype_manual(name = NULL, values = c("Model" = "solid"),
+                        labels = "Model projection") +
+  scale_fill_manual(name = NULL, values = c("Data" = "red"), labels = "Observed data") +
+#  scale_colour_manual(values = c("Mixed" = "gray35", "Male" = "navyblue", "Female" = "steelblue")) +
   facet_wrap(~ time, ncol = 3) +
   geom_text(size = 3.5, data = antihbc_study_labels,
-            mapping = aes(x = Inf, y = Inf, label = label), hjust=1.05, vjust=1.5) +
+            mapping = aes(x = Inf, y = 0.4, label = label), hjust=1.05, vjust=1.5) +
   labs(title = "Anti-HBc prevalence in The Gambia",
-       y = "Anti-HBc prevalence (proportion)", x = "Age (years)",
-       colour = "Sex") +
-  theme_bw() +
+       y = "Anti-HBc prevalence (proportion)", x = "Age (years)") +
+  theme_classic() +
   theme(plot.title = element_text(hjust = 0),
         plot.caption = element_text(hjust = 0, size = 6),
         legend.margin=margin(t = 0, unit="cm"),
@@ -341,7 +345,7 @@ ggplot(data = subset(seromarker_out_mat, outcome == "Anti_HBc_prevalence")) +
   guides(linetype = guide_legend(order = 1),
          fill = guide_legend(order = 2),
          colour = guide_legend(order = 3))
-dev.off()
+#dev.off()
 
 # HBeAg prevalence by time and age and overall ----
 
@@ -365,7 +369,7 @@ hbeag_studies_unique$label <- paste(hbeag_studies_unique$paper_first_author, hbe
 hbeag_study_labels <- rbind(hbeag_studies_unique, hbeag_studies_double)
 
 # Seminar plot: HBeAg prevalence at one timepoint (no distinction between studies)
-tiff(here("output", "fit_plots", "hbeag_plot.tiff"), height = 8, width = 8, units = 'in', res=300)
+#tiff(here("output", "fit_plots", "hbeag_plot.tiff"), height = 8, width = 8, units = 'in', res=300)
 ggplot(data = subset(seromarker_out_mat, outcome == "HBeAg_prevalence")) +
   geom_line(data = subset(seromarker_out_mat, outcome == "HBeAg_prevalence" & time == 1992),
             aes(x = age,  y = model_median, linetype = "Model"), size = 1) +
@@ -390,7 +394,7 @@ ggplot(data = subset(seromarker_out_mat, outcome == "HBeAg_prevalence")) +
   guides(linetype = guide_legend(order = 1),
          fill = guide_legend(order = 2),
          colour = guide_legend(order = 3))
-dev.off()
+#dev.off()
 
 # LSR plots:
 ggplot(data = subset(seromarker_out_mat, outcome == "HBeAg_prevalence")) +
@@ -456,6 +460,46 @@ names(globocan_outcome_facet_labels) <- c("hcc_incidence", "hcc_mortality")
 # Remove 95%CI for data
 #globocan_out_mat_long$ci_lower[globocan_out_mat_long$type == "data_value"] <- NA
 #globocan_out_mat_long$ci_upper[globocan_out_mat_long$type == "data_value"] <- NA
+
+# New style:
+ggplot(data = globocan_out_mat_long[globocan_out_mat_long$time == 2018 &
+                                      globocan_out_mat_long$outcome == "hcc_mortality",],
+       aes(x = paste(age_min,"-",age_max))) +
+  geom_col(data= subset(globocan_out_mat_long, time == 2018 &
+                                        outcome == "hcc_mortality" & type == "data_value"),
+           aes(y = median*100000, group = type, fill= type),
+           position = "dodge") +
+  geom_line(data= subset(globocan_out_mat_long, time == 2018 &
+                          outcome == "hcc_mortality" & type == "model_value"),
+           aes(y = median*100000, group = type)) +
+  geom_errorbar(data= subset(globocan_out_mat_long, time == 2018 &
+                               outcome == "hcc_mortality" & type == "data_value"),
+                aes(ymin = ci_lower*100000, ymax = ci_upper*100000,
+                    group = type, colour = type), position = position_dodge(width=0.9), width = 0.3,
+                show.legend = FALSE)+
+  geom_ribbon(data= subset(globocan_out_mat_long, time == 2018 &
+                             outcome == "hcc_mortality" & type == "model_value"),
+              aes(ymin=ci_lower*100000, ymax=ci_upper*100000, group = type,
+                  colour = type), alpha = 0.2) +
+  facet_grid(~ sex) +
+  #  facet_grid(outcome ~ sex,
+  #             labeller = labeller(outcome =globocan_outcome_facet_labels)) +
+  scale_fill_manual("", values = c("model_value" = "gray35", "data_value" = "red2"),
+                    labels = c("model_value" = "Model projection",
+                               "data_value" = "Observed data")) +
+  scale_colour_manual("", values = c("model_value" = "black", "data_value" = "black")) +
+  theme_classic() +
+  labs(title = "HBV-related HCC mortality rates in 2018",
+       y = "Deaths per 100,000", x = "Age group (years)",
+       subtitle = "GLOBOCAN estimated rates were multiplied by PAF from Ryder 1992 and Kirk 2004 (GLCS)") +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        plot.subtitle = element_text(hjust = 0.5, size = 12),
+        legend.margin=margin(t = 0, unit="cm"),
+        legend.position = "bottom",
+        axis.title = element_text(size = 15),
+        axis.text = element_text(size = 15),
+        legend.text = element_text(size = 15),
+        strip.text = element_text(size = 15))
 
 # Seminar plot: HCC mortality
 # Could change last x axis label on these
@@ -599,27 +643,35 @@ ggplot(data = globocan_out_mat_long[globocan_out_mat_long$time != 2018,],
 
 
 # Risk of chronic carriage ----
-tiff(here("output", "fits", "lsr_plots", "p_chronic_plot.tiff"), height = 9, width = 14, units = 'in', res=300)
-ggplot(data = p_chronic_out_mat) +
-  geom_line(aes(x = age, y = model_median, group = "Model", linetype = "Model"), size = 1, colour = "gray35") +
-  geom_line(aes(x = age, y = model_ci_lower), linetype = "dashed", size = 1, colour = "gray35") +
-  geom_line(aes(x = age, y = model_ci_upper), linetype = "dashed", size = 1, colour = "gray35") +
-  geom_point(aes(x = age, y = data_value, fill = "Observed risk"),
-             shape = 4, stroke = 2, colour = "gray35") +
+#tiff(here("output", "fits", "lsr_plots", "p_chronic_plot.tiff"), height = 9, width = 14, units = 'in', res=300)
+ggplot(p_chronic_out_mat) +
+  geom_line(aes(x = age, y = model_median, group = "Model",
+                linetype = "Model"), size = 1) +
+  geom_ribbon(aes(x=age, ymin=model_ci_lower, ymax=model_ci_upper), alpha = 0.1) +
+  geom_point(aes(x = age, y = data_value, fill = "Data"),
+             shape = 4, stroke = 2, colour = "red") +
+  geom_errorbar(aes(x = age, ymax = ci_upper, ymin = ci_lower), col = "red") +
   scale_linetype_manual(name = "", values = c("Model" = "solid"), labels = c("Model" = "Model projection")) +
+  scale_fill_manual(name = NULL, values = c("Data" = "red"), labels = "Observed data") +
   labs(title = "Risk of chronic carriage by age at infection",
        y = "Risk of chronic carriage (proportion)", x = "Age at infection (years)",
        fill = "") +
-  theme_bw() +
+  theme_classic() +
+  guides(linetype = guide_legend(order = 1),
+           fill = guide_legend(order = 2),
+           colour = guide_legend(order = 3)) +
   theme(plot.title = element_text(hjust = 0),
         plot.caption = element_text(hjust = 0, size = 6),
-        legend.title = element_text(size = 9),
+        legend.margin=margin(t = 0, unit="cm"),
+        legend.position = "bottom",
         axis.title = element_text(size = 20),
-        axis.text = element_text(size = 20),
-        legend.text = element_text(size = 20)) +
+        axis.text = element_text(size = 15),
+        legend.text = element_text(size = 15),
+        legend.title = element_text(size = 15),
+        strip.text.x = element_text(size = 15)) +
   ylim(0,1) +
   xlim(0,30)
-dev.off()
+#dev.off()
 
 # Nat hist prev ----
 nat_hist_prev_out_mat$model_num <-
@@ -731,7 +783,7 @@ shimakawa_hcc_rates <- prog_rates_out_mat_long[c(3:6, 17:20),]
 shimakawa_hcc_rates$median[c(1,3,4)] <- 0.00001
 
 # Seminar plot: HCC incidence
-tiff(here("output", "fit_plots", "shimakawa_hcc_rate_plot.tiff"), height = 6.4, width = 8, units = 'in', res=300)
+#tiff(here("output", "fit_plots", "shimakawa_hcc_rate_plot.tiff"), height = 6.4, width = 8, units = 'in', res=300)
 ggplot(data = shimakawa_hcc_rates,
        aes(x = paste(bl_age_min_years,"-",bl_age_max_years))) +
   geom_col(aes(y = median*100000, group = type, fill= type),
@@ -756,7 +808,7 @@ ggplot(data = shimakawa_hcc_rates,
         axis.text = element_text(size = 15),
         legend.text = element_text(size = 15),
         strip.text = element_text(size = 15))
-dev.off()
+#dev.off()
 
 
 

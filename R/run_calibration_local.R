@@ -1058,8 +1058,11 @@ library(here)
 # params_mat_targets5_2: chosen so that 99% of accepted sets fall within targets
 
 # From recalibration
-load(here("calibration", "input", "accepted_parmsets_123_180520.Rdata")) # params_mat_accepted
-params_mat_targets5 <- params_mat_accepted  # rename so I don't have to change code
+#load(here("calibration", "input", "accepted_parmsets_123_180520.Rdata")) # params_mat_accepted
+#params_mat_targets5 <- params_mat_accepted  # rename so I don't have to change code
+
+load(here("calibration", "input", "accepted_parmsets_kmeans_170820.Rdata"))
+params_mat_targets5 <- params_mat_accepted_kmeans  # rename so I don't have to change code
 
 ### Visualise posteriors for different cutoffs
 load(here("calibration", "input", "lhs_samples_1000000.Rdata"))
@@ -1235,6 +1238,7 @@ ggplot(comp_prior_post2[comp_prior_post2$parm == "alpha",]) +
 # In mixed male cohort: 0.0064
 
 # Not in parallel
+start.time <- Sys.time()
 out_mat <- apply(params_mat_targets5, 1,
                     function(x)
                       fit_model_full_output(default_parameter_list = parameter_list,
@@ -1272,7 +1276,12 @@ out_mat <- apply(params_mat_targets5, 1,
                                                    mu_dcc = as.list(x)$mu_dcc,
                                                    mu_hcc = as.list(x)$mu_hcc,
                                                    vacc_eff = as.list(x)$vacc_eff)))
-save(out_mat, file = here("calibration", "output", "model_fit_output_123_180520.Rdata"))
+end.time <- Sys.time()
+time.taken <- end.time - start.time
+time.taken
+#save(out_mat, file = here("calibration", "output", "model_fit_output_kmeans_221220.Rdata"))
+
+
 out_mat_copy <- out_mat
 
 #new_vacc_meth <- out_mat
