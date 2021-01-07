@@ -3167,6 +3167,12 @@ ggplot(dominance_prob_result) +
 # Clear distinction among the others
 # Lifetime monitoring strategies also completely dominated
 
+# Note: if looking at deaths averted instead of DALYs averted, the non-dominated strategies are:
+# screen_2020_monit_5, screen_2020_monit_2, and screen_2020_monit_0 (same as DALYS),
+# screen_2020_monit_sim9, screen_2020_monit_sim10
+# Whereas sim7 and 6 have a pretty high probability of being dominated.
+# Sim9 and sim10 are focused on the older (30+/45+ ages)!
+
 # Calculate ICER by simulation on non-dominated strategies
 age_df2 <- subset(age_df, scenario %in% c("screen_2020_monit_0", "screen_2020_monit_5",
                                            "screen_2020_monit_2", "screen_2020_monit_sim7",

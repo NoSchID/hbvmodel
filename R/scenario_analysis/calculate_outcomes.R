@@ -387,6 +387,9 @@ extract_time_series <- function(output_file, scenario_label) {
   total_chronic_incidence$total_chronic_infections_rate <-
     total_chronic_incidence$total_chronic_infections/head(output_file$pop_total$pop_total,-1)
 
+  # Total births
+  total_births <- data.frame(total_births = tail(output_file$births$incident_number,-1))
+
   # HBV-related deaths per timestep and per population
   total_hbv_deaths <- data.frame(total_hbv_deaths = tail(output_file$hbv_deaths$incident_number_total+
                                    output_file$screened_hbv_deaths$incident_number_total+
@@ -405,7 +408,7 @@ extract_time_series <- function(output_file, scenario_label) {
 
   outcome_df <- cbind(time = head(output_file$time, -1),
                       scenario = scenario_label,
-                      total_prev, total_chronic_incidence, total_hbv_deaths)
+                      total_prev, total_chronic_incidence, total_hbv_deaths, total_births)
 
 
   #return(list(total_prev = total_prev,

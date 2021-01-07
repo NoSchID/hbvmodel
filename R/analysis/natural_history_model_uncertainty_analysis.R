@@ -21,6 +21,28 @@ disease_outcomes_by_age <- readRDS("C:/Users/Nora Schmit/Documents/Model develop
 prior <- params_mat
 posterior <- params_mat_accepted_kmeans
 
+# Test for cost averted: Incident HCC cases in 1999
+# Cum cases in 1992-cum cases in 1991
+quantile((sapply(disease_outcomes_by_age$cum_hcc_cases_male,
+       function(x) rowSums(x[which(disease_outcomes_by_age$time==1992),]))-
+  sapply(disease_outcomes_by_age$cum_hcc_cases_male,
+         function(x) rowSums(x[which(disease_outcomes_by_age$time==1991),])))+
+  (sapply(disease_outcomes_by_age$cum_hcc_cases_female,
+          function(x) rowSums(x[which(disease_outcomes_by_age$time==1992),]))-
+     sapply(disease_outcomes_by_age$cum_hcc_cases_female,
+            function(x) rowSums(x[which(disease_outcomes_by_age$time==1991),]))),c(0.5,0.025,0.975))
+
+# In 2012:
+quantile((sapply(disease_outcomes_by_age$cum_hcc_cases_male,
+                 function(x) rowSums(x[which(disease_outcomes_by_age$time==2013),]))-
+            sapply(disease_outcomes_by_age$cum_hcc_cases_male,
+                   function(x) rowSums(x[which(disease_outcomes_by_age$time==2012),])))+
+           (sapply(disease_outcomes_by_age$cum_hcc_cases_female,
+                   function(x) rowSums(x[which(disease_outcomes_by_age$time==2013),]))-
+              sapply(disease_outcomes_by_age$cum_hcc_cases_female,
+                     function(x) rowSums(x[which(disease_outcomes_by_age$time==2012),]))),c(0.5,0.025,0.975))
+
+
 # Comparison of prior and posterios (initially run in run_calibration_local.R) ----
 # Table of median, 2.5th and 97.5th quantile of priors and posteriors
 posterior_summary <- gather(params_mat_accepted_kmeans, key = "parameter", value = "sim") %>%

@@ -8,11 +8,22 @@ source(here("R/imperial_model_interventions.R"))
 
 #load(here("calibration", "input", "accepted_parmsets_123_180520.Rdata")) # params_mat_targets5
 load(here("calibration", "input", "accepted_parmsets_kmeans_170820.Rdata")) # params_mat_accepted_kmeans
+load(here("analysis_input", "scenario_a1_it_parms.Rdata"))
 load(here("analysis_input", "scenario_a1_parms.Rdata"))
+load(here("analysis_input", "scenario_anc1_it_parms.Rdata"))
+load(here("analysis_input", "scenario_wpl1_parms.Rdata"))
 
-sim3 <- apply(params_mat_accepted_kmeans[1,],1,
+scenario_wpl1_parms$screening_coverage[,1] <- rep(0.005, 100)
+scenario_wpl1_parms$apply_lifetime_monitoring <- 0
+
+scenario_wpl1_parms$min_age_to_repeat_screen
+scenario_wpl1_parms$max_age_to_screen
+
+length(seq(15,65-0.5,0.5))
+
+sim <- apply(params_mat_accepted_kmeans[1,],1,
              function(x)
-               run_model(sim_duration = runtime, default_parameter_list =scenario_a1_parms,
+               run_model(sim_duration = runtime, default_parameter_list =scenario_wpl1_parms,
                          parms_to_change =
                            list(b1 = as.list(x)$b1,
                                 b2 = as.list(x)$b2,
@@ -47,25 +58,23 @@ sim3 <- apply(params_mat_accepted_kmeans[1,],1,
                                 mu_hcc = as.list(x)$mu_hcc,
                                 vacc_eff = as.list(x)$vacc_eff,
                                 screening_years = c(2020),
-                                screening_coverage = 0.9,
-                                apply_treat_it = 0,
+                                #screening_coverage = 0.9,
+                                #apply_treat_it = 1,
                                 prop_negative_to_remove_from_rescreening = 1,
                                 apply_screen_not_treat = 0,
-                                monitoring_rate = 1,
-                                apply_repeat_screen = 0,
-                                min_age_to_screen = 15,
-                                max_age_to_screen = 65,
+                                monitoring_rate = 0,
+                                apply_repeat_screen = 1,
+                                #min_age_to_screen = 15,
+                                #max_age_to_screen = 65,
                                 min_age_to_repeat_screen = 15,
-                                max_age_to_repeat_screen = 60,
-                                repeat_screening_years = c(2030),
-                                apply_lifetime_monitoring = 0),
-                         drop_timesteps_before = 1960,
+                                max_age_to_repeat_screen = 64.5,
+                                repeat_screening_years = seq(2021,2040,0.5)),
+                                drop_timesteps_before = 1960,
                          scenario = "vacc_screen"))
 
-out3 <- code_model_output(sim3[[1]])
+out <- code_model_output(sim[[1]])
 outpath <- out
 
-out2 <- lapply(sim, code_model_output)
 
 load(here("output", "sims_output_scenario_vacc_130120.RData"))
 out <- out_vacc

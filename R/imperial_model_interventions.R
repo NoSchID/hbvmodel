@@ -1610,7 +1610,7 @@ sum_pop_by_age <- function(time, pop_output_file) {
   return(as.data.frame(pop_output[,-1]))
 }
 
-# Function to calculate incidence per timestep from cumulative number output
+# Previously ran with mistakes
 calculate_incident_numbers <- function(cumulative_output) {
   # Takes as input cumulative number (transition) output from the model
 
@@ -2233,6 +2233,7 @@ code_model_output <- function(output) {
                   #"negative_hbv_deaths_male" = negative_hbv_deaths_male, # to remove
                   #"deaths_total_group5" = deaths_total_group5,
                   #"births_group5" =  births_group5,
+                   "births" =  births,
                   # "incident_infections" = incident_infections,                  # all infections
                    "incident_chronic_infections" = incident_chronic_infections,   # all chronic infections
                    "hbv_deaths" = hbv_deaths,                                     # only without screening/treatment
@@ -2677,7 +2678,7 @@ run_one_screening_scenario_on_cluster <- function(..., default_parameter_list, c
                                             screening_years = years_of_test,
                                             monitoring_rate = monitoring_rate,
                                             prop_negative_to_remove_from_rescreening =
-                                              prop_negative_to_remove_from_rescreening,
+                                            prop_negative_to_remove_from_rescreening,
                                             apply_repeat_screen = apply_repeat_screen,
                                             repeat_screening_years = years_of_repeat_test,
                                             min_age_to_repeat_screen = min_age_to_repeat_screen,
