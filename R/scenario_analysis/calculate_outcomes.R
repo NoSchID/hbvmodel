@@ -103,23 +103,25 @@ calculate_monitoring_interactions <- function(output_file, from_year, by_year, s
 
   if(output_file$input_parameters$apply_lifetime_monitoring == 0) {
 
-   cum_monitoring_treatment_initiations <-
-    ((apply(monitored_ir[which(output_file$time == by_year),],1,sum)-
-        apply(monitored_ir[which(output_file$time == from_year),],1,sum)) +
-       (apply(monitored_enchb[which(output_file$time == by_year),],1,sum)-
-          apply(monitored_enchb[which(output_file$time == from_year),],1,sum)) +
-       (apply(monitored_cc[which(output_file$time == by_year),],1,sum)-
-          apply(monitored_cc[which(output_file$time == from_year),],1,sum)) +
-       (apply(monitored_dcc[which(output_file$time == by_year),],1,sum)-
-          apply(monitored_dcc[which(output_file$time == from_year),],1,sum))) *
-    output_file$input_parameters$treatment_initiation_prob
+    cum_monitoring_treatment_initiations <-
+      (sum(calculate_incident_numbers(apply(monitored_ir[which(output_file$time == from_year):
+                                                           which(output_file$time==by_year),],1,sum)))+
+         sum(calculate_incident_numbers(apply(monitored_enchb[which(output_file$time == from_year):
+                                                                which(output_file$time==by_year),],1,sum)))+
+         sum(calculate_incident_numbers(apply(monitored_cc[which(output_file$time == from_year):
+                                                             which(output_file$time==by_year),],1,sum)))+
+         sum(calculate_incident_numbers(apply(monitored_dcc[which(output_file$time == from_year):
+                                                              which(output_file$time==by_year),],1,sum))))*
+      output_file$input_parameters$treatment_initiation_prob
 
   if (output_file$input_parameters$apply_treat_it == 1) {
     cum_monitoring_treatment_initiations_it <-
-      (apply(monitored_it[which(output_file$time == by_year),which(ages==31):which(ages == 100-da)],1,sum)-
-         apply(monitored_it[which(output_file$time == from_year),
-                            which(ages==31):which(ages == 100-da)],1,sum)) *
+      sum(calculate_incident_numbers(
+        apply(monitored_it[which(output_file$time == from_year):
+                               which(output_file$time==by_year),
+                           which(ages==31):which(ages == 100-da)],1,sum)))*
       output_file$input_parameters$treatment_initiation_prob
+
   } else if (output_file$input_parameters$apply_treat_it == 0) {
     cum_monitoring_treatment_initiations_it <- 0
   }
@@ -127,51 +129,59 @@ calculate_monitoring_interactions <- function(output_file, from_year, by_year, s
   } else if(output_file$input_parameters$apply_lifetime_monitoring == 1) {
 
     cum_monitoring_treatment_initiations <-
-      ((apply(monitored_ir[which(output_file$time == by_year),],1,sum)-
-          apply(monitored_ir[which(output_file$time == from_year),],1,sum)) +
-         (apply(monitored_enchb[which(output_file$time == by_year),],1,sum)-
-            apply(monitored_enchb[which(output_file$time == from_year),],1,sum)) +
-         (apply(monitored_cc[which(output_file$time == by_year),],1,sum)-
-            apply(monitored_cc[which(output_file$time == from_year),],1,sum)) +
-         (apply(monitored_dcc[which(output_file$time == by_year),],1,sum)-
-            apply(monitored_dcc[which(output_file$time == from_year),],1,sum))) *
+      (sum(calculate_incident_numbers(apply(monitored_ir[which(output_file$time == from_year):
+                                                           which(output_file$time==by_year),],1,sum)))+
+         sum(calculate_incident_numbers(apply(monitored_enchb[which(output_file$time == from_year):
+                                                                which(output_file$time==by_year),],1,sum)))+
+         sum(calculate_incident_numbers(apply(monitored_cc[which(output_file$time == from_year):
+                                                             which(output_file$time==by_year),],1,sum)))+
+         sum(calculate_incident_numbers(apply(monitored_dcc[which(output_file$time == from_year):
+                                                              which(output_file$time==by_year),],1,sum))))*
       lifetime_monitoring_treatment_initiation_prob
 
     if (output_file$input_parameters$apply_treat_it == 1) {
+
       cum_monitoring_treatment_initiations_it <-
-        (apply(monitored_it[which(output_file$time == by_year),which(ages==31):which(ages == 100-da)],1,sum)-
-           apply(monitored_it[which(output_file$time == from_year),
-                              which(ages==31):which(ages == 100-da)],1,sum)) *
+        sum(calculate_incident_numbers(
+          apply(monitored_it[which(output_file$time == from_year):
+                               which(output_file$time==by_year),
+                             which(ages==31):which(ages == 100-da)],1,sum)))*
         lifetime_monitoring_treatment_initiation_prob
+
     } else if (output_file$input_parameters$apply_treat_it == 0) {
       cum_monitoring_treatment_initiations_it <- 0
     }
 
   }
 
-
   # Combine into dataframe
   res <- data.frame(scenario = scenario_label,
                     from_year = from_year,
                      by_year = by_year,
                      cum_monitoring_events_it =
-                       apply(monitored_it[which(output_file$time == by_year),],1,sum)-
-                       apply(monitored_it[which(output_file$time == from_year),],1,sum),
+                      sum(calculate_incident_numbers(
+                        apply(monitored_it[which(output_file$time == from_year):
+                                            which(output_file$time==by_year),],1,sum))),
                      cum_monitoring_events_ir =
-                       apply(monitored_ir[which(output_file$time == by_year),],1,sum)-
-                       apply(monitored_ir[which(output_file$time == from_year),],1,sum),
+                      sum(calculate_incident_numbers(
+                        apply(monitored_ir[which(output_file$time == from_year):
+                                             which(output_file$time==by_year),],1,sum))),
                      cum_monitoring_events_enchb =
-                       apply(monitored_enchb[which(output_file$time == by_year),],1,sum)-
-                       apply(monitored_enchb[which(output_file$time == from_year),],1,sum),
+                      sum(calculate_incident_numbers(
+                        apply(monitored_enchb[which(output_file$time == from_year):
+                                             which(output_file$time==by_year),],1,sum))),
                      cum_monitoring_events_cc =
-                       apply(monitored_cc[which(output_file$time == by_year),],1,sum)-
-                       apply(monitored_cc[which(output_file$time == from_year),],1,sum),
+                      sum(calculate_incident_numbers(
+                        apply(monitored_cc[which(output_file$time == from_year):
+                                             which(output_file$time==by_year),],1,sum))),
                      cum_monitoring_events_dcc =
-                       apply(monitored_dcc[which(output_file$time == by_year),],1,sum)-
-                       apply(monitored_dcc[which(output_file$time == from_year),],1,sum),
+                      sum(calculate_incident_numbers(
+                        apply(monitored_dcc[which(output_file$time == from_year):
+                                             which(output_file$time==by_year),],1,sum))),
                      cum_monitoring_events_ineligible =
-                       apply(monitored_ineligible[which(output_file$time == by_year),],1,sum)-
-                       apply(monitored_ineligible[which(output_file$time == from_year),],1,sum),
+                      sum(calculate_incident_numbers(
+                        apply(monitored_ineligible[which(output_file$time == from_year):
+                                             which(output_file$time==by_year),],1,sum))),
                      cum_monitoring_treatment_initiations,
                      cum_monitoring_treatment_initiations_it)
 
