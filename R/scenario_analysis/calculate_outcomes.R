@@ -73,10 +73,14 @@ calculate_screening_interactions <- function(output_file, scenario_label) {
 }
 
 # For monitoring, need to add record of vaccination of susceptibles!
+# This function has been adapted to correctly calculate incident and total
+# monitoring events if there are continuous screening events at every timestep.
+# Scenario arguments are taken from cluster function
 calculate_monitoring_interactions <- function(output_file, from_year, by_year, scenario_label,
                                               lifetime_monitoring_treatment_initiation_prob = 1) {
 
   # Monitoring and treatment
+  input_parms <- output_file$input_parameters
 
   # Number of monitoring events after screening by compartment
   # Need to change ineligible depending on whether IT is included
@@ -98,28 +102,63 @@ calculate_monitoring_interactions <- function(output_file, from_year, by_year, s
   monitored_dcc <- output_file$full_output[,grepl("^cum_monitored_dccf", colnames(output_file$full_output))] +
     output_file$full_output[,grepl("^cum_monitored_dccm", colnames(output_file$full_output))]
 
+  # Calculate incident monitoring events to obtain total cumulative sum
+  # even with repeat events
+  inc_monitoring_events_it <- calculate_incident_numbers(apply(monitored_it,1,sum))
+  inc_monitoring_events_ir <- calculate_incident_numbers(apply(monitored_ir,1,sum))
+  inc_monitoring_events_enchb <- calculate_incident_numbers(apply(monitored_enchb,1,sum))
+  inc_monitoring_events_cc <- calculate_incident_numbers(apply(monitored_cc,1,sum))
+  inc_monitoring_events_dcc <- calculate_incident_numbers(apply(monitored_dcc,1,sum))
+  inc_monitoring_events_ineligible <- calculate_incident_numbers(apply(monitored_ineligible,1,sum))
+
+  # If there are repeat screening events, need to adapt those numbers to account for
+  # reset of cumulative count:
+  if (input_parms$apply_repeat_screen==1) {
+    years_of_reset <- c(input_parms$screening_years, input_parms$repeat_screening_years)+0.5
+
+    inc_monitoring_events_it[which(output_file$time %in% c(years_of_reset))] <-
+      apply(monitored_it,1,sum)[which(output_file$time %in% c(years_of_reset))]
+    inc_monitoring_events_ir[which(output_file$time %in% c(years_of_reset))] <-
+      apply(monitored_ir,1,sum)[which(output_file$time %in% c(years_of_reset))]
+    inc_monitoring_events_enchb[which(output_file$time %in% c(years_of_reset))] <-
+      apply(monitored_enchb,1,sum)[which(output_file$time %in% c(years_of_reset))]
+    inc_monitoring_events_cc[which(output_file$time %in% c(years_of_reset))] <-
+      apply(monitored_cc,1,sum)[which(output_file$time %in% c(years_of_reset))]
+    inc_monitoring_events_dcc[which(output_file$time %in% c(years_of_reset))] <-
+      apply(monitored_dcc,1,sum)[which(output_file$time %in% c(years_of_reset))]
+    inc_monitoring_events_ineligible[which(output_file$time %in% c(years_of_reset))] <-
+      apply(monitored_ineligible,1,sum)[which(output_file$time %in% c(years_of_reset))]
+  }
+
   # Number of treatment initiations as a result of monitoring
   # Sum those monitoring events in treatment eligible compartments and multiply by treatment initiation probability
 
   if(output_file$input_parameters$apply_lifetime_monitoring == 0) {
 
     cum_monitoring_treatment_initiations <-
-      (sum(calculate_incident_numbers(apply(monitored_ir[which(output_file$time == from_year):
-                                                           which(output_file$time==by_year),],1,sum)))+
-         sum(calculate_incident_numbers(apply(monitored_enchb[which(output_file$time == from_year):
-                                                                which(output_file$time==by_year),],1,sum)))+
-         sum(calculate_incident_numbers(apply(monitored_cc[which(output_file$time == from_year):
-                                                             which(output_file$time==by_year),],1,sum)))+
-         sum(calculate_incident_numbers(apply(monitored_dcc[which(output_file$time == from_year):
-                                                              which(output_file$time==by_year),],1,sum))))*
+      (sum(inc_monitoring_events_ir[which(output_file$time == from_year):
+                                     which(output_file$time==by_year)])+
+      sum(inc_monitoring_events_enchb[which(output_file$time == from_year):
+                                     which(output_file$time==by_year)])+
+      sum(inc_monitoring_events_cc[which(output_file$time == from_year):
+                                     which(output_file$time==by_year)])+
+      sum(inc_monitoring_events_dcc[which(output_file$time == from_year):
+                                     which(output_file$time==by_year)]))*
       output_file$input_parameters$treatment_initiation_prob
 
   if (output_file$input_parameters$apply_treat_it == 1) {
+
+    inc_monitoring_treatment_initiations_it <-
+      calculate_incident_numbers(apply(monitored_it[,which(ages==31):which(ages == 100-da)],1,sum))
+    if (input_parms$apply_repeat_screen==1) {
+      years_of_reset <- c(input_parms$screening_years, input_parms$repeat_screening_years)+0.5
+      inc_monitoring_treatment_initiations_it[which(output_file$time %in% c(years_of_reset))] <-
+        apply(monitored_it[,which(ages==31):which(ages == 100-da)],1,sum)[which(output_file$time %in% c(years_of_reset))]
+    }
+
     cum_monitoring_treatment_initiations_it <-
-      sum(calculate_incident_numbers(
-        apply(monitored_it[which(output_file$time == from_year):
-                               which(output_file$time==by_year),
-                           which(ages==31):which(ages == 100-da)],1,sum)))*
+      sum(inc_monitoring_treatment_initiations_it[which(output_file$time == from_year):
+                                                    which(output_file$time==by_year)])*
       output_file$input_parameters$treatment_initiation_prob
 
   } else if (output_file$input_parameters$apply_treat_it == 0) {
@@ -129,23 +168,29 @@ calculate_monitoring_interactions <- function(output_file, from_year, by_year, s
   } else if(output_file$input_parameters$apply_lifetime_monitoring == 1) {
 
     cum_monitoring_treatment_initiations <-
-      (sum(calculate_incident_numbers(apply(monitored_ir[which(output_file$time == from_year):
-                                                           which(output_file$time==by_year),],1,sum)))+
-         sum(calculate_incident_numbers(apply(monitored_enchb[which(output_file$time == from_year):
-                                                                which(output_file$time==by_year),],1,sum)))+
-         sum(calculate_incident_numbers(apply(monitored_cc[which(output_file$time == from_year):
-                                                             which(output_file$time==by_year),],1,sum)))+
-         sum(calculate_incident_numbers(apply(monitored_dcc[which(output_file$time == from_year):
-                                                              which(output_file$time==by_year),],1,sum))))*
+      (sum(inc_monitoring_events_ir[which(output_file$time == from_year):
+                                      which(output_file$time==by_year)])+
+         sum(inc_monitoring_events_enchb[which(output_file$time == from_year):
+                                           which(output_file$time==by_year)])+
+         sum(inc_monitoring_events_cc[which(output_file$time == from_year):
+                                        which(output_file$time==by_year)])+
+         sum(inc_monitoring_events_dcc[which(output_file$time == from_year):
+                                         which(output_file$time==by_year)]))*
       lifetime_monitoring_treatment_initiation_prob
 
     if (output_file$input_parameters$apply_treat_it == 1) {
 
+      inc_monitoring_treatment_initiations_it <-
+        calculate_incident_numbers(apply(monitored_it[,which(ages==31):which(ages == 100-da)],1,sum))
+      if (input_parms$apply_repeat_screen==1) {
+        years_of_reset <- c(input_parms$screening_years, input_parms$repeat_screening_years)+0.5
+        inc_monitoring_treatment_initiations_it[which(output_file$time %in% c(years_of_reset))] <-
+          apply(monitored_it[,which(ages==31):which(ages == 100-da)],1,sum)[which(output_file$time %in% c(years_of_reset))]
+      }
+
       cum_monitoring_treatment_initiations_it <-
-        sum(calculate_incident_numbers(
-          apply(monitored_it[which(output_file$time == from_year):
-                               which(output_file$time==by_year),
-                             which(ages==31):which(ages == 100-da)],1,sum)))*
+        sum(inc_monitoring_treatment_initiations_it[which(output_file$time == from_year):
+                                                      which(output_file$time==by_year)])*
         lifetime_monitoring_treatment_initiation_prob
 
     } else if (output_file$input_parameters$apply_treat_it == 0) {
@@ -159,29 +204,23 @@ calculate_monitoring_interactions <- function(output_file, from_year, by_year, s
                     from_year = from_year,
                      by_year = by_year,
                      cum_monitoring_events_it =
-                      sum(calculate_incident_numbers(
-                        apply(monitored_it[which(output_file$time == from_year):
-                                            which(output_file$time==by_year),],1,sum))),
+                      sum(inc_monitoring_events_it[which(output_file$time == from_year):
+                            which(output_file$time==by_year)]),
                      cum_monitoring_events_ir =
-                      sum(calculate_incident_numbers(
-                        apply(monitored_ir[which(output_file$time == from_year):
-                                             which(output_file$time==by_year),],1,sum))),
+                      sum(inc_monitoring_events_ir[which(output_file$time == from_year):
+                                                     which(output_file$time==by_year)]),
                      cum_monitoring_events_enchb =
-                      sum(calculate_incident_numbers(
-                        apply(monitored_enchb[which(output_file$time == from_year):
-                                             which(output_file$time==by_year),],1,sum))),
+                      sum(inc_monitoring_events_enchb[which(output_file$time == from_year):
+                                                     which(output_file$time==by_year)]),
                      cum_monitoring_events_cc =
-                      sum(calculate_incident_numbers(
-                        apply(monitored_cc[which(output_file$time == from_year):
-                                             which(output_file$time==by_year),],1,sum))),
+                      sum(inc_monitoring_events_cc[which(output_file$time == from_year):
+                                                     which(output_file$time==by_year)]),
                      cum_monitoring_events_dcc =
-                      sum(calculate_incident_numbers(
-                        apply(monitored_dcc[which(output_file$time == from_year):
-                                             which(output_file$time==by_year),],1,sum))),
+                      sum(inc_monitoring_events_dcc[which(output_file$time == from_year):
+                                                     which(output_file$time==by_year)]),
                      cum_monitoring_events_ineligible =
-                      sum(calculate_incident_numbers(
-                        apply(monitored_ineligible[which(output_file$time == from_year):
-                                             which(output_file$time==by_year),],1,sum))),
+                      sum(inc_monitoring_events_ineligible[which(output_file$time == from_year):
+                                                     which(output_file$time==by_year)]),
                      cum_monitoring_treatment_initiations,
                      cum_monitoring_treatment_initiations_it)
 
@@ -373,6 +412,8 @@ calculate_age_standardised_hbv_deaths_rate <- function(output_file) {
 }
 
 # Extract time series
+# Time series functions have not been adapted to continuous screening scenarios
+# and produce the wrong output!
 # Function can be applied to run_model_output+code_model_output (single simulation)
 extract_time_series <- function(output_file, scenario_label) {
 
@@ -479,25 +520,79 @@ summarise_time_series <- function(output_files, scenario_label, summarise_percen
 # Extract cumulative HBV-related deaths (for all simulations)
 # Function automatically uses correct time step to match period starting at from up until (excluding) by.
 # Only works for 1 time period, but can use rbind to combine results for several periods
+# This function has been adapted to correctly calculate incident deaths
+# if there are continuous screening events at every timestep.
 extract_cumulative_hbv_deaths <- function(output_files, scenario_label, from_year, by_year) {
+
+  # Extract full output from simulations
+  input_parms <- output_files[[1]]$input_parameters
+  out <- lapply(output_files, "[[", "full_output")
+  timevec <- out[[1]]$time
+  sim_names <- names(output_files)
+
+  # Extract cumulative number of HBV-related deaths (from cirrhosis and HCC)
+  cum_hbv_deaths <- list()
+  for (i in 1:length(out)) {
+    cum_hbv_deaths[[i]] <- out[[i]][,grepl("^cum_hbv_deathsf.",names(out[[i]]))] +
+      out[[i]][,grepl("^cum_screened_hbv_deathsf.",names(out[[i]]))] +
+      out[[i]][,grepl("^cum_treated_hbv_deathsf.",names(out[[i]]))] +
+      out[[i]][,grepl("^cum_negative_hbv_deathsf.",names(out[[i]]))]+
+      out[[i]][,grepl("^cum_hbv_deathsm.",names(out[[i]]))] +
+      out[[i]][,grepl("^cum_screened_hbv_deathsm.",names(out[[i]]))] +
+      out[[i]][,grepl("^cum_treated_hbv_deathsm.",names(out[[i]]))] +
+      out[[i]][,grepl("^cum_negative_hbv_deathsm.",names(out[[i]]))]
+  }
+
+  # Calculate sum across ages
+  cum_hbv_deaths <- lapply(cum_hbv_deaths, rowSums)
+
+  # Turn into incidence: new cases since the last timestep (i.e. incidence BY timestep)
+  inc_hbv_deaths <- lapply(cum_hbv_deaths, calculate_incident_numbers)
+
+  # If there are repeat screening events, need to adapt those numbers to account for
+  # reset of cumulative count:
+  if (input_parms$apply_repeat_screen==1) {
+    years_of_reset <- c(input_parms$screening_years, input_parms$repeat_screening_years)+0.5
+
+    for (i in 1:length(out)) {
+      inc_hbv_deaths[[i]][which(timevec %in% c(years_of_reset))] <-
+        cum_hbv_deaths[[i]][which(timevec %in% c(years_of_reset))]
+    }
+  }
 
   # Extract absolute incident HBV-related deaths per timestep
   incident_hbv_deaths <- data.frame(time = head(output_files[[1]]$time,-1),
-                                    deaths = tail(sapply(lapply(output_files,"[[", "hbv_deaths"), "[[", "incident_number_total")+
-                                                sapply(lapply(output_files,"[[", "screened_hbv_deaths"), "[[", "incident_number_total")+
-                                                sapply(lapply(output_files,"[[", "treated_hbv_deaths"), "[[", "incident_number_total")+
-                                                sapply(lapply(output_files,"[[", "negative_hbv_deaths"), "[[", "incident_number_total"),-1))
+                                    deaths = tail(do.call("cbind", inc_hbv_deaths),-1))
   colnames(incident_hbv_deaths)[1] <- "time"
 
-  cum_hbv_deaths <- as.data.frame(t(apply(incident_hbv_deaths[which(incident_hbv_deaths$time == from_year):
-                                                which(incident_hbv_deaths$time ==(by_year-da)),-1],2,sum)))
+  total_hbv_deaths <- as.data.frame(t(apply(incident_hbv_deaths[
+    which(incident_hbv_deaths$time == from_year):which(incident_hbv_deaths$time ==(by_year-da)),-1],2,sum)))
 
   res <- data.frame(from_year = from_year,
                     by_year = by_year,
                     scenario = scenario_label,
-                    cum_hbv_deaths = cum_hbv_deaths)
+                    cum_hbv_deaths = total_hbv_deaths)
 
   return(res)
+
+# Previous version did not work correctly for continuous screen:
+  # Extract absolute incident HBV-related deaths per timestep
+  #incident_hbv_deaths <- data.frame(time = head(output_files[[1]]$time,-1),
+  #                                  deaths = tail(sapply(lapply(output_files,"[[", "hbv_deaths"), "[[", "incident_number_total")+
+   #                                             sapply(lapply(output_files,"[[", "screened_hbv_deaths"), "[[", "incident_number_total")+
+   #                                             sapply(lapply(output_files,"[[", "treated_hbv_deaths"), "[[", "incident_number_total")+
+  #                                              sapply(lapply(output_files,"[[", "negative_hbv_deaths"), "[[", "incident_number_total"),-1))
+  #colnames(incident_hbv_deaths)[1] <- "time"
+
+  #cum_hbv_deaths <- as.data.frame(t(apply(incident_hbv_deaths[which(incident_hbv_deaths$time == from_year):
+  #                                              which(incident_hbv_deaths$time ==(by_year-da)),-1],2,sum)))
+
+  #res <- data.frame(from_year = from_year,
+  #                  by_year = by_year,
+  #                  scenario = scenario_label,
+  #                  cum_hbv_deaths = cum_hbv_deaths)
+
+ # return(res)
 }
 
 # Extract chronic infection (for all simulations)
@@ -573,10 +668,14 @@ extract_life_years_lived <- function(output_files, scenario_label, from_year, by
 }
 
 # Extract years of life lost YLL and DALYs (for all simulations)
-extract_yll_and_dalys <- function(output_files, scenario_label, from_year, by_year, sex_to_return = "both",
+# This function has been adapted to correctly calculate incident deaths
+# if there are continuous screening events at every timestep.
+extract_yll_and_dalys <- function(output_files, scenario_label, from_year, by_year,
+                                  sex_to_return = "both",
                           disability_weight_dcc=0.178, disability_weight_hcc=0.54) {
 
   # Extract full output from simulations
+  input_parms <- output_files[[1]]$input_parameters
   out <- lapply(output_files, "[[", "full_output")
   timevec <- out[[1]]$time
   sim_names <- names(output_files)
@@ -623,6 +722,19 @@ extract_yll_and_dalys <- function(output_files, scenario_label, from_year, by_ye
   # Turn into incidence: new cases since the last timestep (i.e. incidence BY timestep)
   inc_hbv_deathsf <- lapply(cum_hbv_deathsf, calculate_incident_numbers)
   inc_hbv_deathsm <- lapply(cum_hbv_deathsm, calculate_incident_numbers)
+
+  # If there are repeat screening events, need to adapt those numbers to account for
+  # reset of cumulative count:
+  if (input_parms$apply_repeat_screen==1) {
+    years_of_reset <- c(input_parms$screening_years, input_parms$repeat_screening_years)+0.5
+
+    for (i in 1:length(output_files)) {
+    inc_hbv_deathsf[[i]][which(timevec %in% c(years_of_reset)),] <-
+      cum_hbv_deathsf[[i]][which(timevec %in% c(years_of_reset)),]
+    inc_hbv_deathsm[[i]][which(timevec %in% c(years_of_reset)),] <-
+      cum_hbv_deathsm[[i]][which(timevec %in% c(years_of_reset)),]
+    }
+  }
 
   # Calculate total years of life lost between from_year and by_year
   # Life expectancy already in units of years
@@ -775,6 +887,8 @@ calculate_number_averted <- function(counterfactual_metric, scenario_metric, sum
 }
 
 # COHORT OUTCOMES (all evaluated in 2100)
+
+# COHORT FUNCTIONS HAVE NOT BEEN ADAPTED TO CONTINUOUS SCREEN SCENARIOS YET!
 
 # Function to calculate average age at death of cohort for one simulation
 # This function is applied to sim

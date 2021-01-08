@@ -3,6 +3,7 @@
 ### Load packages and source file ----
 require(here)  # for setting working directory
 source(here("R/imperial_model_interventions.R"))
+source(here("R/scenario_analysis/calculate_outcomes.R"))
 
 # Simulate intervention model ----
 
@@ -13,17 +14,9 @@ load(here("analysis_input", "scenario_a1_parms.Rdata"))
 load(here("analysis_input", "scenario_anc1_it_parms.Rdata"))
 load(here("analysis_input", "scenario_wpl1_parms.Rdata"))
 
-scenario_wpl1_parms$screening_coverage[,1] <- rep(0.005, 100)
-scenario_wpl1_parms$apply_lifetime_monitoring <- 0
-
-scenario_wpl1_parms$min_age_to_repeat_screen
-scenario_wpl1_parms$max_age_to_screen
-
-length(seq(15,65-0.5,0.5))
-
 sim <- apply(params_mat_accepted_kmeans[1,],1,
              function(x)
-               run_model(sim_duration = runtime, default_parameter_list =scenario_wpl1_parms,
+               run_model(sim_duration = runtime, default_parameter_list =scenario_anc1_it_parms,
                          parms_to_change =
                            list(b1 = as.list(x)$b1,
                                 b2 = as.list(x)$b2,
@@ -62,12 +55,12 @@ sim <- apply(params_mat_accepted_kmeans[1,],1,
                                 #apply_treat_it = 1,
                                 prop_negative_to_remove_from_rescreening = 1,
                                 apply_screen_not_treat = 0,
-                                monitoring_rate = 0,
+                                monitoring_rate = 1/5,
                                 apply_repeat_screen = 1,
                                 #min_age_to_screen = 15,
                                 #max_age_to_screen = 65,
                                 min_age_to_repeat_screen = 15,
-                                max_age_to_repeat_screen = 64.5,
+                                max_age_to_repeat_screen = 49.5,
                                 repeat_screening_years = seq(2021,2040,0.5)),
                                 drop_timesteps_before = 1960,
                          scenario = "vacc_screen"))
@@ -75,6 +68,289 @@ sim <- apply(params_mat_accepted_kmeans[1,],1,
 out <- code_model_output(sim[[1]])
 outpath <- out
 
+
+# From output, extract interactions and DALYS:
+out <- list(out, out)
+
+# Healthcare interactions and person-time on treatment
+interactions <- list()
+py_on_treatment <- list()
+years_to_extract <- seq(2025,2100, by = 5)
+
+  for (j in years_to_extract) {
+    interactions[[j-2024]] <- summarise_healthcare_interactions(out, scenario_label = "label",
+                                                                from_year = 2020, by_year = j)
+  }
+  interactions[sapply(interactions, is.null)] <- NULL
+
+  # Person-time in all compartments after treatment initiation
+  treated_pop_total <- sapply(lapply(out, "[[", "treated_pop_female"), rowSums)+
+    sapply(lapply(out, "[[", "treated_pop_male"), rowSums)
+  # Remove T_R compartment since HBsAg loss would lead to discontinuation
+  t_rf_index <- which(grepl("^T_Rf.",names(out[[1]]$full_output)))
+  t_rm_index <- which(grepl("^T_Rm.",names(out[[1]]$full_output)))
+  t_r_female <- lapply(lapply(out, "[[", "full_output"), "[", t_rf_index)
+  t_r_male <- lapply(lapply(out, "[[", "full_output"), "[", t_rm_index)
+  t_r_total <- sapply(t_r_female, rowSums)+sapply(t_r_male, rowSums)
+  person_time_on_treatment <- treated_pop_total-t_r_total
+
+  # Extract person-YEARS by time
+  for (j in years_to_extract) {
+    py_on_treatment[[j-2024]] <-
+      apply(person_time_on_treatment[which(out[[1]]$time==2020):which(out[[1]]$time==j),],2,sum)*dt
+  }
+  py_on_treatment[sapply(py_on_treatment, is.null)] <- NULL
+
+  # Life years, YLL and DALYS
+  ly <- list()
+  yll_and_dalys <- list()
+  for (j in years_to_extract) {
+    ly[[j-2024]] <- extract_life_years_lived(out, scenario_label = "label",
+                                             from_year = 2020, by_year = j)
+    yll_and_dalys[[j-2024]] <- extract_yll_and_dalys(out, scenario_label = "label",
+                                                     from_year = 2020, by_year = j)
+  }
+  ly[sapply(ly, is.null)] <- NULL
+  yll_and_dalys[sapply(yll_and_dalys, is.null)] <- NULL
+
+  yll <- lapply(yll_and_dalys, "[[", "yll")
+  dalys <- lapply(yll_and_dalys, "[[", "daly")
+
+# Then calculate these manually
+output_file <- out[[1]]
+# HBsAg tests:
+total_sag_tests <- unique(output_file$full_output$total_screened_susceptible +
+                              output_file$full_output$total_screened_immune +
+                              output_file$full_output$total_screened_it +
+                              output_file$full_output$total_screened_chb +
+                              output_file$full_output$total_screened_cirrhosis +
+                              output_file$full_output$total_screened_ineligible)
+
+sum(total_sag_tests)
+interactions[[16]]$total_screened
+# Gives the same but need to find out what happens in the output
+# It appears to record the cumulative number of tests up until the next event (so updates
+# every timestep here)
+# Confirmed this - since screening only occurs as the event this will always work with the reset.
+
+assessments <- unique(output_file$full_output$total_screened_ineligible) *
+  output_file$input_parameters$link_to_care_prob +
+  unique(output_file$full_output$total_screened_it + output_file$full_output$total_screened_chb +
+           output_file$full_output$total_screened_cirrhosis) * output_file$input_parameters$link_to_care_prob
+# Assessments are calculated on same principle as screens
+sum(assessments)
+interactions[[16]]$total_assessed
+
+# PY on treatment: this is calculated above based on time spent in compartments
+# which should not be affected by events
+
+# DALYS
+
+# YLD should be fine since it is based on prevalence
+# YLD = DALYS-YLL
+dalys[[16]][4]-yll[[16]][4]
+# YLD = 6829 total
+
+# Check that YLD is NOT affected for men:
+# (Need to compare with no treatment)
+yll_and_dalys_male <- list()
+for (j in years_to_extract) {
+  yll_and_dalys_male[[j-2024]] <- extract_yll_and_dalys(out, scenario_label = "label",
+                                                        sex_to_return = "male",
+                                                   from_year = 2020, by_year = j)
+}
+yll_and_dalys_male[sapply(yll_and_dalys_male, is.null)] <- NULL
+# By 2100, DALYs male = 283,548 and YLL = 277,623 so YLD = 5925
+
+out2 <- list(out2,out2)
+yll_and_dalys_male2 <- list()
+for (j in years_to_extract) {
+  yll_and_dalys_male2[[j-2024]] <- extract_yll_and_dalys(out2, scenario_label = "label",
+                                                        sex_to_return = "male",
+                                                        from_year = 2020, by_year = j)
+}
+yll_and_dalys_male2[sapply(yll_and_dalys_male2, is.null)] <- NULL
+# This should give different DALYs and YLL but same YLD (DALYS-YLL)
+yll_and_dalys_male2
+# By 2100, DALYs male = 322,025 and YLL = 316093 so YLD = 5932
+# YES
+# So YLD is fine but need to recalculate YLL/HBV deatjs
+
+# Is monitoring tracked correctly? Check for 1 compartment
+by_year = 2100
+from_year= 2020
+output_file <- out3
+monitored_it <- output_file$full_output[,grepl("^cum_monitored_itf", colnames(output_file$full_output))] +
+  output_file$full_output[,grepl("^cum_monitored_itm", colnames(output_file$full_output))]
+apply(monitored_it,1,sum)
+
+# cum_monitoring_events_it:
+  apply(monitored_it[which(output_file$time == by_year),],1,sum)-
+  apply(monitored_it[which(output_file$time == from_year),],1,sum)
+  #  returns 3086 but this is only the cumulative number since the repeat screen!
+  # Should be 3086+3818=6904
+
+sum(calculate_incident_numbers(apply(monitored_it,1,sum)))
+# This is correct! But not if repeat screen occurs at every timestep
+sum(calculate_incident_numbers(apply(monitored_it[which(output_file$time == from_year):
+                                                    which(output_file$time==by_year),],1,sum)))
+calculate_monitoring_interactions(output_file, 2020,2100, "test")
+
+calculate_monitoring_interactions(out[[1]], 2020,2100, "test",
+                                  scenario_arg="vacc_screen",
+                                  apply_repeat_screen_arg=1,
+                                  years_of_test_arg=2020,
+                                  years_of_repeat_test_arg=seq(2021,2040,0.5))
+
+
+# Calculate DALYS from cumulative deaths
+# In men
+outx <- out # this is the full list
+
+out <- lapply(out, "[[", "full_output")
+timevec <- out[[1]]$time
+sim_names <- names(outx)
+
+cum_hbv_deathsf <- list()
+cum_hbv_deathsm <- list()
+for (i in 1:length(out)) {
+  cum_hbv_deathsf[[i]] <- out[[i]][,grepl("^cum_hbv_deathsf.",names(out[[i]]))] +
+    out[[i]][,grepl("^cum_screened_hbv_deathsf.",names(out[[i]]))] +
+    out[[i]][,grepl("^cum_treated_hbv_deathsf.",names(out[[i]]))] +
+    out[[i]][,grepl("^cum_negative_hbv_deathsf.",names(out[[i]]))]
+  cum_hbv_deathsm[[i]] <- out[[i]][,grepl("^cum_hbv_deathsm.",names(out[[i]]))] +
+    out[[i]][,grepl("^cum_screened_hbv_deathsm.",names(out[[i]]))] +
+    out[[i]][,grepl("^cum_treated_hbv_deathsm.",names(out[[i]]))] +
+    out[[i]][,grepl("^cum_negative_hbv_deathsm.",names(out[[i]]))]
+}
+
+
+# Previous WRONG approach:
+inc_hbv_deathsf <- lapply(cum_hbv_deathsf, calculate_incident_numbers)
+inc_hbv_deathsm <- lapply(cum_hbv_deathsm, calculate_incident_numbers)
+
+apply(cum_hbv_deathsm[[1]], 1,sum)
+which(timevec==2020)+221
+apply(inc_hbv_deathsm[[1]], 1,sum) # WRONG
+apply(inc_hbv_deathsf[[1]], 1,sum)  # Here it works
+
+all_screening_years <- c(2020, seq(2021,2040,0.5))
+
+inc_deathsm <- c(apply(cum_hbv_deathsm[[1]],1,sum)[1],  # number at first timestep
+                      diff(apply(cum_hbv_deathsm[[1]],1,sum), lag = 1))
+# number at current timestep - number at previous timestep
+# Replace negative numbers by the cumulative value at that timestep (since events reset count to 0)
+inc_deathsm[which(out[[1]]$time %in% c(all_screening_years+0.5))] <-
+  apply(cum_hbv_deathsm[[1]],1,sum)[which(out[[1]]$time %in% c(all_screening_years+0.5))]
+# That now looks correct
+
+# For YLL calculation need cumulative HBV deaths by sex and age over time!
+
+# Check for monitoring in a continuous screen
+# Other question is whether the issue would occur if
+# screening coverage in one sex is not non-zero... same issue
+
+# Look at monitoring
+output_file <- out
+monitored_ineligible <- output_file$full_output[,grepl("^cum_monitored_icf", colnames(output_file$full_output))] +
+  output_file$full_output[,grepl("^cum_monitored_icm", colnames(output_file$full_output))] +
+  output_file$full_output[,grepl("^cum_monitored_hccf", colnames(output_file$full_output))] +
+  output_file$full_output[,grepl("^cum_monitored_hccm", colnames(output_file$full_output))] +
+  output_file$full_output[,grepl("^cum_monitored_rf", colnames(output_file$full_output))] +
+  output_file$full_output[,grepl("^cum_monitored_rm", colnames(output_file$full_output))]
+
+apply(monitored_ineligible,1,sum)
+which(out$time==2040)
+# from 381 on it seems to be cumulative
+
+test <- calculate_incident_numbers(
+  apply(monitored_ineligible,1,sum))
+sum(test[which(output_file$time == from_year):
+           which(output_file$time==by_year)])
+# Sum of incident number is 393303.6
+# But this is also wrong
+# 606853.8 is correct
+
+plot(out$time, test)
+
+test[which(out$time %in% c(all_screening_years+0.5))] <-
+  apply(monitored_ineligible,1,sum)[which(out$time %in% c(all_screening_years+0.5))]
+
+calculate_monitoring_interactions(out,2020,2100,scenario_label = "l",scenario = "vacc_screen",
+                                  apply_repeat_screen = 1, years_of_test = 2020,
+                                  years_of_repeat_test = seq(2020.5,2039.5,0.5))
+
+all_screening_years <- c(seq(2020.5,2039.5,0.5))
+
+inc_monit <- c(apply(monitored_ineligible,1,sum)[1],  # number at first timestep
+                 diff(apply(monitored_ineligible,1,sum), lag = 1))
+# number at current timestep - number at previous timestep
+# Replace negative numbers by the cumulative value at that timestep (since events reset count to 0)
+inc_monit[which(out$time %in% c(all_screening_years+0.5))] <-
+  apply(monitored_ineligible,1,sum)[which(out$time %in% c(all_screening_years+0.5))]
+
+plot(seq(2020,2100,0.5), inc_monit[which(out$time == from_year):
+                                     which(out$time==by_year)])
+# That now looks correct
+
+# So we need monitoring events by time and compartment and
+# cum hbv deaths by sex, time and age!!
+
+
+# Life years, YLL and DALYS
+out2 <- list(out2, out2)
+
+out <- list(out, out)
+
+yll_and_dalys <- list()
+for (j in years_to_extract) {
+  yll_and_dalys[[j-2024]] <- extract_yll_and_dalys(out, scenario_label = "label",
+                                                   from_year = 2020, by_year = j,
+                                                   sex_to_return = "male")
+}
+yll_and_dalys[sapply(yll_and_dalys, is.null)] <- NULL
+yll_and_dalys
+
+# Before adaptation: 357172.7 DALYS and 350607.1 YLL (combi) = 6565.6 YLD
+# In men: 279062.7 DALYS and  273153.3 YLL
+# In women: 78110.03 DALYS and 77453.75 YLL
+
+# YLD and numbers in women should be unchanged!
+
+# After adaptation: 409815.7 DALYS and 403250.1 YLL  = 6565.6 YLD
+# Men: 320438.5 DALYS and 314529.2 YLL  ( at [[2]]: 94270.5 and  92647.67)
+# Women: 89377.15 and 88720.87
+# Men now have more YLL - this should be the same as in out2
+
+# out2 male: 322025 and 316093.1 (at [[2]]: 94281.71 and 92658.79)
+# out2 female: 196352.4 and 195025.6
+# So numbers in women substantially reduced and only slightly in men
+
+# So it is correct@:
+
+# In women accounting for resets:
+# 30571.88  30342.77
+# In women not accounting for resets:
+# 22748.37  22519.26  (overestimates reduction in DALYs)
+# In women without treatment
+# 51140.49  50853.04
+
+# Try if the screen is in 2030 - should make no diff
+# 498199.3 DALYS and 498199.3  DALYS - correct
+
+# HBV deaths
+outx <- list(out, out)
+
+cum_hbv_deaths <- list()
+for (j in years_to_extract) {
+  cum_hbv_deaths[[j-2024]] <- extract_cumulative_hbv_deaths(out, scenario_label = "label",
+                                                            from_year = 2020, by_year = j)
+}
+cum_hbv_deaths[sapply(cum_hbv_deaths, is.null)] <- NULL
+cum_hbv_deaths[[16]]  # 19200
+
+
+#######
 
 load(here("output", "sims_output_scenario_vacc_130120.RData"))
 out <- out_vacc

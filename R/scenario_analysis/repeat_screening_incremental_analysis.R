@@ -1935,6 +1935,20 @@ ggplot(deaths_averted_per_cost,
   theme_bw() +
   theme(axis.text.x=element_text(angle=90, hjust = 1))
 
+## Antenatal care - try to restore correct cumulative outputs ----
+
+anc_it_2030_monit_0b2 <- readRDS(paste0(out_path, "anc1_2030_no_rescreen_monit_0_050121.rds"))
+anc_it_2030_monit_0b2 <- anc_it_2030_monit_0b2[[1]]
+#anc_it_2030_monit_5b <- readRDS(paste0(out_path, "anc1_2030_no_rescreen_monit_5_070121.rds"))
+#anc_it_2030_monit_5b <- anc_it_2030_monit_5b[[1]]
+#anc_it_2030_monit_0a <- readRDS(paste0(out_path, "anc1_2030_with_rescreen_monit_0_070121.rds"))
+#anc_it_2030_monit_0a <- anc_it_2030_monit_0a[[1]]
+#anc_it_2040_monit_0b <- readRDS(paste0(out_path, "anc1_2040_no_rescreen_monit_0_070121.rds"))
+#anc_it_2040_monit_0b <- anc_it_2040_monit_0b[[1]]
+
+
+
+
 ## Compare regular antenatal care screening (90% coverage) with the population-based screen ----
 # Note that screening in ANC only requires the cost of the test.
 # Repeat screening simulations here don't include IT treatment yet so need to compare this

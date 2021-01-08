@@ -2861,7 +2861,14 @@ run_one_screening_scenario_on_cluster <- function(..., default_parameter_list, c
 
   return(outlist)
 
-  # Alternative output:
+  # Alternative output if simulation involves a continuous repeat screen (every timestep):
+  # In this case calculations involving incident numbers will be wrong (monitoring events,
+  # treatment initiations after monitoring, HBV deaths and YLL used for DALYs)
+
+
+
+
+  # Alternative output to look at patterns by age:
   #extracted_outcomes2 <- list(time = out[[1]]$time,
   #                            carriers_female = lapply(out, "[[", "carriers_female"),
   #                            carriers_male = lapply(out, "[[", "carriers_male"),
@@ -2988,13 +2995,13 @@ run_one_screening_scenario_on_cluster_not_parallel <- function(..., default_para
                                              screening_years = years_of_test,
                                              monitoring_rate = monitoring_rate,
                                              prop_negative_to_remove_from_rescreening =
-                                               prop_negative_to_remove_from_rescreening,
+                                             prop_negative_to_remove_from_rescreening,
                                              apply_repeat_screen = apply_repeat_screen,
                                              repeat_screening_years = years_of_repeat_test,
                                              min_age_to_repeat_screen = min_age_to_repeat_screen,
                                              max_age_to_repeat_screen = max_age_to_repeat_screen),
                                       drop_timesteps_before = drop_timesteps_before,
-                                      scenario = scenario))  # vacc_screen by default
+                                     scenario = scenario))  # vacc_screen by default
 
   out2 <- lapply(sim2, code_model_output)
   rm(sim2)
@@ -3083,7 +3090,6 @@ run_one_screening_scenario_on_cluster_not_parallel <- function(..., default_para
 
   # Timeseries
   timeseries <- summarise_time_series(out, scenario_label = label, summarise_percentiles = FALSE)
-
   gc()
 
   # Extract the screened and treated population by age
