@@ -441,6 +441,79 @@ extract_time_series <- function(output_file, scenario_label) {
   # Total births
   total_births <- data.frame(total_births = tail(output_file$births$incident_number,-1))
 
+  # If there are repeat screening events, need to adapt those numbers to account for
+  # reset of cumulative count:
+  # In this case overwrite previous values
+  if (output_file$input_parameters$apply_repeat_screen==1) {
+
+    # Extract cumulative numbers
+    out_cum_chronic_infectionsf <- output_file$full_output[,grepl("^cum_chronic_infectionsf.",names(output_file$full_output))]
+    out_cum_chronic_infectionsm <- output_file$full_output[,grepl("^cum_chronic_infectionsm.",names(output_file$full_output))]
+    out_cum_negative_chronic_infectionsf <- output_file$full_output[,grepl("^cum_negative_chronic_infectionsf.",names(output_file$full_output))]
+    out_cum_negative_chronic_infectionsm <- output_file$full_output[,grepl("^cum_negative_chronic_infectionsm.",names(output_file$full_output))]
+
+    out_cum_chronic_births <- unlist(output_file$full_output[,grepl("^cum_chronic_births",names(output_file$full_output))])
+
+    out_cum_births <- unlist(select(output_file$full_output, contains("cum_births")))
+
+    # Calculate incidence
+    horizontal_chronic_infections_female <- data.frame(incident_number = calculate_incident_numbers(out_cum_chronic_infectionsf))
+    names(horizontal_chronic_infections_female) <- sprintf("incident_number%g",ages)
+
+    horizontal_chronic_infections_male <- data.frame(incident_number = calculate_incident_numbers(out_cum_chronic_infectionsm))
+    names(horizontal_chronic_infections_male) <- sprintf("incident_number%g",ages)
+
+    horizontal_negative_chronic_infections_female <- data.frame(incident_number =
+                                                                  calculate_incident_numbers(out_cum_negative_chronic_infectionsf))
+    names(horizontal_negative_chronic_infections_female) <- sprintf("incident_number%g",ages)
+
+    horizontal_negative_chronic_infections_male <- data.frame(incident_number =
+                                                                calculate_incident_numbers(out_cum_negative_chronic_infectionsm))
+    names(horizontal_negative_chronic_infections_male) <- sprintf("incident_number%g",ages)
+
+    inc_chronic_births <- calculate_incident_numbers(out_cum_chronic_births)
+
+    births <- data.frame(time = output_file$time,
+                         incident_number = calculate_incident_numbers(out_cum_births))
+    names(births) <- c("time", "incident_number")
+
+    # Total number of incident chronic infections from horizontal transmission and MTCT per time step
+    incident_chronic_infections <- data.frame(time = output_file$time,
+                                              horizontal_chronic_infections = rowSums(horizontal_chronic_infections_female) +
+                                                rowSums(horizontal_chronic_infections_male),
+                                              horizontal_negative_chronic_infections = rowSums(horizontal_negative_chronic_infections_female) +
+                                                rowSums(horizontal_negative_chronic_infections_male),
+                                              chronic_births = inc_chronic_births)
+
+    # Adapt numbers in years with count reset
+    years_of_reset <- c(output_file$input_parameters$screening_years, output_file$input_parameters$repeat_screening_years)+0.5
+
+    incident_chronic_infections$horizontal_chronic_infections[which(output_file$time %in% c(years_of_reset))] <-
+      rowSums(out_cum_chronic_infectionsf+out_cum_chronic_infectionsm)[which(output_file$time %in% c(years_of_reset))]
+
+    incident_chronic_infections$horizontal_negative_chronic_infections[which(output_file$time %in% c(years_of_reset))] <-
+      rowSums(out_cum_negative_chronic_infectionsf+out_cum_negative_chronic_infectionsm)[which(output_file$time %in% c(years_of_reset))]
+
+    incident_chronic_infections$chronic_births[which(output_file$time %in% c(years_of_reset))] <-
+      out_cum_chronic_births[which(output_file$time %in% c(years_of_reset))]
+
+    births$incident_number[which(output_file$time %in% c(years_of_reset))] <-
+      out_cum_births[which(output_file$time %in% c(years_of_reset))]
+
+      # Overwrite output objects
+    total_chronic_incidence <-
+      data.frame(total_chronic_infections =
+                   tail(incident_chronic_infections$horizontal_chronic_infections+
+                          incident_chronic_infections$horizontal_negative_chronic_infections+
+                          incident_chronic_infections$chronic_births,-1),
+                 chronic_births = tail(incident_chronic_infections$chronic_births,-1))
+    total_chronic_incidence$total_chronic_infections_rate <-
+      total_chronic_incidence$total_chronic_infections/head(output_file$pop_total$pop_total,-1)
+
+    total_births <- data.frame(total_births = tail(births$incident_number,-1))
+
+  }
+
   # HBV-related deaths per timestep and per population
   total_hbv_deaths <- data.frame(total_hbv_deaths = tail(output_file$hbv_deaths$incident_number_total+
                                    output_file$screened_hbv_deaths$incident_number_total+
@@ -979,17 +1052,57 @@ extract_cohort_cumulative_hbv_deaths <- function(output_files, scenario_label) {
 
     # Calculate sum of incident deaths until 2100
     last_timestep <- which(output_files[[1]]$time==2100)
+    input_parms <- output_files[[1]]$input_parameters
+    out <- lapply(output_files, "[[", "full_output")
+    timevec <- out[[1]]$time
+
+    # Extract cumulative number of HBV-related deaths (from cirrhosis and HCC)
+    # from screened and treated compartments
+    cum_hbv_deaths <- list()
+    for (i in 1:length(out)) {
+      cum_hbv_deaths[[i]] <- out[[i]][,grepl("^cum_screened_hbv_deathsf.",names(out[[i]]))] +
+        out[[i]][,grepl("^cum_treated_hbv_deathsf.",names(out[[i]]))] +
+        out[[i]][,grepl("^cum_screened_hbv_deathsm.",names(out[[i]]))] +
+        out[[i]][,grepl("^cum_treated_hbv_deathsm.",names(out[[i]]))]
+    }
+
+    # Calculate sum across ages
+    cum_hbv_deaths <- lapply(cum_hbv_deaths, rowSums)
+
+    # Turn into incidence: new cases since the last timestep (i.e. incidence BY timestep)
+    inc_hbv_deaths <- lapply(cum_hbv_deaths, calculate_incident_numbers)
+
+    # If there are repeat screening events, need to adapt those numbers to account for
+    # reset of cumulative count:
+    if (input_parms$apply_repeat_screen==1) {
+      years_of_reset <- c(input_parms$screening_years, input_parms$repeat_screening_years)+0.5
+
+      for (i in 1:length(out)) {
+        inc_hbv_deaths[[i]][which(timevec %in% c(years_of_reset))] <-
+          cum_hbv_deaths[[i]][which(timevec %in% c(years_of_reset))]
+      }
+    }
 
     # Extract absolute incident HBV-related deaths per timestep
     incident_hbv_deaths <- data.frame(time = head(output_files[[1]]$time,-1),
-                                      deaths = tail(sapply(lapply(output_files,"[[", "screened_hbv_deaths"), "[[", "incident_number_total")+
-                                                      sapply(lapply(output_files,"[[", "treated_hbv_deaths"), "[[", "incident_number_total"),-1))
+                                      deaths = tail(do.call("cbind", inc_hbv_deaths),-1))
     colnames(incident_hbv_deaths)[1] <- "time"
 
-    cum_hbv_deaths <- as.data.frame(t(apply(incident_hbv_deaths[1:last_timestep,-1],2,sum)))
+    total_hbv_deaths <- as.data.frame(t(apply(incident_hbv_deaths[1:last_timestep,-1],2,sum)))
 
     res <- data.frame(scenario = scenario_label,
-                      cum_hbv_deaths = cum_hbv_deaths)
+                      cum_hbv_deaths = total_hbv_deaths)
+
+    # Extract absolute incident HBV-related deaths per timestep
+    #incident_hbv_deaths <- data.frame(time = head(output_files[[1]]$time,-1),
+    #                                  deaths = tail(sapply(lapply(output_files,"[[", "screened_hbv_deaths"), "[[", "incident_number_total")+
+    #                                                  sapply(lapply(output_files,"[[", "treated_hbv_deaths"), "[[", "incident_number_total"),-1))
+    #colnames(incident_hbv_deaths)[1] <- "time"
+
+    #cum_hbv_deaths <- as.data.frame(t(apply(incident_hbv_deaths[1:last_timestep,-1],2,sum)))
+
+    #res <- data.frame(scenario = scenario_label,
+    #                  cum_hbv_deaths = cum_hbv_deaths)
 
     return(res)
   }
@@ -1059,6 +1172,7 @@ extract_cohort_yll_and_dalys <- function(output_files, scenario_label, sex_to_re
     # Calculate YLL and DALYs until 2100
     last_timestep <- 2100
     # Extract full output from simulations
+    input_parms <- output_files[[1]]$input_parameters
     out <- lapply(output_files, "[[", "full_output")
     timevec <- out[[1]]$time
     sim_names <- names(output_files)
@@ -1093,6 +1207,19 @@ extract_cohort_yll_and_dalys <- function(output_files, scenario_label, sex_to_re
     # Turn into incidence: new cases since the last timestep (i.e. incidence BY timestep)
     inc_hbv_deathsf <- lapply(cum_hbv_deathsf, calculate_incident_numbers)
     inc_hbv_deathsm <- lapply(cum_hbv_deathsm, calculate_incident_numbers)
+
+    # If there are repeat screening events, need to adapt those numbers to account for
+    # reset of cumulative count:
+    if (input_parms$apply_repeat_screen==1) {
+      years_of_reset <- c(input_parms$screening_years, input_parms$repeat_screening_years)+0.5
+
+      for (i in 1:length(output_files)) {
+        inc_hbv_deathsf[[i]][which(timevec %in% c(years_of_reset)),] <-
+          cum_hbv_deathsf[[i]][which(timevec %in% c(years_of_reset)),]
+        inc_hbv_deathsm[[i]][which(timevec %in% c(years_of_reset)),] <-
+          cum_hbv_deathsm[[i]][which(timevec %in% c(years_of_reset)),]
+      }
+    }
 
     # Calculate total years of life lost between from_year and by_year
     # Life expectancy already in units of years
@@ -1155,7 +1282,7 @@ extract_cohort_yll_and_dalys <- function(output_files, scenario_label, sex_to_re
 
       return(res_male)
     } else if (sex_to_return == "female") {
-      res_fema;e <- list(yll = data.frame(scenario = scenario_label,
+      res_female <- list(yll = data.frame(scenario = scenario_label,
                                          yll_female = yll_output_female),
                         daly=data.frame(scenario = scenario_label,
                                    daly_female = daly_female))

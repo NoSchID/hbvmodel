@@ -16,7 +16,7 @@ load(here("analysis_input", "scenario_wpl1_parms.Rdata"))
 
 sim <- apply(params_mat_accepted_kmeans[1,],1,
              function(x)
-               run_model(sim_duration = runtime, default_parameter_list =scenario_a1_it_parms,
+               run_model(sim_duration = runtime, default_parameter_list =scenario_anc1_it_parms,
                          parms_to_change =
                            list(b1 = as.list(x)$b1,
                                 b2 = as.list(x)$b2,
@@ -54,25 +54,24 @@ sim <- apply(params_mat_accepted_kmeans[1,],1,
                                 #screening_coverage = 0.9,
                                 #apply_treat_it = 1,
                                 prop_negative_to_remove_from_rescreening = 1,
-                                apply_screen_not_treat = 0,
-                                monitoring_rate = monit_rate_vec,
-                                #monitoring_rate = 0,
+                                apply_screen_not_treat = 1,
+                                #monitoring_rate = monit_rate_vec,
+                                monitoring_rate = 0,
                                 apply_repeat_screen = 0,
-                                apply_lifetime_monitoring = 1,
-                                monitoring_prob = 1,
-                                treatment_initiation_prob = 1,
-                                lifetime_monitoring_event_rate = monit_rate_vec,
+                                #apply_lifetime_monitoring = 1,
+                                #monitoring_prob = 1,
+                                #treatment_initiation_prob = 1,
+                                #lifetime_monitoring_event_rate = monit_rate_vec,
                                 #min_age_to_screen = 15,
                                 #max_age_to_screen = 65,
                                 #min_age_to_repeat_screen = 15,
                                 #max_age_to_repeat_screen = 49.5,
-                                repeat_screening_years = seq(2021,2040,0.5)),
+                                repeat_screening_years = seq(2020.5,2040,0.5)),
                                 drop_timesteps_before = 1960,
                          scenario = "vacc_screen"))
 
-out <- code_model_output(sim[[1]])
+out<- code_model_output(sim[[1]])
 outpath <- out
-
 
 load(here("output", "sims_output_scenario_vacc_130120.RData"))
 out <- out_vacc
