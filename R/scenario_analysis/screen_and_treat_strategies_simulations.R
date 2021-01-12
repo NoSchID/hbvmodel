@@ -72,6 +72,21 @@ scenario_a2_parms$apply_bdvacc <- 0
 scenario_a2_parms$apply_treat_it <- 0
 #save(scenario_a2_parms, file= here("analysis_input", "scenario_a2_parms.Rdata"))
 
+# ASSUMPTION A2 SIMULATIONS WITH IT TREATED
+scenario_a2_it_parms <- parameter_list
+scenario_a2_it_parms$screening_coverage <- 0.9
+scenario_a2_it_parms$min_age_to_screen <- 45
+scenario_a2_it_parms$max_age_to_screen <- 65-da
+scenario_a2_it_parms$min_age_to_repeat_screen <- 45
+scenario_a2_it_parms$max_age_to_repeat_screen <- 65-da
+scenario_a2_it_parms$prop_to_vaccinate <- 0
+scenario_a2_it_parms$link_to_care_prob <- 0.8
+scenario_a2_it_parms$treatment_initiation_prob <- 1
+scenario_a2_it_parms$monitoring_prob <- 0.8
+scenario_a2_it_parms$apply_bdvacc <- 0
+scenario_a2_it_parms$apply_treat_it <- 1
+#save(scenario_a2_it_parms, file= here("analysis_input", "scenario_a2_it_parms.Rdata"))
+
 # ASSUMPTION A3 SIMULATIONS
 scenario_a3_parms <- parameter_list
 scenario_a3_parms$screening_coverage <- 0.9
@@ -98,6 +113,21 @@ scenario_a4_parms$apply_bdvacc <- 0
 scenario_a4_parms$apply_treat_it <- 0
 #save(scenario_a4_parms, file= here("analysis_input", "scenario_a4_parms.Rdata"))
 
+# ASSUMPTION A4 SIMULATIONS WITH IT TREATED
+scenario_a4_it_parms <- parameter_list
+scenario_a4_it_parms$screening_coverage <- 0.9
+scenario_a4_it_parms$min_age_to_screen <- 15
+scenario_a4_it_parms$max_age_to_screen <- 30-da
+scenario_a4_it_parms$min_age_to_repeat_screen <- 15
+scenario_a4_it_parms$max_age_to_repeat_screen <- 30-da
+scenario_a4_it_parms$prop_to_vaccinate <- 0
+scenario_a4_it_parms$link_to_care_prob <- 0.8
+scenario_a4_it_parms$treatment_initiation_prob <- 1
+scenario_a4_it_parms$monitoring_prob <- 0.8
+scenario_a4_it_parms$apply_bdvacc <- 0
+scenario_a4_it_parms$apply_treat_it <- 1
+#save(scenario_a4_it_parms, file= here("analysis_input", "scenario_a4_it_parms.Rdata"))
+
 # ASSUMPTION A5 SIMULATIONS
 scenario_a5_parms <- parameter_list
 scenario_a5_parms$screening_coverage <- 0.9
@@ -110,6 +140,21 @@ scenario_a5_parms$monitoring_prob <- 0.8
 scenario_a5_parms$apply_bdvacc <- 0
 scenario_a5_parms$apply_treat_it <- 0
 #save(scenario_a5_parms, file= here("analysis_input", "scenario_a5_parms.Rdata"))
+
+# ASSUMPTION A5 SIMULATIONS WITH IT TREATED
+scenario_a5_it_parms <- parameter_list
+scenario_a5_it_parms$screening_coverage <- 0.9
+scenario_a5_it_parms$min_age_to_screen <- 30
+scenario_a5_it_parms$max_age_to_screen <- 45-da
+scenario_a5_it_parms$min_age_to_repeat_screen <- 30
+scenario_a5_it_parms$max_age_to_repeat_screen <- 45-da
+scenario_a5_it_parms$prop_to_vaccinate <- 0
+scenario_a5_it_parms$link_to_care_prob <- 0.8
+scenario_a5_it_parms$treatment_initiation_prob <- 1
+scenario_a5_it_parms$monitoring_prob <- 0.8
+scenario_a5_it_parms$apply_bdvacc <- 0
+scenario_a5_it_parms$apply_treat_it <- 1
+#save(scenario_a5_it_parms, file= here("analysis_input", "scenario_a5_it_parms.Rdata"))
 
 # ASSUMPTION ANC1 SIMULATIONS (Antenatal care screening, ambitious - 90% coverage)
 scenario_anc1_parms <- parameter_list
