@@ -172,9 +172,10 @@ scenario_anc1_parms$apply_treat_it <- 0
 scenario_anc1_parms$mtct_prob_treat_cofactor <- 1
 #save(scenario_anc1_parms, file= here("analysis_input", "scenario_anc1_parms.Rdata"))
 
-# ASSUMPTION ANC1 SIMULATIONS WITH IT TREATED (Antenatal care screening, ambitious - 90% coverage)
+# ASSUMPTION ANC1 SIMULATIONS WITH IT TREATED (Antenatal care screening, 76% coverage)
+# Updated this coverage to 76% according to WHO antenatal care coverage
 scenario_anc1_it_parms <- parameter_list
-scenario_anc1_it_parms$screening_coverage <- matrix(c(fert_rates[fert_rates[,1]==2020,-1]*0.9,
+scenario_anc1_it_parms$screening_coverage <- matrix(c(fert_rates[fert_rates[,1]==2020,-1]*0.76,
                                                    rep(0, length(which(ages == 15): which(ages==50-da)))),
                                                  ncol = 2)
 scenario_anc1_it_parms$min_age_to_screen <- 15
