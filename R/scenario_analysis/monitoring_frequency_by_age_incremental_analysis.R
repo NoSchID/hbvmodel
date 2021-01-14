@@ -681,7 +681,7 @@ out6an <- out6an[[1]]
 out3 <- readRDS(paste0(out_path, "a1_out3_screen_2020_monit_0_011220.rds"))
 out3 <- out3[[1]]
 
-# Monitoring all age groups from every 30 to every 1 year
+# Monitoring all age groups from every 30 to every 1 year (need to update this with IT)
 out4d <- readRDS(paste0(out_path, "a1_out4d_screen_2020_monit_30_031220.rds"))
 out4d <- out4d[[1]]
 out4c <- readRDS(paste0(out_path, "a1_out4c_screen_2020_monit_25_031220.rds"))
@@ -712,21 +712,38 @@ out6 <- readRDS(paste0(out_path, "a1_out6_screen_2020_monit_1_301120.rds"))
 out6 <- out6[[1]]
 
 # Once in a lifetime monitoring at different ages (replaced with new sims with IT)
-out_lt_monit_30 <- readRDS(paste0(out_path, "a1_out_screen_2020_monit_lifetime_30_101220.rds"))
-out_lt_monit_30 <- out_lt_monit_30[[1]]
-out_lt_monit_45 <- readRDS(paste0(out_path, "a1_out_screen_2020_monit_lifetime_45_101220.rds"))
-out_lt_monit_45 <- out_lt_monit_45[[1]]
+# These are wrong (modelling of lifetime monitoring not comparable with other frequencies)
+#out_lt_monit_30 <- readRDS(paste0(out_path, "a1_out_screen_2020_monit_lifetime_30_101220.rds"))
+#out_lt_monit_30 <- out_lt_monit_30[[1]]
+#out_lt_monit_45 <- readRDS(paste0(out_path, "a1_out_screen_2020_monit_lifetime_45_101220.rds"))
+#out_lt_monit_45 <- out_lt_monit_45[[1]]
 
 # FILES FOR AGE-SPECIFIC ANALYSIS
 # IT is treated
 
+# Effect of screening by age (not monitoring)
+a2_out3_it <- readRDS(paste0(out_path, "a2_it_out3_screen_2020_monit_0_130121.rds"))
+a2_out3_it <- a2_out3_it[[1]]
+a4_out3_it <- readRDS(paste0(out_path, "a4_it_out3_screen_2020_monit_0_130121.rds"))
+a4_out3_it <- a4_out3_it[[1]]
+a5_out3_it <- readRDS(paste0(out_path, "a5_it_out3_screen_2020_monit_0_130121.rds"))
+a5_out3_it <- a5_out3_it[[1]]
+
 # No monitoring/All age monitoring
 out3_it <- readRDS(paste0(out_path, "a1_it_out3_screen_2020_monit_0_161220.rds"))
-out3_it <- out3_it[[1]]
+out3_it <- out3_it[[1]]   # No monitoring
+out4_it <- readRDS(paste0(out_path, "a1_it_out4_screen_2020_monit_10_140121.rds"))
+out4_it <- out4_it[[1]]   # 10 years
 out5_it <- readRDS(paste0(out_path, "a1_it_out5_screen_2020_monit_5_161220.rds"))
-out5_it <- out5_it[[1]]
+out5_it <- out5_it[[1]]   # 5 years
+out6c_it <- readRDS(paste0(out_path, "a1_it_out6c_screen_2020_monit_4_130121.rds"))
+out6c_it <- out6c_it[[1]]   # 4 years
+out6b_it <- readRDS(paste0(out_path, "a1_it_out6b_screen_2020_monit_3_130121.rds"))
+out6b_it <- out6b_it[[1]]   # 3 years
 out6a_it <- readRDS(paste0(out_path, "a1_it_out6a_screen_2020_monit_2_161220.rds"))
-out6a_it <- out6a_it[[1]]
+out6a_it <- out6a_it[[1]]  # 2 years
+out6_it <- readRDS(paste0(out_path, "a1_it_out6_screen_2020_monit_1_130121.rds"))
+out6_it <- out6_it[[1]]  # 1 year
 
 # Monitoring different age groups while they are of given age (IT always treated)
 monit_out7 <- readRDS(paste0(out_path, "a1_it_monit_out7_161220.rds"))
@@ -762,7 +779,36 @@ monit_out1a <- monit_out1a[[1]]
 monit_out8 <- readRDS(paste0(out_path, "a1_it_monit_out8_090121.rds"))
 monit_out8 <- monit_out8[[1]]
 
+# 10-yearly frequencies
+
+# 4-yearly frequencies
+monit_out4c <- readRDS(paste0(out_path, "a1_it_monit_out4c_130121.rds"))
+monit_out4c <- monit_out4c[[1]]
+monit_out5c <- readRDS(paste0(out_path, "a1_it_monit_out5c_130121.rds"))
+monit_out5c <- monit_out5c[[1]]
+monit_out2c <- readRDS(paste0(out_path, "a1_it_monit_out2c_140121.rds"))
+monit_out2c <- monit_out2c[[1]]
+monit_out1c <- readRDS(paste0(out_path, "a1_it_monit_out1c_140121.rds"))
+monit_out1c <- monit_out1c[[1]]
+
+# 3-yearly frequencies
+monit_out4b <- readRDS(paste0(out_path, "a1_it_monit_out4b_130121.rds"))
+monit_out4b <- monit_out4b[[1]]
+monit_out2b <- readRDS(paste0(out_path, "a1_it_monit_out2b_130121.rds"))
+monit_out2b <- monit_out2b[[1]]
+
+# Annual frequencies
+monit_out4 <- readRDS(paste0(out_path, "a1_it_monit_out4_140121.rds"))
+monit_out4 <- monit_out4[[1]]
+monit_out5 <- readRDS(paste0(out_path, "a1_it_monit_out5_140121.rds"))
+monit_out5 <- monit_out5[[1]]
+monit_out2 <- readRDS(paste0(out_path, "a1_it_monit_out2_130121.rds"))
+monit_out2 <- monit_out2[[1]]
+monit_out1 <- readRDS(paste0(out_path, "a1_it_monit_out1_130121.rds"))
+monit_out1 <- monit_out1[[1]]
+
 # Lifetime monitoring events at specific age with IT treatment
+# These are wrong/not comparable!!
 out_it_lt_monit_30 <- readRDS(paste0(out_path, "a1_it_out_screen_2020_monit_lifetime_30_191220.rds"))
 out_it_lt_monit_30 <- out_it_lt_monit_30[[1]]
 out_it_lt_monit_45 <- readRDS(paste0(out_path, "a1_it_out_screen_2020_monit_lifetime_45_191220.rds"))
@@ -2812,331 +2858,67 @@ ggplot(acceptability_curve) +
 # Need to load function
 annual_discounting_rate <- 0.03  # can be 0
 
-age_interactions <- rbind(
-  cbind(scenario = "screen_2020_monit_0",
-        assemble_discounted_interactions_for_monitoring_frequencies(out3_it,
-                                                                    no_monitoring_object = out3_it)),
-  cbind(scenario = "screen_2020_monit_5",
-        assemble_discounted_interactions_for_monitoring_frequencies(out5_it,
-                                                                    no_monitoring_object = out3_it)),
-  cbind(scenario = "screen_2020_monit_2",
-        assemble_discounted_interactions_for_monitoring_frequencies(out6a_it,
-                                                                    no_monitoring_object = out3_it)),
-  cbind(scenario = "screen_2020_monit_sim7",
-        assemble_discounted_interactions_for_monitoring_frequencies(monit_out7,
-                                                                    no_monitoring_object = out3_it)),
-  cbind(scenario = "screen_2020_monit_sim17",
-        assemble_discounted_interactions_for_monitoring_frequencies(monit_out17,
-                                                                    no_monitoring_object = out3_it)),
-  cbind(scenario = "screen_2020_monit_sim2a",
-        assemble_discounted_interactions_for_monitoring_frequencies(monit_out2a,
-                                                                    no_monitoring_object = out3_it)),
-  cbind(scenario = "screen_2020_monit_sim9",
-        assemble_discounted_interactions_for_monitoring_frequencies(monit_out9,
-                                                                    no_monitoring_object = out3_it)),
-  cbind(scenario = "screen_2020_monit_sim18",
-        assemble_discounted_interactions_for_monitoring_frequencies(monit_out18,
-                                                                    no_monitoring_object = out3_it)),
-  cbind(scenario = "screen_2020_monit_sim4a",
-        assemble_discounted_interactions_for_monitoring_frequencies(monit_out4a,
-                                                                    no_monitoring_object = out3_it)),
-  cbind(scenario = "screen_2020_monit_sim10",
-        assemble_discounted_interactions_for_monitoring_frequencies(monit_out10,
-                                                                    no_monitoring_object = out3_it)),
-  cbind(scenario = "screen_2020_monit_sim5a",
-        assemble_discounted_interactions_for_monitoring_frequencies(monit_out5a,
-                                                                    no_monitoring_object = out3_it)),
-  cbind(scenario = "screen_2020_monit_sim6",
-        assemble_discounted_interactions_for_monitoring_frequencies(monit_out6,
-                                                                    no_monitoring_object = out3_it)),
-  cbind(scenario = "screen_2020_monit_sim1a",
-        assemble_discounted_interactions_for_monitoring_frequencies(monit_out1a,
-                                                                    no_monitoring_object = out3_it)),
-  cbind(scenario = "screen_2020_monit_sim8",
-        assemble_discounted_interactions_for_monitoring_frequencies(monit_out8,
-                                                                    no_monitoring_object = out3_it)),
-  cbind(scenario = "screen_2020_monit_lifetime_30",
-        assemble_discounted_interactions_for_monitoring_frequencies(out_it_lt_monit_30,
-                                                                    no_monitoring_object = out3_it)),
-  cbind(scenario = "screen_2020_monit_lifetime_45",
-        assemble_discounted_interactions_for_monitoring_frequencies(out_it_lt_monit_45,
-                                                                    no_monitoring_object = out3_it)),
-  cbind(scenario = "screen_2020_monit_lifetime_30_45",
-        assemble_discounted_interactions_for_monitoring_frequencies(out_it_lt_monit_30_45,
-                                                                    no_monitoring_object = out3_it))
-  )
+# Newly added objects:
+# out4_it, out6c_it, out6b_it, out6_it
+# monit_out4c, monit_out5c, monit_out2c, monit_out1c
+# monit_out4b, monit_out2b
+# monit_out4, monit_out5, monit_out2, monit_out1
 
-# Person-years on treatment
-age_interactions_py_on_treatment <- rbind(
-  data.frame(scenario = "screen_2020_monit_0",
-             discount_outcome_2020_to_2100(scenario_object=out3_it,
-                                           object_to_subtract=NULL,
-                                           outcome="py_on_treatment",
-                                           yearly_discount_rate=annual_discounting_rate)),
-  data.frame(scenario = "screen_2020_monit_5",
-             discount_outcome_2020_to_2100(scenario_object=out5_it,
-                                           object_to_subtract=NULL,
-                                           outcome="py_on_treatment",
-                                           yearly_discount_rate=annual_discounting_rate)),
+# Objects to include in analysis
+# For interactions in this case, the no_monitoring_object is out3_it for all of these
+# And there is no object_to_substract for calculation of person years of treatment
+# For HBV deaths and DALYS averted, the scenario_object (reference scenario)
+# is always out2
+object_list <- list(out3_it, out4_it, out5_it, out6c_it, out6b_it,
+                    out6a_it, out6_it, monit_out7, monit_out17, monit_out2a,
+                 monit_out9, monit_out18, monit_out4a, monit_out10, monit_out5a,
+                 monit_out6,monit_out1a, monit_out8,
+                 monit_out4c, monit_out5c, monit_out2c, monit_out1c,
+                 monit_out4b, monit_out2b,
+                 monit_out4, monit_out5, monit_out2, monit_out1,
+                 out_it_lt_monit_30,out_it_lt_monit_45, out_it_lt_monit_30_45)
 
-  data.frame(scenario = "screen_2020_monit_2",
-             discount_outcome_2020_to_2100(scenario_object=out6a_it,
-                                           object_to_subtract=NULL,
-                                           outcome="py_on_treatment",
-                                           yearly_discount_rate=annual_discounting_rate)),
-  data.frame(scenario = "screen_2020_monit_sim7",
-             discount_outcome_2020_to_2100(scenario_object=monit_out7,
-                                           object_to_subtract=NULL,
-                                           outcome="py_on_treatment",
-                                           yearly_discount_rate=annual_discounting_rate)),
-  data.frame(scenario = "screen_2020_monit_sim17",
-             discount_outcome_2020_to_2100(scenario_object=monit_out17,
-                                           object_to_subtract=NULL,
-                                           outcome="py_on_treatment",
-                                           yearly_discount_rate=annual_discounting_rate)),
-  data.frame(scenario = "screen_2020_monit_sim2a",
-             discount_outcome_2020_to_2100(scenario_object=monit_out2a,
-                                           object_to_subtract=NULL,
-                                           outcome="py_on_treatment",
-                                           yearly_discount_rate=annual_discounting_rate)),
-  data.frame(scenario = "screen_2020_monit_sim9",
-             discount_outcome_2020_to_2100(scenario_object=monit_out9,
-                                           object_to_subtract=NULL,
-                                           outcome="py_on_treatment",
-                                           yearly_discount_rate=annual_discounting_rate)),
-  data.frame(scenario = "screen_2020_monit_sim18",
-             discount_outcome_2020_to_2100(scenario_object=monit_out18,
-                                           object_to_subtract=NULL,
-                                           outcome="py_on_treatment",
-                                           yearly_discount_rate=annual_discounting_rate)),
-  data.frame(scenario = "screen_2020_monit_sim4a",
-             discount_outcome_2020_to_2100(scenario_object=monit_out4a,
-                                           object_to_subtract=NULL,
-                                           outcome="py_on_treatment",
-                                           yearly_discount_rate=annual_discounting_rate)),
-  data.frame(scenario = "screen_2020_monit_sim10",
-             discount_outcome_2020_to_2100(scenario_object=monit_out10,
-                                           object_to_subtract=NULL,
-                                           outcome="py_on_treatment",
-                                           yearly_discount_rate=annual_discounting_rate)),
-  data.frame(scenario = "screen_2020_monit_sim5a",
-             discount_outcome_2020_to_2100(scenario_object=monit_out5a,
-                                           object_to_subtract=NULL,
-                                           outcome="py_on_treatment",
-                                           yearly_discount_rate=annual_discounting_rate)),
-  data.frame(scenario = "screen_2020_monit_sim6",
-             discount_outcome_2020_to_2100(scenario_object=monit_out6,
-                                           object_to_subtract=NULL,
-                                           outcome="py_on_treatment",
-                                           yearly_discount_rate=annual_discounting_rate)),
-  data.frame(scenario = "screen_2020_monit_sim1a",
-             discount_outcome_2020_to_2100(scenario_object=monit_out1a,
-                                           object_to_subtract=NULL,
-                                           outcome="py_on_treatment",
-                                           yearly_discount_rate=annual_discounting_rate)),
-  data.frame(scenario = "screen_2020_monit_sim8",
-             discount_outcome_2020_to_2100(scenario_object=monit_out8,
-                                           object_to_subtract=NULL,
-                                           outcome="py_on_treatment",
-                                           yearly_discount_rate=annual_discounting_rate)),
-  data.frame(scenario = "screen_2020_monit_lifetime_30",
-             discount_outcome_2020_to_2100(scenario_object=out_it_lt_monit_30,
-                                           object_to_subtract=NULL,
-                                           outcome="py_on_treatment",
-                                           yearly_discount_rate=annual_discounting_rate)),
-  data.frame(scenario = "screen_2020_monit_lifetime_45",
-             discount_outcome_2020_to_2100(scenario_object=out_it_lt_monit_45,
-                                           object_to_subtract=NULL,
-                                           outcome="py_on_treatment",
-                                           yearly_discount_rate=annual_discounting_rate)),
-  data.frame(scenario = "screen_2020_monit_lifetime_30_45",
-             discount_outcome_2020_to_2100(scenario_object=out_it_lt_monit_30_45,
-                                           object_to_subtract=NULL,
-                                           outcome="py_on_treatment",
-                                           yearly_discount_rate=annual_discounting_rate))
-  )
+# Extract interactions and person-years on treatment, and HBV-related deaths
+# ad DALYs averted, in a for loop
+age_interactions <- list()
+age_interactions_py_on_treatment <- list()
+age_hbv_deaths_averted <- list()
+age_dalys_averted <- list()
+
+for (i in 1:length(object_list)) {
+  age_interactions[[i]] <-
+    cbind(scenario = object_list[[i]]$cohort_age_at_death$scenario,
+          assemble_discounted_interactions_for_monitoring_frequencies(object_list[[i]],
+          no_monitoring_object = out3_it))
+  age_interactions_py_on_treatment[[i]] <-
+    data.frame(scenario = object_list[[i]]$cohort_age_at_death$scenario,
+               discount_outcome_2020_to_2100(scenario_object=object_list[[i]],
+                                             object_to_subtract=NULL,
+                                             outcome="py_on_treatment",
+                                             yearly_discount_rate=annual_discounting_rate))
+  age_hbv_deaths_averted[[i]] <-
+    cbind(scenario = object_list[[i]]$cohort_age_at_death$scenario,
+          discount_outcome_2020_to_2100(scenario_object=out2,
+                                        object_to_subtract=object_list[[i]],
+                                        outcome="cum_hbv_deaths",
+                                        yearly_discount_rate=annual_discounting_rate))
+  age_dalys_averted[[i]] <-
+    cbind(scenario = object_list[[i]]$cohort_age_at_death$scenario,
+          discount_outcome_2020_to_2100(scenario_object=out2,
+                                        object_to_subtract=object_list[[i]],
+                                        outcome="dalys",
+                                        yearly_discount_rate=annual_discounting_rate))
+}
+age_interactions <- do.call("rbind", age_interactions)
+age_interactions_py_on_treatment <- do.call("rbind", age_interactions_py_on_treatment)
+age_hbv_deaths_averted <- do.call("rbind", age_hbv_deaths_averted)
+age_dalys_averted <- do.call("rbind", age_dalys_averted)
+
 age_interactions_py_on_treatment$sim <- gsub("[^0-9]", "", age_interactions_py_on_treatment$sim)
-
-# Outcome 1: HBV related deaths averted
-age_hbv_deaths_averted <- rbind(
-  cbind(scenario = "screen_2020_monit_0",
-        discount_outcome_2020_to_2100(scenario_object=out2,
-                                      object_to_subtract=out3_it,
-                                      outcome="cum_hbv_deaths",
-                                      yearly_discount_rate=annual_discounting_rate)),
-  cbind(scenario = "screen_2020_monit_5",
-        discount_outcome_2020_to_2100(scenario_object=out2,
-                                      object_to_subtract=out5_it,
-                                      outcome="cum_hbv_deaths",
-                                      yearly_discount_rate=annual_discounting_rate)),
-  cbind(scenario = "screen_2020_monit_2",
-        discount_outcome_2020_to_2100(scenario_object=out2,
-                                      object_to_subtract=out6a_it,
-                                      outcome="cum_hbv_deaths",
-                                      yearly_discount_rate=annual_discounting_rate)),
-  cbind(scenario = "screen_2020_monit_sim7",
-        discount_outcome_2020_to_2100(scenario_object=out2,
-                                      object_to_subtract=monit_out7,
-                                      outcome="cum_hbv_deaths",
-                                      yearly_discount_rate=annual_discounting_rate)),
-  cbind(scenario = "screen_2020_monit_sim17",
-        discount_outcome_2020_to_2100(scenario_object=out2,
-                                      object_to_subtract=monit_out17,
-                                      outcome="cum_hbv_deaths",
-                                      yearly_discount_rate=annual_discounting_rate)),
-  cbind(scenario = "screen_2020_monit_sim2a",
-        discount_outcome_2020_to_2100(scenario_object=out2,
-                                      object_to_subtract=monit_out2a,
-                                      outcome="cum_hbv_deaths",
-                                      yearly_discount_rate=annual_discounting_rate)),
-  cbind(scenario = "screen_2020_monit_sim9",
-        discount_outcome_2020_to_2100(scenario_object=out2,
-                                      object_to_subtract=monit_out9,
-                                      outcome="cum_hbv_deaths",
-                                      yearly_discount_rate=annual_discounting_rate)),
-  cbind(scenario = "screen_2020_monit_sim18",
-        discount_outcome_2020_to_2100(scenario_object=out2,
-                                      object_to_subtract=monit_out18,
-                                      outcome="cum_hbv_deaths",
-                                      yearly_discount_rate=annual_discounting_rate)),
-  cbind(scenario = "screen_2020_monit_sim4a",
-        discount_outcome_2020_to_2100(scenario_object=out2,
-                                      object_to_subtract=monit_out4a,
-                                      outcome="cum_hbv_deaths",
-                                      yearly_discount_rate=annual_discounting_rate)),
-  cbind(scenario = "screen_2020_monit_sim10",
-        discount_outcome_2020_to_2100(scenario_object=out2,
-                                      object_to_subtract=monit_out10,
-                                      outcome="cum_hbv_deaths",
-                                      yearly_discount_rate=annual_discounting_rate)),
-  cbind(scenario = "screen_2020_monit_sim5a",
-        discount_outcome_2020_to_2100(scenario_object=out2,
-                                      object_to_subtract=monit_out5a,
-                                      outcome="cum_hbv_deaths",
-                                      yearly_discount_rate=annual_discounting_rate)),
-  cbind(scenario = "screen_2020_monit_sim6",
-        discount_outcome_2020_to_2100(scenario_object=out2,
-                                      object_to_subtract=monit_out6,
-                                      outcome="cum_hbv_deaths",
-                                      yearly_discount_rate=annual_discounting_rate)),
-  cbind(scenario = "screen_2020_monit_sim1a",
-        discount_outcome_2020_to_2100(scenario_object=out2,
-                                      object_to_subtract=monit_out1a,
-                                      outcome="cum_hbv_deaths",
-                                      yearly_discount_rate=annual_discounting_rate)),
-  cbind(scenario = "screen_2020_monit_sim8",
-        discount_outcome_2020_to_2100(scenario_object=out2,
-                                      object_to_subtract=monit_out8,
-                                      outcome="cum_hbv_deaths",
-                                      yearly_discount_rate=annual_discounting_rate)),
-  cbind(scenario = "screen_2020_monit_lifetime_30",
-        discount_outcome_2020_to_2100(scenario_object=out2,
-                                      object_to_subtract=out_it_lt_monit_30,
-                                      outcome="cum_hbv_deaths",
-                                      yearly_discount_rate=annual_discounting_rate)),
-  cbind(scenario = "screen_2020_monit_lifetime_45",
-        discount_outcome_2020_to_2100(scenario_object=out2,
-                                      object_to_subtract=out_it_lt_monit_45,
-                                      outcome="cum_hbv_deaths",
-                                      yearly_discount_rate=annual_discounting_rate)),
-  cbind(scenario = "screen_2020_monit_lifetime_30_45",
-        discount_outcome_2020_to_2100(scenario_object=out2,
-                                      object_to_subtract=out_it_lt_monit_30_45,
-                                      outcome="cum_hbv_deaths",
-                                      yearly_discount_rate=annual_discounting_rate))
-)
 age_hbv_deaths_averted$sim <- gsub("[^0-9]", "", age_hbv_deaths_averted$sim)
 colnames(age_hbv_deaths_averted)[colnames(age_hbv_deaths_averted) == "cum_hbv_deaths"] <-
   "value"
 
-# Outcome 2: DALYS averted
-age_dalys_averted <- rbind(
-  cbind(scenario = "screen_2020_monit_0",
-        discount_outcome_2020_to_2100(scenario_object=out2,
-                                      object_to_subtract=out3_it,
-                                      outcome="dalys",
-                                      yearly_discount_rate=annual_discounting_rate)),
-  cbind(scenario = "screen_2020_monit_5",
-        discount_outcome_2020_to_2100(scenario_object=out2,
-                                      object_to_subtract=out5_it,
-                                      outcome="dalys",
-                                      yearly_discount_rate=annual_discounting_rate)),
-  cbind(scenario = "screen_2020_monit_2",
-        discount_outcome_2020_to_2100(scenario_object=out2,
-                                      object_to_subtract=out6a_it,
-                                      outcome="dalys",
-                                      yearly_discount_rate=annual_discounting_rate)),
-  cbind(scenario = "screen_2020_monit_sim7",
-        discount_outcome_2020_to_2100(scenario_object=out2,
-                                      object_to_subtract=monit_out7,
-                                      outcome="dalys",
-                                      yearly_discount_rate=annual_discounting_rate)),
-  cbind(scenario = "screen_2020_monit_sim17",
-        discount_outcome_2020_to_2100(scenario_object=out2,
-                                      object_to_subtract=monit_out17,
-                                      outcome="dalys",
-                                      yearly_discount_rate=annual_discounting_rate)),
-  cbind(scenario = "screen_2020_monit_sim2a",
-        discount_outcome_2020_to_2100(scenario_object=out2,
-                                      object_to_subtract=monit_out2a,
-                                      outcome="dalys",
-                                      yearly_discount_rate=annual_discounting_rate)),
-  cbind(scenario = "screen_2020_monit_sim9",
-        discount_outcome_2020_to_2100(scenario_object=out2,
-                                      object_to_subtract=monit_out9,
-                                      outcome="dalys",
-                                      yearly_discount_rate=annual_discounting_rate)),
-  cbind(scenario = "screen_2020_monit_sim18",
-        discount_outcome_2020_to_2100(scenario_object=out2,
-                                      object_to_subtract=monit_out18,
-                                      outcome="dalys",
-                                      yearly_discount_rate=annual_discounting_rate)),
-  cbind(scenario = "screen_2020_monit_sim4a",
-        discount_outcome_2020_to_2100(scenario_object=out2,
-                                      object_to_subtract=monit_out4a,
-                                      outcome="dalys",
-                                      yearly_discount_rate=annual_discounting_rate)),
-  cbind(scenario = "screen_2020_monit_sim10",
-        discount_outcome_2020_to_2100(scenario_object=out2,
-                                      object_to_subtract=monit_out10,
-                                      outcome="dalys",
-                                      yearly_discount_rate=annual_discounting_rate)),
-  cbind(scenario = "screen_2020_monit_sim5a",
-        discount_outcome_2020_to_2100(scenario_object=out2,
-                                      object_to_subtract=monit_out5a,
-                                      outcome="dalys",
-                                      yearly_discount_rate=annual_discounting_rate)),
-  cbind(scenario = "screen_2020_monit_sim6",
-        discount_outcome_2020_to_2100(scenario_object=out2,
-                                      object_to_subtract=monit_out6,
-                                      outcome="dalys",
-                                      yearly_discount_rate=annual_discounting_rate)),
-  cbind(scenario = "screen_2020_monit_sim1a",
-        discount_outcome_2020_to_2100(scenario_object=out2,
-                                      object_to_subtract=monit_out1a,
-                                      outcome="dalys",
-                                      yearly_discount_rate=annual_discounting_rate)),
-  cbind(scenario = "screen_2020_monit_sim8",
-        discount_outcome_2020_to_2100(scenario_object=out2,
-                                      object_to_subtract=monit_out8,
-                                      outcome="dalys",
-                                      yearly_discount_rate=annual_discounting_rate)),
-  cbind(scenario = "screen_2020_monit_lifetime_30",
-        discount_outcome_2020_to_2100(scenario_object=out2,
-                                      object_to_subtract=out_it_lt_monit_30,
-                                      outcome="dalys",
-                                      yearly_discount_rate=annual_discounting_rate)),
-  cbind(scenario = "screen_2020_monit_lifetime_45",
-        discount_outcome_2020_to_2100(scenario_object=out2,
-                                      object_to_subtract=out_it_lt_monit_45,
-                                      outcome="dalys",
-                                      yearly_discount_rate=annual_discounting_rate)),
-  cbind(scenario = "screen_2020_monit_lifetime_30_45",
-        discount_outcome_2020_to_2100(scenario_object=out2,
-                                      object_to_subtract=out_it_lt_monit_30_45,
-                                      outcome="dalys",
-                                      yearly_discount_rate=annual_discounting_rate))
-)
 age_dalys_averted$sim <- gsub("[^0-9]", "", age_dalys_averted$sim)
 colnames(age_dalys_averted)[colnames(age_dalys_averted) == "dalys"] <-
   "value"
@@ -3187,9 +2969,18 @@ ggplot(dominance_prob_result) +
   theme_bw() +
   theme(axis.text.x=element_text(angle = 90, hjust =1))
 
-# Dominated strategies (<50% non-dominated):
-# Only non-dominated strategies are screen_2020_monit_sim7, screen_2020_monit_2,
-# screen_2020_monit_5, screen_2020_monit_sim8, screen_2020_monit_sim6, and screen_2020_monit_0
+# Find dominated strategies (<50% non-dominated) with 3% discounting:
+# Only non-dominated strategies are:
+# screen_2020_monit_1, screen_2020_monit_2, screen_2020_monit_3,
+# screen_2020_monit_4, screen_2020_monit_5,
+# screen_2020_monit_sim8, screen_2020_monit_sim6, screen_2020_monit_sim7,
+# screen_2020_monit_0, screen_2020_monit_10
+# The latter 2 have >25% probability of being dominated
+
+# Previously looking only at 5 and 2-yearly frequencies:
+# screen_2020_monit_sim7, screen_2020_monit_2,
+# screen_2020_monit_5, screen_2020_monit_sim8,
+# screen_2020_monit_sim6, and screen_2020_monit_0
 # screen_2020_monit_0 has > 35% probability of being dominated though.
 # Clear distinction among the others
 
@@ -3200,8 +2991,11 @@ ggplot(dominance_prob_result) +
 # Sim9 and sim10 are focused on the older (30+/45+ ages)!
 
 # Calculate ICER by simulation on non-dominated strategies
-age_df2 <- subset(age_df, scenario %in% c("screen_2020_monit_0", "screen_2020_monit_5",
-                                           "screen_2020_monit_2", "screen_2020_monit_sim7",
+age_df2 <- subset(age_df, scenario %in% c("screen_2020_monit_0", "screen_2020_monit_1",
+                                          "screen_2020_monit_2", "screen_2020_monit_3",
+                                          "screen_2020_monit_4", "screen_2020_monit_5",
+                                          "screen_2020_monit_10",
+                                          "screen_2020_monit_sim7",
                                            "screen_2020_monit_sim8",
                                            "screen_2020_monit_sim6"))
 
@@ -3224,8 +3018,14 @@ icer_result <- group_by(icer_df, scenario, comparator) %>%
   arrange(icer_median)
 icer_result
 
+# Monitoring every 5 years among the younger age groups is more cost-effective than
+# every 10 years across all ages. Note the result of cost-effectiveness of 5-yearly
+# monitoring in all age groups depends on inclusion 10-yearly frequency (without it might just be,
+# with 10-yearly included it definitely is not)
 
 # ICER plots ----
+# Need to do this on a subset
+
 age_df$frontier <- "Dominated"
 age_df$frontier[age_df$scenario %in% c("screen_2020_monit_0", "screen_2020_monit_5",
                                 "screen_2020_monit_2", "screen_2020_monit_sim7",
@@ -3379,10 +3179,11 @@ ggplot(data = subset(age_df, frontier == "Non-dominated" | scenario == "No treat
 
 
 
-## 4) Plots of impact of 5-yearly monitoring by separate age group ----
+# Cost-acceptability curve to do ----
 
-# 15-30 year olds (monit_sim6), 30-45 year olds (monit_sim8) and 45+ year olds (monit_sim10)
-# Extract incremental impact and interactions compared to no monitoring
+## 4) Plots of breakdown of impact of 5-yearly monitoring and screening by separate age group ----
+
+# EFFECT OF MONITORING BY AGE
 
 # DALYs averted by monitoring
 dalys_averted_by_age_group <-
@@ -3522,6 +3323,13 @@ p8 <- ggplot(df_by_age_group) +
   xlab("Monitored age group") +
   ylim(0,1.75)
 
+# Incremental PY on treatment per treatment initiation
+p9 <- ggplot(df_by_age_group) +
+  geom_boxplot(aes(x=scenario, y = py_on_treatment/treatment_initiations)) +
+  ylab("Incremental person-years on treatment\nper treatment initiation") +
+  xlab("Monitored age group") +
+  ylim(0,35)
+
 grid.arrange(p1,p2,p3,p4,p5,p6, ncol = 3)
 grid.arrange(p7,p8, ncol = 1)
 
@@ -3532,3 +3340,227 @@ grid.arrange(p7,p8, ncol = 1)
 # Carriers at entry would also be interesting.
 # Also per remaining life expectancy/average age at death? But this would
 # need to be calculated in group of given age only (not entire cohort)
+
+
+# Lifetime risk of HBV death
+# 15-30 year olds (monit_sim6), 30-45 year olds (monit_sim8) and 45+ year olds (monit_sim10)
+# Extract incremental impact and interactions compared to no monitoring
+
+quantile(monit_out6$cohort_cum_hbv_deaths[,-1]/monit_out6$cohort_size[,-1],
+         c(0.5,0.025,0.975))
+# Lifetime risk of HBV death in 15-30 year old screened+treated+monitored carriers =
+# 7% (3-13%)
+quantile(monit_out10$cohort_cum_hbv_deaths[,-1]/monit_out10$cohort_size[,-1],
+         c(0.5,0.025,0.975))
+# Lifetime risk of HBV death in 45+ year old screened+treated+monitored carriers =
+# 5% (2-9%)
+
+# But need cohort simulations of a cohort of this age without treatment/monitoring
+# to look at reduction in lifetime risk! Have simulations of screening+treatment without
+# monitoring.
+
+# Average age at death in screened+treated cohort
+ggplot(gather(rbind(out3_it$cohort_age_at_death, out6a_it$cohort_age_at_death),
+       key = "sim", value = "age", -scenario))+
+  geom_boxplot(aes(x=scenario,y=age))
+
+quantile(out6a_it$cohort_age_at_death[,-1]-out3_it$cohort_age_at_death[,-1],
+         c(0.5,0.025,0.975))*12
+# Average age at death postponed by 7 (3-18) months by monitoring every 2 years
+quantile(((out3_it$cohort_cum_hbv_deaths[,-1]/out3_it$cohort_size[,-1])-
+           (out6a_it$cohort_cum_hbv_deaths[,-1]/out6a_it$cohort_size[,-1]))/
+           (out3_it$cohort_cum_hbv_deaths[,-1]/out3_it$cohort_size[,-1]),
+         c(0.5,0.025,0.975))
+# Lifetime risk of dying from HBV reduced by 3 (1-8%) by monitoring every 2 years
+# in absolute terms or 49% (27-70%) relative to lifetime risk with no monitoring!
+
+## EFFECT OF SCREENING WITHOUT MONITORING BY AGE
+
+# DALYs averted
+dalys_averted_by_screened_age_group <-
+  plot_hbv_deaths_averted(counterfactual_object = out2,
+                          scenario_objects = list(a2_out3_it,
+                                                  a4_out3_it,
+                                                  a5_out3_it),
+                          outcome_to_avert = "dalys",
+                          outcome_to_plot = "number_averted",
+                          counterfactual_label = "No treatment")
+dalys_averted_by_screened_age_group <- subset(dalys_averted_by_screened_age_group,
+                                              type == "number_averted" &
+                                       by_year==2100) %>%
+  select(scenario, sim, value)
+dalys_averted_by_screened_age_group$sim <- gsub("[^0-9]", "",
+                                                dalys_averted_by_screened_age_group$sim)
+colnames(dalys_averted_by_screened_age_group)[3] <- "dalys_averted"
+
+deaths_averted_by_screened_age_group <-
+  plot_hbv_deaths_averted(counterfactual_object = out2,
+                          scenario_objects = list(a2_out3_it,
+                                                  a4_out3_it,
+                                                  a5_out3_it),
+                          outcome_to_avert = "cum_hbv_deaths",
+                          outcome_to_plot = "number_averted",
+                          counterfactual_label = "No treatment")
+deaths_averted_by_screened_age_group <- subset(deaths_averted_by_screened_age_group,
+                                               type == "number_averted" &
+                                        by_year==2100) %>%
+  select(scenario, sim, value)
+deaths_averted_by_screened_age_group$sim <- gsub("[^0-9]", "", deaths_averted_by_screened_age_group$sim)
+colnames(deaths_averted_by_screened_age_group)[3] <- "deaths_averted"
+
+# In terms of interactions, want the HBsAg tests, initial clinical assessments,
+# initial treatment initiations and person years of treatment due to initial treatment
+
+interactions_by_screened_age_group <- rbind(
+  cbind(scenario = "a2_screen_2020_monit_0",
+        left_join(left_join(
+          gather(a2_out3_it$interactions[[16]]$total_screened[-c(1:3)],
+                 key = "sim", value = "hbsag_tests"),
+          gather(a2_out3_it$interactions[[16]]$total_assessed[-c(1:3)],
+                 key = "sim", value = "clinical_assessments"), by = "sim"),
+          gather(a2_out3_it$interactions[[16]]$total_treated[-c(1:3)],
+                 key = "sim", value = "treatment_initiations"), by = "sim")),
+  cbind(scenario = "a4_screen_2020_monit_0",
+        left_join(left_join(
+          gather(a4_out3_it$interactions[[16]]$total_screened[-c(1:3)],
+                 key = "sim", value = "hbsag_tests"),
+          gather(a4_out3_it$interactions[[16]]$total_assessed[-c(1:3)],
+                 key = "sim", value = "clinical_assessments"), by = "sim"),
+          gather(a4_out3_it$interactions[[16]]$total_treated[-c(1:3)],
+                 key = "sim", value = "treatment_initiations"), by = "sim")),
+  cbind(scenario = "a5_screen_2020_monit_0",
+        left_join(left_join(
+          gather(a5_out3_it$interactions[[16]]$total_screened[-c(1:3)],
+                 key = "sim", value = "hbsag_tests"),
+          gather(a5_out3_it$interactions[[16]]$total_assessed[-c(1:3)],
+                 key = "sim", value = "clinical_assessments"), by = "sim"),
+          gather(a5_out3_it$interactions[[16]]$total_treated[-c(1:3)],
+                 key = "sim", value = "treatment_initiations"), by = "sim")))
+interactions_by_screened_age_group$sim <- gsub("[^0-9]", "", interactions_by_screened_age_group$sim)
+
+py_on_treatment_by_screened_age_group <-rbind(
+  data.frame(scenario = "a2_screen_2020_monit_0",
+             sim = names(a2_out3_it$py_on_treatment[[16]]),
+             py_on_treatment = a2_out3_it$py_on_treatment[[16]]),
+  data.frame(scenario = "a4_screen_2020_monit_0",
+             sim = names(a4_out3_it$py_on_treatment[[16]]),
+             py_on_treatment = a4_out3_it$py_on_treatment[[16]]),
+  data.frame(scenario = "a5_screen_2020_monit_0",
+             sim = names(a5_out3_it$py_on_treatment[[16]]),
+             py_on_treatment = a5_out3_it$py_on_treatment[[16]]))
+
+df_by_screened_age_group <- left_join(left_join(
+  left_join(interactions_by_screened_age_group, py_on_treatment_by_screened_age_group,
+            by = c("scenario", "sim")),
+  dalys_averted_by_screened_age_group, by = c("scenario", "sim")),
+  deaths_averted_by_screened_age_group, by = c("scenario", "sim"))
+df_by_screened_age_group$scenario <- factor(df_by_screened_age_group$scenario)
+levels(df_by_screened_age_group$scenario) <- list("15-30 years" = "a4_screen_2020_monit_0",
+                                         "30-45 years" = "a5_screen_2020_monit_0",
+                                         "45+ years" = "a2_screen_2020_monit_0")
+
+# Add per sAg test
+
+# Incremental DALYs averted per clinical assessment
+ps1 <- ggplot(df_by_screened_age_group) +
+  geom_boxplot(aes(x=scenario, y = dalys_averted/clinical_assessments)) +
+  ylab("Incremental DALYs averted\nper clinical assessment") +
+  xlab("Screened age group") +
+  ylim(0,4.5)
+
+# Incremental DALYs averted per treatment initiations
+ps2 <- ggplot(df_by_screened_age_group) +
+  geom_boxplot(aes(x=scenario, y = dalys_averted/treatment_initiations)) +
+  ylab("Incremental DALYs averted\nper treatment initiation") +
+  xlab("Screened age group") +
+  ylim(0,20)
+
+# Incremental DALYs averted per PY on treatment
+ps3 <- ggplot(df_by_screened_age_group) +
+  geom_boxplot(aes(x=scenario, y = dalys_averted/py_on_treatment)) +
+  ylab("Incremental DALYs averted\nper PY on treatment") +
+  xlab("Screened age group") +
+  ylim(0,1)
+
+# Incremental deaths averted per monitoring assessment
+p4 <- ggplot(df_by_age_group) +
+  geom_boxplot(aes(x=scenario, y = deaths_averted/monitoring_assessments)) +
+  ylab("Incremental HBV-related deaths averted\nper monitoring assessment") +
+  xlab("Screened age group") +
+  ylim(0,0.04)
+
+# Incremental deaths  averted per treatment initiations
+p5 <- ggplot(df_by_age_group) +
+  geom_boxplot(aes(x=scenario, y = deaths_averted/treatment_initiations)) +
+  ylab("Incremental HBV-related deaths averted\nper treatment initiation") +
+  xlab("Screened age group") +
+  ylim(0,0.7)
+
+# Incremental deaths  averted per PY on treatment
+p6 <- ggplot(df_by_age_group) +
+  geom_boxplot(aes(x=scenario, y = deaths_averted/py_on_treatment)) +
+  ylab("Incremental HBV-related deaths averted\nper PY on treatment") +
+  xlab("Screened age group") +
+  ylim(0,0.05)
+
+# Incremental treatment initiations per clinical assessment
+ps7 <- ggplot(df_by_screened_age_group) +
+  geom_boxplot(aes(x=scenario, y = treatment_initiations/clinical_assessments)) +
+  ylab("New treatment initiations\nper clinical assessment") +
+  xlab("Screened age group") +
+  ylim(0,0.4)
+
+# Incremental PY on treatment per clinical assessment
+ps8 <- ggplot(df_by_screened_age_group) +
+  geom_boxplot(aes(x=scenario, y = py_on_treatment/clinical_assessments)) +
+  ylab("Incremental person-years on treatment\nper clinical assessment") +
+  xlab("Screened age group") +
+  ylim(0,7.5)
+
+# Incremental PY on treatment per treatment initiation
+ps9 <- ggplot(df_by_screened_age_group) +
+  geom_boxplot(aes(x=scenario, y = py_on_treatment/treatment_initiations)) +
+  ylab("Incremental person-years on treatment\nper treatment initiation") +
+  xlab("Screened age group") +
+  ylim(0,30)
+
+grid.arrange(p1,p2,p3,p4,p5,p6, ncol = 3)
+
+grid.arrange(ps7,ps9,ps8,p7,p9, p8, ncol = 3)
+
+# There was a mistake in count of treatment initiations in the <30 age group,
+# resimulate this analysis!
+
+# Might want to show something like: % of total treatment initiations
+# after first vs monitoring assessments by age
+
+
+## 5) Screening by age: cost-effectiveness of including <30 year olds in one-time screen ----
+
+dalys_averted <- cbind(rep(0,183),
+                       t((out2$dalys[[16]][,-c(1:3)]-a4_out3_it$dalys[[16]][,-c(1:3)])+
+                           (out2$dalys[[16]][,-c(1:3)]-a5_out3_it$dalys[[16]][,-c(1:3)])),
+                       t(out2$dalys[[16]][,-c(1:3)]-out3_it$dalys[[16]][,-c(1:3)]))
+
+cost <- cbind(rep(0,183),
+              t((a4_out3_it$interactions[[16]]$total_screened[,-c(1:3)]+
+                   a5_out3_it$interactions[[16]]$total_screened[,-c(1:3)])*8.3+
+                  (a4_out3_it$interactions[[16]]$total_assessed[,-c(1:3)]+
+                     a5_out3_it$interactions[[16]]$total_assessed[,-c(1:3)])*84.4+
+                  (a4_out3_it$py_on_treatment[[16]]+a5_out3_it$py_on_treatment[[16]])*60),
+              t((a4_out3_it$interactions[[16]]$total_screened[,-c(1:3)]+
+                   a5_out3_it$interactions[[16]]$total_screened[,-c(1:3)]+
+                   a2_out3_it$interactions[[16]]$total_screened[,-c(1:3)])*8.3+
+                  (a4_out3_it$interactions[[16]]$total_assessed[,-c(1:3)]+
+                     a5_out3_it$interactions[[16]]$total_assessed[,-c(1:3)]+
+                     a2_out3_it$interactions[[16]]$total_assessed[,-c(1:3)])*84.4+
+                  (a4_out3_it$py_on_treatment[[16]]+
+                     a5_out3_it$py_on_treatment[[16]]+a2_out3_it$py_on_treatment[[16]])*60))
+
+ceef.plot(bcea(e=dalys_averted,
+               c=cost,
+               ref=1,
+               interventions=c("No treatment", "Screen 30+", "Screen all"),
+               Kmax=100000000000000),
+          graph="base", relative = FALSE)
+# Extending the screen to all ages is still below WTP (on the mean)

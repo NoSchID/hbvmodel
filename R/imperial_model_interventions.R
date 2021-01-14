@@ -1015,7 +1015,8 @@ imperial_model <- function(timestep, pop, parameters, sim_starttime) {
              dcum_monitored_r,
              total_screened_susceptible = 0,
              total_screened_immune = 0,
-             total_screened_it = 0,
+             total_screened_it_under30 = 0,
+             total_screened_it_over30 = 0,
              total_screened_chb = 0,
              total_screened_cirrhosis = 0,
              total_screened_ineligible = 0)
@@ -1068,13 +1069,6 @@ screen_pop <- function(timestep, pop, parameters){
     pop_to_screen_ineligible <- parameters$screening_coverage * total_pop[age_groups_to_screen,4,1:2]+
       parameters$screening_coverage * total_pop[age_groups_to_screen,8,1:2]
 
-    total_screened_susceptible <- sum(pop_to_screen_susceptible)
-    total_screened_immune <- sum(pop_to_screen_immune)
-    total_screened_it <- sum(pop_to_screen_it)
-    total_screened_chb <- sum(pop_to_screen_chb)
-    total_screened_cirrhosis <- sum(pop_to_screen_cirrhosis)
-    total_screened_ineligible <- sum(pop_to_screen_ineligible)
-
     # Calculate the population to screen then treat in the treatment eligible compartments:
     # IT (2) - optional, IR (3), ENCHB (5), CC (6), DCC (7)
     pop_to_treat_it <- parameters$screening_coverage * parameters$link_to_care_prob *
@@ -1100,6 +1094,17 @@ screen_pop <- function(timestep, pop, parameters){
 
     pop_to_monitor_ic <- parameters$screening_coverage * parameters$link_to_care_prob *
       total_pop[age_groups_to_screen,4,1:2]
+
+    # Sum total pop to screen
+    total_screened_susceptible <- sum(pop_to_screen_susceptible)
+    total_screened_immune <- sum(pop_to_screen_immune)
+    total_screened_it <- sum(pop_to_screen_it)
+    total_screened_it_over30 <- sum(pop_to_treat_it/parameters$link_to_care_prob/
+                                      parameters$treatment_initiation_prob)
+    total_screened_it_under30 <- total_screened_it-total_screened_it_over30
+    total_screened_chb <- sum(pop_to_screen_chb)
+    total_screened_cirrhosis <- sum(pop_to_screen_cirrhosis)
+    total_screened_ineligible <- sum(pop_to_screen_ineligible)
 
     # Move treated/screened IT (now 2 monitor comps)
 
@@ -1176,8 +1181,9 @@ screen_pop <- function(timestep, pop, parameters){
       }
 
 
-    return(c(total_pop, unlist(init_pop[(2*n_infectioncat*n_agecat+1):(length(init_pop)-6)]),
-             total_screened_susceptible, total_screened_immune, total_screened_it, total_screened_chb,
+    return(c(total_pop, unlist(init_pop[(2*n_infectioncat*n_agecat+1):(length(init_pop)-7)]),
+             total_screened_susceptible, total_screened_immune, total_screened_it_under30,
+             total_screened_it_over30, total_screened_chb,
              total_screened_cirrhosis, total_screened_ineligible))
   })
 }
@@ -1206,13 +1212,6 @@ repeat_screen_pop <- function(timestep, pop, parameters){
     pop_to_screen_ineligible <- parameters$screening_coverage * total_pop[age_groups_to_screen,4,1:2]+
       parameters$screening_coverage * total_pop[age_groups_to_screen,8,1:2]
 
-    total_screened_susceptible <- sum(pop_to_screen_susceptible)
-    total_screened_immune <- sum(pop_to_screen_immune)
-    total_screened_it <- sum(pop_to_screen_it)
-    total_screened_chb <- sum(pop_to_screen_chb)
-    total_screened_cirrhosis <- sum(pop_to_screen_cirrhosis)
-    total_screened_ineligible <- sum(pop_to_screen_ineligible)
-
     # Calculate the population to screen then treat in the treatment eligible compartments:
     # IT (2) - optional, IR (3), ENCHB (5), CC (6), DCC (7)
     pop_to_treat_it <- parameters$screening_coverage * parameters$link_to_care_prob *
@@ -1238,6 +1237,17 @@ repeat_screen_pop <- function(timestep, pop, parameters){
 
     pop_to_monitor_ic <- parameters$screening_coverage * parameters$link_to_care_prob *
       total_pop[age_groups_to_screen,4,1:2]
+
+    # Sum total pop to screen
+    total_screened_susceptible <- sum(pop_to_screen_susceptible)
+    total_screened_immune <- sum(pop_to_screen_immune)
+    total_screened_it <- sum(pop_to_screen_it)
+    total_screened_it_over30 <- sum(pop_to_treat_it/parameters$link_to_care_prob/
+                                      parameters$treatment_initiation_prob)
+    total_screened_it_under30 <- total_screened_it-total_screened_it_over30
+    total_screened_chb <- sum(pop_to_screen_chb)
+    total_screened_cirrhosis <- sum(pop_to_screen_cirrhosis)
+    total_screened_ineligible <- sum(pop_to_screen_ineligible)
 
     # Move treated/screened IT (now 2 monitor comps)
 
@@ -1314,8 +1324,9 @@ repeat_screen_pop <- function(timestep, pop, parameters){
     }
 
 
-    return(c(total_pop, unlist(init_pop[(2*n_infectioncat*n_agecat+1):(length(init_pop)-6)]),
-             total_screened_susceptible, total_screened_immune, total_screened_it, total_screened_chb,
+    return(c(total_pop, unlist(init_pop[(2*n_infectioncat*n_agecat+1):(length(init_pop)-7)]),
+             total_screened_susceptible, total_screened_immune, total_screened_it_under30,
+             total_screened_it_over30, total_screened_chb,
              total_screened_cirrhosis, total_screened_ineligible))
   })
 }
@@ -3443,7 +3454,8 @@ output_storage <- c("cum_all_deathsf" = rep(0,n_agecat), "cum_all_deathsm" = rep
                     "cum_monitored_hccf" = rep(0,n_agecat), "cum_monitored_hccm" = rep(0,n_agecat),
                     "cum_monitored_rf" = rep(0,n_agecat), "cum_monitored_rm" = rep(0,n_agecat),
                     "total_screened_susceptible" = 0, "total_screened_immune" = 0,
-                    "total_screened_it" = 0, "total_screened_chb" = 0,
+                    "total_screened_it_under30" = 0,"total_screened_it_over30" = 0,
+                    "total_screened_chb" = 0,
                     "total_screened_cirrhosis" = 0, "total_screened_ineligible" = 0)
 
 init_pop <- c("Sf" = popsize_1950$pop_female*(1-gambia_infected),

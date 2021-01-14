@@ -26,7 +26,8 @@ calculate_screening_interactions <- function(output_file, scenario_label) {
   # Number of HBsAg tests
   total_sag_tests <- unique(output_file$full_output$total_screened_susceptible +
                               output_file$full_output$total_screened_immune +
-                              output_file$full_output$total_screened_it +
+                              output_file$full_output$total_screened_it_under30 +
+                              output_file$full_output$total_screened_it_over30 +
                               output_file$full_output$total_screened_chb +
                               output_file$full_output$total_screened_cirrhosis +
                               output_file$full_output$total_screened_ineligible)
@@ -35,21 +36,30 @@ calculate_screening_interactions <- function(output_file, scenario_label) {
   if(output_file$input_parameters$apply_treat_it == 0) {
 
     total_identified_as_ineligible <- unique(output_file$full_output$total_screened_ineligible +
-                                               output_file$full_output$total_screened_it) *
+                                               output_file$full_output$total_screened_it_under30+
+                                               output_file$full_output$total_screened_it_over30) *
       output_file$input_parameters$link_to_care_prob
 
     total_identified_as_eligible <-
       unique(output_file$full_output$total_screened_chb +
                output_file$full_output$total_screened_cirrhosis) * output_file$input_parameters$link_to_care_prob
 
-    # Number of liver disease assessments if IT is treated
+    # Number of liver disease assessments if IT is treated (slightly approximated)
 
   } else if(output_file$input_parameters$apply_treat_it == 1) {
-    total_identified_as_ineligible <- unique(output_file$full_output$total_screened_ineligible) *
+
+    total_identified_as_ineligible <- unique(output_file$full_output$total_screened_ineligible+
+                                               output_file$full_output$total_screened_it_under30) *
       output_file$input_parameters$link_to_care_prob
 
+    # IT only eligible for treatment if older than 30 years:
+    #it_eligible_for_treatment <-
+    #  sum((output_file$full_output[,grepl("^T_ITf.",names(output_file$full_output))]+
+    #  output_file$full_output[,grepl("^T_ITm.",names(output_file$full_output))])[which(output_file$time==time_of_screening+da),
+    #                                                                             which(ages==31):which(ages==100-da)])
+
     total_identified_as_eligible <-
-      unique(output_file$full_output$total_screened_it + output_file$full_output$total_screened_chb +
+      unique(output_file$full_output$total_screened_it_over30 + output_file$full_output$total_screened_chb +
                output_file$full_output$total_screened_cirrhosis) * output_file$input_parameters$link_to_care_prob
 
   }
