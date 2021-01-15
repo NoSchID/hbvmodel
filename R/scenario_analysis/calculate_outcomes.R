@@ -1309,7 +1309,10 @@ extract_cohort_yll_and_dalys <- function(output_files, scenario_label, sex_to_re
 # This cohort represents those who were screened+assessed+treated/not eligible, so these are carriers who
 # have completed the liver disease assessment and received a treatment decision (either taken up treatment
 # or not treatment eligible). It excludes carriers who refused liver disease assessment or treatment.
-extract_cohort_size <- function(output_files, scenario_label, sex_to_return = "both") {
+extract_cohort_size <- function(output_files, scenario_label,
+                                sex_to_return = "both", cohort_to_return = "total") {
+
+  if(cohort_to_return == "total") {
 
   screened_pop_female <- sapply(lapply(output_files, "[[", "screened_pop_female"), rowSums)
   screened_pop_male <- sapply(lapply(output_files, "[[", "screened_pop_male"), rowSums)
@@ -1317,11 +1320,11 @@ extract_cohort_size <- function(output_files, scenario_label, sex_to_return = "b
   treated_pop_male <- sapply(lapply(output_files, "[[", "treated_pop_male"), rowSums)
 
   # Confirm there is only 1 screening event
-  if (length(output_files[[1]]$input_parameters$screening_years)>1L) {
+  #if (length(output_files[[1]]$input_parameters$screening_years)>1L) {
 
-    print("More than one screened cohort.")
+  #  print("More than one screened cohort.")
 
-  } else {
+  #} else {
 
     first_timestep <- output_files[[1]]$input_parameters$screening_years+da
 
@@ -1354,8 +1357,37 @@ extract_cohort_size <- function(output_files, scenario_label, sex_to_return = "b
       print("sex_to_return has to be male, female or both")
     }
 
-  }
+  } else if(cohort_to_return=="screened") {
 
+    # Extract screened population by age at time of screen
+    first_timestep <- output_files[[1]]$input_parameters$screening_years+da
+
+    screened_pop_female <- do.call("rbind", lapply(lapply(output_files, "[[", "screened_pop_female"),
+                                  function(x) x[which(output_files[[1]]$time==first_timestep),]))
+
+    screened_pop_male <- do.call("rbind", lapply(lapply(output_files, "[[", "screened_pop_male"),
+                                function(x) x[which(output_files[[1]]$time==first_timestep),]))
+
+    if (sex_to_return == "both") {
+      res_total <- data.frame(scenario = scenario_label,
+                              cohort_size_total = data.frame(screened_pop_female+
+                                                                 screened_pop_male))
+
+      return(res_total)
+    } else if (sex_to_return == "male") {
+      res_male <- data.frame(scenario = scenario_label,
+                             cohort_size_male = data.frame(screened_pop_male))
+
+      return(res_male)
+    } else if (sex_to_return == "female") {
+      res_female <- data.frame(scenario = scenario_label,
+                               cohort_size_female = data.frame(screened_pop_female))
+      return(res_female)
+    } else {
+      print("sex_to_return has to be male, female or both")
+    }
+
+  }
 
 }
 

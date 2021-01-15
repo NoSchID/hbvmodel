@@ -2763,7 +2763,8 @@ run_one_screening_scenario_on_cluster <- function(..., default_parameter_list, c
   cohort_age_at_death <- summarise_cohort_average_age_at_death(out,scenario_label = label)
   cohort_cum_hbv_deaths <- extract_cohort_cumulative_hbv_deaths(out, label)
   cohort_ly <- extract_cohort_life_years_lived(out,label)
-  cohort_size <- extract_cohort_size(out, label)
+  cohort_size <- extract_cohort_size(out, label)  # at first screen
+  cohort_size_screened <- extract_cohort_size(out, label, cohort_to_return = "screened")  # this is only the cohort in the screened compartments (to monitor)
   cohort_size_at_outcome <- extract_cohort_size_at_outcome(out, label)  # returns remaining cohort
   # population size in 2100, when cohort outcomes above are evaluated
   cohort_yll_and_dalys <- extract_cohort_yll_and_dalys(out, label, from_year = 2020)
@@ -2854,6 +2855,7 @@ run_one_screening_scenario_on_cluster <- function(..., default_parameter_list, c
                cohort_yll = cohort_yll,
                cohort_dalys = cohort_dalys,
                cohort_size = cohort_size,
+               cohort_size_screened = cohort_size_screened,
                cohort_size_at_outcome = cohort_size_at_outcome,
                cum_hbv_deaths = cum_hbv_deaths,
                ly = ly,
@@ -3030,6 +3032,7 @@ run_one_screening_scenario_on_cluster_not_parallel <- function(..., default_para
   cohort_cum_hbv_deaths <- extract_cohort_cumulative_hbv_deaths(out, label)
   cohort_ly <- extract_cohort_life_years_lived(out,label)
   cohort_size <- extract_cohort_size(out, label)
+  cohort_size_screened <- extract_cohort_size(out, label, cohort_to_return = "screened")  # this is only the cohort in the screened compartments (to monitor)
   cohort_size_at_outcome <- extract_cohort_size_at_outcome(out, label)  # returns remaining cohort
   # population size in 2100, when cohort outcomes above are evaluated
   cohort_yll_and_dalys <- extract_cohort_yll_and_dalys(out, label, from_year = 2020)
@@ -3116,6 +3119,7 @@ run_one_screening_scenario_on_cluster_not_parallel <- function(..., default_para
                              cohort_yll = cohort_yll,
                              cohort_dalys = cohort_dalys,
                              cohort_size = cohort_size,
+                             cohort_size_screened = cohort_size_screened,
                              cohort_size_at_outcome = cohort_size_at_outcome,
                              cum_hbv_deaths = cum_hbv_deaths,
                              ly = ly,

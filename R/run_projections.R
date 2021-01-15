@@ -14,7 +14,7 @@ load(here("analysis_input", "scenario_a1_parms.Rdata"))
 load(here("analysis_input", "scenario_anc1_it_parms.Rdata"))
 load(here("analysis_input", "scenario_wpl1_parms.Rdata"))
 
-sim <- apply(params_mat_accepted_kmeans[8,],1,
+sim <- apply(params_mat_accepted_kmeans[2,],1,
              function(x)
                run_model(sim_duration = runtime, default_parameter_list =scenario_a1_it_parms,
                          parms_to_change =
@@ -51,14 +51,14 @@ sim <- apply(params_mat_accepted_kmeans[8,],1,
                                 mu_hcc = as.list(x)$mu_hcc,
                                 vacc_eff = as.list(x)$vacc_eff,
                                 screening_years = c(2020),
-                                min_age_to_screen = 45,
-                                max_age_to_screen = 65-da,
                                 #screening_coverage = 0.9,
                                 #apply_treat_it = 1,
-                                prop_negative_to_remove_from_rescreening = 1,
+                                #prop_negative_to_remove_from_rescreening = 0,
                                 apply_screen_not_treat = 0,
                                 #monitoring_rate = monit_rate_vec,
-                                monitoring_rate = 0,
+                                monitoring_rate = c(rep(0, length(which(ages == 0):which(ages == 15-da))),
+                                                    rep(1/10, length(which(ages == 15):which(ages == 45-da))),
+                                                    rep(0, length(which(ages == 45):which(ages == 100-da)))),
                                 apply_repeat_screen = 0,
                                 #apply_lifetime_monitoring = 1,
                                 #monitoring_prob = 1,
@@ -72,8 +72,9 @@ sim <- apply(params_mat_accepted_kmeans[8,],1,
                                 drop_timesteps_before = 1960,
                          scenario = "vacc_screen"))
 
-out2 <- code_model_output(sim[[1]])
+out3 <- code_model_output(sim[[1]])
 outpath <- out
+
 
 load(here("output", "sims_output_scenario_vacc_130120.RData"))
 out <- out_vacc

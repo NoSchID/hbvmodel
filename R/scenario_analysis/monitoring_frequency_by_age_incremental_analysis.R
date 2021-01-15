@@ -780,6 +780,8 @@ monit_out8 <- readRDS(paste0(out_path, "a1_it_monit_out8_090121.rds"))
 monit_out8 <- monit_out8[[1]]
 
 # 10-yearly frequencies
+monit_out7_10 <- readRDS(paste0(out_path, "a1_it_monit_out7_10_150121.rds"))
+monit_out7_10 <- monit_out7_10[[1]]
 
 # 4-yearly frequencies
 monit_out4c <- readRDS(paste0(out_path, "a1_it_monit_out4c_130121.rds"))
@@ -796,6 +798,10 @@ monit_out4b <- readRDS(paste0(out_path, "a1_it_monit_out4b_130121.rds"))
 monit_out4b <- monit_out4b[[1]]
 monit_out2b <- readRDS(paste0(out_path, "a1_it_monit_out2b_130121.rds"))
 monit_out2b <- monit_out2b[[1]]
+monit_out5b <- readRDS(paste0(out_path, "a1_it_monit_out5b_150121.rds"))
+monit_out5b <- monit_out5b[[1]]
+monit_out1b <- readRDS(paste0(out_path, "a1_it_monit_out1b_150121.rds"))
+monit_out1b <- monit_out1b[[1]]
 
 # Annual frequencies
 monit_out4 <- readRDS(paste0(out_path, "a1_it_monit_out4_140121.rds"))
@@ -2862,7 +2868,8 @@ annual_discounting_rate <- 0.03  # can be 0
 # out4_it, out6c_it, out6b_it, out6_it
 # monit_out4c, monit_out5c, monit_out2c, monit_out1c
 # monit_out4b, monit_out2b
-# monit_out4, monit_out5, monit_out2, monit_out1
+# monit_out4, monit_out5, monit_out2, monit_out1,
+# monit_out5b, monit_out1b, monit_out7_10
 
 # Objects to include in analysis
 # For interactions in this case, the no_monitoring_object is out3_it for all of these
@@ -2872,9 +2879,9 @@ annual_discounting_rate <- 0.03  # can be 0
 object_list <- list(out3_it, out4_it, out5_it, out6c_it, out6b_it,
                     out6a_it, out6_it, monit_out7, monit_out17, monit_out2a,
                  monit_out9, monit_out18, monit_out4a, monit_out10, monit_out5a,
-                 monit_out6,monit_out1a, monit_out8,
+                 monit_out6,monit_out1a, monit_out8, monit_out7_10,
                  monit_out4c, monit_out5c, monit_out2c, monit_out1c,
-                 monit_out4b, monit_out2b,
+                 monit_out4b, monit_out2b,monit_out5b, monit_out1b,
                  monit_out4, monit_out5, monit_out2, monit_out1,
                  out_it_lt_monit_30,out_it_lt_monit_45, out_it_lt_monit_30_45)
 
@@ -2969,13 +2976,15 @@ ggplot(dominance_prob_result) +
   theme_bw() +
   theme(axis.text.x=element_text(angle = 90, hjust =1))
 
-# Find dominated strategies (<50% non-dominated) with 3% discounting:
+# Find dominated strategies (<50% non-dominated) with 3% discounting and monit_sim7_10 included:
 # Only non-dominated strategies are:
 # screen_2020_monit_1, screen_2020_monit_2, screen_2020_monit_3,
 # screen_2020_monit_4, screen_2020_monit_5,
-# screen_2020_monit_sim8, screen_2020_monit_sim6, screen_2020_monit_sim7,
+# screen_2020_monit_sim7,screen_2020_monit_sim7_10,
 # screen_2020_monit_0, screen_2020_monit_10
 # The latter 2 have >25% probability of being dominated
+# With monit_sim7_10 excluded:
+# Add screen_2020_monit_sim8, screen_2020_monit_sim6
 
 # Previously looking only at 5 and 2-yearly frequencies:
 # screen_2020_monit_sim7, screen_2020_monit_2,
@@ -2996,8 +3005,9 @@ age_df2 <- subset(age_df, scenario %in% c("screen_2020_monit_0", "screen_2020_mo
                                           "screen_2020_monit_4", "screen_2020_monit_5",
                                           "screen_2020_monit_10",
                                           "screen_2020_monit_sim7",
-                                           "screen_2020_monit_sim8",
-                                           "screen_2020_monit_sim6"))
+                                          "screen_2020_monit_sim7_10"))
+                                           #"screen_2020_monit_sim8",
+                                           #"screen_2020_monit_sim6"))
 
 icer_list <- list()
 
@@ -3022,6 +3032,27 @@ icer_result
 # every 10 years across all ages. Note the result of cost-effectiveness of 5-yearly
 # monitoring in all age groups depends on inclusion 10-yearly frequency (without it might just be,
 # with 10-yearly included it definitely is not)
+# If 10-yearly monitoring among <45 year olds is included as an option, then this is
+# the most cost-effective option and th 5-yearly frequency in this age group is just not
+# cost-effective anymore on the median (ICER of 526).But still sufficient to
+# potentially argue for this since it is more feasible in reality.
+
+# Monitoring every 10 years in 15-45 year olds would correspond at most to 3 monitoring
+# assessments (in 15 year olds)
+# Need to simulate the population to monitor to count this exacty (essentially the
+# screened compartments or the cohort - the treated people)
+# Cohort size - initial treatment initiations
+# Approximated pop to monitor:
+(unlist(monit_out7_10$cohort_size[,-1])-
+    age_df[age_df$scenario=="screen_2020_monit_0",]$treatment_initiations)
+
+quantile(age_df[age_df$scenario=="screen_2020_monit_sim7_10",]$monitoring_assessments/
+  (unlist(monit_out7_10$cohort_size[,-1])-
+     age_df[age_df$scenario=="screen_2020_monit_0",]$treatment_initiations),
+  c(0.5,0.025,0.975))
+# 10-yearly monitoring would correspond to less than 1 monitoring assessment per person
+# at 80% monitoring prob (but this approximation does not account for age groups being treated)
+
 
 # ICER plots ----
 # Need to do this on a subset
@@ -3181,6 +3212,63 @@ ggplot(data = subset(age_df, frontier == "Non-dominated" | scenario == "No treat
 
 # Cost-acceptability curve to do ----
 
+# For 1 screen_2020_monit_0,screen_2020_monit_sim7_10,screen_2020_monit_sim7,
+# screen_2020_monit_10  and screen_2020_monit_5
+# if 10-yearly frequencies are included
+acceptability1 <- 0
+acceptability2 <- 0
+acceptability3 <- 0
+acceptability4 <- 0
+acceptability5 <- 0
+scenario1 <- "screen_2020_monit_0"
+scenario2 <- "screen_2020_monit_sim7_10"
+scenario3 <- "screen_2020_monit_sim7"
+scenario4 <- "screen_2020_monit_10"
+scenario5 <- "screen_2020_monit_5"
+
+for (i in 1:752) {   # 725 is the max WTP
+  acceptability1[i] <-
+    length(which(icer_df[icer_df$scenario==scenario1,]$icer<=i&
+                   icer_df[icer_df$scenario==scenario1,]$icer>=0))/183
+  acceptability2[i] <-
+    length(which(icer_df[icer_df$scenario==scenario2,]$icer<=i&
+                   icer_df[icer_df$scenario==scenario2,]$icer>=0))/183
+  acceptability3[i] <-
+    length(which(icer_df[icer_df$scenario==scenario3,]$icer<=i&
+                   icer_df[icer_df$scenario==scenario3,]$icer>=0))/183
+  acceptability4[i] <-
+    length(which(icer_df[icer_df$scenario==scenario4,]$icer<=i&
+                   icer_df[icer_df$scenario==scenario4,]$icer>=0))/183
+  acceptability5[i] <-
+    length(which(icer_df[icer_df$scenario==scenario5,]$icer<=i&
+                   icer_df[icer_df$scenario==scenario5,]$icer>=0))/183
+}
+acceptability_curve <- data.frame(scenario = rep(c(scenario1,scenario2,
+                                                   scenario3, scenario4,
+                                                   scenario5),
+                                                 each = 752),
+                                  wtp = rep(1:752, times=5),
+                                  prob_cost_effective = c(acceptability1,
+                                                          acceptability2,
+                                                          acceptability3,
+                                                          acceptability4,
+                                                          acceptability5))
+
+ggplot(acceptability_curve) +
+  geom_line(aes(x=wtp, y = prob_cost_effective*100,
+                group = reorder(scenario, -prob_cost_effective),
+                colour = reorder(scenario, -prob_cost_effective))) +
+  geom_vline(xintercept=391, linetype="dashed") +
+  geom_vline(xintercept=518, linetype="dashed") +
+  ylab("Probability cost-effective (%)") +
+  xlab("Willingness to pay (USD/DALY averted)") +
+  labs(colour = "Monitoring scenario") +
+  theme_bw() +
+  #ylim(0,100) +
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        legend.text = element_text(size = 14),
+        legend.title = element_text(size = 14))
 ## 4) Plots of breakdown of impact of 5-yearly monitoring and screening by separate age group ----
 
 # EFFECT OF MONITORING BY AGE
