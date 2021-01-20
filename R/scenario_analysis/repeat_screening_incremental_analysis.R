@@ -44,6 +44,22 @@ out4 <- out4[[1]]
 out5 <- readRDS(paste0(out_path_monit, "a1_out5_screen_2020_monit_5_301120.rds"))
 out5 <- out5[[1]]
 
+# 2020 screen with no/5-yearly monitoring, 90% coverage, IT treated
+out3_it <- readRDS(paste0(out_path_monit, "a1_it_out3_screen_2020_monit_0_180121.rds"))
+out3_it <- out3_it[[1]]
+out5_it <- readRDS(paste0(out_path_monit, "a1_it_out5_screen_2020_monit_5_161220.rds"))
+out5_it <- out5_it[[1]]
+
+# Population-based repeat screen in 2030 with/without rescreening - with IT treated
+out8a_it_2030_monit_0 <- readRDS(paste0(out_path, "a1_it_out8a_monit_0_screen_10a_2030_080121.rds"))
+out8a_it_2030_monit_0 <- out8a_it_2030_monit_0[[1]]
+out8a_it_2030_monit_5 <- readRDS(paste0(out_path, "a1_it_out8a_monit_5_screen_10a_2030_080121.rds"))
+out8a_it_2030_monit_5 <- out8a_it_2030_monit_5[[1]]
+out8b_it_2030_monit_0 <- readRDS(paste0(out_path, "a1_it_out8b_monit_0_screen_10b_2030_080121.rds"))
+out8b_it_2030_monit_0 <- out8b_it_2030_monit_0[[1]]
+out8b_it_2030_monit_5 <- readRDS(paste0(out_path, "a1_it_out8b_monit_5_screen_10b_2030_080121.rds"))
+out8b_it_2030_monit_5 <- out8b_it_2030_monit_5[[1]]
+
 # With repeat screening & 90% cov
 out8b_2030n <- readRDS(paste0(out_path, "a1_out8b_monit_0_screen_10b_2030_041220.rds"))
 out8b_2030n <- out8b_2030n[[1]]
@@ -74,37 +90,44 @@ out8b_2030_monit10_cov50n <- out8b_2030_monit10_cov50n[[1]]
 out8b_2040_monit10_cov50n <- readRDS(paste0(out_path, "ea1_out8b_monit_10_screen_10b_2040_091220.rds"))
 out8b_2040_monit10_cov50n <- out8b_2040_monit10_cov50n[[1]]
 
-# Screening in antenatal care WITH IT TREATED (90% of pregnant women)
+# Screening in antenatal care WITH IT TREATED (76% of pregnant women)
 # One-time screen in 2020, no monitoring
-anc_it_2020_monit_0 <- readRDS(paste0(out_path, "anc1_out3_screen_2020_monit_0_050121.rds"))
+anc_it_2020_monit_0 <- readRDS(paste0(out_path, "anc1_out3_screen_2020_monit_0_150121.rds"))
 anc_it_2020_monit_0 <- anc_it_2020_monit_0[[1]]
 # One-time screen in 2020, 5-yearly monitoring
-anc_it_2020_monit_5 <- readRDS(paste0(out_path, "anc1_out5_screen_2020_monit_5_050121.rds"))
-anc_it_2020_monit_5 <- anc_it_2020_monit_5[[1]]
+#anc_it_2020_monit_5 <- readRDS(paste0(out_path, "anc1_out5_screen_2020_monit_5_050121.rds"))
+#anc_it_2020_monit_5 <- anc_it_2020_monit_5[[1]]
 
-# Regular screening at 90% coverage until specific year (2030/2040)
+# Regular screening at 76% coverage until specific year (2030/2040)
 # With or without re-testing of those previously confirmed negative, no monitoring or every 5 years
 # a=with rescreen, b=no rescreen
-anc_it_2030_monit_0b <- readRDS(paste0(out_path, "anc1_2030_no_rescreen_monit_0_090121.rds"))
+anc_it_2030_monit_0b <- readRDS(paste0(out_path, "anc1_2030_no_rescreen_monit_0_150121.rds"))
 anc_it_2030_monit_0b <- anc_it_2030_monit_0b[[1]]
-anc_it_2030_monit_5a <- readRDS(paste0(out_path, "anc1_2030_with_rescreen_monit_5_090121.rds"))
-anc_it_2030_monit_5a <- anc_it_2030_monit_5a[[1]]
-anc_it_2030_monit_0a <- readRDS(paste0(out_path, "anc1_2030_with_rescreen_monit_0_090121.rds"))
+anc_it_2030_monit_5b <- readRDS(paste0(out_path, "anc1_2030_no_rescreen_monit_5_140121.rds"))
+anc_it_2030_monit_5b <- anc_it_2030_monit_5b[[1]]
+anc_it_2030_monit_0a <- readRDS(paste0(out_path, "anc1_2030_with_rescreen_monit_0_140121.rds"))
 anc_it_2030_monit_0a <- anc_it_2030_monit_0a[[1]]
-anc_it_2040_monit_5a <- readRDS(paste0(out_path, "anc1_2040_with_rescreen_monit_5_090121.rds"))
-anc_it_2040_monit_5a <- anc_it_2040_monit_5a[[1]]
-anc_it_2050_monit_5a <- readRDS(paste0(out_path, "anc1_2050_with_rescreen_monit_5_090121.rds"))
-anc_it_2050_monit_5a <- anc_it_2050_monit_5a[[1]]
-anc_it_2040_monit_0a <- readRDS(paste0(out_path, "anc1_2040_with_rescreen_monit_0_100121.rds"))
-anc_it_2040_monit_0a <- anc_it_2040_monit_0a[[1]]
-anc_it_2040_monit_0b <- readRDS(paste0(out_path, "anc1_2040_no_rescreen_monit_0_100121.rds"))
+anc_it_2040_monit_0b <- readRDS(paste0(out_path, "anc1_2040_no_rescreen_monit_0_150121.rds"))
 anc_it_2040_monit_0b <- anc_it_2040_monit_0b[[1]]
-anc_it_2050_monit_0a <- readRDS(paste0(out_path, "anc1_2050_with_rescreen_monit_0_100121.rds"))
-anc_it_2050_monit_0a <- anc_it_2050_monit_0a[[1]]
-anc_it_2050_monit_0b <- readRDS(paste0(out_path, "anc1_2050_no_rescreen_monit_0_100121.rds"))
-anc_it_2050_monit_0b <- anc_it_2050_monit_0b[[1]]
+anc_it_2040_monit_5b <- readRDS(paste0(out_path, "anc1_2040_no_rescreen_monit_5_140121.rds"))
+anc_it_2040_monit_5b <- anc_it_2040_monit_5b[[1]]
+anc_it_2040_monit_0a <- readRDS(paste0(out_path, "anc1_2040_with_rescreen_monit_0_140121.rds"))
+anc_it_2040_monit_0a <- anc_it_2040_monit_0a[[1]]
 
-# Yearly screening instead of continuous - don't use anymore:
+anc_it_2030_monit_0b_cohort <- readRDS(paste0(out_path, "anc1_2030_no_rescreen_monit_0_cohort_140121.rds"))
+anc_it_2030_monit_0b_cohort <- anc_it_2030_monit_0b_cohort[[1]]
+anc_it_2030_monit_0b_bdvacc <- readRDS(paste0(out_path, "anc1_2030_no_rescreen_monit_0_bdvacc_140121.rds"))
+anc_it_2030_monit_0b_bdvacc <- anc_it_2030_monit_0b_bdvacc[[1]]
+
+# Screening in ANC until 2050 removed because lack of effect past 2030 already visible
+#anc_it_2050_monit_5a <- readRDS(paste0(out_path, "anc1_2050_with_rescreen_monit_5_090121.rds"))
+#anc_it_2050_monit_5a <- anc_it_2050_monit_5a[[1]]
+#anc_it_2050_monit_0a <- readRDS(paste0(out_path, "anc1_2050_with_rescreen_monit_0_100121.rds"))
+#anc_it_2050_monit_0a <- anc_it_2050_monit_0a[[1]]
+#anc_it_2050_monit_0b <- readRDS(paste0(out_path, "anc1_2050_no_rescreen_monit_0_100121.rds"))
+#anc_it_2050_monit_0b <- anc_it_2050_monit_0b[[1]]
+
+# Yearly screening instead of continuous - don't use anymore as these were just temporary:
 #anc_it_2030_monit_0b <- readRDS(paste0(out_path, "anc1_2030x_no_rescreen_monit_0_070121.rds"))
 #anc_it_2030_monit_0b <- anc_it_2030_monit_0b[[1]]
 #anc_it_2030_monit_5b <- readRDS(paste0(out_path, "anc1_2030x_no_rescreen_monit_5_070121.rds"))
@@ -128,14 +151,14 @@ e1_it_out5_gradual <- e1_it_out5_gradual[[1]]
 # No monitoring:
 
 # Status quo
-out2 <- readRDS(paste0(out_path, "out2_status_quo_180820.rds"))
-out2 <- out2[[1]]
+#out2 <- readRDS(paste0(out_path, "out2_status_quo_180820.rds"))
+#out2 <- out2[[1]]
 
 # Screened untreated different cohorts
 # No repeat screening
 # 90% cov
-out1 <- readRDS(paste0(out_path_monit, "a1_out1_status_quo_cohort_240920.rds"))
-out1 <- out1[[1]]
+#out1 <- readRDS(paste0(out_path_monit, "a1_out1_status_quo_cohort_240920.rds"))
+#out1 <- out1[[1]]
 # 10% cov
 out8b_2020_cov10_sq <- readRDS(paste0(out_path, "e1_out1_screen_2020_status_quo_cohort_cov10_231120.rds"))
 out8b_2020_cov10_sq <- out8b_2020_cov10_sq[[1]]
@@ -152,8 +175,8 @@ out8b_2040_cov10_sq <- readRDS(paste0(out_path, "e1_out1_screen_2040_status_quo_
 out8b_2040_cov10_sq <- out8b_2040_cov10_sq[[1]]
 
 # No repeat screening (2020 only)
-out3 <- readRDS(paste0(out_path, "a1_out3_screen_2020_monit_0_240920.rds"))
-out3 <- out3[[1]]
+#out3 <- readRDS(paste0(out_path, "a1_out3_screen_2020_monit_0_240920.rds"))
+#out3 <- out3[[1]]
 
 # With repeat screening in the same age group (15-60) and rescreening of HBsAg-negatives
 out8 <- readRDS(paste0(out_path, "a1_out8_monit_0_screen_10_290920.rds"))
@@ -266,11 +289,11 @@ out9b_2060 <- out9b_2060[[1]]
 
 # Access channels analysis
 # Workplace screening
-out3_wpl <-  readRDS(paste0(out_path, "wpl1_out3_screen_2020_monit_0_301020.rds"))
-out3_wpl <- out3_wpl[[1]]
+#out3_wpl <-  readRDS(paste0(out_path, "wpl1_out3_screen_2020_monit_0_301020.rds"))
+#out3_wpl <- out3_wpl[[1]]
 # ANC screening
-out3_anc <-  readRDS(paste0(out_path, "anc1_out3_screen_2020_monit_0_021120.rds"))
-out3_anc <- out3_anc[[1]]
+#out3_anc <-  readRDS(paste0(out_path, "anc1_out3_screen_2020_monit_0_021120.rds"))
+#out3_anc <- out3_anc[[1]]
 
 
 # Labels
@@ -1956,24 +1979,10 @@ ggplot(deaths_averted_per_cost,
   theme_bw() +
   theme(axis.text.x=element_text(angle=90, hjust = 1))
 
-## Compare regular antenatal care screening (90% coverage) with the population-based screen ----
+## Compare regular antenatal care screening (76% antenatal coverage) with the population-based screen ----
 # Note that screening in ANC only requires the cost of the test.
 # Repeat screening simulations here don't include IT treatment yet so need to compare this
 # to the one-off screen from monitoring_frequency:
-out3_it <- readRDS(paste0(out_path_monit, "a1_it_out3_screen_2020_monit_0_161220.rds"))
-out3_it <- out3_it[[1]]
-out5_it <- readRDS(paste0(out_path_monit, "a1_it_out5_screen_2020_monit_5_161220.rds"))
-out5_it <- out5_it[[1]]
-
-# Add in population-based repeat screen in 2030 with/without rescreening
-out8a_it_2030_monit_0 <- readRDS(paste0(out_path, "a1_it_out8a_monit_0_screen_10a_2030_080121.rds"))
-out8a_it_2030_monit_0 <- out8a_it_2030_monit_0[[1]]
-out8a_it_2030_monit_5 <- readRDS(paste0(out_path, "a1_it_out8a_monit_5_screen_10a_2030_080121.rds"))
-out8a_it_2030_monit_5 <- out8a_it_2030_monit_5[[1]]
-out8b_it_2030_monit_0 <- readRDS(paste0(out_path, "a1_it_out8b_monit_0_screen_10b_2030_080121.rds"))
-out8b_it_2030_monit_0 <- out8b_it_2030_monit_0[[1]]
-out8b_it_2030_monit_5 <- readRDS(paste0(out_path, "a1_it_out8b_monit_5_screen_10b_2030_080121.rds"))
-out8b_it_2030_monit_5 <- out8b_it_2030_monit_5[[1]]
 
 # Files:
 # out3_it: Standard pop-based screen in 2020, no monitoring
@@ -1983,7 +1992,6 @@ out8b_it_2030_monit_5 <- out8b_it_2030_monit_5[[1]]
 # e1_it_out5_gradual: same pop-based screen but with 10% coverage each year spread over
 # 2020-2028, 5-yearly monitoring
 # anc_it_2020_monit_0: screen 90% of pregnant women in 2020, no monitoring
-# anc_it_2020_monit_5: screen 90% of pregnant women in 2020, 5-yearly monitoring
 # anc_it_2030_monit_0b: screen 90% of pregnant women all the time until 2030, no monitoring,
 # no retesting of those previosuly found to be HBsAg-negative
 # anc_it_2030_monit_5a: : screen 90% of pregnant women all the time until 2030, 5-yearly monitoring,
@@ -1998,7 +2006,6 @@ out8b_it_2030_monit_5 <- out8b_it_2030_monit_5[[1]]
 # screen_2020_monit_0 - out3_it
 # screen_2020_monit_5 - out5_it
 # screen_2020_anc_monit_0 - anc_it_2020_monit_0
-# screen_2020_anc_monit_5 - anc_it_2020_monit_5
 # anc_2030_no_rescreen_monit_0 - anc_it_2030_monit_0b
 # anc_2030_with_rescreen_monit_5 - anc_it_2030_monit_5a
 # anc_2030_with_rescreen_monit_0 - anc_it_2030_monit_0a
@@ -2041,6 +2048,7 @@ assemble_discounted_interactions_for_screening_strategies <- function(scenario_o
   return(out)
 }
 
+# Here the assessment object only has to change for simulations that involve monitoring
 anc_interactions_disc <- rbind(
   cbind(scenario = "screen_2020_monit_0",
         assemble_discounted_interactions_for_screening_strategies(out3_it,
@@ -2051,36 +2059,24 @@ anc_interactions_disc <- rbind(
   cbind(scenario = "screen_2020_anc_monit_0",
         assemble_discounted_interactions_for_screening_strategies(anc_it_2020_monit_0,
                                                                   assessment_object = anc_it_2020_monit_0)),
-  cbind(scenario = "screen_2020_anc_monit_5",
-        assemble_discounted_interactions_for_screening_strategies(anc_it_2020_monit_5,
-                                                                  assessment_object = anc_it_2020_monit_0)),
   cbind(scenario = "anc_2030_no_rescreen_monit_0",
         assemble_discounted_interactions_for_screening_strategies(anc_it_2030_monit_0b,
                                                                   assessment_object = anc_it_2030_monit_0b)),
-  cbind(scenario = "anc_2030_with_rescreen_monit_5",
-        assemble_discounted_interactions_for_screening_strategies(anc_it_2030_monit_5a,
+  cbind(scenario = "anc_2030_no_rescreen_monit_5",
+        assemble_discounted_interactions_for_screening_strategies(anc_it_2030_monit_5b,
                                                                   assessment_object = anc_it_2030_monit_0b)),
   cbind(scenario = "anc_2030_with_rescreen_monit_0",
         assemble_discounted_interactions_for_screening_strategies(anc_it_2030_monit_0a,
                                                                   assessment_object = anc_it_2030_monit_0a)),
-  cbind(scenario = "anc_2040_with_rescreen_monit_5",
-        assemble_discounted_interactions_for_screening_strategies(anc_it_2040_monit_5a,
-                                                                  assessment_object = anc_it_2040_monit_5a)),
- # cbind(scenario = "anc_2050_with_rescreen_monit_5",
- #       assemble_discounted_interactions_for_screening_strategies(anc_it_2050_monit_5a,
- #                                                                 assessment_object = anc_it_2050_monit_5a)),
+  cbind(scenario = "anc_2040_no_rescreen_monit_5",
+        assemble_discounted_interactions_for_screening_strategies(anc_it_2040_monit_5b,
+                                                                  assessment_object = anc_it_2040_monit_5b)),
   cbind(scenario = "anc_2040_no_rescreen_monit_0",
         assemble_discounted_interactions_for_screening_strategies(anc_it_2040_monit_0b,
                                                                   assessment_object = anc_it_2040_monit_0b)),
   cbind(scenario = "anc_2040_with_rescreen_monit_0",
         assemble_discounted_interactions_for_screening_strategies(anc_it_2040_monit_0a,
                                                                   assessment_object = anc_it_2040_monit_0a)),
-#  cbind(scenario = "anc_2050_with_rescreen_monit_0",
-#        assemble_discounted_interactions_for_screening_strategies(anc_it_2050_monit_0a,
-#                                                                  assessment_object = anc_it_2050_monit_0a)),
-#  cbind(scenario = "anc_2050_no_rescreen_monit_0",
-#        assemble_discounted_interactions_for_screening_strategies(anc_it_2050_monit_0b,
-#                                                                  assessment_object = anc_it_2050_monit_0b)),
   cbind(scenario = "monit_0_screen_10a_2030",
         assemble_discounted_interactions_for_screening_strategies(out8a_it_2030_monit_0,
                                                                   assessment_object = out8a_it_2030_monit_0)),
@@ -2092,8 +2088,7 @@ anc_interactions_disc <- rbind(
                                                                   assessment_object = out8b_it_2030_monit_0)),
   cbind(scenario = "monit_5_screen_10b_2030",
         assemble_discounted_interactions_for_screening_strategies(out8b_it_2030_monit_5,
-                                                                  assessment_object = out8b_it_2030_monit_0))
-  )
+                                                                  assessment_object = out8b_it_2030_monit_0))  )
 
 anc_py_on_treatment_disc <- rbind(
   data.frame(scenario = "screen_2020_monit_0",
@@ -2111,18 +2106,13 @@ anc_py_on_treatment_disc <- rbind(
                                            object_to_subtract=NULL,
                                            outcome="py_on_treatment",
                                            yearly_discount_rate=annual_discounting_rate)),
-  data.frame(scenario = "screen_2020_anc_monit_5",
-             discount_outcome_2020_to_2100(scenario_object=anc_it_2020_monit_5,
-                                           object_to_subtract=NULL,
-                                           outcome="py_on_treatment",
-                                           yearly_discount_rate=annual_discounting_rate)),
   data.frame(scenario = "anc_2030_no_rescreen_monit_0",
              discount_outcome_2020_to_2100(scenario_object=anc_it_2030_monit_0b,
                                            object_to_subtract=NULL,
                                            outcome="py_on_treatment",
                                            yearly_discount_rate=annual_discounting_rate)),
-  data.frame(scenario = "anc_2030_with_rescreen_monit_5",
-             discount_outcome_2020_to_2100(scenario_object=anc_it_2030_monit_5a,
+  data.frame(scenario = "anc_2030_no_rescreen_monit_5",
+             discount_outcome_2020_to_2100(scenario_object=anc_it_2030_monit_5b,
                                            object_to_subtract=NULL,
                                            outcome="py_on_treatment",
                                            yearly_discount_rate=annual_discounting_rate)),
@@ -2131,16 +2121,11 @@ anc_py_on_treatment_disc <- rbind(
                                            object_to_subtract=NULL,
                                            outcome="py_on_treatment",
                                            yearly_discount_rate=annual_discounting_rate)),
-  data.frame(scenario = "anc_2040_with_rescreen_monit_5",
-             discount_outcome_2020_to_2100(scenario_object=anc_it_2040_monit_5a,
+  data.frame(scenario = "anc_2040_no_rescreen_monit_5",
+             discount_outcome_2020_to_2100(scenario_object=anc_it_2040_monit_5b,
                                            object_to_subtract=NULL,
                                            outcome="py_on_treatment",
                                            yearly_discount_rate=annual_discounting_rate)),
-#  data.frame(scenario = "anc_2050_with_rescreen_monit_5",
-#             discount_outcome_2020_to_2100(scenario_object=anc_it_2050_monit_5a,
-#                                           object_to_subtract=NULL,
-#                                           outcome="py_on_treatment",
-#                                           yearly_discount_rate=annual_discounting_rate)),
   data.frame(scenario = "anc_2040_no_rescreen_monit_0",
              discount_outcome_2020_to_2100(scenario_object=anc_it_2040_monit_0b,
                                            object_to_subtract=NULL,
@@ -2151,16 +2136,6 @@ anc_py_on_treatment_disc <- rbind(
                                            object_to_subtract=NULL,
                                            outcome="py_on_treatment",
                                            yearly_discount_rate=annual_discounting_rate)),
-#  data.frame(scenario = "anc_2050_with_rescreen_monit_0",
-#             discount_outcome_2020_to_2100(scenario_object=anc_it_2050_monit_0a,
-#                                           object_to_subtract=NULL,
-#                                           outcome="py_on_treatment",
-#                                           yearly_discount_rate=annual_discounting_rate)),
-#  data.frame(scenario = "anc_2050_no_rescreen_monit_0",
-#             discount_outcome_2020_to_2100(scenario_object=anc_it_2050_monit_0b,
-#                                           object_to_subtract=NULL,
-#                                           outcome="py_on_treatment",
-#                                           yearly_discount_rate=annual_discounting_rate)),
   data.frame(scenario = "monit_0_screen_10a_2030",
              discount_outcome_2020_to_2100(scenario_object=out8a_it_2030_monit_0,
                                            object_to_subtract=NULL,
@@ -2181,7 +2156,7 @@ anc_py_on_treatment_disc <- rbind(
                                            object_to_subtract=NULL,
                                            outcome="py_on_treatment",
                                            yearly_discount_rate=annual_discounting_rate))
-)
+  )
 anc_py_on_treatment_disc$sim <- gsub("[^0-9]", "", anc_py_on_treatment_disc$sim)
 
 anc_dalys_averted_disc <- rbind(
@@ -2200,19 +2175,14 @@ anc_dalys_averted_disc <- rbind(
                                            object_to_subtract=anc_it_2020_monit_0,
                                            outcome="dalys",
                                            yearly_discount_rate=annual_discounting_rate)),
-  data.frame(scenario = "screen_2020_anc_monit_5",
-             discount_outcome_2020_to_2100(scenario_object=out2n,
-                                           object_to_subtract=anc_it_2020_monit_5,
-                                           outcome="dalys",
-                                           yearly_discount_rate=annual_discounting_rate)),
   data.frame(scenario = "anc_2030_no_rescreen_monit_0",
              discount_outcome_2020_to_2100(scenario_object=out2n,
                                            object_to_subtract=anc_it_2030_monit_0b,
                                            outcome="dalys",
                                            yearly_discount_rate=annual_discounting_rate)),
-  data.frame(scenario = "anc_2030_with_rescreen_monit_5",
+  data.frame(scenario = "anc_2030_no_rescreen_monit_5",
              discount_outcome_2020_to_2100(scenario_object=out2n,
-                                           object_to_subtract=anc_it_2030_monit_5a,
+                                           object_to_subtract=anc_it_2030_monit_5b,
                                            outcome="dalys",
                                            yearly_discount_rate=annual_discounting_rate)),
   data.frame(scenario = "anc_2030_with_rescreen_monit_0",
@@ -2220,16 +2190,11 @@ anc_dalys_averted_disc <- rbind(
                                            object_to_subtract=anc_it_2030_monit_0a,
                                            outcome="dalys",
                                            yearly_discount_rate=annual_discounting_rate)),
-  data.frame(scenario = "anc_2040_with_rescreen_monit_5",
+  data.frame(scenario = "anc_2040_no_rescreen_monit_5",
              discount_outcome_2020_to_2100(scenario_object=out2n,
-                                           object_to_subtract=anc_it_2040_monit_5a,
+                                           object_to_subtract=anc_it_2040_monit_5b,
                                            outcome="dalys",
                                            yearly_discount_rate=annual_discounting_rate)),
-#  data.frame(scenario = "anc_2050_with_rescreen_monit_5",
-#             discount_outcome_2020_to_2100(scenario_object=out2n,
-#                                           object_to_subtract=anc_it_2050_monit_5a,
-#                                           outcome="dalys",
-#                                           yearly_discount_rate=annual_discounting_rate)),
   data.frame(scenario = "anc_2040_no_rescreen_monit_0",
              discount_outcome_2020_to_2100(scenario_object=out2n,
                                            object_to_subtract=anc_it_2040_monit_0b,
@@ -2240,16 +2205,6 @@ anc_dalys_averted_disc <- rbind(
                                            object_to_subtract=anc_it_2040_monit_0a,
                                            outcome="dalys",
                                            yearly_discount_rate=annual_discounting_rate)),
-#  data.frame(scenario = "anc_2050_with_rescreen_monit_0",
-#             discount_outcome_2020_to_2100(scenario_object=out2n,
-#                                           object_to_subtract=anc_it_2050_monit_0a,
-#                                           outcome="dalys",
-#                                           yearly_discount_rate=annual_discounting_rate)),
-#  data.frame(scenario = "anc_2050_no_rescreen_monit_0",
-#             discount_outcome_2020_to_2100(scenario_object=out2n,
-#                                           object_to_subtract=anc_it_2050_monit_0b,
-#                                           outcome="dalys",
-#                                           yearly_discount_rate=annual_discounting_rate)),
   data.frame(scenario = "monit_0_screen_10a_2030",
              discount_outcome_2020_to_2100(scenario_object=out2n,
                                            object_to_subtract=out8a_it_2030_monit_0,
@@ -2274,6 +2229,7 @@ anc_dalys_averted_disc <- rbind(
 anc_dalys_averted_disc$sim <- gsub("[^0-9]", "", anc_dalys_averted_disc$sim)
 colnames(anc_dalys_averted_disc)[colnames(anc_dalys_averted_disc) == "dalys"] <-
   "value"
+# Comparing the added impact of adding BD vaccination so still comparing to status quo
 
 # Deaths averted
 anc_deaths_averted_disc <- rbind(
@@ -2292,19 +2248,14 @@ anc_deaths_averted_disc <- rbind(
                                            object_to_subtract=anc_it_2020_monit_0,
                                            outcome="cum_hbv_deaths",
                                            yearly_discount_rate=annual_discounting_rate)),
-  data.frame(scenario = "screen_2020_anc_monit_5",
-             discount_outcome_2020_to_2100(scenario_object=out2n,
-                                           object_to_subtract=anc_it_2020_monit_5,
-                                           outcome="cum_hbv_deaths",
-                                           yearly_discount_rate=annual_discounting_rate)),
   data.frame(scenario = "anc_2030_no_rescreen_monit_0",
              discount_outcome_2020_to_2100(scenario_object=out2n,
                                            object_to_subtract=anc_it_2030_monit_0b,
                                            outcome="cum_hbv_deaths",
                                            yearly_discount_rate=annual_discounting_rate)),
-  data.frame(scenario = "anc_2030_with_rescreen_monit_5",
+  data.frame(scenario = "anc_2030_no_rescreen_monit_5",
              discount_outcome_2020_to_2100(scenario_object=out2n,
-                                           object_to_subtract=anc_it_2030_monit_5a,
+                                           object_to_subtract=anc_it_2030_monit_5b,
                                            outcome="cum_hbv_deaths",
                                            yearly_discount_rate=annual_discounting_rate)),
   data.frame(scenario = "anc_2030_with_rescreen_monit_0",
@@ -2312,16 +2263,11 @@ anc_deaths_averted_disc <- rbind(
                                            object_to_subtract=anc_it_2030_monit_0a,
                                            outcome="cum_hbv_deaths",
                                            yearly_discount_rate=annual_discounting_rate)),
-  data.frame(scenario = "anc_2040_with_rescreen_monit_5",
+  data.frame(scenario = "anc_2040_no_rescreen_monit_5",
              discount_outcome_2020_to_2100(scenario_object=out2n,
-                                           object_to_subtract=anc_it_2040_monit_5a,
+                                           object_to_subtract=anc_it_2040_monit_5b,
                                            outcome="cum_hbv_deaths",
                                            yearly_discount_rate=annual_discounting_rate)),
-#  data.frame(scenario = "anc_2050_with_rescreen_monit_5",
-#             discount_outcome_2020_to_2100(scenario_object=out2n,
-#                                           object_to_subtract=anc_it_2050_monit_5a,
-#                                           outcome="cum_hbv_deaths",
-#                                           yearly_discount_rate=annual_discounting_rate)),
   data.frame(scenario = "anc_2040_no_rescreen_monit_0",
              discount_outcome_2020_to_2100(scenario_object=out2n,
                                            object_to_subtract=anc_it_2040_monit_0b,
@@ -2332,16 +2278,6 @@ anc_deaths_averted_disc <- rbind(
                                            object_to_subtract=anc_it_2040_monit_0a,
                                            outcome="cum_hbv_deaths",
                                            yearly_discount_rate=annual_discounting_rate)),
-#  data.frame(scenario = "anc_2050_with_rescreen_monit_0",
-#             discount_outcome_2020_to_2100(scenario_object=out2n,
-#                                           object_to_subtract=anc_it_2050_monit_0a,
-#                                           outcome="cum_hbv_deaths",
-#                                           yearly_discount_rate=annual_discounting_rate)),
-#  data.frame(scenario = "anc_2050_no_rescreen_monit_0",
-#             discount_outcome_2020_to_2100(scenario_object=out2n,
-#                                           object_to_subtract=anc_it_2050_monit_0b,
-#                                           outcome="cum_hbv_deaths",
-#                                           yearly_discount_rate=annual_discounting_rate)),
   data.frame(scenario = "monit_0_screen_10a_2030",
              discount_outcome_2020_to_2100(scenario_object=out2n,
                                            object_to_subtract=out8a_it_2030_monit_0,
@@ -2366,6 +2302,8 @@ anc_deaths_averted_disc <- rbind(
 anc_deaths_averted_disc$sim <- gsub("[^0-9]", "", anc_deaths_averted_disc$sim)
 colnames(anc_deaths_averted_disc)[colnames(anc_deaths_averted_disc) == "cum_hbv_deaths"] <-
   "value"
+
+
 
 # Combine into dataframe
 anc_incremental_df_disc <- create_incremental_plot_df(interactions_df=anc_interactions_disc,
@@ -2410,7 +2348,7 @@ anc_incremental_df_disc[
           "monit_5_screen_10a_2030","monit_0_screen_10b_2030","monit_5_screen_10b_2030")),]$treatment_cost
 
 
-# Analysis ----
+# Cost-effectiveness analysis ----
 
 # Find dominated strategies and ICERs
 dominance_prob_list <- list()
@@ -2440,7 +2378,7 @@ ggplot(dominance_prob_result) +
 
 # With discounting rate set to 0 (no discounting):
 
-# With 3% discounting rate:
+# With 3% discounting rate and 76% antenatal coverage (same as with 90% cov):
 # The non-dominated strategies are:
 # monit_5_screen_10a_2030, monit_5_screen_10b_2030, screen_2020_anc_monit_0,
 #  anc_2030_no_rescreen_monit_0 and anc_2040_no_rescreen_monit_0
@@ -2450,11 +2388,11 @@ ggplot(dominance_prob_result) +
 anc_incremental_df_non_dom_disc <- subset(anc_incremental_df_disc,
                                           scenario %in% c("monit_5_screen_10a_2030",
                                                           "monit_5_screen_10b_2030",
-                                                     "screen_2020_monit_0",
-                                                     "screen_2020_anc_monit_0",
-                                                     "anc_2030_no_rescreen_monit_0",
-                                                     "anc_2040_no_rescreen_monit_0",
-                                                     "monit_0_screen_10b_2030"))
+                                                          "screen_2020_anc_monit_0",
+                                                          "anc_2030_no_rescreen_monit_0",
+                                                          "anc_2040_no_rescreen_monit_0",
+                                                          "screen_2020_monit_0",
+                                                          "monit_0_screen_10b_2030"))
 
 icer_list <- list()
 for(i in 1:183) {
@@ -2474,16 +2412,16 @@ icer_result <- group_by(icer_df, scenario, comparator) %>%
   arrange(icer_median)
 icer_result
 
-
 anc_incremental_df_disc$frontier <- "Dominated"
 anc_incremental_df_disc$frontier[anc_incremental_df_disc$scenario %in%
                                    c("monit_5_screen_10a_2030",
                                      "monit_5_screen_10b_2030",
-                                     "screen_2020_monit_0",
                                      "screen_2020_anc_monit_0",
                                      "anc_2030_no_rescreen_monit_0",
                                      "anc_2040_no_rescreen_monit_0",
-                                     "monit_0_screen_10b_2030", "No treatment")] <- "Non-dominated"
+                                     "screen_2020_monit_0",
+                                     "monit_0_screen_10b_2030",
+                                     "No treatment")] <- "Non-dominated"
 
 anc_incremental_df_disc_median <- group_by(anc_incremental_df_disc, scenario, frontier) %>%
   summarise(deaths_averted = median(deaths_averted),
@@ -2523,13 +2461,10 @@ ggplot(subset(anc_incremental_df_disc, scenario != "No treatment")) +
                       values = c("black",  brewer.pal(name="Dark2", n = 8), brewer.pal(name="Paired", n = 9)),
                       labels = c("anc_2030_no_rescreen_monit_0"="ANC 2020-2030 (0,no)",
                                  "anc_2030_with_rescreen_monit_0"="ANC 2020-2030 (0,yes)",
-                                 "anc_2030_with_rescreen_monit_5"="ANC 2020-2030 (5,yes)",
+                                 "anc_2030_no_rescreen_monit_5"="ANC 2020-2030 (5,no)",
                                  "anc_2040_no_rescreen_monit_0"="ANC 2020-2040 (0,no)",
                                  "anc_2040_with_rescreen_monit_0"="ANC 2020-2040 (0,yes)",
-                                 "anc_2040_with_rescreen_monit_5"="ANC 2020-2040 (5,yes)",
-                                 "anc_2050_no_rescreen_monit_0"="ANC 2020-2050 (0,no)",
-                                 "anc_2050_with_rescreen_monit_0"="ANC 2020-2050 (0,yes)",
-                                 "anc_2050_with_rescreen_monit_5"="ANC 2020-2050 (5,yes)",
+                                 "anc_2040_no_rescreen_monit_5"="ANC 2020-2040 (5,no)",
                                  "monit_0_screen_10a_2030"="Pop 2020+2030 (0,yes)",
                                  "monit_0_screen_10b_2030" ="Pop 2020+2030 (0,no)",
                                  "monit_5_screen_10a_2030"="Pop 2020+2030 (5,yes)",
@@ -2537,7 +2472,7 @@ ggplot(subset(anc_incremental_df_disc, scenario != "No treatment")) +
                                  "screen_2020_anc_monit_0"="ANC 2020 (0)",
                                  "screen_2020_anc_monit_5"="ANC 2020 (5)",
                                  "screen_2020_monit_0"="Pop 2020 (0)",
-                                 "screen_2020_monit_5"="Pop 2020 (5)",
+                                 "anc_2030_no_rescreen_monit_0_bdvacc"="ANC 2020-2030 (0,no)\n+ birth dose",
                                  "No treatment"="No treatment")) +
   ylab("Total cost (USD 2019)") +
   xlab("DALYs averted") +
@@ -2546,6 +2481,105 @@ ggplot(subset(anc_incremental_df_disc, scenario != "No treatment")) +
 #  geom_abline(slope=391, linetype = "dashed") +
 #  geom_abline(slope=518, linetype = "dashed") +
   theme_bw()
+
+
+# Impact analysis in cohort and with added birth dose ----
+
+# WHAT PROPORTION OF DALYS AVERTED BY ANC SCREENING IS IN COHORT?
+
+# DALYS averted in cohort
+da_in_cohort <- anc_it_2030_monit_0b_cohort$cohort_dalys[,-1]-anc_it_2030_monit_0b$cohort_dalys[,-1]
+
+# DALYS averted in the population (could also use out2n as reference here, same)
+da_in_pop <- anc_it_2030_monit_0b_cohort$dalys[[16]][,-c(1:3)]-anc_it_2030_monit_0b$dalys[[16]][,-c(1:3)]
+
+# Ratio:
+quantile(da_in_cohort/da_in_pop, c(0.5,0.025,0.975))
+# 97% (90-100%)
+
+# WITH added birth dose:
+da_in_cohort_bd <- anc_it_2030_monit_0b_cohort$cohort_dalys[,-1]-anc_it_2030_monit_0b_bdvacc$cohort_dalys[,-1]
+da_in_pop_bd <- anc_it_2030_monit_0b_cohort$dalys[[16]][,-c(1:3)]-anc_it_2030_monit_0b_bdvacc$dalys[[16]][,-c(1:3)]
+# Ratio:
+quantile(da_in_cohort_bd/da_in_pop_bd, c(0.5,0.025,0.975))
+# 61% (25-89%)
+# Makes sense!
+
+# How many extra DALYS and deaths are averted through addition of the BD?
+dalys_averted_by_pmtct <-
+  plot_hbv_deaths_averted(counterfactual_object = out2n,
+                          scenario_objects = list(anc_it_2030_monit_0b,
+                                                  anc_it_2030_monit_0b_bdvacc,
+                                                  out3_it,
+                                                  out8b_it_2030_monit_0,
+                                                  out8b_it_2030_monit_5),
+                          outcome_to_avert = "dalys",
+                          outcome_to_plot = "number_averted",
+                          counterfactual_label = "no treatment")
+dalys_averted_by_pmtct <- subset(dalys_averted_by_pmtct) %>%
+  select(scenario, sim,type,by_year, value)
+dalys_averted_by_pmtct$sim <- gsub("[^0-9]", "", dalys_averted_by_pmtct$sim)
+colnames(dalys_averted_by_pmtct)[5] <- "dalys_averted"
+
+ggplot(dalys_averted_by_pmtct[dalys_averted_by_pmtct$type == "number_averted" &
+                                dalys_averted_by_pmtct$by_year==2100,],
+       aes(x=reorder(scenario, dalys_averted), y = dalys_averted)) +
+  stat_summary(fun.data=f, geom="boxplot", width = 0.5) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, NA))
+
+ggplot(dalys_averted_by_pmtct[dalys_averted_by_pmtct$type == "proportion_averted" &
+                                dalys_averted_by_pmtct$by_year==2100,],
+       aes(x=reorder(scenario, dalys_averted), y = dalys_averted)) +
+  stat_summary(fun.data=f, geom="boxplot", width = 0.5) +
+  ylim(0,0.75)
+# So ANC with birth dose scale-up is quite close in effect to the
+# one-time screen without monitoring (add in here the optimal monitoring frequency in young ages).
+# Note though that timescale of impact is different:
+# By 2030:
+ggplot(dalys_averted_by_pmtct[dalys_averted_by_pmtct$type == "proportion_averted" &
+                                dalys_averted_by_pmtct$by_year==2030,],
+       aes(x=reorder(scenario, dalys_averted), y = dalys_averted)) +
+  stat_summary(fun.data=f, geom="boxplot", width = 0.5) +
+  ylim(0,0.75)
+# By 2050:
+ggplot(dalys_averted_by_pmtct[dalys_averted_by_pmtct$type == "proportion_averted" &
+                                dalys_averted_by_pmtct$by_year==2050,],
+       aes(x=reorder(scenario, dalys_averted), y = dalys_averted)) +
+  stat_summary(fun.data=f, geom="boxplot", width = 0.5) +
+  ylim(0,0.75)
+
+# Deaths averted
+deaths_averted_by_pmtct <-
+  plot_hbv_deaths_averted(counterfactual_object = out2n,
+                          scenario_objects = list(anc_it_2030_monit_0b,
+                                                  anc_it_2030_monit_0b_bdvacc,
+                                                  out3_it,
+                                                  out8b_it_2030_monit_0,
+                                                  out8b_it_2030_monit_5),
+                          outcome_to_avert = "cum_hbv_deaths",
+                          outcome_to_plot = "number_averted",
+                          counterfactual_label = "no treatment")
+deaths_averted_by_pmtct <- subset(deaths_averted_by_pmtct,
+                                 by_year==2100) %>%
+  select(scenario, sim,type, value)
+deaths_averted_by_pmtct$sim <- gsub("[^0-9]", "",deaths_averted_by_pmtct$sim)
+colnames(deaths_averted_by_pmtct)[4] <- "deaths_averted"
+
+ggplot(deaths_averted_by_pmtct[deaths_averted_by_pmtct$type == "number_averted",],
+       aes(x=scenario, y = deaths_averted)) +
+  stat_summary(fun.data=f, geom="boxplot", width = 0.5) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, NA))
+
+ggplot(deaths_averted_by_pmtct[deaths_averted_by_pmtct$type == "proportion_averted",],
+       aes(x=scenario, y = deaths_averted)) +
+  stat_summary(fun.data=f, geom="boxplot", width = 0.5) +
+  ylim(0,0.75)
+# Pattern for deaths averted is basically the same as for DALYS
+
+
+# Also look at infections averted and compare this to pop-based
+
+
 
 
 ## Compare one-off vs gradual programme (check) ----
@@ -2719,7 +2753,7 @@ ggplot(subset(gradual_incremental_df_disc, scenario != "No treatment")) +
   geom_abline(slope=518, linetype = "dashed") +
   theme_bw()
 
-# Test: One-off population based vs workplace screening ----
+# Test: One-off population based vs workplace screening (ignore) ----
 plot_hbv_deaths_averted(counterfactual_object = out2,
                         scenario_objects = list(out3,
                                                 out3_wpl),
@@ -2773,7 +2807,7 @@ ceef.plot(bcea(e=deaths_df,
                c=int_df,ref=3,interventions=c("General population", "Workplace", "No treatment")),graph="base")
 
 
-# Test: 1 REPEAT SCREEN VS ALL AGE MONITORING AND ACCESS CHANNELS ----
+# Test: 1 REPEAT SCREEN VS ALL AGE MONITORING AND ACCESS CHANNELS (ignore) ----
 out_path2 <-
   "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/monitoring_frequency/"
 

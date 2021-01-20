@@ -659,8 +659,8 @@ out_path <-
   "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/monitoring_frequency/"
 
 # Status quo
-out1 <- readRDS(paste0(out_path, "a1_out1_status_quo_cohort_301120.rds"))
-out1 <- out1[[1]]
+out1_it <- readRDS(paste0(out_path, "a1_it_out1_status_quo_cohort_200121.rds"))
+out1_it <- out1_it[[1]]
 out2 <- readRDS(paste0(out_path, "out2_status_quo_301120.rds"))
 out2 <- out2[[1]]
 
@@ -722,15 +722,15 @@ out6 <- out6[[1]]
 # IT is treated
 
 # Effect of screening by age (not monitoring)
-a2_out3_it <- readRDS(paste0(out_path, "a2_it_out3_screen_2020_monit_0_130121.rds"))
+a2_out3_it <- readRDS(paste0(out_path, "a2_it_out3_screen_2020_monit_0_180121.rds"))
 a2_out3_it <- a2_out3_it[[1]]
-a4_out3_it <- readRDS(paste0(out_path, "a4_it_out3_screen_2020_monit_0_130121.rds"))
+a4_out3_it <- readRDS(paste0(out_path, "a4_it_out3_screen_2020_monit_0_190121.rds"))
 a4_out3_it <- a4_out3_it[[1]]
-a5_out3_it <- readRDS(paste0(out_path, "a5_it_out3_screen_2020_monit_0_130121.rds"))
+a5_out3_it <- readRDS(paste0(out_path, "a5_it_out3_screen_2020_monit_0_190121.rds"))
 a5_out3_it <- a5_out3_it[[1]]
 
 # No monitoring/All age monitoring
-out3_it <- readRDS(paste0(out_path, "a1_it_out3_screen_2020_monit_0_161220.rds"))
+out3_it <- readRDS(paste0(out_path, "a1_it_out3_screen_2020_monit_0_180121.rds"))
 out3_it <- out3_it[[1]]   # No monitoring
 out4_it <- readRDS(paste0(out_path, "a1_it_out4_screen_2020_monit_10_140121.rds"))
 out4_it <- out4_it[[1]]   # 10 years
@@ -764,13 +764,13 @@ monit_out18 <- monit_out18[[1]]
 monit_out4a <- readRDS(paste0(out_path, "a1_it_monit_out4a_171220.rds"))
 monit_out4a <- monit_out4a[[1]]
 
-monit_out10 <- readRDS(paste0(out_path, "a1_it_monit_out10_171220.rds"))
+monit_out10 <- readRDS(paste0(out_path, "a1_it_monit_out10_200121.rds"))
 monit_out10 <- monit_out10[[1]]
 
 monit_out5a <- readRDS(paste0(out_path, "a1_it_monit_out5a_161220.rds"))
 monit_out5a <- monit_out5a[[1]]
 
-monit_out6 <- readRDS(paste0(out_path, "a1_it_monit_out6_201220.rds"))
+monit_out6 <- readRDS(paste0(out_path, "a1_it_monit_out6_200121.rds"))
 monit_out6 <- monit_out6[[1]]
 
 monit_out1a <- readRDS(paste0(out_path, "a1_it_monit_out1a_191220.rds"))
@@ -2999,6 +2999,7 @@ ggplot(dominance_prob_result) +
 # Whereas sim7 and 6 have a pretty high probability of being dominated.
 # Sim9 and sim10 are focused on the older (30+/45+ ages)!
 
+
 # Calculate ICER by simulation on non-dominated strategies
 age_df2 <- subset(age_df, scenario %in% c("screen_2020_monit_0", "screen_2020_monit_1",
                                           "screen_2020_monit_2", "screen_2020_monit_3",
@@ -3006,8 +3007,6 @@ age_df2 <- subset(age_df, scenario %in% c("screen_2020_monit_0", "screen_2020_mo
                                           "screen_2020_monit_10",
                                           "screen_2020_monit_sim7",
                                           "screen_2020_monit_sim7_10"))
-                                           #"screen_2020_monit_sim8",
-                                           #"screen_2020_monit_sim6"))
 
 icer_list <- list()
 
@@ -3053,6 +3052,25 @@ quantile(age_df[age_df$scenario=="screen_2020_monit_sim7_10",]$monitoring_assess
 # 10-yearly monitoring would correspond to less than 1 monitoring assessment per person
 # at 80% monitoring prob (but this approximation does not account for age groups being treated)
 
+# Original persons to screen (15-45 year olds at entry into cohort):
+
+# Monitoring assessments per person:
+# This is monitoring assessments per number of persons originally eligible for that
+# monitoring (all 15-45 year olds at entry into cohort in principle, though technically
+# one could consider only <36 year olds being at risk for the 10-yearly)
+quantile(age_df[age_df$scenario=="screen_2020_monit_sim7_10",]$monitoring_assessments/
+  rowSums(out3_it$cohort_size_screened[,which(ages==15):which(ages==45-da)]),
+  c(0.5,0.025,0.975))
+# 10-yearly monitoring would correspond to less than 1 monitoring assessment per person
+# at 80% monitoring prob
+quantile(age_df[age_df$scenario=="screen_2020_monit_sim7_10",]$monitoring_assessments/
+           rowSums(out3_it$cohort_size_screened[,which(ages==15):which(ages==36-da)]),
+         c(0.5,0.025,0.975))
+# If excluding >35 year olds it is 1.3 per person
+quantile(age_df[age_df$scenario=="screen_2020_monit_sim7",]$monitoring_assessments/
+           rowSums(out3_it$cohort_size_screened[,which(ages==15):which(ages==45-da)]),
+         c(0.5,0.025,0.975))
+# About 1.55 per person at 80% probability for the 5-yearly frequency in the same age group
 
 # ICER plots ----
 # Need to do this on a subset
@@ -3299,7 +3317,9 @@ deaths_averted_by_age_group <-
 deaths_averted_by_age_group <- subset(deaths_averted_by_age_group, type == "number_averted" &
                                        by_year==2100) %>%
   select(scenario, sim, value)
-deaths_averted_by_age_group$sim <- gsub("[^0-9]", "", deaths_averted_by_age_group$sim)
+# ISSUE WITH SIM NAMES HERE, USE THOSE FROM DALYS
+#deaths_averted_by_age_group$sim <- gsub("[^0-9]", "", deaths_averted_by_age_group$sim)
+deaths_averted_by_age_group$sim <-dalys_averted_by_age_group$sim
 colnames(deaths_averted_by_age_group)[3] <- "deaths_averted"
 
 # In terms of interactions, want the extra monitoring assessments, treatment initiations and
@@ -3402,7 +3422,7 @@ p7 <- ggplot(df_by_age_group) +
   geom_boxplot(aes(x=scenario, y = treatment_initiations/monitoring_assessments)) +
   ylab("New treatment initiations\nper monitoring assessment") +
   xlab("Monitored age group") +
-  ylim(0,5.5/100)
+  ylim(0,0.2)
 
 # Incremental PY on treatment per monitoring assessment
 p8 <- ggplot(df_by_age_group) +
@@ -3421,6 +3441,10 @@ p9 <- ggplot(df_by_age_group) +
 grid.arrange(p1,p2,p3,p4,p5,p6, ncol = 3)
 grid.arrange(p7,p8, ncol = 1)
 
+# Compare this with previous result!! Totally different because of change in
+# initial treatment initiations (out3_it) - this would be case in all scenarios including
+#
+
 # Additional plots per carrier (especially monitoring assessments per carrier)
 # would be helpful (this would be basically the cohort size over time in the different age groups)
 # But monitoring assessments is kind of a proxy for carriers over time (except
@@ -3428,7 +3452,6 @@ grid.arrange(p7,p8, ncol = 1)
 # Carriers at entry would also be interesting.
 # Also per remaining life expectancy/average age at death? But this would
 # need to be calculated in group of given age only (not entire cohort)
-
 
 # Lifetime risk of HBV death
 # 15-30 year olds (monit_sim6), 30-45 year olds (monit_sim8) and 45+ year olds (monit_sim10)
@@ -3443,24 +3466,37 @@ quantile(monit_out10$cohort_cum_hbv_deaths[,-1]/monit_out10$cohort_size[,-1],
 # Lifetime risk of HBV death in 45+ year old screened+treated+monitored carriers =
 # 5% (2-9%)
 
+
 # But need cohort simulations of a cohort of this age without treatment/monitoring
 # to look at reduction in lifetime risk! Have simulations of screening+treatment without
 # monitoring.
 
 # Average age at death in screened+treated cohort
-ggplot(gather(rbind(out3_it$cohort_age_at_death, out6a_it$cohort_age_at_death),
+ggplot(gather(rbind(out3_it$cohort_age_at_death, out6_it$cohort_age_at_death,
+                    out1_it$cohort_age_at_death),
        key = "sim", value = "age", -scenario))+
-  geom_boxplot(aes(x=scenario,y=age))
+  geom_boxplot(aes(x=reorder(scenario, age),y=age))
 
-quantile(out6a_it$cohort_age_at_death[,-1]-out3_it$cohort_age_at_death[,-1],
+quantile(out6_it$cohort_age_at_death[,-1]-out3_it$cohort_age_at_death[,-1],
          c(0.5,0.025,0.975))*12
-# Average age at death postponed by 7 (3-18) months by monitoring every 2 years
+# Average age at death postponed by 8 (3-20) months by monitoring every year
+quantile(out3_it$cohort_age_at_death[,-1]-out1_it$cohort_age_at_death[,-1],
+         c(0.5,0.025,0.975))
+# Average age at death postponed by 1.5 (0.7-3) years by treating without monitoring
 quantile(((out3_it$cohort_cum_hbv_deaths[,-1]/out3_it$cohort_size[,-1])-
-           (out6a_it$cohort_cum_hbv_deaths[,-1]/out6a_it$cohort_size[,-1]))/
+           (out6_it$cohort_cum_hbv_deaths[,-1]/out6_it$cohort_size[,-1]))/
            (out3_it$cohort_cum_hbv_deaths[,-1]/out3_it$cohort_size[,-1]),
          c(0.5,0.025,0.975))
-# Lifetime risk of dying from HBV reduced by 3 (1-8%) by monitoring every 2 years
-# in absolute terms or 49% (27-70%) relative to lifetime risk with no monitoring!
+# Lifetime risk of dying from HBV reduced by 4% (1-8%) by monitoring every year
+# in absolute terms or 52% (29-74%) relative to lifetime risk with no monitoring!
+
+quantile(((out1_it$cohort_cum_hbv_deaths[,-1]/out1_it$cohort_size[,-1])-
+            (out3_it$cohort_cum_hbv_deaths[,-1]/out3_it$cohort_size[,-1]))/
+           (out1_it$cohort_cum_hbv_deaths[,-1]/out1_it$cohort_size[,-1]),
+         c(0.5,0.025,0.975))
+# Lifetime risk of dying from HBV reduced by 6% (3-12) by treating without monitoring
+# in absolute terms or 45% (31-59%) relative to lifetime risk with no treatment!
+
 
 ## EFFECT OF SCREENING WITHOUT MONITORING BY AGE
 
@@ -3561,7 +3597,7 @@ ps2 <- ggplot(df_by_screened_age_group) +
   geom_boxplot(aes(x=scenario, y = dalys_averted/treatment_initiations)) +
   ylab("Incremental DALYs averted\nper treatment initiation") +
   xlab("Screened age group") +
-  ylim(0,20)
+  ylim(0,30)
 
 # Incremental DALYs averted per PY on treatment
 ps3 <- ggplot(df_by_screened_age_group) +
@@ -3571,25 +3607,25 @@ ps3 <- ggplot(df_by_screened_age_group) +
   ylim(0,1)
 
 # Incremental deaths averted per monitoring assessment
-p4 <- ggplot(df_by_age_group) +
-  geom_boxplot(aes(x=scenario, y = deaths_averted/monitoring_assessments)) +
-  ylab("Incremental HBV-related deaths averted\nper monitoring assessment") +
+ps4 <- ggplot(df_by_screened_age_group) +
+  geom_boxplot(aes(x=scenario, y = deaths_averted/clinical_assessments)) +
+  ylab("Incremental HBV-related deaths averted\nper clinical assessment") +
   xlab("Screened age group") +
-  ylim(0,0.04)
+  ylim(0,0.2)
 
 # Incremental deaths  averted per treatment initiations
-p5 <- ggplot(df_by_age_group) +
+ps5 <- ggplot(df_by_screened_age_group) +
   geom_boxplot(aes(x=scenario, y = deaths_averted/treatment_initiations)) +
   ylab("Incremental HBV-related deaths averted\nper treatment initiation") +
   xlab("Screened age group") +
-  ylim(0,0.7)
+  ylim(0,0.8)
 
 # Incremental deaths  averted per PY on treatment
-p6 <- ggplot(df_by_age_group) +
+ps6 <- ggplot(df_by_screened_age_group) +
   geom_boxplot(aes(x=scenario, y = deaths_averted/py_on_treatment)) +
   ylab("Incremental HBV-related deaths averted\nper PY on treatment") +
   xlab("Screened age group") +
-  ylim(0,0.05)
+  ylim(0,0.04)
 
 # Incremental treatment initiations per clinical assessment
 ps7 <- ggplot(df_by_screened_age_group) +
@@ -3610,18 +3646,14 @@ ps9 <- ggplot(df_by_screened_age_group) +
   geom_boxplot(aes(x=scenario, y = py_on_treatment/treatment_initiations)) +
   ylab("Incremental person-years on treatment\nper treatment initiation") +
   xlab("Screened age group") +
-  ylim(0,30)
+  ylim(0,45)
 
-grid.arrange(p1,p2,p3,p4,p5,p6, ncol = 3)
+grid.arrange(ps1,ps2,ps3,ps4,ps5,ps6, ncol = 3)
 
 grid.arrange(ps7,ps9,ps8,p7,p9, p8, ncol = 3)
 
-# There was a mistake in count of treatment initiations in the <30 age group,
-# resimulate this analysis!
-
 # Might want to show something like: % of total treatment initiations
 # after first vs monitoring assessments by age
-
 
 ## 5) Screening by age: cost-effectiveness of including <30 year olds in one-time screen ----
 

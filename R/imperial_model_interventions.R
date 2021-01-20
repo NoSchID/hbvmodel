@@ -1193,6 +1193,15 @@ screen_pop <- function(timestep, pop, parameters){
 repeat_screen_pop <- function(timestep, pop, parameters){
   with (as.list(pop),{
 
+    screening_coverage_parameter <- parameters$screening_coverage
+
+    # If wanting to vary the screening coverage in the repeat screen, use switch:
+
+    if("vary_screening_coverage_in_repeat_screen" %in% names(parameters) &&
+       parameters$vary_screening_coverage_in_repeat_screen == 1) {
+      screening_coverage_parameter <- parameters$repeat_screening_coverage
+    }
+
     # Define indices for age groupts to screen
     age_groups_to_screen <- which(ages==parameters$min_age_to_repeat_screen):which(ages==parameters$max_age_to_repeat_screen)
 
@@ -1202,40 +1211,40 @@ repeat_screen_pop <- function(timestep, pop, parameters){
     # Record the total number of people screened at each screening event
     # Note this is not a cumulative output in the model and stays the same for years where there
     # is no screening programme (sum unique values to calculate total HBsAg tests)
-    pop_to_screen_susceptible <- parameters$screening_coverage * total_pop[age_groups_to_screen,1,1:2]
-    pop_to_screen_immune <- parameters$screening_coverage * total_pop[age_groups_to_screen,9,1:2]
-    pop_to_screen_it <- parameters$screening_coverage * total_pop[age_groups_to_screen,2,1:2]
-    pop_to_screen_chb <- parameters$screening_coverage * total_pop[age_groups_to_screen,3,1:2]+
-      parameters$screening_coverage * total_pop[age_groups_to_screen,5,1:2]
-    pop_to_screen_cirrhosis <- parameters$screening_coverage * total_pop[age_groups_to_screen,6,1:2]+
-      parameters$screening_coverage * total_pop[age_groups_to_screen,7,1:2]
-    pop_to_screen_ineligible <- parameters$screening_coverage * total_pop[age_groups_to_screen,4,1:2]+
-      parameters$screening_coverage * total_pop[age_groups_to_screen,8,1:2]
+    pop_to_screen_susceptible <- screening_coverage_parameter * total_pop[age_groups_to_screen,1,1:2]
+    pop_to_screen_immune <- screening_coverage_parameter * total_pop[age_groups_to_screen,9,1:2]
+    pop_to_screen_it <- screening_coverage_parameter * total_pop[age_groups_to_screen,2,1:2]
+    pop_to_screen_chb <- screening_coverage_parameter * total_pop[age_groups_to_screen,3,1:2]+
+      screening_coverage_parameter * total_pop[age_groups_to_screen,5,1:2]
+    pop_to_screen_cirrhosis <- screening_coverage_parameter * total_pop[age_groups_to_screen,6,1:2]+
+      screening_coverage_parameter * total_pop[age_groups_to_screen,7,1:2]
+    pop_to_screen_ineligible <- screening_coverage_parameter * total_pop[age_groups_to_screen,4,1:2]+
+      screening_coverage_parameter * total_pop[age_groups_to_screen,8,1:2]
 
     # Calculate the population to screen then treat in the treatment eligible compartments:
     # IT (2) - optional, IR (3), ENCHB (5), CC (6), DCC (7)
-    pop_to_treat_it <- parameters$screening_coverage * parameters$link_to_care_prob *
+    pop_to_treat_it <- screening_coverage_parameter * parameters$link_to_care_prob *
       parameters$treatment_initiation_prob_it[age_groups_to_screen]  * total_pop[age_groups_to_screen,2,1:2]
     # Only >30 year old IT people can be treated
 
-    pop_to_treat_ir <- parameters$screening_coverage * parameters$link_to_care_prob *
+    pop_to_treat_ir <- screening_coverage_parameter * parameters$link_to_care_prob *
       parameters$treatment_initiation_prob * total_pop[age_groups_to_screen,3,1:2]
 
-    pop_to_treat_enchb <- parameters$screening_coverage * parameters$link_to_care_prob *
+    pop_to_treat_enchb <- screening_coverage_parameter * parameters$link_to_care_prob *
       parameters$treatment_initiation_prob * total_pop[age_groups_to_screen,5,1:2]
 
-    pop_to_treat_cc <- parameters$screening_coverage * parameters$link_to_care_prob *
+    pop_to_treat_cc <- screening_coverage_parameter * parameters$link_to_care_prob *
       parameters$treatment_initiation_prob * total_pop[age_groups_to_screen,6,1:2]
 
-    pop_to_treat_dcc <- parameters$screening_coverage * parameters$link_to_care_prob *
+    pop_to_treat_dcc <- screening_coverage_parameter * parameters$link_to_care_prob *
       parameters$treatment_initiation_prob * total_pop[age_groups_to_screen,7,1:2]
 
     # Calculate the population identified as treatment-ineligible (eligible for monitoring):
     # IT (2) - if not treated, IC (4)
-    pop_to_monitor_it <- parameters$screening_coverage * parameters$link_to_care_prob *
+    pop_to_monitor_it <- screening_coverage_parameter * parameters$link_to_care_prob *
       total_pop[age_groups_to_screen,2,1:2] - pop_to_treat_it
 
-    pop_to_monitor_ic <- parameters$screening_coverage * parameters$link_to_care_prob *
+    pop_to_monitor_ic <- screening_coverage_parameter * parameters$link_to_care_prob *
       total_pop[age_groups_to_screen,4,1:2]
 
     # Sum total pop to screen
@@ -3591,6 +3600,7 @@ parameter_list <- list(
   screening_years = c(2020),                 # vectors for years to implement the first screening programme (or repeat screening in the same age group)
   repeat_screening_years = c(2015),          # vectors for years to repeats screening if apply_repeat_screen = 1
   screening_coverage = 0.7,                  # proportion of population in given age group to screen
+  repeat_screening_coverage = 0,             # screening coverage can vary in repeat screens
   min_age_to_screen = 30,                    # Minimum age group to screen on first screen
   max_age_to_screen = 70,                    # Maximum age group to screen on first screen
   min_age_to_repeat_screen = 30,             # Minimum age group to screen on every repeat screen
@@ -3618,6 +3628,7 @@ parameter_list <- list(
   apply_treat_it = 0,                        # Switch for IT >30 year olds being eligible for treatment (default = off)
   apply_screen_not_treat = 0,                # Switch to only screen+assess but not treat (allows to follow an untreated cohort)
   apply_repeat_screen = 0,                   # Switch to turn on repeat screening in a different age group from first screen
+  vary_screening_coverage_in_repeat_screen = 0,
   apply_lifetime_monitoring = 0,
   # DEMOGRAPHY ON/OFF SWITCH (1/0)
   births_on = 1,

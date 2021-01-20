@@ -53,26 +53,19 @@ sim <- apply(params_mat_accepted_kmeans[2,],1,
                                 screening_years = c(2020),
                                 #screening_coverage = 0.9,
                                 #apply_treat_it = 1,
-                                #prop_negative_to_remove_from_rescreening = 0,
+                                prop_negative_to_remove_from_rescreening = 1,
                                 apply_screen_not_treat = 0,
-                                #monitoring_rate = monit_rate_vec,
-                                monitoring_rate = c(rep(0, length(which(ages == 0):which(ages == 15-da))),
-                                                    rep(1/10, length(which(ages == 15):which(ages == 45-da))),
-                                                    rep(0, length(which(ages == 45):which(ages == 100-da)))),
-                                apply_repeat_screen = 0,
-                                #apply_lifetime_monitoring = 1,
-                                #monitoring_prob = 1,
-                                #treatment_initiation_prob = 1,
-                                #lifetime_monitoring_event_rate = monit_rate_vec,
+                                monitoring_rate = 0,
+                                apply_repeat_screen = 1,
                                 #min_age_to_screen = 15,
                                 #max_age_to_screen = 65,
                                 #min_age_to_repeat_screen = 15,
                                 #max_age_to_repeat_screen = 49.5,
-                                repeat_screening_years = seq(2020.5,2040,0.5)),
+                                repeat_screening_years = seq(2020.5,2030,0.5)),
                                 drop_timesteps_before = 1960,
                          scenario = "vacc_screen"))
 
-out3 <- code_model_output(sim[[1]])
+out <- code_model_output(sim[[1]])
 outpath <- out
 
 
