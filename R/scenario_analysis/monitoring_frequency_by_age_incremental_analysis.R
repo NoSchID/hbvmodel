@@ -776,7 +776,7 @@ monit_out6 <- monit_out6[[1]]
 monit_out1a <- readRDS(paste0(out_path, "a1_it_monit_out1a_191220.rds"))
 monit_out1a <- monit_out1a[[1]]
 
-monit_out8 <- readRDS(paste0(out_path, "a1_it_monit_out8_090121.rds"))
+monit_out8 <- readRDS(paste0(out_path, "a1_it_monit_out8_210121.rds"))
 monit_out8 <- monit_out8[[1]]
 
 # 10-yearly frequencies
@@ -2936,9 +2936,9 @@ age_df <- create_incremental_plot_df(interactions_df=age_interactions,
                                       deaths_averted_df=age_hbv_deaths_averted,
                                       ly_saved_df = age_dalys_averted, # replace LY by DALYs
                                       hbsag_test_cost = 8.3,
-                                      clinical_assessment_cost = 84.4,
-                                      monitoring_assessment_cost = 40.1,
-                                      treatment_py_cost = 60,
+                                      clinical_assessment_cost = 33, #84.4,
+                                      monitoring_assessment_cost = 25.5, #40.1,
+                                      treatment_py_cost = 66.5,#60,
                                       #scenario_labels_obj = scenario_labels,
                                       ref_label = "No treatment")
 colnames(age_df)[colnames(age_df)=="ly_saved"] <- "dalys_averted"
@@ -2948,6 +2948,11 @@ age_df <- subset(age_df, !(scenario %in% c("screen_2020_monit_lifetime_30",
                                            "screen_2020_monit_lifetime_45",
                                            "screen_2020_monit_lifetime_30_45")))
 
+# Exclude monit_sim8 cause least realistic and very similar to others
+# Exclude 10 yearly frequencies though can show this in a sensitivity analysis
+age_df <- subset(age_df, !(scenario %in% c("screen_2020_monit_sim7_10",
+                                           "screen_2020_monit_10",
+                                           "screen_2020_monit_sim8")))
 
 # Analysis: calculate probability of each strategy being non-dominated and ICERs ----
 
@@ -2976,22 +2981,18 @@ ggplot(dominance_prob_result) +
   theme_bw() +
   theme(axis.text.x=element_text(angle = 90, hjust =1))
 
-# Find dominated strategies (<50% non-dominated) with 3% discounting and monit_sim7_10 included:
+# Find dominated strategies (<50% non-dominated) with 3% discounting and
+# monit_sim7_10 and out4 included + using updated costs from Liem.
 # Only non-dominated strategies are:
 # screen_2020_monit_1, screen_2020_monit_2, screen_2020_monit_3,
 # screen_2020_monit_4, screen_2020_monit_5,
-# screen_2020_monit_sim7,screen_2020_monit_sim7_10,
-# screen_2020_monit_0, screen_2020_monit_10
-# The latter 2 have >25% probability of being dominated
-# With monit_sim7_10 excluded:
-# Add screen_2020_monit_sim8, screen_2020_monit_sim6
+# screen_2020_monit_sim7, screen_2020_monit_sim7_10,
+# screen_2020_monit_10
 
-# Previously looking only at 5 and 2-yearly frequencies:
-# screen_2020_monit_sim7, screen_2020_monit_2,
-# screen_2020_monit_5, screen_2020_monit_sim8,
-# screen_2020_monit_sim6, and screen_2020_monit_0
-# screen_2020_monit_0 has > 35% probability of being dominated though.
-# Clear distinction among the others
+# With monit_sim7_10, out4 and monit_sim8 excluded:
+# Add screen_2020_monit_sim6 and screen_2020_monit_sim2c
+# screen_2020_monit_0 is 49% but a far larger drop in probabilities occurs after that one
+# This is because it is almost identical to only monitoring 5-30 year olds
 
 # Note: if looking at deaths averted instead of DALYs averted, the non-dominated strategies are:
 # screen_2020_monit_5, screen_2020_monit_2, and screen_2020_monit_0 (same as DALYS),
@@ -3001,12 +3002,15 @@ ggplot(dominance_prob_result) +
 
 
 # Calculate ICER by simulation on non-dominated strategies
-age_df2 <- subset(age_df, scenario %in% c("screen_2020_monit_0", "screen_2020_monit_1",
+age_df2 <- subset(age_df, scenario %in% c("screen_2020_monit_1",
                                           "screen_2020_monit_2", "screen_2020_monit_3",
                                           "screen_2020_monit_4", "screen_2020_monit_5",
-                                          "screen_2020_monit_10",
+                                          #"screen_2020_monit_10",
+                                          #"screen_2020_monit_sim7_10"
                                           "screen_2020_monit_sim7",
-                                          "screen_2020_monit_sim7_10"))
+                                          #"screen_2020_monit_sim8",
+                                          "screen_2020_monit_sim6",
+                                          "screen_2020_monit_sim2c"))
 
 icer_list <- list()
 
@@ -3076,10 +3080,15 @@ quantile(age_df[age_df$scenario=="screen_2020_monit_sim7",]$monitoring_assessmen
 # Need to do this on a subset
 
 age_df$frontier <- "Dominated"
-age_df$frontier[age_df$scenario %in% c("screen_2020_monit_0", "screen_2020_monit_5",
-                                "screen_2020_monit_2", "screen_2020_monit_sim7",
-                                "screen_2020_monit_sim8",
-                                "screen_2020_monit_sim6", "No treatment")] <- "Non-dominated"
+age_df$frontier[age_df$scenario %in% c("screen_2020_monit_1",
+                                       "screen_2020_monit_2", "screen_2020_monit_3",
+                                       "screen_2020_monit_4", "screen_2020_monit_5",
+                                       #"screen_2020_monit_10",
+                                       #"screen_2020_monit_sim7_10"
+                                       "screen_2020_monit_sim7",
+                                       #"screen_2020_monit_sim8",
+                                       "screen_2020_monit_sim6",
+                                       "screen_2020_monit_sim2c", "No treatment")] <- "Non-dominated"
 
 
 
@@ -3157,7 +3166,7 @@ ggplot(data = age_df) +
 # Notation: age group (frequency)
 
 # Plot with only non-dominated strategies
-ggplot(data = subset(age_df, frontier == "Non-dominated" | scenario == "No treatment")) +
+  ggplot(data = subset(age_df, frontier == "Non-dominated" | scenario == "No treatment")) +
   geom_line(aes(x = dalys_averted, y = total_cost, group = sim),
               colour = "grey", alpha = 0.2) +
   geom_segment(aes(x = 0, y = 0, xend = dalys_averted, yend = total_cost),
@@ -3190,13 +3199,16 @@ ggplot(data = subset(age_df, frontier == "Non-dominated" | scenario == "No treat
              size = 5, shape = 2,
              colour = "black") +
   #scale_fill_manual(values = rev(brewer.pal(11,"RdYlBu"))) +
-  scale_fill_manual(values = brewer.pal(name="Dark2", n = 6)) +
+  scale_fill_manual(values = c(brewer.pal(name="Dark2", n = 8), brewer.pal(name="Paired", n = 2))) +
   scale_colour_manual("Monitoring strategy\n[age group (frequency)]",
                       #values = c("black", rev(brewer.pal(14,"RdYlBu"))),
-                      values = c("black",  brewer.pal(name="Dark2", n = 6)),
+                      values = c("black",  c(brewer.pal(name="Dark2", n = 8), brewer.pal(name="Paired", n = 2))),
                       labels = c("screen_2020_monit_0" = "15+ (0)",
                                  "screen_2020_monit_5" = "15+ (5)",
                                  "screen_2020_monit_2" = "15+ (2)",
+                                 "screen_2020_monit_4" = "15+ (4)",
+                                 "screen_2020_monit_3" = "15+ (3)",
+                                 "screen_2020_monit_1" = "15+ (1)",
                                  "screen_2020_monit_sim7" = "15-45 (5), 45+ (0)",
                                  "screen_2020_monit_sim17" = "15-30 (2), 30-45 (5), 45+ (0)",
                                  "screen_2020_monit_sim2a" = "15-45 (2), 45+ (0)",
@@ -3206,6 +3218,7 @@ ggplot(data = subset(age_df, frontier == "Non-dominated" | scenario == "No treat
                                  "screen_2020_monit_sim10" = "15-45 (0), 45+ (5)",
                                  "screen_2020_monit_sim5a" = "15-45 (0), 45+ (2)",
                                  "screen_2020_monit_sim6" = "15-30 (5), 30+ (0)",
+                                 "screen_2020_monit_sim2c" = "15-45 (4), 45+ (0)",
                                  "screen_2020_monit_sim1a" = "15-30 (2), 30+ (0)",
                                  "screen_2020_monit_sim8" = "15-30 (0), 30-45 (5), 45+ (0)",
                                  "No treatment" = "No treatment")) +
@@ -3222,13 +3235,7 @@ ggplot(data = subset(age_df, frontier == "Non-dominated" | scenario == "No treat
         legend.title = element_text(size = 14))
 # Notation: age group (frequency)
 
-
-
-
-
-
-
-# Cost-acceptability curve to do ----
+# Cost-acceptability curve----
 
 # For 1 screen_2020_monit_0,screen_2020_monit_sim7_10,screen_2020_monit_sim7,
 # screen_2020_monit_10  and screen_2020_monit_5
@@ -3238,11 +3245,16 @@ acceptability2 <- 0
 acceptability3 <- 0
 acceptability4 <- 0
 acceptability5 <- 0
-scenario1 <- "screen_2020_monit_0"
-scenario2 <- "screen_2020_monit_sim7_10"
-scenario3 <- "screen_2020_monit_sim7"
-scenario4 <- "screen_2020_monit_10"
-scenario5 <- "screen_2020_monit_5"
+#scenario1 <- "screen_2020_monit_0"
+#scenario2 <- "screen_2020_monit_sim7_10"
+#scenario3 <- "screen_2020_monit_sim7"
+#scenario4 <- "screen_2020_monit_10"
+#scenario5 <- "screen_2020_monit_5"
+scenario1 <- "screen_2020_monit_sim6"
+scenario2 <- "screen_2020_monit_sim7"
+scenario3 <- "screen_2020_monit_sim2c"
+scenario4 <- "screen_2020_monit_5"
+scenario5 <- "screen_2020_monit_4"
 
 for (i in 1:752) {   # 725 is the max WTP
   acceptability1[i] <-
@@ -3278,18 +3290,24 @@ ggplot(acceptability_curve) +
                 colour = reorder(scenario, -prob_cost_effective))) +
   geom_vline(xintercept=391, linetype="dashed") +
   geom_vline(xintercept=518, linetype="dashed") +
-  ylab("Probability cost-effective (%)") +
+  ylab("Probability of strategy being\ncost-effective at WTP (%)") +
   xlab("Willingness to pay (USD/DALY averted)") +
-  labs(colour = "Monitoring scenario") +
+  scale_colour_discrete(labels = c("screen_2020_monit_5" = "15+ (5)",
+                                 "screen_2020_monit_4" = "15+ (4)",
+                                 "screen_2020_monit_sim7" = "15-45 (5), 45+ (0)",
+                                 "screen_2020_monit_sim6" = "15-30 (5), 30+ (0)",
+                                 "screen_2020_monit_sim2c" = "15-45 (4), 45+ (0)")) +
+  labs(colour = "Monitoring strategy\n[age group (frequency)]") +
   theme_bw() +
   #ylim(0,100) +
   theme(axis.text = element_text(size = 15),
         axis.title = element_text(size = 15),
         legend.text = element_text(size = 14),
         legend.title = element_text(size = 14))
+
 ## 4) Plots of breakdown of impact of 5-yearly monitoring and screening by separate age group ----
 
-# EFFECT OF MONITORING BY AGE
+# EFFECT OF MONITORING BY AGE (monitoring compared to no monitoring)
 
 # DALYs averted by monitoring
 dalys_averted_by_age_group <-
@@ -3321,6 +3339,7 @@ deaths_averted_by_age_group <- subset(deaths_averted_by_age_group, type == "numb
 #deaths_averted_by_age_group$sim <- gsub("[^0-9]", "", deaths_averted_by_age_group$sim)
 deaths_averted_by_age_group$sim <-dalys_averted_by_age_group$sim
 colnames(deaths_averted_by_age_group)[3] <- "deaths_averted"
+
 
 # In terms of interactions, want the extra monitoring assessments, treatment initiations and
 # person years of treatment due to monitoring
@@ -3422,7 +3441,7 @@ p7 <- ggplot(df_by_age_group) +
   geom_boxplot(aes(x=scenario, y = treatment_initiations/monitoring_assessments)) +
   ylab("New treatment initiations\nper monitoring assessment") +
   xlab("Monitored age group") +
-  ylim(0,0.2)
+  ylim(0,0.07)
 
 # Incremental PY on treatment per monitoring assessment
 p8 <- ggplot(df_by_age_group) +
@@ -3651,6 +3670,46 @@ ps9 <- ggplot(df_by_screened_age_group) +
 grid.arrange(ps1,ps2,ps3,ps4,ps5,ps6, ncol = 3)
 
 grid.arrange(ps7,ps9,ps8,p7,p9, p8, ncol = 3)
+
+grid.arrange(ps1,ps2,ps3,
+             p1,p2,p3,
+             ps4,ps5,ps6,
+             p4,p5,p6, ncol = 3)
+
+grid.arrange(ps7,ps9,ps1,ps2,ps3,ps4,ps5,ps6,
+             p7,p9,p1,p2,p3,p4,p5,p6, ncol = 8)
+
+# Interactions
+grid.arrange(ps7,ps9,p7,p9, ncol = 2)
+# DALYS
+grid.arrange(ps7,ps9,ps1,ps2,ps3,p7,p9,p1,p2,p3, ncol = 5)
+# Deaths
+grid.arrange(ps7,ps9,ps4,ps5,ps6,p7,p9,p4,p5,p6, ncol = 5)
+
+# For screened don't call it incremental
+# Add also the absolute!
+# Clinical assessments are proportional to carriers in the population in 2020.
+# Monitoring assessments are proportional to carriers of that age over time.
+
+# Age patterns in DALYS averted due to monitoring seem to be mostly explained
+# by PY on treatment (young people have higher DALYS averted but also longer lifespan)
+# Nevertheless DALYS averted per PY on treatment due to initial screening are still
+# higher in the younger age group than among others. So far the only
+# potential explanation I have found in sim 5 for this is that the proportion of treatment-eligible
+# carriers with cirrhosis varies in that age group between the initial screen vs the
+# monitoring. In 2020 the proportion of cirrhosis among treatment eligible carriers by age is:
+# 27% (15-30), 16% (30-45), 17% (45-65). Of the monitoring events, the proportion in cirrhotic
+# compartments of all treatment eligible compartments by age is:
+# 9% (15-30), 8% (30-45), 12% (45-65). So possibly both the PY on treatment
+# and DALYS averted depend on cirrhotic status.
+# The higher proportion of treatment eligible carriers being cirrhotic in the younger
+# age group is because IT is not treatment eligible. Yet also still depends on
+# absolute number. Only way to find this out would be to simulate the
+# treatment effect in those cirrhotic at first assessment vs non-cirrhotic.
+# Nevertheless would expect a higher effect and longer life among those non-cirrhotic
+# at treatment initiation. Pattern for YLL averted is the same.
+# Clinical assessments corresponds to number of carriers and treatment initiations
+# to number of treatment eligible carriers.
 
 # Might want to show something like: % of total treatment initiations
 # after first vs monitoring assessments by age

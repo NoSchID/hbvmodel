@@ -14,7 +14,7 @@ load(here("analysis_input", "scenario_a1_parms.Rdata"))
 load(here("analysis_input", "scenario_anc1_it_parms.Rdata"))
 load(here("analysis_input", "scenario_wpl1_parms.Rdata"))
 
-sim <- apply(params_mat_accepted_kmeans[2,],1,
+sim7 <- apply(params_mat_accepted_kmeans[5,],1,
              function(x)
                run_model(sim_duration = runtime, default_parameter_list =scenario_a1_it_parms,
                          parms_to_change =
@@ -53,21 +53,263 @@ sim <- apply(params_mat_accepted_kmeans[2,],1,
                                 screening_years = c(2020),
                                 #screening_coverage = 0.9,
                                 #apply_treat_it = 1,
-                                prop_negative_to_remove_from_rescreening = 1,
+                                prop_negative_to_remove_from_rescreening = 0,
                                 apply_screen_not_treat = 0,
                                 monitoring_rate = 0,
-                                apply_repeat_screen = 1,
-                                #min_age_to_screen = 15,
-                                #max_age_to_screen = 65,
+                                #monitoring_rate = c(rep(0, length(which(ages==0):which(ages==14.5))),
+                                #                    rep(1/5, length(which(ages==15):which(ages==29.5))),
+                                #                    rep(0, length(which(ages==30):which(ages==99.5)))),
+                                apply_repeat_screen = 0,
+                                min_age_to_screen = 15,
+                                max_age_to_screen = 29.5,
                                 #min_age_to_repeat_screen = 15,
                                 #max_age_to_repeat_screen = 49.5,
                                 repeat_screening_years = seq(2020.5,2030,0.5)),
                                 drop_timesteps_before = 1960,
                          scenario = "vacc_screen"))
 
-out <- code_model_output(sim[[1]])
+out7 <- code_model_output(sim7[[1]])
 outpath <- out
 
+## Code for distribution of treatment initiations by compartment ##
+
+# out is a status quo simulation - use this to see the distribution of
+# disease states among 15-30 year olds that are screened
+out_it <- out$full_output[,grepl("^ITf.",names(out$full_output))]+
+  out$full_output[,grepl("^ITm.",names(out$full_output))]
+out_ir <- out$full_output[,grepl("^IRf.",names(out$full_output))]+
+  out$full_output[,grepl("^IRm.",names(out$full_output))]
+out_ic <- out$full_output[,grepl("^ICf.",names(out$full_output))]+
+  out$full_output[,grepl("^ICm.",names(out$full_output))]
+out_enchb <- out$full_output[,grepl("^ENCHBf.",names(out$full_output))]+
+  out$full_output[,grepl("^ENCHBm.",names(out$full_output))]
+out_cc <- out$full_output[,grepl("^CCf.",names(out$full_output))]+
+  out$full_output[,grepl("^CCm.",names(out$full_output))]
+out_dcc <- out$full_output[,grepl("^DCCf.",names(out$full_output))]+
+  out$full_output[,grepl("^DCCm.",names(out$full_output))]
+out_hcc <- out$full_output[,grepl("^HCCf.",names(out$full_output))]+
+  out$full_output[,grepl("^HCCm.",names(out$full_output))]
+
+
+comps_by_age <- rbind(
+data.frame(age="15-30", comp = "IT",
+  n = sum(out_it[which(out$time==2020),which(ages==15):which(ages==29.5)])),
+data.frame(age="15-30", comp = "IC",
+           n = sum(out_ic[which(out$time==2020),which(ages==15):which(ages==29.5)])),
+data.frame(age="15-30", comp = "HCC",
+           n = sum(out_hcc[which(out$time==2020),which(ages==15):which(ages==29.5)])),
+data.frame(age="15-30", comp = "IR",
+           n = sum(out_ir[which(out$time==2020),which(ages==15):which(ages==29.5)])),
+data.frame(age="15-30", comp = "ENCHB",
+           n = sum(out_enchb[which(out$time==2020),which(ages==15):which(ages==29.5)])),
+data.frame(age="15-30", comp = "CC",
+           n = sum(out_cc[which(out$time==2020),which(ages==15):which(ages==29.5)])),
+data.frame(age="15-30", comp = "DCC",
+           n = sum(out_dcc[which(out$time==2020),which(ages==15):which(ages==29.5)])),
+data.frame(age="30-45", comp = "IT",
+           n = sum(out_it[which(out$time==2020),which(ages==30):which(ages==44.5)])),
+data.frame(age="30-45", comp = "IR",
+           n = sum(out_ir[which(out$time==2020),which(ages==30):which(ages==44.5)])),
+data.frame(age="30-45", comp = "ENCHB",
+           n = sum(out_enchb[which(out$time==2020),which(ages==30):which(ages==44.5)])),
+data.frame(age="30-45", comp = "CC",
+           n = sum(out_cc[which(out$time==2020),which(ages==30):which(ages==44.5)])),
+data.frame(age="30-45", comp = "DCC",
+           n = sum(out_dcc[which(out$time==2020),which(ages==30):which(ages==44.5)])),
+data.frame(age="30-45", comp = "IC",
+           n = sum(out_ic[which(out$time==2020),which(ages==30):which(ages==44.5)])),
+data.frame(age="30-45", comp = "HCC",
+           n = sum(out_hcc[which(out$time==2020),which(ages==30):which(ages==44.5)])),
+data.frame(age="45-65", comp = "IT",
+           n = sum(out_it[which(out$time==2020),which(ages==45):which(ages==64.5)])),
+data.frame(age="45-65", comp = "IR",
+           n = sum(out_ir[which(out$time==2020),which(ages==45):which(ages==64.5)])),
+data.frame(age="45-65", comp = "ENCHB",
+           n = sum(out_enchb[which(out$time==2020),which(ages==45):which(ages==64.5)])),
+data.frame(age="45-65", comp = "CC",
+           n = sum(out_cc[which(out$time==2020),which(ages==45):which(ages==64.5)])),
+data.frame(age="45-65", comp = "DCC",
+           n = sum(out_dcc[which(out$time==2020),which(ages==45):which(ages==64.5)])),
+data.frame(age="45-65", comp = "IC",
+           n = sum(out_ic[which(out$time==2020),which(ages==45):which(ages==64.5)])),
+data.frame(age="45-65", comp = "HCC",
+           n = sum(out_hcc[which(out$time==2020),which(ages==45):which(ages==64.5)]))
+)
+
+comps_by_age_to_treat <- subset(comps_by_age, comp != "IC" & comp != "HCC" &
+                                  !(comp=="IT" & age=="15-30"))
+
+comps_by_age2 <- rbind(
+  #data.frame(age="15-30", comp = "IT",
+  #  n = sum(out_it[which(out$time==2020),which(ages==15):which(ages==29.5)])),
+  data.frame(age="15-30", comp = "Non-cirrhotic",
+             n = sum(out_ir[which(out$time==2020),which(ages==15):which(ages==29.5)])+
+               sum(out_enchb[which(out$time==2020),which(ages==15):which(ages==29.5)])),
+  data.frame(age="15-30", comp = "Cirrhotic",
+             n = sum(out_cc[which(out$time==2020),which(ages==15):which(ages==29.5)])+
+               sum(out_dcc[which(out$time==2020),which(ages==15):which(ages==29.5)])),
+  data.frame(age="30-45", comp = "Non-cirrhotic",
+             n = sum(out_it[which(out$time==2020),which(ages==30):which(ages==44.5)])+
+               sum(out_ir[which(out$time==2020),which(ages==30):which(ages==44.5)])+
+               sum(out_enchb[which(out$time==2020),which(ages==30):which(ages==44.5)])),
+  data.frame(age="30-45", comp = "Cirrhotic",
+             n = sum(out_cc[which(out$time==2020),which(ages==30):which(ages==44.5)])+
+               sum(out_dcc[which(out$time==2020),which(ages==30):which(ages==44.5)])),
+  data.frame(age="45-65", comp = "Non-cirrhotic",
+             n = sum(out_it[which(out$time==2020),which(ages==45):which(ages==64.5)])+
+               sum(out_ir[which(out$time==2020),which(ages==45):which(ages==64.5)])+
+               sum(out_enchb[which(out$time==2020),which(ages==45):which(ages==64.5)])),
+  data.frame(age="45-65", comp = "Cirrhotic",
+             n = sum(out_cc[which(out$time==2020),which(ages==45):which(ages==64.5)])+
+               sum(out_dcc[which(out$time==2020),which(ages==45):which(ages==64.5)]))
+)
+
+comps_by_age_to_treat <- comps_by_age_to_treat %>%
+  group_by(age) %>%
+  mutate(total=sum(n)) %>%
+  group_by(age,comp) %>%
+  mutate(prop=n/total)
+comps_by_age_to_treat$type <- "Non-cirrhotic"
+comps_by_age_to_treat$type[comps_by_age_to_treat$comp%in%c("CC", "DCC")] <- "Cirrhotic"
+
+# Compartments:
+ggplot(comps_by_age) +
+  geom_col(aes(x=comp, y = n, fill = comp))+
+  facet_wrap(~age, scales="free_y")
+
+# Stacked proportion
+ggplot(comps_by_age) +
+  geom_bar(aes(x=age, y = n, fill = comp), position="fill", stat="identity")
+
+ggplot(comps_by_age_to_treat) +
+  geom_bar(aes(x=age, y = n, fill = comp), position="fill", stat="identity")
+
+# Dodged proportion by cirrhosis status!
+ggplot(comps_by_age_to_treat) +
+  geom_bar(aes(x=type, y = prop, fill = comp), position="stack", stat="identity")+
+  facet_wrap(~age)
+
+# Times numbers by 0.8 to get treatment initiations resulting from screen by comp
+
+# Get treatment initiations after monitoring
+monit_ir_y <- out4$full_output[,grepl("cum_monitored_irf",names(out4$full_output))]+
+  out4$full_output[,grepl("cum_monitored_irm",names(out4$full_output))]
+monit_enchb_y <-
+  out4$full_output[,grepl("cum_monitored_enchbf",names(out4$full_output))]+
+  out4$full_output[,grepl("cum_monitored_enchbm",names(out4$full_output))]
+monit_cc_y <- out4$full_output[,grepl("cum_monitored_ccf",names(out4$full_output))]+
+  out4$full_output[,grepl("cum_monitored_ccm",names(out4$full_output))]
+monit_dcc_y <-
+  out4$full_output[,grepl("cum_monitored_dccf",names(out4$full_output))]+
+  out4$full_output[,grepl("cum_monitored_dccm",names(out4$full_output))]
+
+monit_it_y <- out4$full_output[,grepl("cum_monitored_itf",names(out4$full_output))]+
+  out4$full_output[,grepl("cum_monitored_itm",names(out4$full_output))]
+
+monit_it_m <- out5$full_output[,grepl("cum_monitored_itf",names(out5$full_output))]+
+  out5$full_output[,grepl("cum_monitored_itm",names(out5$full_output))]
+monit_ir_m <- out5$full_output[,grepl("cum_monitored_irf",names(out5$full_output))]+
+  out5$full_output[,grepl("cum_monitored_irm",names(out5$full_output))]
+monit_enchb_m <-
+  out5$full_output[,grepl("cum_monitored_enchbf",names(out5$full_output))]+
+  out5$full_output[,grepl("cum_monitored_enchbm",names(out5$full_output))]
+monit_cc_m <- out5$full_output[,grepl("cum_monitored_ccf",names(out5$full_output))]+
+  out5$full_output[,grepl("cum_monitored_ccm",names(out5$full_output))]
+monit_dcc_m <-
+  out5$full_output[,grepl("cum_monitored_dccf",names(out5$full_output))]+
+  out5$full_output[,grepl("cum_monitored_dccm",names(out5$full_output))]
+
+monit_it_o <- out6$full_output[,grepl("cum_monitored_itf",names(out6$full_output))]+
+  out6$full_output[,grepl("cum_monitored_itm",names(out6$full_output))]
+monit_ir_o <- out6$full_output[,grepl("cum_monitored_irf",names(out6$full_output))]+
+  out6$full_output[,grepl("cum_monitored_irm",names(out6$full_output))]
+monit_enchb_o <-
+  out6$full_output[,grepl("cum_monitored_enchbf",names(out6$full_output))]+
+  out6$full_output[,grepl("cum_monitored_enchbm",names(out6$full_output))]
+monit_cc_o <- out6$full_output[,grepl("cum_monitored_ccf",names(out6$full_output))]+
+  out6$full_output[,grepl("cum_monitored_ccm",names(out6$full_output))]
+monit_dcc_o <-
+  out6$full_output[,grepl("cum_monitored_dccf",names(out6$full_output))]+
+  out6$full_output[,grepl("cum_monitored_dccm",names(out6$full_output))]
+
+treated_comps_by_age_monit <- rbind(
+  data.frame(age="15-30", comp = "IR",
+             n = max(rowSums(monit_ir_y))),
+  data.frame(age="15-30", comp = "ENCHB",
+             n = max(rowSums(monit_enchb_y))),
+  data.frame(age="15-30", comp = "CC",
+             n = max(rowSums(monit_cc_y))),
+  data.frame(age="15-30", comp = "DCC",
+             n = max(rowSums(monit_dcc_y))),
+  data.frame(age="30-45", comp = "IT",
+             n =  max(rowSums(monit_it_m))),
+  data.frame(age="30-45", comp = "IR",
+             n = max(rowSums(monit_ir_m))),
+  data.frame(age="30-45", comp = "ENCHB",
+             n = max(rowSums(monit_enchb_m))),
+  data.frame(age="30-45", comp = "CC",
+             n = max(rowSums(monit_cc_m))),
+  data.frame(age="30-45", comp = "DCC",
+             n = max(rowSums(monit_dcc_m))),
+  data.frame(age="45-65", comp = "IT",
+             n = max(rowSums(monit_it_o))),
+  data.frame(age="45-65", comp = "IR",
+             n = max(rowSums(monit_ir_o))),
+  data.frame(age="45-65", comp = "ENCHB",
+             n = max(rowSums(monit_enchb_o))),
+  data.frame(age="45-65", comp = "CC",
+             n = max(rowSums(monit_cc_o))),
+  data.frame(age="45-65", comp = "DCC",
+             n = max(rowSums(monit_dcc_o)))
+)
+treated_comps_by_age_monit <- treated_comps_by_age_monit %>%
+  group_by(age) %>%
+  mutate(total=sum(n)) %>%
+  group_by(age,comp) %>%
+  mutate(prop=n/total)
+treated_comps_by_age_monit$type <- "Non-cirrhotic"
+treated_comps_by_age_monit$type[treated_comps_by_age_monit$comp%in%c("CC", "DCC")] <- "Cirrhotic"
+
+# Plots
+
+ggplot(comps_by_age_to_treat) +
+  geom_bar(aes(x=age, y = n, fill = comp), position="fill", stat="identity")
+
+ggplot(treated_comps_by_age_monit) +
+  geom_bar(aes(x=age, y = n, fill = comp), position="fill", stat="identity")
+
+# Dodged proportion by cirrhosis status!
+p1 <- ggplot(comps_by_age_to_treat) +
+  geom_bar(aes(x=type, y = prop*100, fill = comp), position="stack", stat="identity")+
+  facet_wrap(~age) +
+  labs(fill="Compartment", x=NULL, y = "Percentage in compartment\nat treatment initiation",
+       title="Treatment initiations following screening")+
+  scale_fill_discrete(labels=c("CC" = "Compensated cirrhosis",
+                             "DCC" = "Decompensated cirrhosis",
+                             "ENCHB" = "HBeAg-negative CHB",
+                             "IR" = "Immune reactive",
+                             "IT" = "Immune tolerant")) +
+  ylim(0,100) +
+  theme_bw() +
+  theme(legend.position = "none")
+
+p2 <- ggplot(treated_comps_by_age_monit) +
+  geom_bar(aes(x=type, y = prop*100, fill = comp), position="stack", stat="identity")+
+  facet_wrap(~age)+
+  labs(fill="Compartment", x=NULL, y="Percentage in compartment\nat treatment initiation",
+       title = "Treatment initiations following monitoring")+
+  scale_fill_discrete(labels=c("CC" = "Compensated\ncirrhosis",
+                               "DCC" = "Decompensated\ncirrhosis",
+                               "ENCHB" = "HBeAg-negative\nCHB",
+                               "IR" = "Immune\nreactive",
+                               "IT" = "Immune\ntolerant")) +
+  ylim(0,100) +
+  theme_bw() +
+  theme(legend.position = "bottom")
+
+grid.arrange(p1,p2,ncol=1, heights=c(2:3),
+             top = "Distribution of disease state at treatment initiation by targeted age group (simulation #5)")
+###
 
 load(here("output", "sims_output_scenario_vacc_130120.RData"))
 out <- out_vacc
