@@ -2887,9 +2887,6 @@ run_one_screening_scenario_on_cluster <- function(..., default_parameter_list, c
   # In this case calculations involving incident numbers will be wrong (monitoring events,
   # treatment initiations after monitoring, HBV deaths and YLL used for DALYs)
 
-
-
-
   # Alternative output to look at patterns by age:
   #extracted_outcomes2 <- list(time = out[[1]]$time,
   #                            carriers_female = lapply(out, "[[", "carriers_female"),
@@ -2914,6 +2911,259 @@ run_one_screening_scenario_on_cluster <- function(..., default_parameter_list, c
 
   #return(outlist2)
 
+
+}
+
+# Simulate other outcomes on cluster
+run_alternative_outcomes_on_cluster <- function(..., default_parameter_list, calibrated_parameter_sets,
+                                                  parms_to_change = list(...), years_of_test, monitoring_rate,
+                                                  prop_negative_to_remove_from_rescreening = 0,
+                                                  apply_repeat_screen = 0, years_of_repeat_test = 2015,
+                                                  min_age_to_repeat_screen = 15, max_age_to_repeat_screen = 65-da,
+                                                  drop_timesteps_before = NULL,
+                                                  label, scenario = "vacc_screen") {
+
+  sim1 <- parApply(cl = NULL, calibrated_parameter_sets[1:91,], 1,
+                   function(x) run_model(sim_duration = runtime,
+                                         default_parameter_list = default_parameter_list,
+                                         parms_to_change =
+                                           list(b1 = as.list(x)$b1,
+                                                b2 = as.list(x)$b2,
+                                                b3 = as.list(x)$b3,
+                                                mtct_prob_s = as.list(x)$mtct_prob_s,
+                                                mtct_prob_e = as.list(x)$mtct_prob_e,
+                                                alpha = as.list(x)$alpha,
+                                                p_chronic_in_mtct = as.list(x)$p_chronic_in_mtct,
+                                                p_chronic_function_r = as.list(x)$p_chronic_function_r,
+                                                p_chronic_function_s = as.list(x)$p_chronic_function_s,
+                                                pr_it_ir = as.list(x)$pr_it_ir,
+                                                pr_ir_ic = as.list(x)$pr_ir_ic,
+                                                eag_prog_function_rate = as.list(x)$eag_prog_function_rate,
+                                                pr_ir_enchb = as.list(x)$pr_ir_enchb,
+                                                pr_ir_cc_female = as.list(x)$pr_ir_cc_female,
+                                                pr_ir_cc_age_threshold = as.list(x)$pr_ir_cc_age_threshold,
+                                                pr_ic_enchb = as.list(x)$pr_ic_enchb,
+                                                sag_loss_slope = as.list(x)$sag_loss_slope,
+                                                pr_enchb_cc_female = as.list(x)$pr_enchb_cc_female,
+                                                cirrhosis_male_cofactor = as.list(x)$cirrhosis_male_cofactor,
+                                                pr_cc_dcc = as.list(x)$pr_cc_dcc,
+                                                cancer_prog_coefficient_female = as.list(x)$cancer_prog_coefficient_female,
+                                                cancer_age_threshold = as.list(x)$cancer_age_threshold,
+                                                cancer_male_cofactor = as.list(x)$cancer_male_cofactor,
+                                                hccr_it = as.list(x)$hccr_it,
+                                                hccr_ir = as.list(x)$hccr_ir,
+                                                hccr_enchb = as.list(x)$hccr_enchb,
+                                                hccr_cc = as.list(x)$hccr_cc,
+                                                hccr_dcc = as.list(x)$hccr_dcc,
+                                                mu_cc = as.list(x)$mu_cc,
+                                                mu_dcc = as.list(x)$mu_dcc,
+                                                mu_hcc = as.list(x)$mu_hcc,
+                                                vacc_eff = as.list(x)$vacc_eff,
+                                                screening_years = years_of_test,
+                                                monitoring_rate = monitoring_rate,
+                                                prop_negative_to_remove_from_rescreening =
+                                                  prop_negative_to_remove_from_rescreening,
+                                                apply_repeat_screen = apply_repeat_screen,
+                                                repeat_screening_years = years_of_repeat_test,
+                                                min_age_to_repeat_screen = min_age_to_repeat_screen,
+                                                max_age_to_repeat_screen = max_age_to_repeat_screen),
+                                         drop_timesteps_before = drop_timesteps_before,
+                                         scenario = scenario))  # vacc_screen by default
+
+  out1 <- lapply(sim1, code_model_output)
+  rm(sim1)
+  gc()
+
+  sim2 <- parApply(cl = NULL, calibrated_parameter_sets[92:183,], 1,
+                   function(x) run_model(sim_duration = runtime,
+                                         default_parameter_list = default_parameter_list,
+                                         parms_to_change =
+                                           list(b1 = as.list(x)$b1,
+                                                b2 = as.list(x)$b2,
+                                                b3 = as.list(x)$b3,
+                                                mtct_prob_s = as.list(x)$mtct_prob_s,
+                                                mtct_prob_e = as.list(x)$mtct_prob_e,
+                                                alpha = as.list(x)$alpha,
+                                                p_chronic_in_mtct = as.list(x)$p_chronic_in_mtct,
+                                                p_chronic_function_r = as.list(x)$p_chronic_function_r,
+                                                p_chronic_function_s = as.list(x)$p_chronic_function_s,
+                                                pr_it_ir = as.list(x)$pr_it_ir,
+                                                pr_ir_ic = as.list(x)$pr_ir_ic,
+                                                eag_prog_function_rate = as.list(x)$eag_prog_function_rate,
+                                                pr_ir_enchb = as.list(x)$pr_ir_enchb,
+                                                pr_ir_cc_female = as.list(x)$pr_ir_cc_female,
+                                                pr_ir_cc_age_threshold = as.list(x)$pr_ir_cc_age_threshold,
+                                                pr_ic_enchb = as.list(x)$pr_ic_enchb,
+                                                sag_loss_slope = as.list(x)$sag_loss_slope,
+                                                pr_enchb_cc_female = as.list(x)$pr_enchb_cc_female,
+                                                cirrhosis_male_cofactor = as.list(x)$cirrhosis_male_cofactor,
+                                                pr_cc_dcc = as.list(x)$pr_cc_dcc,
+                                                cancer_prog_coefficient_female = as.list(x)$cancer_prog_coefficient_female,
+                                                cancer_age_threshold = as.list(x)$cancer_age_threshold,
+                                                cancer_male_cofactor = as.list(x)$cancer_male_cofactor,
+                                                hccr_it = as.list(x)$hccr_it,
+                                                hccr_ir = as.list(x)$hccr_ir,
+                                                hccr_enchb = as.list(x)$hccr_enchb,
+                                                hccr_cc = as.list(x)$hccr_cc,
+                                                hccr_dcc = as.list(x)$hccr_dcc,
+                                                mu_cc = as.list(x)$mu_cc,
+                                                mu_dcc = as.list(x)$mu_dcc,
+                                                mu_hcc = as.list(x)$mu_hcc,
+                                                vacc_eff = as.list(x)$vacc_eff,
+                                                screening_years = years_of_test,
+                                                monitoring_rate = monitoring_rate,
+                                                prop_negative_to_remove_from_rescreening =
+                                                  prop_negative_to_remove_from_rescreening,
+                                                apply_repeat_screen = apply_repeat_screen,
+                                                repeat_screening_years = years_of_repeat_test,
+                                                min_age_to_repeat_screen = min_age_to_repeat_screen,
+                                                max_age_to_repeat_screen = max_age_to_repeat_screen),
+                                         drop_timesteps_before = drop_timesteps_before,
+                                         scenario = scenario))  # vacc_screen by default
+
+  out2 <- lapply(sim2, code_model_output)
+  rm(sim2)
+  gc()
+
+  out <- append(out1,out2)
+  rm(out1)
+  rm(out2)
+  gc()
+
+  # Extract outcomes for analysis
+
+  # Treatment effect in cohort
+  index_cum_screened_hbv_deathsm  <- which(grepl("^cum_screened_hbv_deathsm.",names(out[[1]]$full_output)))
+  index_cum_treated_hbv_deathsm  <- which(grepl("^cum_treated_hbv_deathsm.",names(out[[1]]$full_output)))
+
+  index_cum_screened_hbv_deathsf  <- which(grepl("^cum_screened_hbv_deathsf.",names(out[[1]]$full_output)))
+  index_cum_treated_hbv_deathsf  <- which(grepl("^cum_treated_hbv_deathsf.",names(out[[1]]$full_output)))
+
+  index_cum_screened_hcc_deathsm  <- which(grepl("^cum_screened_hcc_deathsm.",names(out[[1]]$full_output)))
+  index_cum_treated_hcc_deathsm  <- which(grepl("^cum_treated_hcc_deathsm.",names(out[[1]]$full_output)))
+
+  index_cum_screened_hcc_deathsf  <- which(grepl("^cum_screened_hcc_deathsf.",names(out[[1]]$full_output)))
+  index_cum_treated_hcc_deathsf  <- which(grepl("^cum_treated_hcc_deathsf.",names(out[[1]]$full_output)))
+
+  index_cum_screened_incident_hccm  <- which(grepl("^cum_screened_incident_hccm.",names(out[[1]]$full_output)))
+  index_cum_treated_incident_hccm  <- which(grepl("^cum_treated_incident_hccm.",names(out[[1]]$full_output)))
+
+  index_cum_screened_incident_hccf  <- which(grepl("^cum_screened_incident_hccf.",names(out[[1]]$full_output)))
+  index_cum_treated_incident_hccf  <- which(grepl("^cum_treated_incident_hccf.",names(out[[1]]$full_output)))
+
+  # Extract based on indices
+  cum_screened_hbv_deaths_male <- lapply(lapply(out, "[[", "full_output"), "[",
+                                         index_cum_screened_hbv_deathsm)
+  cum_treated_hbv_deaths_male <- lapply(lapply(out, "[[", "full_output"), "[",
+                                        index_cum_treated_hbv_deathsm)
+  cum_screened_hbv_deaths_female <- lapply(lapply(out, "[[", "full_output"), "[",
+                                         index_cum_screened_hbv_deathsf)
+  cum_treated_hbv_deaths_female <- lapply(lapply(out, "[[", "full_output"), "[",
+                                        index_cum_treated_hbv_deathsf)
+
+  cum_screened_hcc_deaths_male <- lapply(lapply(out, "[[", "full_output"), "[",
+                                         index_cum_screened_hcc_deathsm)
+  cum_treated_hcc_deaths_male <- lapply(lapply(out, "[[", "full_output"), "[",
+                                        index_cum_treated_hcc_deathsm)
+  cum_screened_hcc_deaths_female <- lapply(lapply(out, "[[", "full_output"), "[",
+                                           index_cum_screened_hcc_deathsf)
+  cum_treated_hcc_deaths_female <- lapply(lapply(out, "[[", "full_output"), "[",
+                                          index_cum_treated_hcc_deathsf)
+
+  cum_screened_incident_hcc_male <- lapply(lapply(out, "[[", "full_output"), "[",
+                                         index_cum_screened_incident_hccm)
+  cum_treated_incident_hcc_male <- lapply(lapply(out, "[[", "full_output"), "[",
+                                        index_cum_treated_incident_hccm)
+  cum_screened_incident_hcc_female <- lapply(lapply(out, "[[", "full_output"), "[",
+                                           index_cum_screened_incident_hccf)
+  cum_treated_incident_hcc_female <- lapply(lapply(out, "[[", "full_output"), "[",
+                                          index_cum_treated_incident_hccf)
+
+  # Combine into full cumulative cohort outcome over time
+  cum_cohort_hbv_deaths_male_over_time <- sapply(cum_screened_hbv_deaths_male, rowSums)+
+    sapply(cum_treated_hbv_deaths_male, rowSums)
+  cum_cohort_hbv_deaths_female_over_time <- sapply(cum_screened_hbv_deaths_female, rowSums)+
+    sapply(cum_treated_hbv_deaths_female, rowSums)
+  cum_cohort_hcc_deaths_male_over_time <- sapply(cum_screened_hcc_deaths_male, rowSums)+
+    sapply(cum_treated_hcc_deaths_male, rowSums)
+  cum_cohort_hcc_deaths_female_over_time <- sapply(cum_screened_hcc_deaths_female, rowSums)+
+    sapply(cum_treated_hcc_deaths_female, rowSums)
+  cum_cohort_incident_hcc_male_over_time <- sapply(cum_screened_incident_hcc_male, rowSums)+
+    sapply(cum_treated_incident_hcc_male, rowSums)
+  cum_cohort_incident_hcc_female_over_time <- sapply(cum_screened_incident_hcc_female, rowSums)+
+    sapply(cum_treated_incident_hcc_female, rowSums)
+
+  # Calculate incidence of these at each timestep
+  inc_cohort_hbv_deaths_male_over_time  <- calculate_incident_numbers(cum_cohort_hbv_deaths_male_over_time)
+  inc_cohort_hbv_deaths_female_over_time  <- calculate_incident_numbers(cum_cohort_hbv_deaths_female_over_time)
+  inc_cohort_hcc_deaths_male_over_time  <- calculate_incident_numbers(cum_cohort_hcc_deaths_male_over_time)
+  inc_cohort_hcc_deaths_female_over_time  <- calculate_incident_numbers(cum_cohort_hcc_deaths_female_over_time)
+  inc_cohort_hcc_cases_male_over_time  <- calculate_incident_numbers(cum_cohort_incident_hcc_male_over_time)
+  inc_cohort_hcc_cases_female_over_time  <- calculate_incident_numbers(cum_cohort_incident_hcc_female_over_time)
+
+  # Extract cumulative outcomes by age by 2100 (cohort and separate)
+  cum_cohort_hbv_deaths_male_by_age_2100 <- do.call("rbind", lapply(cum_screened_hbv_deaths_male,function(x) x[which(out[[1]]$time==2100),]))+
+    do.call("rbind", lapply(cum_treated_hbv_deaths_male, function(x) x[which(out[[1]]$time==2100),]))
+  cum_screened_hbv_deaths_male_by_age_2100 <- do.call("rbind", lapply(cum_screened_hbv_deaths_male, function(x) x[which(out[[1]]$time==2100),]))
+  cum_treated_hbv_deaths_male_by_age_2100 <- do.call("rbind", lapply(cum_treated_hbv_deaths_male, function(x) x[which(out[[1]]$time==2100),]))
+  cum_cohort_hbv_deaths_female_by_age_2100 <- do.call("rbind", lapply(cum_screened_hbv_deaths_female,function(x) x[which(out[[1]]$time==2100),]))+
+    do.call("rbind", lapply(cum_treated_hbv_deaths_female, function(x) x[which(out[[1]]$time==2100),]))
+  cum_screened_hbv_deaths_female_by_age_2100 <- do.call("rbind", lapply(cum_screened_hbv_deaths_female, function(x) x[which(out[[1]]$time==2100),]))
+  cum_treated_hbv_deaths_female_by_age_2100 <- do.call("rbind", lapply(cum_treated_hbv_deaths_female, function(x) x[which(out[[1]]$time==2100),]))
+
+  cum_cohort_hcc_deaths_male_by_age_2100 <- do.call("rbind", lapply(cum_screened_hcc_deaths_male,function(x) x[which(out[[1]]$time==2100),]))+
+    do.call("rbind", lapply(cum_treated_hcc_deaths_male, function(x) x[which(out[[1]]$time==2100),]))
+  cum_screened_hcc_deaths_male_by_age_2100 <- do.call("rbind", lapply(cum_screened_hcc_deaths_male, function(x) x[which(out[[1]]$time==2100),]))
+  cum_treated_hcc_deaths_male_by_age_2100 <- do.call("rbind", lapply(cum_treated_hcc_deaths_male, function(x) x[which(out[[1]]$time==2100),]))
+  cum_cohort_hcc_deaths_female_by_age_2100 <- do.call("rbind", lapply(cum_screened_hcc_deaths_female,function(x) x[which(out[[1]]$time==2100),]))+
+    do.call("rbind", lapply(cum_treated_hcc_deaths_female, function(x) x[which(out[[1]]$time==2100),]))
+  cum_screened_hcc_deaths_female_by_age_2100 <- do.call("rbind", lapply(cum_screened_hcc_deaths_female, function(x) x[which(out[[1]]$time==2100),]))
+  cum_treated_hcc_deaths_female_by_age_2100 <- do.call("rbind", lapply(cum_treated_hcc_deaths_female, function(x) x[which(out[[1]]$time==2100),]))
+
+  cum_cohort_incident_hcc_male_by_age_2100 <- do.call("rbind", lapply(cum_screened_incident_hcc_male,function(x) x[which(out[[1]]$time==2100),]))+
+    do.call("rbind", lapply(cum_treated_incident_hcc_male, function(x) x[which(out[[1]]$time==2100),]))
+  cum_screened_incident_hcc_male_by_age_2100 <- do.call("rbind", lapply(cum_screened_incident_hcc_male, function(x) x[which(out[[1]]$time==2100),]))
+  cum_treated_incident_hcc_male_by_age_2100 <- do.call("rbind", lapply(cum_treated_incident_hcc_male, function(x) x[which(out[[1]]$time==2100),]))
+  cum_cohort_incident_hcc_female_by_age_2100 <- do.call("rbind", lapply(cum_screened_incident_hcc_female,function(x) x[which(out[[1]]$time==2100),]))+
+    do.call("rbind", lapply(cum_treated_incident_hcc_female, function(x) x[which(out[[1]]$time==2100),]))
+  cum_screened_incident_hcc_female_by_age_2100 <- do.call("rbind", lapply(cum_screened_incident_hcc_female, function(x) x[which(out[[1]]$time==2100),]))
+  cum_treated_incident_hcc_female_by_age_2100 <- do.call("rbind", lapply(cum_treated_incident_hcc_female, function(x) x[which(out[[1]]$time==2100),]))
+
+
+  gc()
+
+
+  # Change object names
+  extracted_outcomes <- list(inc_cohort_hbv_deaths_male_over_time=inc_cohort_hbv_deaths_male_over_time,
+                             inc_cohort_hbv_deaths_female_over_time=inc_cohort_hbv_deaths_female_over_time,
+                             inc_cohort_hcc_deaths_male_over_time=inc_cohort_hcc_deaths_male_over_time,
+                             inc_cohort_hcc_deaths_female_over_time=inc_cohort_hcc_deaths_female_over_time,
+                             inc_cohort_hcc_cases_male_over_time=inc_cohort_hcc_cases_male_over_time,
+                             inc_cohort_hcc_cases_female_over_time=inc_cohort_hcc_cases_female_over_time,
+                             cum_cohort_hbv_deaths_male_by_age_2100=cum_cohort_hbv_deaths_male_by_age_2100,
+                             cum_screened_hbv_deaths_male_by_age_2100=cum_screened_hbv_deaths_male_by_age_2100,
+                             cum_treated_hbv_deaths_male_by_age_2100=cum_treated_hbv_deaths_male_by_age_2100,
+                             cum_cohort_hbv_deaths_female_by_age_2100=cum_cohort_hbv_deaths_female_by_age_2100,
+                             cum_screened_hbv_deaths_female_by_age_2100=cum_screened_hbv_deaths_female_by_age_2100,
+                             cum_treated_hbv_deaths_female_by_age_2100=cum_treated_hbv_deaths_female_by_age_2100,
+                             cum_cohort_hcc_deaths_male_by_age_2100=cum_cohort_hcc_deaths_male_by_age_2100,
+                             cum_screened_hcc_deaths_male_by_age_2100=cum_screened_hcc_deaths_male_by_age_2100,
+                             cum_treated_hcc_deaths_male_by_age_2100=cum_treated_hcc_deaths_male_by_age_2100,
+                             cum_cohort_hcc_deaths_female_by_age_2100=cum_cohort_hcc_deaths_female_by_age_2100,
+                             cum_screened_hcc_deaths_female_by_age_2100=cum_screened_hcc_deaths_female_by_age_2100,
+                             cum_treated_hcc_deaths_female_by_age_2100=cum_treated_hcc_deaths_female_by_age_2100,
+                             cum_cohort_hcc_cases_male_by_age_2100=cum_cohort_incident_hcc_male_by_age_2100,
+                             cum_screened_hcc_cases_male_by_age_2100=cum_screened_incident_hcc_male_by_age_2100,
+                             cum_treated_hcc_cases_male_by_age_2100=cum_treated_incident_hcc_male_by_age_2100,
+                             cum_cohort_hcc_cases_female_by_age_2100=cum_cohort_incident_hcc_female_by_age_2100,
+                             cum_screened_hcc_cases_female_by_age_2100=cum_screened_incident_hcc_female_by_age_2100,
+                             cum_treated_hcc_cases_female_by_age_2100=cum_treated_incident_hcc_female_by_age_2100
+  )
+
+  outlist <- list("screen" = extracted_outcomes)
+  names(outlist) <- label
+
+  return(outlist)
 
 }
 

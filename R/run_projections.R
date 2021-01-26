@@ -14,7 +14,7 @@ load(here("analysis_input", "scenario_a1_parms.Rdata"))
 load(here("analysis_input", "scenario_anc1_it_parms.Rdata"))
 load(here("analysis_input", "scenario_wpl1_parms.Rdata"))
 
-sim7 <- apply(params_mat_accepted_kmeans[5,],1,
+sim <- apply(params_mat_accepted_kmeans[5,],1,
              function(x)
                run_model(sim_duration = runtime, default_parameter_list =scenario_a1_it_parms,
                          parms_to_change =
@@ -68,8 +68,9 @@ sim7 <- apply(params_mat_accepted_kmeans[5,],1,
                                 drop_timesteps_before = 1960,
                          scenario = "vacc_screen"))
 
-out7 <- code_model_output(sim7[[1]])
+out <- code_model_output(sim[[1]])
 outpath <- out
+
 
 ## Code for distribution of treatment initiations by compartment ##
 

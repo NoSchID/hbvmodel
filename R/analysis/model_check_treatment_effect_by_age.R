@@ -284,14 +284,11 @@ sim1o <- apply(params_mat_accepted_kmeans[111,],1,
 out1o <- code_model_output(sim1o[[1]])
 
 
-
-
 # Extract HBV-related deaths by age
 # Extract HCC deaths by age
 # Extract life-years by age
 # Calculate HBV deaths, HCC deaths averted and LY saved in the population
 # Calculate HBV deaths, HCC deaths averted and LY saved in the screened+treated cohort
-
 
 extract_outcomes_by_age <- function(sim, out) {
 
@@ -358,8 +355,9 @@ extract_outcomes_by_age <- function(sim, out) {
               inc_hbv_deaths_cohort=inc_hbv_deaths_cohort,
               inc_hcc_deaths_cohort=inc_hcc_deaths_cohort,
               ly = ly,
-              ly_cohort = ly_cohort,
-              inc_hcc_deaths_treated = inc_hcc_deaths_treated))
+              ly_cohort = ly_cohort#,
+              #inc_hcc_deaths_treated = inc_hcc_deaths_treated
+              ))
 
 }
 

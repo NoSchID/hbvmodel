@@ -3388,51 +3388,69 @@ df_by_age_group <- left_join(left_join(
                              dalys_averted_by_age_group, by = c("scenario", "sim")),
   deaths_averted_by_age_group, by = c("scenario", "sim"))
 df_by_age_group$scenario <- factor(df_by_age_group$scenario)
-levels(df_by_age_group$scenario) <- list("15-30 years" = "screen_2020_monit_sim6",
-                                        "30-45 years" = "screen_2020_monit_sim8",
-                                        "45+ years" = "screen_2020_monit_sim10")
+levels(df_by_age_group$scenario) <- list("15-30" = "screen_2020_monit_sim6",
+                                        "30-45" = "screen_2020_monit_sim8",
+                                        "45+" = "screen_2020_monit_sim10")
 
 
+# DALYs averted
+p <- ggplot(df_by_age_group) +
+  geom_boxplot(aes(x=scenario, y = dalys_averted)) +
+  ylab("Inc. DALYs averted") +
+  xlab("Monitored age group") +
+  ylim(0,61000)
+
+px <- ggplot(df_by_age_group) +
+  geom_boxplot(aes(x=scenario, y = deaths_averted)) +
+  ylab("Inc. HBV deaths averted") +
+  xlab("Monitored age group") +
+  ylim(0,4100)
+
+p0 <- ggplot(df_by_age_group) +
+  geom_boxplot(aes(x=scenario, y = monitoring_assessments)) +
+  ylab("Monitoring assessments") +
+  xlab("Monitored age group") +
+  ylim(0,400000)
 
 # Incremental DALYs averted per monitoring assessment
 p1 <- ggplot(df_by_age_group) +
   geom_boxplot(aes(x=scenario, y = dalys_averted/monitoring_assessments)) +
-  ylab("Incremental DALYs averted\nper monitoring assessment") +
+  ylab("Inc. DALYs averted\nper monitoring assessment") +
   xlab("Monitored age group") +
   ylim(0,1)
 
 # Incremental DALYs averted per treatment initiations
 p2 <- ggplot(df_by_age_group) +
   geom_boxplot(aes(x=scenario, y = dalys_averted/treatment_initiations)) +
-  ylab("Incremental DALYs averted\nper treatment initiation") +
+  ylab("Inc. DALYs averted\nper inc. treatment initiation") +
   xlab("Monitored age group") +
   ylim(0,30)
 
 # Incremental DALYs averted per PY on treatment
 p3 <- ggplot(df_by_age_group) +
   geom_boxplot(aes(x=scenario, y = dalys_averted/py_on_treatment)) +
-  ylab("Incremental DALYs averted\nper PY on treatment") +
+  ylab("Inc. DALYs averted\nper inc. PY on treatment") +
   xlab("Monitored age group") +
   ylim(0,0.75)
 
 # Incremental deaths averted per monitoring assessment
 p4 <- ggplot(df_by_age_group) +
   geom_boxplot(aes(x=scenario, y = deaths_averted/monitoring_assessments)) +
-  ylab("Incremental HBV-related deaths averted\nper monitoring assessment") +
+  ylab("Inc. HBV-related deaths averted\nper monitoring assessment") +
   xlab("Monitored age group") +
   ylim(0,0.04)
 
 # Incremental deaths  averted per treatment initiations
 p5 <- ggplot(df_by_age_group) +
   geom_boxplot(aes(x=scenario, y = deaths_averted/treatment_initiations)) +
-  ylab("Incremental HBV-related deaths averted\nper treatment initiation") +
+  ylab("Inc. HBV-related deaths averted\nper inc. treatment initiation") +
   xlab("Monitored age group") +
   ylim(0,0.7)
 
 # Incremental deaths  averted per PY on treatment
 p6 <- ggplot(df_by_age_group) +
   geom_boxplot(aes(x=scenario, y = deaths_averted/py_on_treatment)) +
-  ylab("Incremental HBV-related deaths averted\nper PY on treatment") +
+  ylab("Inc. HBV-related deaths averted\nper inc. PY on treatment") +
   xlab("Monitored age group") +
   ylim(0,0.05)
 
@@ -3446,14 +3464,14 @@ p7 <- ggplot(df_by_age_group) +
 # Incremental PY on treatment per monitoring assessment
 p8 <- ggplot(df_by_age_group) +
   geom_boxplot(aes(x=scenario, y = py_on_treatment/monitoring_assessments)) +
-  ylab("Incremental person-years on treatment\nper monitoring assessment") +
+  ylab("Inc. PY on treatment\nper monitoring assessment") +
   xlab("Monitored age group") +
   ylim(0,1.75)
 
 # Incremental PY on treatment per treatment initiation
 p9 <- ggplot(df_by_age_group) +
   geom_boxplot(aes(x=scenario, y = py_on_treatment/treatment_initiations)) +
-  ylab("Incremental person-years on treatment\nper treatment initiation") +
+  ylab("Inc. PY on treatment\nper inc. treatment initiation") +
   xlab("Monitored age group") +
   ylim(0,35)
 
@@ -3598,72 +3616,92 @@ df_by_screened_age_group <- left_join(left_join(
   dalys_averted_by_screened_age_group, by = c("scenario", "sim")),
   deaths_averted_by_screened_age_group, by = c("scenario", "sim"))
 df_by_screened_age_group$scenario <- factor(df_by_screened_age_group$scenario)
-levels(df_by_screened_age_group$scenario) <- list("15-30 years" = "a4_screen_2020_monit_0",
-                                         "30-45 years" = "a5_screen_2020_monit_0",
-                                         "45+ years" = "a2_screen_2020_monit_0")
+levels(df_by_screened_age_group$scenario) <- list("15-30" = "a4_screen_2020_monit_0",
+                                         "30-45" = "a5_screen_2020_monit_0",
+                                         "45-65" = "a2_screen_2020_monit_0")
 
 # Add per sAg test
+
+# DALYs averted
+ps <- ggplot(df_by_screened_age_group) +
+  geom_boxplot(aes(x=scenario, y = dalys_averted)) +
+  ylab("DALYs averted") +
+  xlab("Screened age group") +
+  ylim(0,120000)
+
+psx <- ggplot(df_by_screened_age_group) +
+  geom_boxplot(aes(x=scenario, y = deaths_averted)) +
+  ylab("HBV deaths averted") +
+  xlab("Screened age group") +
+  ylim(0,4600)
+
+
+ps0 <- ggplot(df_by_screened_age_group) +
+  geom_boxplot(aes(x=scenario, y = clinical_assessments)) +
+  ylab("Clinical assessments") +
+  xlab("Screened age group") +
+  ylim(0,50000)
 
 # Incremental DALYs averted per clinical assessment
 ps1 <- ggplot(df_by_screened_age_group) +
   geom_boxplot(aes(x=scenario, y = dalys_averted/clinical_assessments)) +
-  ylab("Incremental DALYs averted\nper clinical assessment") +
+  ylab("DALYs averted\nper clinical assessment") +
   xlab("Screened age group") +
   ylim(0,4.5)
 
 # Incremental DALYs averted per treatment initiations
 ps2 <- ggplot(df_by_screened_age_group) +
   geom_boxplot(aes(x=scenario, y = dalys_averted/treatment_initiations)) +
-  ylab("Incremental DALYs averted\nper treatment initiation") +
+  ylab("DALYs averted\nper treatment initiation") +
   xlab("Screened age group") +
   ylim(0,30)
 
 # Incremental DALYs averted per PY on treatment
 ps3 <- ggplot(df_by_screened_age_group) +
   geom_boxplot(aes(x=scenario, y = dalys_averted/py_on_treatment)) +
-  ylab("Incremental DALYs averted\nper PY on treatment") +
+  ylab("DALYs averted\nper PY on treatment") +
   xlab("Screened age group") +
   ylim(0,1)
 
-# Incremental deaths averted per monitoring assessment
+# Incremental deaths averted per clinical assessment
 ps4 <- ggplot(df_by_screened_age_group) +
   geom_boxplot(aes(x=scenario, y = deaths_averted/clinical_assessments)) +
-  ylab("Incremental HBV-related deaths averted\nper clinical assessment") +
+  ylab("HBV-related deaths averted\nper clinical assessment") +
   xlab("Screened age group") +
-  ylim(0,0.2)
+  ylim(0,0.16)
 
 # Incremental deaths  averted per treatment initiations
 ps5 <- ggplot(df_by_screened_age_group) +
   geom_boxplot(aes(x=scenario, y = deaths_averted/treatment_initiations)) +
-  ylab("Incremental HBV-related deaths averted\nper treatment initiation") +
+  ylab("HBV-related deaths averted\nper treatment initiation") +
   xlab("Screened age group") +
   ylim(0,0.8)
 
 # Incremental deaths  averted per PY on treatment
 ps6 <- ggplot(df_by_screened_age_group) +
   geom_boxplot(aes(x=scenario, y = deaths_averted/py_on_treatment)) +
-  ylab("Incremental HBV-related deaths averted\nper PY on treatment") +
+  ylab("HBV-related deaths averted\nper PY on treatment") +
   xlab("Screened age group") +
   ylim(0,0.04)
 
 # Incremental treatment initiations per clinical assessment
 ps7 <- ggplot(df_by_screened_age_group) +
   geom_boxplot(aes(x=scenario, y = treatment_initiations/clinical_assessments)) +
-  ylab("New treatment initiations\nper clinical assessment") +
+  ylab("Treatment initiations\nper clinical assessment") +
   xlab("Screened age group") +
-  ylim(0,0.4)
+  ylim(0,0.31)
 
 # Incremental PY on treatment per clinical assessment
 ps8 <- ggplot(df_by_screened_age_group) +
   geom_boxplot(aes(x=scenario, y = py_on_treatment/clinical_assessments)) +
-  ylab("Incremental person-years on treatment\nper clinical assessment") +
+  ylab("PY on treatment\nper clinical assessment") +
   xlab("Screened age group") +
   ylim(0,7.5)
 
 # Incremental PY on treatment per treatment initiation
 ps9 <- ggplot(df_by_screened_age_group) +
   geom_boxplot(aes(x=scenario, y = py_on_treatment/treatment_initiations)) +
-  ylab("Incremental person-years on treatment\nper treatment initiation") +
+  ylab("PY on treatment\nper treatment initiation") +
   xlab("Screened age group") +
   ylim(0,45)
 
@@ -3686,8 +3724,22 @@ grid.arrange(ps7,ps9,ps1,ps2,ps3,p7,p9,p1,p2,p3, ncol = 5)
 # Deaths
 grid.arrange(ps7,ps9,ps4,ps5,ps6,p7,p9,p4,p5,p6, ncol = 5)
 
-# For screened don't call it incremental
-# Add also the absolute!
+# Screen:
+grid.arrange(ps,psx,ps0,ps7,ps9,
+               ps1,ps2,ps3,
+               ps4,ps5,ps6,
+             layout_matrix = rbind(c(1,1,1,2,2,2,3,3,3,4,4,4,5,5,5),
+                                   c(6,6,6,6,6,7,7,7,7,7,8,8,8,8,8),
+                                   c(9,9,9,9,9,10,10,10,10,10,11,11,11,11,11)))
+# Monitor
+grid.arrange(p,px,p0,p7,p9,
+             p1,p2,p3,
+             p4,p5,p6,
+             layout_matrix = rbind(c(1,1,1,2,2,2,3,3,3,4,4,4,5,5,5),
+                                   c(6,6,6,6,6,7,7,7,7,7,8,8,8,8,8),
+                                   c(9,9,9,9,9,10,10,10,10,10,11,11,11,11,11)))
+
+
 # Clinical assessments are proportional to carriers in the population in 2020.
 # Monitoring assessments are proportional to carriers of that age over time.
 

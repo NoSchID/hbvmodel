@@ -2591,8 +2591,6 @@ ggplot(dominance_prob_result) +
   theme_bw() +
   theme(axis.text.x=element_text(angle=90, hjust=1))
 
-# With discounting rate set to 0 (no discounting):
-
 # With 3% discounting rate and 76% antenatal coverage (same as with 90% cov),
 # and with pop/ANC combination strategies added in + updated costs from Liem:
 # The non-dominated strategies are:
@@ -2704,8 +2702,8 @@ ggplot(subset(anc_incremental_df_disc, scenario != "No treatment")) +
   theme_bw()
 
 # CER plot of non-dominated strategies
-ggplot(subset(anc_incremental_df_disc, (frontier=="Non-dominated" | scenario ==
-                "screen_2020_monit_sim7") & scenario != "No treatment")) +
+ggplot(subset(anc_incremental_df_disc, (frontier=="Non-dominated" | scenario %in%
+                c("screen_2020_monit_sim7", "screen_2020_monit_0")) & scenario != "No treatment")) +
   stat_ellipse(aes(x = dalys_averted, y = total_cost,
                    group = reorder(scenario, total_cost),
                    fill= reorder(scenario, total_cost)),
@@ -2714,13 +2712,16 @@ ggplot(subset(anc_incremental_df_disc, (frontier=="Non-dominated" | scenario ==
   geom_line(data = subset(anc_incremental_df_disc_median, frontier == "Non-dominated"),
             aes(x = dalys_averted, y = total_cost), size = 1) +
   geom_point(data =  subset(anc_incremental_df_disc_median, frontier == "Non-dominated" |
-                              scenario == "screen_2020_monit_sim7"),
+                              scenario %in%
+                              c("screen_2020_monit_sim7", "screen_2020_monit_0")),
              aes(x = dalys_averted, y = total_cost,
                  group = reorder(scenario, total_cost),
                  colour = reorder(scenario, total_cost),
                  shape = frontier),
              size = 5) +
-  geom_point(data = subset(anc_incremental_df_disc_median, scenario == "screen_2020_monit_sim7"),
+  geom_point(data = subset(anc_incremental_df_disc_median,
+                           scenario %in%
+                             c("screen_2020_monit_sim7", "screen_2020_monit_0")),
              aes(x = dalys_averted, y = total_cost,
                  group =reorder(scenario, total_cost),
                  colour = reorder(scenario, total_cost)),
@@ -2740,17 +2741,22 @@ ggplot(subset(anc_incremental_df_disc, (frontier=="Non-dominated" | scenario ==
                                  "monit_5_screen_10a_2030"="Pop 2020+2030 (5,yes)",
                                  "monit_5_screen_10b_2030"="Pop 2020+2030 (5,no)",
                                  "screen_2020_anc_monit_0"="ANC 2020 (0)",
-                                 "screen_2020_monit_sim7"="Pop 2020 (5 in <45 year olds)",
-                                 "pop_2020_anc_2030_no_rescreen_monit_sim7"="Pop 2020 + ANC 2020-2030 (5 in <45 year olds,no)",
-                                 "pop_2020_anc_2040_no_rescreen_monit_0"="Pop 2020 + ANC 2020-2040 (0,no)",
+                                 "screen_2020_monit_0"="Pop 2020 (0)",
+                                 "screen_2020_monit_sim7"="Pop 2020\n(5 in <45 year olds)",
+                                 "pop_2020_anc_2030_no_rescreen_monit_sim7"="Pop 2020+\nANC 2020-2030\n(5 in <45 year olds,no)",
+                                 "pop_2020_anc_2040_no_rescreen_monit_0"="Pop 2020+\nANC 2020-2040 (0,no)",
                                  "No treatment"="No treatment")) +
   ylab("Total cost (USD 2019)") +
   xlab("DALYs averted") +
   guides(fill=FALSE) +
   guides(shape=FALSE) +
-  #  geom_abline(slope=391, linetype = "dashed") +
-  #  geom_abline(slope=518, linetype = "dashed") +
-  theme_bw()
+  #geom_abline(slope=391, linetype = "dashed") +
+  #geom_abline(slope=518, linetype = "dashed") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        legend.text = element_text(size = 13),
+        legend.title = element_text(size = 14))
 
 
 # Impact analysis in cohort and with added birth dose ----
