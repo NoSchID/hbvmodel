@@ -14,7 +14,7 @@ load(here("analysis_input", "scenario_a1_parms.Rdata"))
 load(here("analysis_input", "scenario_anc1_it_parms.Rdata"))
 load(here("analysis_input", "scenario_wpl1_parms.Rdata"))
 
-sim <- apply(params_mat_accepted_kmeans[5,],1,
+sim2030 <- apply(params_mat_accepted_kmeans[5,],1,
              function(x)
                run_model(sim_duration = runtime, default_parameter_list =scenario_a1_it_parms,
                          parms_to_change =
@@ -53,23 +53,24 @@ sim <- apply(params_mat_accepted_kmeans[5,],1,
                                 screening_years = c(2020),
                                 #screening_coverage = 0.9,
                                 #apply_treat_it = 1,
-                                prop_negative_to_remove_from_rescreening = 0,
+                                prop_negative_to_remove_from_rescreening = 1,
                                 apply_screen_not_treat = 0,
                                 monitoring_rate = 0,
                                 #monitoring_rate = c(rep(0, length(which(ages==0):which(ages==14.5))),
                                 #                    rep(1/5, length(which(ages==15):which(ages==29.5))),
                                 #                    rep(0, length(which(ages==30):which(ages==99.5)))),
-                                apply_repeat_screen = 0,
-                                min_age_to_screen = 15,
-                                max_age_to_screen = 29.5,
+                                apply_repeat_screen = 1,
+                                #min_age_to_screen = 15,
+                                #max_age_to_screen = 29.5,
                                 #min_age_to_repeat_screen = 15,
                                 #max_age_to_repeat_screen = 49.5,
-                                repeat_screening_years = seq(2020.5,2030,0.5)),
+                                repeat_screening_years = c(2030)),
                                 drop_timesteps_before = 1960,
                          scenario = "vacc_screen"))
 
-out <- code_model_output(sim[[1]])
+out2030 <- code_model_output(sim2030[[1]])
 outpath <- out
+
 
 
 ## Code for distribution of treatment initiations by compartment ##

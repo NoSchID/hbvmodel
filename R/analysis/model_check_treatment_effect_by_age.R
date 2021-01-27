@@ -1,4 +1,5 @@
 # Explore the effect of treatment depending on which age group is targeted in screening in 2020
+# Now have full model simulations of this which are analysed in treatment_effect_by_age_analysis
 
 require(here)  # for setting working directory
 source(here("R/imperial_model_interventions.R"))
