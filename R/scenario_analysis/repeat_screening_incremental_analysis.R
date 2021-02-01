@@ -1773,6 +1773,9 @@ ggplot(equity_deaths_averted,
   geom_segment(aes(x=6.9, y=5027, xend=10, yend=5027), lty="dashed") +
   geom_vline(xintercept = 3.5) +
   geom_vline(xintercept = 6.5) +
+  ylab("HBV deaths averted") +
+  xlab("Screening coverage & end year of repeat screen") +
+  labs(fill="Monitoring frequency") +
   #  stat_summary(fun.min = function(x)quantile(x,0.025),
   #               fun.max = function(x) quantile(x,0.975),
   #               position=position_dodge(width=0.95),

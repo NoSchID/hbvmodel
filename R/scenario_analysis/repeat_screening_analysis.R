@@ -22,6 +22,58 @@ out_path <-
 out_path_monit <-
   "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/monitoring_frequency/"
 
+out_path_full_output <-
+  "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/kmeans_full_output/"
+
+out2_it <- readRDS(paste0(out_path_full_output, "out2_status_quo_repeat_screens_comparison_280121.rds"))
+out2_it <- out2_it[[1]]
+out3_it <- readRDS(paste0(out_path_full_output, "a1_it_out3_screen_2020_monit_0_repeat_screens_comparison_280121.rds"))
+out3_it <- out3_it[[1]]
+# Varying number of repeat screening events for a 10-year frequency and without rescreening
+# No monitoring:
+out8b_it_2030 <- readRDS(paste0(out_path_full_output, "a1_it_out8b_monit_0_screen_10b_2030_repeat_screens_comparison_280121.rds"))
+out8b_it_2030 <- out8b_it_2030[[1]]
+out8b_it_2040 <- readRDS(paste0(out_path_full_output, "a1_it_out8b_monit_0_screen_10b_2040_repeat_screens_comparison_280121.rds"))
+out8b_it_2040 <- out8b_it_2040[[1]]
+out8b_it_2050 <- readRDS(paste0(out_path_full_output, "a1_it_out8b_monit_0_screen_10b_2050_repeat_screens_comparison_280121.rds"))
+out8b_it_2050 <- out8b_it_2050[[1]]
+out8b_it_2060 <- readRDS(paste0(out_path_full_output, "a1_it_out8b_monit_0_screen_10b_2060_repeat_screens_comparison_280121.rds"))
+out8b_it_2060 <- out8b_it_2060[[1]]
+# With monitoring every 5 years in <45 year olds
+monit_out7_it <- readRDS(paste0(out_path_full_output, "a1_it_out3_screen_2020_monit_sim7_repeat_screens_comparison_290121.rds"))
+monit_out7_it <- monit_out7_it[[1]]
+out8b_it_2030_monit_sim7 <- readRDS(paste0(out_path_full_output, "a1_it_out8b_monit_sim7_screen_10b_2030_repeat_screens_comparison_290121.rds"))
+out8b_it_2030_monit_sim7 <- out8b_it_2030_monit_sim7[[1]]
+out8b_it_2040_monit_sim7 <- readRDS(paste0(out_path_full_output, "a1_it_out8b_monit_sim7_screen_10b_2040_repeat_screens_comparison_290121.rds"))
+out8b_it_2040_monit_sim7 <- out8b_it_2040_monit_sim7[[1]]
+out8b_it_2050_monit_sim7 <- readRDS(paste0(out_path_full_output, "a1_it_out8b_monit_sim7_screen_10b_2050_repeat_screens_comparison_290121.rds"))
+out8b_it_2050_monit_sim7 <- out8b_it_2050_monit_sim7[[1]]
+out8b_it_2060_monit_sim7 <- readRDS(paste0(out_path_full_output, "a1_it_out8b_monit_sim7_screen_10b_2060_repeat_screens_comparison_290121.rds"))
+out8b_it_2060_monit_sim7 <- out8b_it_2060_monit_sim7[[1]]
+# With 50% screening coverage and no monitoring
+out3_it_cov50 <- readRDS(paste0(out_path_full_output, "a1_it_out3_screen_2020_monit_0_cov50_repeat_screens_comparison_290121.rds"))
+out3_it_cov50 <- out3_it_cov50[[1]]
+out8b_it_2030_cov50 <- readRDS(paste0(out_path_full_output, "a1_it_out8b_monit_0_screen_10b_2030_cov50_repeat_screens_comparison_290121.rds"))
+out8b_it_2030_cov50 <- out8b_it_2030_cov50[[1]]
+out8b_it_2040_cov50 <- readRDS(paste0(out_path_full_output, "a1_it_out8b_monit_0_screen_10b_2040_cov50_repeat_screens_comparison_290121.rds"))
+out8b_it_2040_cov50 <- out8b_it_2040_cov50[[1]]
+out8b_it_2050_cov50 <- readRDS(paste0(out_path_full_output, "a1_it_out8b_monit_0_screen_10b_2050_cov50_repeat_screens_comparison_290121.rds"))
+out8b_it_2050_cov50 <- out8b_it_2050_cov50[[1]]
+out8b_it_2060_cov50 <- readRDS(paste0(out_path_full_output, "a1_it_out8b_monit_0_screen_10b_2060_cov50_repeat_screens_comparison_290121.rds"))
+out8b_it_2060_cov50 <- out8b_it_2060_cov50[[1]]
+# With 50% screening coverage and monitoring every 5 years in <45 year olds
+monit_out7_it_cov50 <- readRDS(paste0(out_path_full_output, "a1_it_out3_screen_2020_monit_sim7_cov50_repeat_screens_comparison_010221.rds"))
+monit_out7_it_cov50 <- monit_out7_it_cov50[[1]]
+out8b_it_2030_monit_sim7_cov50 <- readRDS(paste0(out_path_full_output, "a1_it_out8b_monit_sim7_screen_10b_2030_cov50_repeat_screens_comparison_010221.rds"))
+out8b_it_2030_monit_sim7_cov50 <- out8b_it_2030_monit_sim7_cov50[[1]]
+out8b_it_2040_monit_sim7_cov50 <- readRDS(paste0(out_path_full_output, "a1_it_out8b_monit_sim7_screen_10b_2040_cov50_repeat_screens_comparison_010221.rds"))
+out8b_it_2040_monit_sim7_cov50 <- out8b_it_2040_monit_sim7_cov50[[1]]
+out8b_it_2050_monit_sim7_cov50 <- readRDS(paste0(out_path_full_output, "a1_it_out8b_monit_sim7_screen_10b_2050_cov50_repeat_screens_comparison_010221.rds"))
+out8b_it_2050_monit_sim7_cov50 <- out8b_it_2050_monit_sim7_cov50[[1]]
+out8b_it_2060_monit_sim7_cov50 <- readRDS(paste0(out_path_full_output, "a1_it_out8b_monit_sim7_screen_10b_2060_cov50_repeat_screens_comparison_010221.rds"))
+out8b_it_2060_monit_sim7_cov50 <- out8b_it_2060_monit_sim7_cov50[[1]]
+
+# OLD SIMULATIONS WITHOUT IT:
 # No monitoring:
 
 # Status quo
@@ -1179,3 +1231,302 @@ ggplot(comb_carriers) +
   stat_summary(aes(x=age_group, y = value, fill = time), fun=median, geom = "bar",
                position = "dodge")
 # Need to look at carriers who can still be targeted in screening (those not in cohort)
+
+## NEW WITH IT TREATED: Plot of repeat screening impact compared to prevalence and treatment need ----
+
+obj_list <- list(out3_it, out8b_it_2030, out8b_it_2040, out8b_it_2050, out8b_it_2060,
+                 monit_out7_it, out8b_it_2030_monit_sim7, out8b_it_2040_monit_sim7,
+                 out8b_it_2050_monit_sim7, out8b_it_2060_monit_sim7,
+                 out3_it_cov50, out8b_it_2030_cov50, out8b_it_2040_cov50,
+                 out8b_it_2050_cov50, out8b_it_2060_cov50,
+                 monit_out7_it_cov50, out8b_it_2030_monit_sim7_cov50, out8b_it_2040_monit_sim7_cov50,
+                 out8b_it_2050_monit_sim7_cov50, out8b_it_2060_monit_sim7_cov50)
+hbv_deaths_averted_sq_n <- list()
+hbv_deaths_averted_sq_p <- list()
+
+for(i in 1:length(obj_list)) {
+  hbv_deaths_averted_sq_n[[i]] <- data.frame(scenario = obj_list[[i]]$cum_hbv_deaths_by_2100$scenario,
+                                             type = "number",
+                                             out2_it$cum_hbv_deaths_by_2100[,-c(1:3)]-
+                                               obj_list[[i]]$cum_hbv_deaths_by_2100[,-c(1:3)])
+  hbv_deaths_averted_sq_p[[i]] <- data.frame(scenario = obj_list[[i]]$cum_hbv_deaths_by_2100$scenario,
+                                             type = "proportion",
+                                             (out2_it$cum_hbv_deaths_by_2100[,-c(1:3)]-
+                                               obj_list[[i]]$cum_hbv_deaths_by_2100[,-c(1:3)])/
+                                               out2_it$cum_hbv_deaths_by_2100[,-c(1:3)])
+
+}
+
+hbv_deaths_averted_sq <- rbind(do.call("rbind", hbv_deaths_averted_sq_n),
+                               do.call("rbind", hbv_deaths_averted_sq_p))
+# List of labels to match scenario to combine with df
+categories_df <- data.frame(scenario = unique(hbv_deaths_averted_sq$scenario),
+                            screening_end_year = rep(c("2020","2030","2040","2050","2060"), times= 4),
+                            monitoring = rep(c("No", "5<45", "No", "5<45"), each = 5),
+                            screening_coverage = c(rep("90%", 2*5),rep("50%",2*5)))
+categories_df$screening_coverage_end_year <- paste(categories_df$screening_coverage,
+                                                   categories_df$screening_end_year)
+categories_df$screening_end_year_monitoring <- paste(categories_df$screening_end_year,
+                                                     categories_df$monitoring)
+categories_df$screening_coverage_monitoring <- paste(categories_df$screening_coverage,
+                                                   categories_df$monitoring)
+
+hbv_deaths_averted_sq <- left_join(hbv_deaths_averted_sq, categories_df,
+                                   by = "scenario")
+
+hbv_deaths_averted_sq <- gather(hbv_deaths_averted_sq, key = "sim", value = "value",
+                                -scenario, -type, -screening_end_year,
+                                -monitoring, -screening_coverage, -screening_coverage_end_year,
+                                -screening_end_year_monitoring,-screening_coverage_monitoring)
+hbv_deaths_averted_sq$sim <- gsub("[^0-9]", "", hbv_deaths_averted_sq$sim)
+
+ggplot(subset(hbv_deaths_averted_sq, type == "proportion")) +
+  #geom_boxplot(aes(x=screening_coverage_end_year, y = value, fill = monitoring))
+  stat_summary(aes(x=screening_coverage_end_year, y = value, fill = monitoring), fun = "median",
+               geom= "col", position = "dodge")
+
+# Extract remaining number of carriers needing treatment AT time of screen (not after)
+# Remaining treatment need with treatment provided
+timepoints <- rep(seq(2020,2060,10),4)
+remaining_treatment_need_n <- list()
+remaining_treatment_need_p <- list()
+
+for(i in 1:length(obj_list)) {
+    remaining_treatment_need_n[[i]] <- data.frame(scenario = obj_list[[i]]$cum_hbv_deaths_by_2100$scenario,
+               at_time = timepoints[i], type ="number",
+               remaining_treatment_need=
+                 obj_list[[i]]$treatment_eligible_carriers_undiagnosed_over_time_15_to_65[obj_list[[i]]$time==timepoints[i]]+
+                 obj_list[[i]]$treatment_eligible_carriers_screened_over_time_15_to_65[obj_list[[i]]$time==timepoints[i]])
+    # As a proportion of the total Gambian population
+    remaining_treatment_need_p[[i]] <- data.frame(scenario = obj_list[[i]]$cum_hbv_deaths_by_2100$scenario,
+                                                  at_time = timepoints[i], type ="proportion",
+                                                  remaining_treatment_need=
+                                                    (obj_list[[i]]$treatment_eligible_carriers_undiagnosed_over_time_15_to_65[obj_list[[i]]$time==timepoints[i]]+
+                                                    obj_list[[i]]$treatment_eligible_carriers_screened_over_time_15_to_65[obj_list[[i]]$time==timepoints[i]])/
+                                                    obj_list[[i]]$total_pop_15_to_65_over_time[obj_list[[i]]$time==timepoints[i]])
+}
+
+# Remaining/total treatment need if there was no treatment programme (to see effect of vaccination alone)
+sq_treatment_need <- rbind(
+  data.frame(scenario = "sq", at_time = "2020",type ="number",
+             remaining_treatment_need=out2_it$treatment_eligible_carriers_undiagnosed_over_time_15_to_65[out2_it$time==2020]),
+  data.frame(scenario = "sq", at_time = "2030",type ="number",
+             remaining_treatment_need=out2_it$treatment_eligible_carriers_undiagnosed_over_time_15_to_65[out2_it$time==2030]),
+  data.frame(scenario = "sq", at_time = "2040",type ="number",
+             remaining_treatment_need=out2_it$treatment_eligible_carriers_undiagnosed_over_time_15_to_65[out2_it$time==2040]),
+  data.frame(scenario = "sq", at_time = "2050",type ="number",
+             remaining_treatment_need=out2_it$treatment_eligible_carriers_undiagnosed_over_time_15_to_65[out2_it$time==2050]),
+  data.frame(scenario = "sq", at_time = "2060",type ="number",
+             remaining_treatment_need=out2_it$treatment_eligible_carriers_undiagnosed_over_time_15_to_65[out2_it$time==2060]),
+  data.frame(scenario = "sq", at_time = "2020",type ="proportion",
+             remaining_treatment_need=out2_it$treatment_eligible_carriers_undiagnosed_over_time_15_to_65[out2_it$time==2020]/
+               out2_it$total_pop_15_to_65_over_time[out2_it$time==2020]),
+  data.frame(scenario = "sq", at_time = "2030",type ="proportion",
+             remaining_treatment_need=out2_it$treatment_eligible_carriers_undiagnosed_over_time_15_to_65[out2_it$time==2030]/
+               out2_it$total_pop_15_to_65_over_time[out2_it$time==2030]),
+  data.frame(scenario = "sq", at_time = "2040",type ="proportion",
+             remaining_treatment_need=out2_it$treatment_eligible_carriers_undiagnosed_over_time_15_to_65[out2_it$time==2040]/
+               out2_it$total_pop_15_to_65_over_time[out2_it$time==2040]),
+  data.frame(scenario = "sq", at_time = "2050",type ="proportion",
+             remaining_treatment_need=out2_it$treatment_eligible_carriers_undiagnosed_over_time_15_to_65[out2_it$time==2050]/
+               out2_it$total_pop_15_to_65_over_time[out2_it$time==2050]),
+  data.frame(scenario = "sq", at_time = "2060",type ="proportion",
+             remaining_treatment_need=out2_it$treatment_eligible_carriers_undiagnosed_over_time_15_to_65[out2_it$time==2060]/
+               out2_it$total_pop_15_to_65_over_time[out2_it$time==2060])
+)
+
+
+remaining_treatment_need <- rbind(do.call("rbind", remaining_treatment_need_n),
+                                  do.call("rbind", remaining_treatment_need_p))
+remaining_treatment_need$sim <- as.character(rep(1:183))
+sq_treatment_need$sim <- as.character(rep(1:183))
+
+remaining_treatment_need <- left_join(remaining_treatment_need, categories_df,
+                                   by = "scenario")
+
+sq_treatment_need$screening_end_year <- sq_treatment_need$at_time
+sq_treatment_need$monitoring <- "No monitoring"
+sq_treatment_need$screening_coverage <- NA
+sq_treatment_need$screening_coverage_end_year <- NA
+sq_treatment_need$screening_end_year_monitoring <- sq_treatment_need$at_time
+sq_treatment_need$screening_coverage_monitoring <- NA
+
+remaining_treatment_need <- rbind(remaining_treatment_need, sq_treatment_need)
+
+total_df <- full_join(hbv_deaths_averted_sq, remaining_treatment_need,
+                      by = c("scenario", "sim", "type",
+                             "screening_end_year", "monitoring","screening_coverage",
+                             "screening_coverage_end_year", "screening_end_year_monitoring",
+                             "screening_coverage_monitoring"))
+colnames(total_df)[colnames(total_df)=="value"] <- "deaths_averted"
+total_df <- gather(total_df, key = "outcome", value = "value", -scenario,
+                   -type, -sim, -screening_end_year, -monitoring, -screening_coverage,
+                   -screening_coverage_end_year,-at_time, -screening_end_year_monitoring,
+                   -screening_coverage_monitoring)
+
+ggplot(subset(total_df, type == "proportion"& outcome %in% c("deaths_averted",
+                                                             "remaining_treatment_need") &
+                scenario != "sq"),
+       aes(x=screening_coverage_end_year, y = value*100, fill = monitoring)) +
+  stat_summary(fun="median", geom="col", colour="black", position = "dodge")+
+  #  stat_summary(fun.min= function(x) quantile(x,0.025),
+  #               fun.max= function(x) quantile(x,0.975),
+  #               geom="errorbar", width = 0.2)+
+  facet_wrap(~outcome, scales="free") +
+  scale_fill_viridis_d() +
+  theme_classic()
+# Maybe show total number/proportion needing treatment AND those (like here) who haven't received it yet
+# Note how the total proportion of HBV deaths averted does not go over 35%
+# This is to a large degree because of no monitoring, but also:
+# imperfect treatment effect and imperfect uptake
+# Plot shows: cumulative deaths averted by 2100 against duration of repeat screening,
+# and remaining treatment need at time of each repeat screen.
+# See Fig 1 or 7 for plots: https://www.nature.com/articles/s41467-020-17528-3.pdf
+# Fill colours will be split by monitoring status & coverage
+# Maybe add remaining treatment need without treatment
+# See my other plot for inspiration
+
+# Have lower coverage as a subset of bars
+# Need 2 separate plots to overlay these because order varies by outcome
+ggplot() +
+  stat_summary(data=subset(total_df, type == "number"& outcome %in% c("deaths_averted",
+                                                                 "remaining_treatment_need") &
+                        screening_coverage=="90%" ),
+               aes(x=screening_end_year, y = value, fill = monitoring),
+               fun="median", geom="col",colour="black", position = "dodge")+
+  stat_summary(data=subset(total_df, type == "number"& outcome %in% c("deaths_averted",
+                                                                      "remaining_treatment_need") &
+                             screening_coverage=="50%"),
+               aes(x=screening_end_year, y = value, fill = monitoring),
+               fun="median", geom="col", colour="black", position = "dodge")+
+  facet_wrap(~outcome, scales="free") +
+  scale_fill_viridis_d() +
+  theme_classic()
+
+# Combine with showing vaccination effect alone on treatment need (cross):
+ggplot() +
+  stat_summary(data=subset(total_df, type == "proportion" & outcome == "remaining_treatment_need" &
+                             scenario == "sq"),
+               aes(x=screening_end_year, y = value*100), shape = 4, size=3,
+               fun="median", geom="point",colour="black")+
+  stat_summary(data=subset(total_df, type == "proportion" & outcome == "remaining_treatment_need" &
+                             scenario != "sq" & screening_coverage == "90%"),
+               aes(x=screening_end_year, y = value*100, fill = monitoring),
+               fun="median", geom="col",colour="black", position = "dodge")+
+  scale_fill_viridis_d() +
+  theme_classic()
+# WHO are the unidentified eligible carriers at the end? Those who did not
+# take up the assessment/treatment and also new MTCT cases.
+
+# Note that I looked at this with carriers on treatment, but that is not the ideal plot to show that overall treatment need is declining due to
+# vaccination, cause by showing carriers on treatment it already includes the effect
+# of prolonged life as a result of treatment
+
+# To add: proportion of all treatment eligible carriers on treatment? Need to calculate this
+# with reference to SQ scenario.
+
+# MAIN PLOT
+# LEFT: Deaths averted - overlay 50% coverage (which should be lighter)
+
+p1 <- ggplot() +
+  stat_summary(data=subset(total_df, type == "proportion"& outcome =="deaths_averted" & scenario != "sq" &
+                             screening_coverage=="90%"),
+               aes(x=monitoring, y = value*100,
+                   fill = screening_coverage_monitoring,colour="l1"),
+               fun="median", geom="bar")+
+  stat_summary(data=subset(total_df, type == "proportion"& outcome =="deaths_averted" & scenario != "sq" &
+                             screening_coverage=="50%"),
+               aes(x=monitoring, y = value*100,
+                   fill = screening_coverage_monitoring,colour="l2"),
+               fun="median", geom="bar")+
+  facet_wrap(~screening_end_year, ncol = 5, strip.position="bottom") +
+  scale_fill_manual("Monitoring strategy",
+                    values = c("50% 5<45" = "#A180A9",
+                               "50% No" = "#90C7C5",
+                               "90% 5<45" = "#440154",
+                               "90% No" = "#21908C"),
+                    breaks = c("90% 5<45", "90% No"),
+                    labels =  c("90% 5<45" = "Every 5 years\nin <45 year olds",
+                                "90% No" = "No monitoring")) +
+  scale_colour_manual("Screening coverage",
+                      values = c("l1" = "black",
+                                 "l2" = "black"),
+                      labels = c("l1" = "50%",
+                                 "l2" = "90%")) +
+  guides(color = guide_legend(override.aes = list(fill = c("grey80", "black"),
+                                                  colour = c("white", "white")),
+                                                  order =2),
+         fill = guide_legend(order=1)) +
+  ylab("Cumulative HBV-related deaths\naverted by 2100 (%)") +
+  xlab("End year of screening") +
+  theme_classic() +
+  scale_y_continuous(expand = c(0, 0)) +
+  theme(axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        strip.background = element_blank(),
+        axis.line.x = element_blank(),
+        legend.position = "none",
+        strip.text = element_text(size = 15),
+        axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        legend.text = element_text(size = 13),
+        legend.title = element_text(size = 14))
+
+# RIGHT: Remaining treatment need
+p2 <- ggplot() +
+  stat_summary(data=subset(total_df, type == "proportion"& outcome =="remaining_treatment_need" &
+                             scenario != "sq" &
+                             screening_coverage=="50%"),
+               aes(x=monitoring, y = value*100,
+                   fill = screening_coverage_monitoring,colour="l2"),
+               fun="median", geom="bar")+
+  stat_summary(data=subset(total_df, type == "proportion"& outcome =="remaining_treatment_need" &
+                             scenario != "sq" &
+                             screening_coverage=="90%"),
+               aes(x=monitoring, y = value*100,
+                   fill = screening_coverage_monitoring,colour="l1"),
+               fun="median", geom="bar") +
+  stat_summary(data=subset(total_df, type == "proportion" & outcome == "remaining_treatment_need" &
+                             scenario == "sq"),
+            aes(x=1.5, y = value*100), shape = 4, size=3,
+               fun="median", geom="point",colour="black")+
+  facet_wrap(~screening_end_year, ncol = 5, strip.position="bottom") +
+  scale_fill_manual("Monitoring strategy",
+                    values = c("50% 5<45" = "#A180A9",
+                               "50% No" = "#90C7C5",
+                               "90% 5<45" = "#440154",
+                               "90% No" = "#21908C"),
+                    breaks = c("90% 5<45", "90% No"),
+                    labels =  c("90% 5<45" = "Every 5 years\nin <45 year olds",
+                                "90% No" = "No monitoring")) +
+  scale_colour_manual("Screening coverage",
+                      values = c("l1" = "black",
+                                 "l2" = "black"),
+                      labels = c("l1" = "50%",
+                                 "l2" = "90%")) +
+  guides(color = guide_legend(override.aes = list(fill = c("grey80", "black"),
+                                                  colour = c("white", "white")),
+                              order =2),
+         fill = guide_legend(order=1)) +
+  ylab("Remaining treatment need in total\ntargeted population at time of screening (%)") +
+  xlab("Year of screening") +
+  theme_classic() +
+  scale_y_continuous(expand = c(0, 0)) +
+  theme(axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        strip.background = element_blank(),
+        axis.line.x = element_blank(),
+        legend.position = c(0.75, 0.75),
+        strip.text = element_text(size = 15),
+        axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        legend.text = element_text(size = 13),
+        legend.title = element_text(size = 14))
+# It is surprising how few of the eligible carriers are identified by the programme.
+# Is this because of losses in the cascade? Or uncertainty?
+# => to quite a large degree because of uncertainty in NUMBERS (demography has an
+# effect here too). Though related to vaccination showing the PROPORTION has similar
+# effect.
+
+grid.arrange(p1,p2,ncol=2)
+# Cross indicates treatment need decline with vaccination alone.
