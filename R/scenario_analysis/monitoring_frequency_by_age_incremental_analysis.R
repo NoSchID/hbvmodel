@@ -3503,7 +3503,6 @@ quantile(monit_out10$cohort_cum_hbv_deaths[,-1]/monit_out10$cohort_size[,-1],
 # Lifetime risk of HBV death in 45+ year old screened+treated+monitored carriers =
 # 5% (2-9%)
 
-
 # But need cohort simulations of a cohort of this age without treatment/monitoring
 # to look at reduction in lifetime risk! Have simulations of screening+treatment without
 # monitoring.

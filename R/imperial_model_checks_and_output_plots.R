@@ -267,10 +267,10 @@ outpath <- out
 ## Total population, births, deaths
 
 # Plot total population size over timesteps
-plot(outpath$time, outpath$pop_total$pop_total,
-     xlab = "Year", ylab = "Population size", type = "l", ylim = c(0,7000000))
-points(popsize_total$time, popsize_total$pop, col = "red")
-
+plot(outpath$time, outpath$pop_total$pop_total/1000000,
+     xlab = "Year", ylab = "Population size (millions)", type = "l", ylim = c(0,7),
+     xlim=c(1970,2095))
+points(popsize_total$time, popsize_total$pop/1000000, col = "red")
 
 # Plot total number of births over time periods
 plot(outpath$births_group5$timegroup, outpath$births_group5$incident_number,
@@ -423,6 +423,61 @@ points(x = seq(2,102,5),
        y = input_popsize_male_clean$pop[input_popsize_male_clean$time == "2080"]/5,
        col = "red")
 par(mfrow=c(1,1))
+
+
+### Demography plots for methods section ----
+outpath <- out
+
+par(mfrow=c(1,1), mar=c(5.1,4.1,4.1,2.1))
+# Plot total population size over timesteps
+plot(outpath$time, outpath$pop_total$pop_total/1000000,
+     xlab = "Year", ylab = "Population size (millions)", type = "l", ylim = c(0,7),
+     xlim=c(1970,2095))
+points(popsize_total$time, popsize_total$pop/1000000, col = "red")
+
+par(mfrow=c(3,2), mai=c(0.6,0.5,0.3,0.3))
+# Female age structure in 1970
+plot(x = ages,
+     y = outpath$pop_female[which(outpath$time == 1970),index$ages_all]/da,
+     type = "l", xlab = "Age (years)", ylab = "Population", main = "1970 - women")
+points(x = seq(2,82,5),
+       y = input_popsize_female_clean$pop[input_popsize_female_clean$time == "1970"]/5,
+       col = "red")
+# Male age structure in 1970
+plot(x = ages,
+     y = outpath$pop_male[which(outpath$time == 1970),index$ages_all]/da,
+     type = "l", xlab = "Age (years)", ylab = "Population", main = "1970 - men")
+points(x = seq(2,82,5),
+       y = input_popsize_male_clean$pop[input_popsize_male_clean$time == "1970"]/5,
+       col = "red")
+# Female age structure in 2020
+plot(x = ages,
+     y = outpath$pop_female[which(outpath$time == 2020),index$ages_all]/da,
+     type = "l", xlab = "Age (years)", ylab = "Population", main = "2020 - women")
+points(x = seq(2,102,5),
+       y = input_popsize_female_clean$pop[input_popsize_female_clean$time == "2020"]/5,
+       col = "red")
+# Male age structure in 2020
+plot(x = ages,
+     y = outpath$pop_male[which(outpath$time == 2020),index$ages_all]/da,
+     type = "l", xlab = "Age (years)", ylab = "Population", main = "2020 - men")
+points(x = seq(2,102,5),
+       y = input_popsize_male_clean$pop[input_popsize_male_clean$time == "2020"]/5,
+       col = "red")
+# Female age structure in 2050
+plot(x = ages,
+     y = outpath$pop_female[which(outpath$time == 2050),index$ages_all]/da,
+     type = "l", xlab = "Age (years)", ylab = "Population", main = "2050 - women")
+points(x = seq(2,102,5),
+       y = input_popsize_female_clean$pop[input_popsize_female_clean$time == "2050"]/5,
+       col = "red")
+# Male age structure in 2050
+plot(x = ages,
+     y = outpath$pop_male[which(outpath$time == 2050),index$ages_all]/da,
+     type = "l", xlab = "Age (years)", ylab = "Population", main = "2050 - men")
+points(x = seq(2,102,5),
+       y = input_popsize_male_clean$pop[input_popsize_male_clean$time == "2050"]/5,
+       col = "red")
 
 
 ### To do: model checks ----

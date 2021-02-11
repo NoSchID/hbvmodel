@@ -10,11 +10,11 @@ source(here("R/scenario_analysis/calculate_outcomes.R"))
 #load(here("calibration", "input", "accepted_parmsets_123_180520.Rdata")) # params_mat_targets5
 load(here("calibration", "input", "accepted_parmsets_kmeans_170820.Rdata")) # params_mat_accepted_kmeans
 load(here("analysis_input", "scenario_a1_it_parms.Rdata"))
-load(here("analysis_input", "scenario_a1_parms.Rdata"))
+#load(here("analysis_input", "scenario_a1_parms.Rdata"))
 load(here("analysis_input", "scenario_anc1_it_parms.Rdata"))
 load(here("analysis_input", "scenario_wpl1_parms.Rdata"))
 
-sim2030 <- apply(params_mat_accepted_kmeans[5,],1,
+sim <- apply(params_mat_accepted_kmeans[5,],1,
              function(x)
                run_model(sim_duration = runtime, default_parameter_list =scenario_a1_it_parms,
                          parms_to_change =
@@ -59,18 +59,43 @@ sim2030 <- apply(params_mat_accepted_kmeans[5,],1,
                                 #monitoring_rate = c(rep(0, length(which(ages==0):which(ages==14.5))),
                                 #                    rep(1/5, length(which(ages==15):which(ages==29.5))),
                                 #                    rep(0, length(which(ages==30):which(ages==99.5)))),
-                                apply_repeat_screen = 1,
+                                apply_repeat_screen = 0,
                                 #min_age_to_screen = 15,
                                 #max_age_to_screen = 29.5,
                                 #min_age_to_repeat_screen = 15,
                                 #max_age_to_repeat_screen = 49.5,
                                 repeat_screening_years = c(2030)),
                                 drop_timesteps_before = 1960,
-                         scenario = "vacc_screen"))
+                         scenario = "vacc"))
 
-out2030 <- code_model_output(sim2030[[1]])
+out <- code_model_output(sim[[1]])
 outpath <- out
 
+
+## Code for lifetime risk of HBV death in treatment eligible vs treatment ineligible compartments ##
+
+# Sim is 5-yearly monitoring with treatment
+# Extracted screened deaths and screened cohort size to calculate lifetime risk
+# among these
+# Sim2 is no monitoring with apply_screen_not_treat = 1
+# Extract screened deaths+cohort size (which now includes those that should be treated) and
+# substract screened from sim3 (no monitoring), leaving us with the lifetime risk of HBV death
+# in those who should have been treated.
+# Though I guess looking at DALYs would make more sense
+
+sum(out$screened_hbv_deaths$incident_number_total[out$time >2020 & out$time <2100])/
+  sum((out$screened_pop_female[out$time==2020.5,]+
+  out$screened_pop_female[out$time==2020.5,]))
+# Lifetime risk of HBV death in treatment ineligible carriers is 1.8% or less
+# as some of this could still be due to missed progression.
+
+(sum(out2$screened_hbv_deaths$incident_number_total[out2$time >2020 & out2$time <2100])-
+  sum(out3$screened_hbv_deaths$incident_number_total[out3$time >2020 & out3$time <2100]))/
+  (sum((out2$screened_pop_female[out2$time==2020.5,]+
+         out2$screened_pop_female[out2$time==2020.5,]))-
+     sum((out3$screened_pop_female[out3$time==2020.5,]+
+       out3$screened_pop_female[out3$time==2020.5,])))
+# Lifetime risk of HBV death in treatment eligible carriers not receiving treatment is 40%!
 
 
 ## Code for distribution of treatment initiations by compartment ##

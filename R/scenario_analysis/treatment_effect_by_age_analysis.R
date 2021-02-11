@@ -118,24 +118,47 @@ averted_outcomes <-filter(averted_outcomes, time>=2015 & time <=2100)
 
 averted_outcomes_long <- gather(averted_outcomes, key = "sim", value = "value",
                                 -outcome, -age, -sex,-time)
+
+
+# New facet label names
+facet_labels_deaths <- c("Averted cirrhosis deaths", "Averted HCC deaths")
+names(facet_labels_deaths) <- c("cirrhosis_deaths_averted", "hcc_deaths_averted")
+
+#averted_outcomes_long$y_min[averted_outcomes_long$sex=="male" &
+#                        averted_outcomes_long$outcome == "cirrhosis_deaths_averted"] <- -14
+#averted_outcomes_long$y_max[averted_outcomes_long$sex=="male" &
+#                              averted_outcomes_long$outcome == "cirrhosis_deaths_averted"] <- 150
+#averted_outcomes_long$y_min[averted_outcomes_long$sex=="male" &
+#                              averted_outcomes_long$outcome == "hcc_deaths_averted"] <- -14
+#averted_outcomes_long$y_max[averted_outcomes_long$sex=="male" &
+#                              averted_outcomes_long$outcome == "hcc_deaths_averted"] <- 51
+
 # Men
 ggplot(subset(averted_outcomes_long,sex == "male" & outcome %in%
                 c("cirrhosis_deaths_averted", "hcc_deaths_averted"))) +
   geom_line(aes(x=time, y = value/0.5, group = sim), col = "grey") +
   stat_summary(aes(x=time, y = value), fun="median", geom = "line", col = "red")+
-  facet_wrap(outcome~age,ncol = 3, scales = "free_y") +
-  ylab("HBV-related deaths averted per year in men") +
+  facet_wrap(outcome~age,ncol = 3, scales = "free_y",
+             labeller = labeller(outcome = facet_labels_deaths)) +
+  ylab("HBV-related deaths averted per year") +
   geom_hline(yintercept=0) +
-  theme_bw()
+  labs(title="HBV-related deaths averted by treatment in different age groups in men") +
+#  geom_blank(aes(y = y_min)) +
+#  geom_blank(aes(y = y_max)) +
+  theme_classic()
+
+
 # Women
 ggplot(subset(averted_outcomes_long,sex == "female" & outcome %in%
                 c("cirrhosis_deaths_averted", "hcc_deaths_averted"))) +
   geom_line(aes(x=time, y = value/0.5, group = sim), col = "grey") +
   stat_summary(aes(x=time, y = value), fun="median", geom = "line", col = "red")+
-  facet_wrap(outcome~age,ncol = 3, scales = "free_y") +
-  ylab("HBV-related deaths averted per year in women") +
+  facet_wrap(outcome~age,ncol = 3, scales = "free_y",
+             labeller = labeller(outcome = facet_labels_deaths)) +
+  ylab("HBV-related deaths averted per year") +
   geom_hline(yintercept=0) +
-  theme_bw()
+  labs(title="HBV-related deaths averted by treatment in different age groups in women") +
+  theme_classic()
 
 # Cumulative HBV/HCC deaths by age by 2100 to show shift in pattern of HCC deaths by age in the treated cohort ----
 # What would happen in those who need treatment but would not get it?
@@ -270,8 +293,8 @@ age_p3 <-ggplot(subset(df, treated_age == "45-65")) +
         legend.key = element_rect(fill = "white")) +
   scale_color_discrete(guide = guide_legend(override.aes = list(color = "white")))
 
-grid.arrange(age_p1,age_p2,age_p3,ncol = 3,top =
-               "Effect of antiviral therapy on HCC incidence in treatment-eligible HBV carriers")
+grid.arrange(age_p1,age_p2,age_p3,ncol = 3,
+             top ="Effect of antiviral therapy on HCC incidence in treatment-eligible HBV carriers")
 
 
 
