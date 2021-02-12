@@ -72,6 +72,33 @@ monit_out7_thccr_chb_lower <- readRDS(paste0(out_path, "a1_it_screen_2020_monit_
 monit_out7_thccr_chb_lower <- monit_out7_thccr_chb_lower[[1]]
 monit_out7_thccr_chb_upper <- readRDS(paste0(out_path, "a1_it_screen_2020_monit_out7_thccr_chb_upper_040221.rds"))
 monit_out7_thccr_chb_upper <- monit_out7_thccr_chb_upper[[1]]
+# Vary thccr_it to 0.1 and 0.8
+out3_thccr_it_lower <- readRDS(paste0(out_path, "a1_it_screen_2020_monit_0_thccr_it_lower_080221.rds"))
+out3_thccr_it_lower <- out3_thccr_it_lower[[1]]
+out3_thccr_it_upper <- readRDS(paste0(out_path, "a1_it_screen_2020_monit_0_thccr_it_upper_080221.rds"))
+out3_thccr_it_upper <- out3_thccr_it_upper[[1]]
+monit_out7_thccr_it_lower <- readRDS(paste0(out_path, "a1_it_screen_2020_monit_out7_thccr_it_lower_080221.rds"))
+monit_out7_thccr_it_lower <- monit_out7_thccr_it_lower[[1]]
+monit_out7_thccr_it_upper <- readRDS(paste0(out_path, "a1_it_screen_2020_monit_out7_thccr_it_upper_090221.rds"))
+monit_out7_thccr_it_upper <- monit_out7_thccr_it_upper[[1]]
+# Vary thccr_cc to 0.1 and 0.8
+out3_thccr_cc_lower <- readRDS(paste0(out_path, "a1_it_screen_2020_monit_0_thccr_cc_lower_080221.rds"))
+out3_thccr_cc_lower <- out3_thccr_cc_lower[[1]]
+out3_thccr_cc_upper <- readRDS(paste0(out_path, "a1_it_screen_2020_monit_0_thccr_cc_upper_080221.rds"))
+out3_thccr_cc_upper <- out3_thccr_cc_upper[[1]]
+monit_out7_thccr_cc_lower <- readRDS(paste0(out_path, "a1_it_screen_2020_monit_out7_thccr_cc_lower_090221.rds"))
+monit_out7_thccr_cc_lower <- monit_out7_thccr_cc_lower[[1]]
+monit_out7_thccr_cc_upper <- readRDS(paste0(out_path, "a1_it_screen_2020_monit_out7_thccr_cc_upper_090221.rds"))
+monit_out7_thccr_cc_upper <- monit_out7_thccr_cc_upper[[1]]
+# Vary thccr_dcc to 0.1 and 0.8
+out3_thccr_dcc_lower <- readRDS(paste0(out_path, "a1_it_screen_2020_monit_0_thccr_dcc_lower_120221.rds"))
+out3_thccr_dcc_lower <- out3_thccr_dcc_lower[[1]]
+out3_thccr_dcc_upper <- readRDS(paste0(out_path, "a1_it_screen_2020_monit_0_thccr_dcc_upper_080221.rds"))
+out3_thccr_dcc_upper <- out3_thccr_dcc_upper[[1]]
+monit_out7_thccr_dcc_lower <- readRDS(paste0(out_path, "a1_it_screen_2020_monit_out7_thccr_dcc_lower_080221.rds"))
+monit_out7_thccr_dcc_lower <- monit_out7_thccr_dcc_lower[[1]]
+monit_out7_thccr_dcc_upper <- readRDS(paste0(out_path, "a1_it_screen_2020_monit_out7_thccr_dcc_upper_080221.rds"))
+monit_out7_thccr_dcc_upper <- monit_out7_thccr_dcc_upper[[1]]
 
 # Technically out3 is dominated, but get ICER compared to SQ anyway for comparison purposes
 # The ICER for monit_sim7 compared to monit_sim6 in the other file is: 338 (161-844)
@@ -90,7 +117,13 @@ annual_discounting_rate <- 0.03
 #object_list <- list(out3_tmu_dcc_lower, monit_out7_tmu_dcc_lower)
 #object_list <- list(out3_tmu_dcc_upper, monit_out7_tmu_dcc_upper)
 #object_list <- list(out3_thccr_chb_lower, monit_out7_thccr_chb_lower)
-object_list <- list(out3_thccr_chb_upper, monit_out7_thccr_chb_upper)
+#object_list <- list(out3_thccr_chb_upper, monit_out7_thccr_chb_upper)
+#object_list <- list(out3_thccr_it_lower, monit_out7_thccr_it_lower)
+#object_list <- list(out3_thccr_it_upper, monit_out7_thccr_it_upper)
+#object_list <- list(out3_thccr_cc_lower, monit_out7_thccr_cc_lower)
+#object_list <- list(out3_thccr_cc_upper, monit_out7_thccr_cc_upper)
+#object_list <- list(out3_thccr_dcc_lower, monit_out7_thccr_dcc_lower)
+object_list <- list(out3_thccr_dcc_upper, monit_out7_thccr_dcc_upper)
 
 # Extract interactions and person-years on treatment, and HBV-related deaths
 # ad DALYs averted, in a for loop
@@ -180,26 +213,88 @@ icer_result
 # tmu_dcc_upper:  out3 = 266 (163-494), monit_out7 = 321 (155-768)
 # thccr_chb_lower:  out3 = 260 (160-471), monit_out7 = 308 (152-705)
 # thccr_chb_upper:  out3 = 286 (168-609), monit_out7 = 361 (163-1084)
+# thccr_it_lower: out3 = 264 (163-490), monit_out7 = 320(154-761)
+# thccr_it_upper:  out3 = 269 (164-509), monit_out7 = 329 (156-914)
+# thccr_cc_lower: out3 = 256 (158-474), monit_out7 = 316(152-757)
+# thccr_cc_upper:  out3 = 300 (178-585), monit_out7 = 345 (166-805)
+# thccr_dcc_lower: out3 = 264 (163-492), monit_out7 = 321 (155-767)
+# thccr_dcc_upper: out3 = 264 (163-493), monit_out7 = 321 (155-768)
 
 # For tornado plot, take median ICER for default, and lower and upper value for each parameter.
 # Have separate columns for lower and upper, one of which is negative from median.
 # Add coord_flip and 2 separete layers for lower and upper
 
-tornado_df_out3 <- data.frame(parm = c("tmu_dcc", "thccr_chb"),
-                         lower_icer = c(264, 260),
-                         default_icer = c(264,264),
-                         upper_icer = c(266,286))
+# Median ICERS:
+tornado_df_out3 <- data.frame(outcome = "monit_0",
+                              parm = c("thccr_it","thccr_chb","thccr_cc","thccr_dcc","tmu_dcc"),
+                              lower_icer = c(264,260,256,264,264),
+                              default_icer = c(264,264,264,264,264),
+                              upper_icer = c(269,286,300,264,266))
+tornado_df_out3$parm <- factor(tornado_df_out3$parm,
+                               levels = c("thccr_it","thccr_chb","thccr_cc","thccr_dcc","tmu_dcc"))
+
+tornado_df_monit_sim7 <- data.frame(outcome = "monit_sim7",
+                                    parm = c("thccr_it","thccr_chb","thccr_cc","thccr_dcc","tmu_dcc"),
+                                    lower_icer = c(320,308,316,321,321),
+                                    default_icer = c(321,321,321,321,321),
+                                    upper_icer = c(329,361,345,321,321))
+tornado_df_monit_sim7$parm <- factor(tornado_df_monit_sim7$parm,
+                               levels = c("thccr_it","thccr_chb","thccr_cc","thccr_dcc","tmu_dcc"))
+
+lower_wtp <- 404
 
 ggplot(tornado_df_out3) +
   geom_col(aes(x=parm, y = upper_icer-default_icer), fill = "blue") +
   geom_col(aes(x=parm, y = lower_icer-default_icer), fill = "red") +
-  geom_hline(yintercept=391-264) +
-  scale_y_continuous(breaks = c(0,391-264),
-                     labels = c(264,391),
-                     limits=c(-130,130)) +
+  geom_text(aes(label = c(0.8,0.8,0.8,0.8,0.08), x = parm, y = upper_icer-default_icer),
+            position = position_dodge(width = 0.8), hjust = -0.5) +
+  geom_text(aes(label = c(0.1,0.1,0.1,0.1,0.35), x = parm, y = lower_icer-default_icer),
+            position = position_dodge(width = 0.8), hjust = 1.5) +
+  geom_hline(yintercept=lower_wtp-264, lty="dashed") +
+  geom_hline(yintercept=0) +
+  scale_x_discrete("Treatment effect parameter",
+                   labels = c("thccr_it" = "RR for progression to HCC\nfrom HBeAg+ infection (0.19)",
+                              "thccr_chb" = "RR for progression to HCC\nfrom CHB (0.27)",
+                              "thccr_cc" = "RR for progression to HCC\nfrom CC (0.23)",
+                              "thccr_dcc" = "RR for progression to HCC\nfrom DCC (0.13)",
+                              "tmu_dcc" = "Mortality rate from\ntreated DCC (0.18)"),
+                   limits = rev)+
+  scale_y_continuous(breaks = c(200-264,0,lower_wtp-264),
+                     labels = c(200,264,lower_wtp),
+                     limits=c(200-264,(lower_wtp-264+10))) +
   ylab("Median incremental cost per averted DALY") +
+  labs(title = "2020 screening and treatment without monitoring\nvs. status quo of no treatment") +
+  theme_classic() +
+  theme(axis.text = element_text(size=11),
+        axis.title = element_text(size=12)) +
   coord_flip()
 
+
+ggplot(tornado_df_monit_sim7) +
+  geom_col(aes(x=parm, y = upper_icer-default_icer), fill = "blue") +
+  geom_col(aes(x=parm, y = lower_icer-default_icer), fill = "red") +
+  geom_text(aes(label = c(0.8,0.8,0.8,0.8,0.08), x = parm, y = upper_icer-default_icer),
+            position = position_dodge(width = 0.8), hjust = -0.5) +
+  geom_text(aes(label = c(0.1,0.1,0.1,0.1,0.35), x = parm, y = lower_icer-default_icer),
+            position = position_dodge(width = 0.8), hjust = 1.5) +
+  geom_hline(yintercept=lower_wtp-321, lty="dashed") +
+  geom_hline(yintercept=0) +
+  scale_x_discrete("Treatment effect parameter",
+                   labels = c("thccr_it" = "RR for progression to HCC\nfrom HBeAg+ infection (0.19)",
+                              "thccr_chb" = "RR for progression to HCC\nfrom CHB (0.27)",
+                              "thccr_cc" = "RR for progression to HCC\nfrom CC (0.23)",
+                              "thccr_dcc" = "RR for progression to HCC\nfrom DCC (0.13)",
+                              "tmu_dcc" = "Mortality rate from\ntreated DCC (0.18)"),
+                   limits = rev)+
+  scale_y_continuous(breaks = c(200-321,0,lower_wtp-321),
+                     labels = c(200,321,lower_wtp),
+                     limits=c(200-321,(lower_wtp-321+10))) +
+  ylab("Median incremental cost per averted DALY") +
+  labs(title = "2020 screening and treatment with optimal* monitoring\nscenario vs. treatment programme without monitoring") +
+  theme_classic() +
+  theme(axis.text = element_text(size=11),
+        axis.title = element_text(size=12)) +
+  coord_flip()
 
 # PRCC on default simulation (need individual ICERS) ----
 annual_discounting_rate <- 0.03

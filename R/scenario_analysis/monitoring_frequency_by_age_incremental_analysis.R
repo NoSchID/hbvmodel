@@ -3005,12 +3005,16 @@ ggplot(dominance_prob_result) +
 age_df2 <- subset(age_df, scenario %in% c("screen_2020_monit_1",
                                           "screen_2020_monit_2", "screen_2020_monit_3",
                                           "screen_2020_monit_4", "screen_2020_monit_5",
-                                          #"screen_2020_monit_10",
-                                          #"screen_2020_monit_sim7_10"
                                           "screen_2020_monit_sim7",
-                                          #"screen_2020_monit_sim8",
                                           "screen_2020_monit_sim6",
                                           "screen_2020_monit_sim2c"))
+# If monit_10, sim7_10 and sim8 are included:
+#age_df2 <- subset(age_df, scenario %in% c("screen_2020_monit_1",
+#                                          "screen_2020_monit_2", "screen_2020_monit_3",
+#                                          "screen_2020_monit_4", "screen_2020_monit_5",
+#                                          "screen_2020_monit_10",
+#                                          "screen_2020_monit_sim7_10",
+#                                          "screen_2020_monit_sim7"))
 
 icer_list <- list()
 
@@ -3030,6 +3034,8 @@ icer_result <- group_by(icer_df, scenario, comparator) %>%
             icer_upper = quantile(icer, 0.975)) %>%
   arrange(icer_median)
 icer_result
+
+# NOTE NEW COST-EFFECTIVENESS THRESHOLDS ARE: 404 and 537
 
 # Monitoring every 5 years among the younger age groups is more cost-effective than
 # every 10 years across all ages. Note the result of cost-effectiveness of 5-yearly
@@ -3075,6 +3081,7 @@ quantile(age_df[age_df$scenario=="screen_2020_monit_sim7",]$monitoring_assessmen
            rowSums(out3_it$cohort_size_screened[,which(ages==15):which(ages==45-da)]),
          c(0.5,0.025,0.975))
 # About 1.55 per person at 80% probability for the 5-yearly frequency in the same age group
+
 
 # ICER plots ----
 # Need to do this on a subset
@@ -3288,10 +3295,10 @@ ggplot(acceptability_curve) +
   geom_line(aes(x=wtp, y = prob_cost_effective*100,
                 group = reorder(scenario, -prob_cost_effective),
                 colour = reorder(scenario, -prob_cost_effective))) +
-  geom_vline(xintercept=391, linetype="dashed") +
-  geom_vline(xintercept=518, linetype="dashed") +
+  geom_vline(xintercept=404, linetype="dashed") +
+  geom_vline(xintercept=537, linetype="dashed") +
   ylab("Probability of strategy being\ncost-effective at WTP (%)") +
-  xlab("Willingness to pay (USD/DALY averted)") +
+  xlab("Cost-effectiveness thresholds (USD/DALY averted)") +
   scale_colour_discrete(labels = c("screen_2020_monit_5" = "15+ (5)",
                                  "screen_2020_monit_4" = "15+ (4)",
                                  "screen_2020_monit_sim7" = "15-45 (5), 45+ (0)",
