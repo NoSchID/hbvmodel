@@ -3000,7 +3000,6 @@ ggplot(dominance_prob_result) +
 # Whereas sim7 and 6 have a pretty high probability of being dominated.
 # Sim9 and sim10 are focused on the older (30+/45+ ages)!
 
-
 # Calculate ICER by simulation on non-dominated strategies
 age_df2 <- subset(age_df, scenario %in% c("screen_2020_monit_1",
                                           "screen_2020_monit_2", "screen_2020_monit_3",
@@ -3497,23 +3496,6 @@ grid.arrange(p7,p8, ncol = 1)
 # Also per remaining life expectancy/average age at death? But this would
 # need to be calculated in group of given age only (not entire cohort)
 
-# Lifetime risk of HBV death
-# 15-30 year olds (monit_sim6), 30-45 year olds (monit_sim8) and 45+ year olds (monit_sim10)
-# Extract incremental impact and interactions compared to no monitoring
-
-quantile(monit_out6$cohort_cum_hbv_deaths[,-1]/monit_out6$cohort_size[,-1],
-         c(0.5,0.025,0.975))
-# Lifetime risk of HBV death in 15-30 year old screened+treated+monitored carriers =
-# 7% (3-13%)
-quantile(monit_out10$cohort_cum_hbv_deaths[,-1]/monit_out10$cohort_size[,-1],
-         c(0.5,0.025,0.975))
-# Lifetime risk of HBV death in 45+ year old screened+treated+monitored carriers =
-# 5% (2-9%)
-
-# But need cohort simulations of a cohort of this age without treatment/monitoring
-# to look at reduction in lifetime risk! Have simulations of screening+treatment without
-# monitoring.
-
 # Average age at death in screened+treated cohort
 ggplot(gather(rbind(out3_it$cohort_age_at_death, out6_it$cohort_age_at_death,
                     out1_it$cohort_age_at_death),
@@ -3771,6 +3753,73 @@ grid.arrange(p,px,p0,p7,p9,
 
 # Might want to show something like: % of total treatment initiations
 # after first vs monitoring assessments by age
+
+# Lifetime risk of HBV death by age group monitored ----
+# Lifetime risk of HBV death
+# 15-30 year olds (monit_sim6), 30-45 year olds (monit_sim8) and 45+ year olds (monit_sim10)
+# Extract incremental impact and interactions compared to no monitoring
+
+quantile(monit_out6$cohort_cum_hbv_deaths[,-1]/monit_out6$cohort_size[,-1],
+         c(0.5,0.025,0.975))
+# Lifetime risk of HBV death in 15-30 year old screened+treated+monitored carriers =
+# 7% (3-13%)
+quantile(monit_out10$cohort_cum_hbv_deaths[,-1]/monit_out10$cohort_size[,-1],
+         c(0.5,0.025,0.975))
+# Lifetime risk of HBV death in 45+ year old screened+treated+monitored carriers =
+# 5% (2-9%)
+
+# But need cohort simulations of a cohort of this age without treatment/monitoring
+# to look at reduction in lifetime risk! Have simulations of screening+treatment without
+# monitoring.
+
+# Cohort outcomes with/without monitoring ----
+age_at_death <- rbind(
+  gather(out1_it$cohort_age_at_death, key = "sim", value = "value", -scenario),
+  gather(out3_it$cohort_age_at_death, key = "sim", value = "value", -scenario),
+  gather(out6_it$cohort_age_at_death, key = "sim", value = "value", -scenario))
+
+ggplot(age_at_death) +
+  stat_summary(aes(x=reorder(scenario, value), y = value),
+               fun.data=f, geom="boxplot", width = 0.8, fatten=3) +
+  scale_x_discrete("Scenario",
+                   labels = c("status_quo_cohort" = "No treatment\n(base case)",
+                              "screen_2020_monit_0" =
+                                "Screen & treat\n(no monitoring)",
+                              "screen_2020_monit_1" =
+                                "Screen & treat\n(annual monitoring)")) +
+  ylab("Average age at death (years)") +
+  theme(axis.text = element_text(size = 14),
+        axis.title = element_text(size = 15))
+
+cum_hbv_death <-
+  rbind(gather(out1_it$cohort_cum_hbv_deaths, key = "sim", value = "deaths", -scenario),
+  gather(out3_it$cohort_cum_hbv_deaths, key = "sim", value = "deaths", -scenario),
+  gather(out6_it$cohort_cum_hbv_deaths, key = "sim", value = "deaths", -scenario))
+cum_hbv_death$sim <- rep(1:183,3)
+cohort_size <-
+  rbind(gather(out1_it$cohort_size, key = "sim", value = "cohort_size", -scenario),
+        gather(out3_it$cohort_size, key = "sim", value = "cohort_size", -scenario),
+        gather(out6_it$cohort_size, key = "sim", value = "cohort_size", -scenario))
+cohort_size$sim <- rep(1:183,3)
+
+lifetime_risk_of_hbv_death <- left_join(cum_hbv_death, cohort_size,
+                                        by=c("scenario", "sim")) %>%
+  mutate(lifetime_risk=deaths/cohort_size)
+
+ggplot(lifetime_risk_of_hbv_death) +
+  stat_summary(aes(x=reorder(scenario, -lifetime_risk), y = lifetime_risk*100),
+               fun.data=f, geom="boxplot", width = 0.8, fatten=3) +
+  ylim(0,26) +
+  scale_x_discrete("Scenario",
+                   labels = c("status_quo_cohort" = "No treatment\n(base case)",
+                              "screen_2020_monit_0" =
+                                "Screen & treat\n(no monitoring)",
+                              "screen_2020_monit_1" =
+                                "Screen & treat\n(annual monitoring)")) +
+  ylab("Lifetime risk of HBV death (%)")+
+  theme(axis.text = element_text(size = 14),
+        axis.title = element_text(size = 15))
+
 
 ## 5) Screening by age: cost-effectiveness of including <30 year olds in one-time screen ----
 
