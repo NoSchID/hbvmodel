@@ -3082,8 +3082,7 @@ quantile(age_df[age_df$scenario=="screen_2020_monit_sim7",]$monitoring_assessmen
 # About 1.55 per person at 80% probability for the 5-yearly frequency in the same age group
 
 
-# ICER plots ----
-# Need to do this on a subset
+# ICER plots (improved) ----
 
 age_df$frontier <- "Dominated"
 age_df$frontier[age_df$scenario %in% c("screen_2020_monit_1",
@@ -3094,93 +3093,226 @@ age_df$frontier[age_df$scenario %in% c("screen_2020_monit_1",
                                        "screen_2020_monit_sim7",
                                        #"screen_2020_monit_sim8",
                                        "screen_2020_monit_sim6",
-                                       "screen_2020_monit_sim2c", "No treatment")] <- "Non-dominated"
+                                       "screen_2020_monit_sim2c",
+                                       "No treatment")] <- "Non-dominated"
+# Break into monitoring frequency and age group
+age_df$monitoring_frequency <- "No treatment"
+age_df$monitoring_frequency[age_df$scenario=="screen_2020_monit_0"] <- "No monitoring"
+age_df$monitoring_frequency[age_df$scenario %in%
+                              c("screen_2020_monit_5", "screen_2020_monit_sim7",
+                                "screen_2020_monit_sim9", "screen_2020_monit_sim10",
+                                "screen_2020_monit_sim6")] <- "5 years"
+age_df$monitoring_frequency[age_df$scenario %in%
+                              c("screen_2020_monit_4", "screen_2020_monit_sim4c",
+                                "screen_2020_monit_sim5c", "screen_2020_monit_sim2c",
+                                "screen_2020_monit_sim1c")] <- "4 years"
+age_df$monitoring_frequency[age_df$scenario %in%
+                              c("screen_2020_monit_3", "screen_2020_monit_sim4b",
+                                "screen_2020_monit_sim5b", "screen_2020_monit_sim2b",
+                                "screen_2020_monit_sim1b")] <- "3 years"
+age_df$monitoring_frequency[age_df$scenario %in%
+                              c("screen_2020_monit_2", "screen_2020_monit_sim4a",
+                                "screen_2020_monit_sim5a", "screen_2020_monit_sim2a",
+                                "screen_2020_monit_sim1a")] <- "2 years"
+age_df$monitoring_frequency[age_df$scenario %in%
+                              c("screen_2020_monit_1", "screen_2020_monit_sim4",
+                                "screen_2020_monit_sim5", "screen_2020_monit_sim2",
+                                "screen_2020_monit_sim1")] <- "1 years"
+age_df$monitoring_frequency[age_df$scenario %in%
+                              c("screen_2020_monit_sim17", "screen_2020_monit_sim18")] <- "Varies"
 
+age_df$age_group <- "No treatment"
+age_df$age_group[age_df$scenario=="screen_2020_monit_0"] <- "No monitoring"
+age_df$age_group[age_df$scenario %in% c("screen_2020_monit_5",
+                                        "screen_2020_monit_4","screen_2020_monit_3",
+                                        "screen_2020_monit_2","screen_2020_monit_1")] <- "All ages"
+age_df$age_group[age_df$scenario %in% c("screen_2020_monit_sim6",
+                                        "screen_2020_monit_sim1a","screen_2020_monit_sim1b",
+                                        "screen_2020_monit_sim1c","screen_2020_monit_sim1")] <- "15-30"
+age_df$age_group[age_df$scenario %in% c("screen_2020_monit_sim7","screen_2020_monit_sim17",
+                                        "screen_2020_monit_sim2a","screen_2020_monit_sim2b",
+                                        "screen_2020_monit_sim2c","screen_2020_monit_sim2")] <- "15-45"
+age_df$age_group[age_df$scenario %in% c("screen_2020_monit_sim9","screen_2020_monit_sim18",
+                                        "screen_2020_monit_sim4a","screen_2020_monit_sim4b",
+                                        "screen_2020_monit_sim4c","screen_2020_monit_sim4")] <- "30+"
+age_df$age_group[age_df$scenario %in% c("screen_2020_monit_sim10",
+                                        "screen_2020_monit_sim5a","screen_2020_monit_sim5b",
+                                        "screen_2020_monit_sim5c","screen_2020_monit_sim5")] <- "45+"
 
-
-age_df_median <- group_by(age_df, scenario, frontier) %>%
+age_df_median <- group_by(age_df, scenario, frontier, monitoring_frequency, age_group) %>%
   summarise(deaths_averted = median(deaths_averted),
             total_interactions = median(total_interactions),
             dalys_averted = median(dalys_averted),
             total_cost = median(total_cost))
 
-# DALYS averted vs costs
-ggplot(data = age_df) +
-#  geom_line(aes(x = dalys_averted, y = total_cost, group = sim),
-#            colour = "grey", alpha = 0.3) +
-#  geom_point(aes(x = dalys_averted, y = total_cost,
-#                 group = reorder(scenario, total_cost),
-#                 colour = reorder(scenario, total_cost)), alpha = 0.15) +
-  stat_ellipse(data = subset(age_df, scenario != "No treatment"),
-               aes(x = dalys_averted, y = total_cost,
-                   group = reorder(scenario, total_cost),
-                   fill= reorder(scenario, total_cost)),
-               geom = "polygon",
-               alpha = 0.2) +
-  geom_line(data = subset(age_df_median, frontier == "Non-dominated" |
-                            scenario == "No treatment"),
-            aes(x = dalys_averted, y = total_cost), size = 1) +
-  geom_point(data = age_df_median,
-             aes(x = dalys_averted, y = total_cost,
+icer_under_threshold1 <- icer_result$scenario[which(icer_result$icer_median<=404)]
+icer_under_threshold2 <- icer_result$scenario[which(icer_result$icer_median<=537)]
+
+age_df_median$under_threshold <- "Over"
+age_df_median$under_threshold[age_df_median$frontier=="Dominated"] <- NA
+age_df_median$under_threshold[age_df_median$frontier=="Non-dominated" &
+                                age_df_median$scenario %in% icer_under_threshold2] <- "Under upper threshold"
+age_df_median$under_threshold[(age_df_median$frontier=="Non-dominated" &
+                                age_df_median$scenario %in% icer_under_threshold1) |
+                                age_df_median$scenario == "No treatment"] <- "Under lower threshold"
+
+# All strategies - median only
+# Remove here strategies with varying frequency by age for simplicity
+# Cross through the middle shows non-dominated strategies
+# Solid black line is ICER<=threshold (in this case all less than 404)
+# Dashed grey line is ICER>threshold
+# can zoom in
+ggplot() +
+  geom_line(data = subset(age_df_median, frontier == "Non-dominated" &
+                            under_threshold == "Over"),
+            aes(x = dalys_averted/1000, y = total_cost/1000000),
+            size=1, colour = "grey50", lty="dashed") +
+  geom_point(data = subset(age_df_median, scenario == "No treatment"),
+             aes(x = dalys_averted/1000, y = total_cost/1000000, shape = "No treatment"),
+             colour = "black", size = 5) + # shape 4
+  geom_point(data = subset(age_df_median, scenario == "screen_2020_monit_0"),
+             aes(x = dalys_averted/1000, y = total_cost/1000000, shape = "No monitoring"),
+             colour = "black", size = 5) +  # shape 16
+  geom_point(data = subset(age_df_median, !(scenario %in% c("No treatment",
+                             "screen_2020_monit_0", "screen_2020_monit_sim17",
+                             "screen_2020_monit_sim18"))),
+             aes(x = dalys_averted/1000, y = total_cost/1000000,
                  group = reorder(scenario, total_cost),
-                 colour = reorder(scenario, total_cost),
-                 shape = frontier),
+                 colour = reorder(monitoring_frequency, total_cost),
+                 shape = age_group),
              size = 5) +
-  geom_point(data = subset(age_df_median, frontier == "Dominated"),
-             aes(x = dalys_averted, y = total_cost,
-                 group =reorder(scenario, total_cost),
-                 colour = reorder(scenario, total_cost)),
-             size = 5, shape = 1,
-             colour = "black") +
-  geom_point(data = subset(age_df_median, frontier == "Non-dominated"),
-             aes(x = dalys_averted, y = total_cost,
-                 group =reorder(scenario, total_cost),
-                 colour = reorder(scenario, total_cost)),
-             size = 5, shape = 2,
-             colour = "black") +
-  #scale_fill_manual(values = rev(brewer.pal(11,"RdYlBu"))) +
-  scale_fill_manual(values = c(brewer.pal(name="Dark2", n = 8), brewer.pal(name="Paired", n = 6))) +
-  scale_colour_manual("Monitoring strategy\n[age group (frequency)]",
-                      #values = c("black", rev(brewer.pal(14,"RdYlBu"))),
-                      values = c("black",  brewer.pal(name="Dark2", n = 8), brewer.pal(name="Paired", n = 6)),
-                      labels = c("screen_2020_monit_0" = "15+ (0)",
-                                 "screen_2020_monit_5" = "15+ (5)",
-                                 "screen_2020_monit_2" = "15+ (2)",
-                                 "screen_2020_monit_sim7" = "15-45 (5), 45+ (0)",
-                                 "screen_2020_monit_sim17" = "15-30 (2), 30-45 (5), 45+ (0)",
-                                 "screen_2020_monit_sim2a" = "15-45 (2), 45+ (0)",
-                                 "screen_2020_monit_sim9" = "15-30 (0), 30+ (5)",
-                                 "screen_2020_monit_sim18" = "15-30 (0), 30-45 (5), 45+ (2)",
-                                 "screen_2020_monit_sim4a" = "15-30 (0), 30+ (2)",
-                                 "screen_2020_monit_sim10" = "15-45 (0), 45+ (5)",
-                                 "screen_2020_monit_sim5a" = "15-45 (0), 45+ (2)",
-                                 "screen_2020_monit_sim6" = "15-30 (5), 30+ (0)",
-                                 "screen_2020_monit_sim1a" = "15-30 (2), 30+ (0)",
-                                 "screen_2020_monit_sim8" = "15-30 (0), 30-45 (5), 45+ (0)",
-                                 "No treatment" = "No treatment")) +
-  guides(fill=FALSE) +
-  guides(shape=FALSE) +
-#  geom_abline(slope=391, intercept = 0, linetype = "dashed") +
-#  geom_abline(slope=518, intercept = 0, linetype = "dashed") +
-  ylab("Incremental total cost (USD 2019)") +
-  xlab("Incremental DALYs averted") +
-  theme_bw() +
+  geom_point(data = subset(age_df_median, frontier == "Non-dominated" & scenario !=
+                             "No treatment"),
+             aes(x = dalys_averted/1000, y = total_cost/1000000),
+             colour = "grey30", shape = 3, size = 3) +
+  geom_line(data = subset(age_df_median, frontier == "Non-dominated" &
+                            under_threshold == "Under lower threshold"),
+            aes(x = dalys_averted/1000, y = total_cost/1000000),
+            size=1, colour = "black") +
+#  scale_fill_manual(values = c(brewer.pal(name="Paired", n = 12), brewer.pal(name="Set3", n = 12), brewer.pal(name="Dark2", n =4))) +
+  scale_colour_manual("Monitoring interval",
+                      values = brewer.pal(name="Paired", n = 5)) +
+  scale_shape_manual("Monitored age group\n(years)",
+                     values = c("No treatment" = 4, "No monitoring" = 16,
+                                "15-30" = 20, "15-45" = 17,
+                                "30+" = 1, "45+" = 5, "All ages" = 18)) +
+  ylab("Additional cost (million US$)") +
+  xlab("DALYs averted (thousands)") +
+  theme_classic() +
+ # xlim(75,105) + ylim(20,50) +   # Use this to zoom in
   theme(axis.text = element_text(size = 15),
         axis.title = element_text(size = 15),
         legend.text = element_text(size = 14),
         legend.title = element_text(size = 14))
-# Notation: age group (frequency)
 
-# Plot with only non-dominated strategies
-  ggplot(data = subset(age_df, frontier == "Non-dominated" | scenario == "No treatment")) +
-  geom_line(aes(x = dalys_averted, y = total_cost, group = sim),
+# Plot with only non-dominated strategies showing uncertainty for select strategies:
+# Draw ellipse and points outside 95% interval based on ICER calculation (not stat_ellipse)
+age_df_subs <- subset(icer_df, scenario %in% c("screen_2020_monit_1",
+                                         #"screen_2020_monit_2", "screen_2020_monit_3",
+                                         #"screen_2020_monit_4",
+                                         "screen_2020_monit_5",
+                                         #"screen_2020_monit_10",
+                                         #"screen_2020_monit_sim7_10"
+                                         "screen_2020_monit_sim7",
+                                         #"screen_2020_monit_sim8",
+                                         #"screen_2020_monit_sim6",
+                                         #"screen_2020_monit_sim2c",
+                                         "No treatment"))
+
+age_df_subs <- age_df_subs %>%
+  group_by(scenario, comparator) %>%
+  mutate(icer_lower = quantile(icer, 0.025),
+         icer_upper =quantile(icer,0.975)) %>%
+  ungroup() %>%
+  mutate(outside_interval = ifelse(test = (icer<icer_lower | icer>icer_upper), yes= "Yes", no = "No"))
+
+# No monitoring to add:
+no_monitoring_icer <- subset(age_df, scenario=="screen_2020_monit_0") %>%
+  mutate(icer=total_cost/dalys_averted) %>%
+  group_by(scenario) %>%
+  mutate(icer_lower = quantile(icer, 0.025),
+         icer_upper =quantile(icer,0.975)) %>%
+  ungroup() %>%
+  mutate(outside_interval = ifelse(test = (icer<icer_lower | icer>icer_upper), yes= "Yes", no = "No"))
+
+# Plot
+ggplot() +
+  geom_line(data=subset(age_df_subs, outside_interval=="No"),
+             aes(x = dalys_averted/1000, y = total_cost/1000000, group = sim),
               colour = "grey", alpha = 0.2) +
-  geom_segment(aes(x = 0, y = 0, xend = dalys_averted, yend = total_cost),
-              data = subset(age_df, scenario == "screen_2020_monit_0"),
-              colour = "grey", alpha = 0.2) +
-  geom_point(aes(x = dalys_averted, y = total_cost,
+  geom_segment(aes(x = 0, y = 0, xend = dalys_averted/1000, yend = total_cost/1000000),
+                 data = subset(age_df_subs, outside_interval=="No" &
+                                 scenario == "screen_2020_monit_sim7"),
+                 colour = "grey", alpha = 0.2) +
+  geom_point(data=subset(no_monitoring_icer, outside_interval=="No"),
+             aes(x = dalys_averted/1000, y = total_cost/1000000),
+             colour="grey20",
+                 size=2,alpha = 1) +
+  geom_point(data=subset(age_df_subs, outside_interval=="No"),
+               aes(x = dalys_averted/1000, y = total_cost/1000000,
                    group = reorder(scenario, total_cost),
-                   colour = reorder(scenario, total_cost)), alpha = 0.25) +
+                   colour = reorder(scenario, total_cost)), size=2, alpha = 1) +
+  # Median values:
+  geom_line(data = subset(age_df_median, scenario %in% c("No treatment",
+                                                         "screen_2020_monit_sim7")),
+            aes(x = dalys_averted/1000, y = total_cost/1000000),
+            size=1.5, colour = "black") +
+  geom_line(data = subset(age_df_median, scenario %in% c("screen_2020_monit_sim7",
+                                                         "screen_2020_monit_5",
+                                                         "screen_2020_monit_1")),
+            aes(x = dalys_averted/1000, y = total_cost/1000000),
+            size=1.5, colour = "grey50", lty="dashed") +
+  geom_point(data = subset(age_df_median, scenario == "No treatment"),
+             aes(x = dalys_averted/1000, y = total_cost/1000000, shape = "No treatment"),
+             colour = "black", size = 6) + # shape 4
+  geom_point(data = subset(age_df_median, scenario %in% c("screen_2020_monit_0",
+                                                          "screen_2020_monit_sim7",
+                                                            "screen_2020_monit_5",
+                                                            "screen_2020_monit_1")),
+               aes(x = dalys_averted/1000, y = total_cost/1000000,
+                   group = reorder(scenario, total_cost),
+                   colour = reorder(scenario, total_cost)),
+               size = 6) +
+  geom_point(data = subset(age_df_median, scenario %in% c("screen_2020_monit_0",
+                                                          "screen_2020_monit_sim7",
+                                                          "screen_2020_monit_5",
+                                                          "screen_2020_monit_1")),
+             aes(x = dalys_averted/1000, y = total_cost/1000000,
+                 group = reorder(scenario, total_cost),
+                 colour = reorder(scenario, total_cost)),
+             shape =1,colour="black",
+             size = 6) +
+    #scale_fill_manual(values = rev(brewer.pal(11,"RdYlBu"))) +
+#    scale_fill_manual(values = c(brewer.pal(name="Paired", n = 8))) +
+    scale_colour_manual("Monitoring strategy",
+                        labels = c("screen_2020_monit_0" = "No monitoring",
+                                   "screen_2020_monit_5" = "All ages,\nevery 5 years",
+                                   "screen_2020_monit_1" = "All ages,\nevery 1 year",
+                                   "screen_2020_monit_sim7" = "Age 15-45 years,\nevery 5 years",
+                                   "No treatment" = "No treatment"),
+                        values = c("black", brewer.pal(name="Paired", n = 4))) +
+    scale_shape_manual("",
+                     values = c("No treatment" = 4)) +
+   guides(fill=FALSE) +
+    ylab("Additional cost (million US$)") +
+    xlab("DALYs averted (thousands)") +
+    labs(colour="Monitoring frequencies") +
+    theme_classic() +
+    theme(axis.text = element_text(size = 15),
+          axis.title = element_text(size = 15),
+          legend.text = element_text(size = 14),
+          legend.title = element_text(size = 14))
+
+# Old plot with only non-dominated strategies (ignore)
+ggplot(data = subset(age_df, frontier == "Non-dominated" | scenario == "No treatment")) +
+  geom_line(aes(x = dalys_averted, y = total_cost, group = sim),
+            colour = "grey", alpha = 0.2) +
+  geom_segment(aes(x = 0, y = 0, xend = dalys_averted, yend = total_cost),
+               data = subset(age_df, scenario == "screen_2020_monit_0"),
+               colour = "grey", alpha = 0.2) +
+  geom_point(aes(x = dalys_averted, y = total_cost,
+                 group = reorder(scenario, total_cost),
+                 colour = reorder(scenario, total_cost)), alpha = 0.25) +
   stat_ellipse(data = subset(age_df, frontier == "Non-dominated" & scenario != "No treatment"),
                aes(x = dalys_averted, y = total_cost,
                    group = reorder(scenario, total_cost),
@@ -3820,6 +3952,63 @@ ggplot(lifetime_risk_of_hbv_death) +
   theme(axis.text = element_text(size = 14),
         axis.title = element_text(size = 15))
 
+
+# Plot of monitoring frequency across all ages ----
+
+age_dalys_averted_cohort <-
+  plot_hbv_deaths_averted_cohort(counterfactual_object = out1_it,
+                          scenario_objects = list(out3_it, out5_it,
+                                                  out6c_it, out6b_it, out6a_it,
+                                                  out6_it),
+                          outcome_to_avert = "cohort_dalys",
+                          outcome_to_plot = "number_averted",
+                          counterfactual_label = "no treatment")
+
+age_dalys_averted_pop <-
+  plot_hbv_deaths_averted(counterfactual_object = out2,
+                                 scenario_objects = list(out3_it,
+                                                         out5_it,
+                                                         out6c_it, out6b_it, out6a_it,
+                                                         out6_it),
+                                 outcome_to_avert = "dalys",
+                                 outcome_to_plot = "number_averted",
+                                 counterfactual_label = "no treatment")
+
+age_df_daly_summary <- subset(rbind(age_dalys_averted_cohort,
+                                    age_dalys_averted_pop[age_dalys_averted_pop$by_year==2100,-c(1:2)]),
+                              type == "proportion_averted") %>%
+  group_by(counterfactual, scenario) %>%
+  summarise(median = median(value),
+            lower = quantile(value, 0.025),
+            upper= quantile(value, 0.975))
+
+ggplot(age_df_daly_summary) +
+  geom_col(aes(x=reorder(scenario, median), y = median*100, group = counterfactual,
+               fill = counterfactual), position=position_dodge(width=0.9), colour="black") +
+  geom_errorbar(aes(x=reorder(scenario, median), ymin = lower*100, ymax = upper*100,
+                    group = counterfactual), position=position_dodge(width=0.9),
+                width = 0.15) +
+  theme_classic() +
+  scale_x_discrete(labels=c("screen_2020_monit_0" = "No monitoring",
+                            "screen_2020_monit_5" = "5 years",
+                            "screen_2020_monit_4" = "4 years",
+                            "screen_2020_monit_3" = "3 years",
+                            "screen_2020_monit_2" = "2 years",
+                            "screen_2020_monit_1" = "1 year")) +
+  scale_fill_manual("", labels=c("status_quo" = "Population-level",
+                             "status_quo_cohort" = "Cohort-level"),
+                    values=c("status_quo" = "#A180A9",
+                             "status_quo_cohort" = "#1F968BFF")) +
+  xlab("Monitoring interval") +
+  ylim(0,100) +
+  ylab("DALYs averted by 2100 (%)") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        panel.border = element_rect(colour = "black", fill = NA),
+        axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        legend.text = element_text(size = 14))
 
 ## 5) Screening by age: cost-effectiveness of including <30 year olds in one-time screen ----
 
