@@ -167,6 +167,24 @@ nat_hist_prev_out_mat$ci_lower <- c(out_mat$nat_hist_prevalence$ci_lower,
 nat_hist_prev_out_mat$ci_upper<- c(out_mat$nat_hist_prevalence$ci_upper,
                                    ci_upper_model_values[grepl("^nat_hist_prevalence.*",names(ci_upper_model_values))])
 
+# Liver disease demography
+ld_demog_out_mat <- select(out_mat$mapped_liver_disease_demography, -ci_lower, -ci_upper)
+# Turn into long format then remove the mock value column
+ld_demog_out_mat<- gather(ld_demog_out_mat, key = "type", value = "value",
+                                 c("data_value", "model_value"))
+ld_demog_out_mat$value <- NULL
+ld_demog_out_mat$median <- c(out_mat$mapped_liver_disease_demography$data_value,
+                                  median_model_values[grepl("^mapped_liver_disease_demography.*",names(median_model_values))])
+ld_demog_out_mat$ci_lower <- c(out_mat$mapped_liver_disease_demography$ci_lower,
+                                    ci_lower_model_values[grepl("^mapped_liver_disease_demography.*",names(ci_lower_model_values))])
+ld_demog_out_mat$ci_upper<- c(out_mat$mapped_liver_disease_demography$ci_upper,
+                                   ci_upper_model_values[grepl("^mapped_liver_disease_demography.*",names(ci_upper_model_values))])
+
+# Add labels
+ld_demog_out_mat$outcome2 <- "Proportion male"
+ld_demog_out_mat$outcome2[ld_demog_out_mat$outcome %in%
+                            c("hcc_mean_age", "cirrhosis_mean_age")] <- "Mean age"
+
 # Mortality curves
 mort_curves_out_mat <- select(out_mat$mortality_curves, -ci_lower, -ci_upper)
 # Turn into long format then remove the mock value column
@@ -813,3 +831,61 @@ ggplot(data = shimakawa_hcc_rates,
 
 
 
+
+# Liver disease demography ----
+# Proportion male
+
+plot_ld_mean_age <- ggplot(data = subset(ld_demog_out_mat, outcome2 == "Mean age"),
+       aes(x = pop_group_clinical)) +
+  geom_col(aes(y = median, group = type, fill= type), position = "dodge") +
+  geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper, group = type, colour= type), position = position_dodge(width=0.9), width = 0.3,
+                show.legend = FALSE)+
+#  facet_wrap(~outcome2, scales = "free_y") +
+  scale_x_discrete(breaks=c("HBsAg-positive cirrhosis patients", "HBsAg-positive HCC patients"),
+                   labels=c("Cirrhosis", "HCC")) +
+  scale_fill_manual("", values = c("model_value" = "gray35", "data_value" = "red2"),
+                    labels = c("model_value" = "Model projection",
+                               "data_value" = "Observed data")) +
+  scale_colour_manual("", values = c("model_value" = "black", "data_value" = "black")) +
+  theme_classic() +
+  guides(fill=FALSE) +
+  ylim(0,70) +
+  labs(#title = "Characteristics of HBV-related liver disease patients",
+       #subtitle = "Gambia Liver Cancer Study (Mendy 2010)",
+       y = "Mean age at presentation (years)", x = "Disease outcome") +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        plot.subtitle = element_text(hjust = 0.5, size = 12),
+        axis.title = element_text(size = 15),
+        axis.text = element_text(size = 15),
+        legend.text = element_text(size = 15),
+        strip.text = element_text(size = 15))
+
+plot_ld_prop_male <-
+  ggplot(data = subset(ld_demog_out_mat, outcome2 == "Proportion male"),
+         aes(x = pop_group_clinical)) +
+  geom_col(aes(y = median, group = type, fill= type), position = "dodge") +
+  geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper, group = type, colour= type), position = position_dodge(width=0.9), width = 0.3,
+                show.legend = FALSE)+
+  scale_x_discrete(breaks=c("HBsAg-positive cirrhosis patients", "HBsAg-positive HCC patients"),
+                   labels=c("Cirrhosis", "HCC")) +
+  scale_fill_manual("", values = c("model_value" = "gray35", "data_value" = "red2"),
+                    labels = c("model_value" = "Model projection",
+                               "data_value" = "Observed data")) +
+  scale_colour_manual("", values = c("model_value" = "black", "data_value" = "black")) +
+  theme_classic() +
+  #guides(fill=FALSE) +
+  ylim(0,1) +
+  labs(#title = "Characteristics of HBV-related liver disease patients",
+       #subtitle = "Gambia Liver Cancer Study (Mendy 2010)",
+       y = "Proportion male", x = "Disease outcome") +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        plot.subtitle = element_text(hjust = 0.5, size = 12),
+        axis.title = element_text(size = 15),
+        axis.text = element_text(size = 15),
+        legend.text = element_text(size = 15),
+        strip.text = element_text(size = 15))
+
+
+## Combined liver disease demography
+p_ld_demog <- grid.arrange(plot_ld_mean_age, plot_ld_prop_male, nrow = 1, widths= 1:2,
+                           top = "Characteristics of HBV-related liver disease patients\nGambia Liver Cancer Study (Mendy 2010)")

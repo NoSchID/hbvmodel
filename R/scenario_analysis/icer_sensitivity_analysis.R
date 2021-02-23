@@ -34,6 +34,10 @@ monit_out7 <- monit_out7[[1]]
 out5_it <- readRDS(paste0(out_path_monit, "a1_it_out5_screen_2020_monit_5_161220.rds"))
 out5_it <- out5_it[[1]]
 
+# For PRCC:
+out6_it <- readRDS(paste0(out_path_monit, "a1_it_out6_screen_2020_monit_1_130121.rds"))
+out6_it <- out6_it[[1]]  # 1 year
+
 # Option 1: increase all thccr parameters to 0.4
 out3_s1 <- readRDS(paste0(out_path, "a1_it_screen_2020_monit_0_treatment_sensitivity_upper_030221.rds"))
 out3_s1 <- out3_s1[[1]]
@@ -618,4 +622,49 @@ ggplot(two_way_df,aes(x=pr_ic_enchb, y=mtct_prob_e, z = icer_monit_sim7)) +
   scale_fill_continuous_diverging(mid=518, palette = "Blue-Red 3",
                                   l1 = 30, l2 = 100, p1 = .9, p2 = 1.2) +
   theme_classic()
+
+
+# PRCC for the incremental impact of annual vs 5-yearly monitoring ----
+dalys_averted_cohort <-
+  plot_hbv_deaths_averted_cohort(counterfactual_object = out5_it,
+                                 scenario_objects = list(out6_it),
+                                 outcome_to_avert = "cohort_dalys",
+                                 outcome_to_plot = "number_averted",
+                                 counterfactual_label = "no monitoring")
+
+outcome <- dalys_averted_cohort$value[dalys_averted_cohort$type=="proportion_averted"]
+
+# Load parameter sets chosen based on kmeans clustering
+load(here("calibration", "input", "accepted_parmsets_kmeans_170820.Rdata")) # params_mat_accepted_kmeans
+
+# Run PRCC
+prcc_diff_outcome <- pcc(params_mat_accepted_kmeans,
+                         outcome,
+                         rank = TRUE, nboot = 100)
+plot(prcc_diff_outcome)
+abline(h=0)
+
+# Subset only significant parameters (95% CI not including 0):
+diff_outcome_significant_parms <- data.frame(parm = rownames(prcc_diff_outcome$PRCC)[
+  which(sign(prcc_diff_outcome$PRCC$`max. c.i.`)==sign(prcc_diff_outcome$PRCC$`min. c.i.`))],
+  prcc_mean = prcc_diff_outcome$PRCC$original[
+    which(sign(prcc_diff_outcome$PRCC$`max. c.i.`)==sign(prcc_diff_outcome$PRCC$`min. c.i.`))],
+  prcc_ci_lower = prcc_diff_outcome$PRCC$`min. c.i.`[
+    which(sign(prcc_diff_outcome$PRCC$`max. c.i.`)==sign(prcc_diff_outcome$PRCC$`min. c.i.`))],
+  prcc_ci_upper = prcc_diff_outcome$PRCC$`max. c.i.`[
+    which(sign(prcc_diff_outcome$PRCC$`max. c.i.`)==sign(prcc_diff_outcome$PRCC$`min. c.i.`))])
+diff_outcome_significant_parms <- arrange(diff_outcome_significant_parms, -abs(prcc_mean))
+
+# Want to know: why are returns with increasing monitoring frequency diminishing so quickly?
+
+# This suggests that the impact of annual monitoring compared to 5-yearly would be
+# higher if progression on the cirrhosis pathway was higher (pr_enchb_cc_female and pr_ic_enchb),
+# which is stopped by treatment, and if progression on the HCC pathway was lower (cancer_male_cofactor,
+# cancer_prog_coefficient_female)
+# Good reminder that the impact of treatment does not just depend on how quickly
+# people progress to disease, but also how treatment works to prevent that!
+# Interestingly, the HCC parameters do not feature if looking at difference in proportion
+# averted in the POPULATION instead of the cohort. But here we are really interested
+# in the cohort effects.
+
 

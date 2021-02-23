@@ -652,6 +652,74 @@ discount_outcome_2020_to_2100 <- function(scenario_object,object_to_subtract,
 
 }
 
+calculate_probability_most_costeffective <- function(df, exposure, outcome, threshold) {
+  # ALWAYS CALCULATING ICER FOR DALYS AND COST
+
+  # Need to artificially repeat value twice in e and c:
+  # Effectiveness (outcome) matrix:
+  outcome_matrix <- rbind(as.matrix(select(df, scenario, sim, outcome) %>%
+                                      spread(key="scenario", value = outcome)%>%
+                                      select(-sim)),
+                          as.matrix(select(df, scenario, sim,outcome) %>%
+                                      spread(key="scenario", value =outcome)%>%
+                                      select(-sim)))
+  # Cost (exposure) matrix:
+  exposure_matrix <- rbind(as.matrix(select(df, scenario, sim, exposure) %>%
+                                       spread(key="scenario", value = exposure)%>%
+                                       select(-sim)),
+                           as.matrix(select(df, scenario, sim,exposure) %>%
+                                       spread(key="scenario", value =exposure)%>%
+                                       select(-sim)))
+  # Assign numbers to each scenario
+  interventions_df <- data.frame(scenario = c(colnames(select(df, scenario, sim, outcome) %>%
+                                                         spread(key="scenario", value = outcome)%>%
+                                                         select(-sim))),
+                                 numbers = 1:length(c(colnames(select(df, scenario, sim, outcome) %>%
+                                                                 spread(key="scenario", value = outcome)%>%
+                                                                 select(-sim)))))
+
+
+  ceef <- capture.output(ceef.plot.median(bcea(e=outcome_matrix,
+                                               c=exposure_matrix,
+                                               ref=1,
+                                               interventions=interventions_df$numbers,
+                                               Kmax=100000000000000,
+                                               plot=FALSE),
+                                          graph="base", relative = FALSE, return_dominated_only = TRUE))
+
+  # Extracted numbers of dominated interventions
+  dominated_numbers <- unlist(regmatches(ceef, gregexpr("[[:digit:]]+", ceef)))[-1]
+  # Assign this to scenario
+  interventions_df$dominated <- "No"
+  interventions_df$dominated[interventions_df$numbers %in% dominated_numbers] <- "Yes"
+  # Merge with original df
+
+  dom_df <- left_join(df, interventions_df, by = "scenario") %>%
+    select(-numbers)
+
+  frontier_scenarios <- subset(dom_df, dominated == "No")
+
+  icer <- calculate_icer_per_sim(frontier_scenarios,
+                         exposure="total_cost",
+                         outcome="dalys_averted")
+
+  # Subset to those under threshold
+  if(any(icer$icer<=threshold)==FALSE) {
+    return(data.frame(
+      threshold = threshold,
+      scenario = "None")
+    )
+  } else {
+    icer <- icer[icer$icer<=threshold,]
+    most_cost_effective <- data.frame(
+      threshold = threshold,
+      scenario = icer$scenario[which(icer$icer==max(icer$icer))])
+
+    return(most_cost_effective)
+  }
+
+}
+
 
 # Load files ----
 
@@ -3000,6 +3068,13 @@ ggplot(dominance_prob_result) +
 # Whereas sim7 and 6 have a pretty high probability of being dominated.
 # Sim9 and sim10 are focused on the older (30+/45+ ages)!
 
+# Which strategies are non-dominated if outcome is averted deaths?
+# screen_2020_monit_1, screen_2020_monit_2, screen_2020_monit_3,
+# screen_2020_monit_4, screen_2020_monit_5,
+# screen_2020_monit_sim10, screen_2020_monit_sim9,
+# screen_2020_monit_0
+
+
 # Calculate ICER by simulation on non-dominated strategies
 age_df2 <- subset(age_df, scenario %in% c("screen_2020_monit_1",
                                           "screen_2020_monit_2", "screen_2020_monit_3",
@@ -3033,6 +3108,23 @@ icer_result <- group_by(icer_df, scenario, comparator) %>%
             icer_upper = quantile(icer, 0.975)) %>%
   arrange(icer_median)
 icer_result
+
+# For table (not incremental):
+View(age_df %>% group_by(scenario) %>%
+  summarise(cost_median= round(median(total_cost/1000000),1),
+            cost_lower = round(quantile(total_cost/1000000, 0.025),1),
+            cost_upper = round(quantile(total_cost/1000000, 0.975),1),
+            dalys_median =round(median(dalys_averted/1000),1),
+            dalys_lower = round(quantile(dalys_averted/1000, 0.025),1),
+            dalys_upper = round(quantile(dalys_averted/1000, 0.975),1),
+            deaths_median =round(median(deaths_averted/1000),1),
+            deaths_lower = round(quantile(deaths_averted/1000, 0.025),1),
+            deaths_upper = round(quantile(deaths_averted/1000, 0.975),1)) %>%
+  arrange(cost_median) %>%
+    mutate(cost = paste(cost_median, paste0("(", cost_lower,"-",cost_upper,")")),
+           dalys = paste(dalys_median, paste0("(", dalys_lower,"-",dalys_upper,")")),
+           deaths = paste(deaths_median, paste0("(", deaths_lower,"-", deaths_upper,")"))) %>%
+    select(scenario, cost, dalys, deaths))
 
 # NOTE NEW COST-EFFECTIVENESS THRESHOLDS ARE: 404 and 537
 
@@ -3081,6 +3173,40 @@ quantile(age_df[age_df$scenario=="screen_2020_monit_sim7",]$monitoring_assessmen
          c(0.5,0.025,0.975))
 # About 1.55 per person at 80% probability for the 5-yearly frequency in the same age group
 
+
+# Analysis: calculate probability of each strategy being the most cost-effective for given threshold ----
+
+opt_strategy <- list()
+opt_strategy_by_threshold <- list()
+
+threshold_vec <- c(0.25, 0.52,0.69, 1)*777.81
+
+for (j in 1:length(threshold_vec)) {
+  for(i in 1:183) {
+    print(i)
+    opt_strategy[[i]] <- age_df[which(age_df$sim==
+                                        unique(age_df$sim)[i]),]
+    opt_strategy[[i]] <- calculate_probability_most_costeffective(opt_strategy[[i]],
+                                                                  exposure="total_cost",
+                                                                  outcome="dalys_averted",
+                                                                  threshold = threshold_vec[j])
+  }
+  opt_strategy_by_threshold[[j]] <- do.call("rbind", opt_strategy)
+}
+opt_strategy_by_threshold <- do.call("rbind",opt_strategy_by_threshold)
+
+res <- opt_strategy_by_threshold %>%
+  group_by(threshold) %>%
+  count(scenario) %>%
+  mutate(prob = n/183)
+
+
+
+ggplot(res[res$scenario %in% unique(res$scenario[res$prob>0.25]) &
+                   res$scenario != "None",]) +
+  geom_point(aes(x=threshold, y = prob, colour=scenario), size =3) +
+  geom_line(aes(x=threshold, y = prob, colour=scenario)) +
+  theme_classic()
 
 # ICER plots (improved) ----
 
@@ -3952,27 +4078,113 @@ ggplot(lifetime_risk_of_hbv_death) +
   theme(axis.text = element_text(size = 14),
         axis.title = element_text(size = 15))
 
+total_cohort_dalys <-
+  data.frame(scenario = rep(c("status_quo_cohort", "screen_2020_monit_0",
+                              "screen_2020_monit_1"), each=183),
+             dalys_per_person = c(unlist(out1_it$cohort_dalys[,-1])/
+                                    unlist(out1_it$cohort_size[,-1]),
+                                  unlist(out3_it$cohort_dalys[,-1])/
+                                    unlist(out3_it$cohort_size[,-1]),
+                                  unlist(out6_it$cohort_dalys[,-1])/
+                                    unlist(out6_it$cohort_size[,-1])))
 
-# Plot of monitoring frequency across all ages ----
+ggplot(total_cohort_dalys) +
+  stat_summary(aes(x=reorder(scenario, - dalys_per_person), y = dalys_per_person),
+               fun.data=f, geom="boxplot", width = 0.8, fatten=3) +
+  ylab("Cumulative DALYs per person") +
+  scale_x_discrete("Scenario",
+                   labels = c("status_quo_cohort" = "No treatment\n(base case)",
+                              "screen_2020_monit_0" =
+                                "Screen & treat\n(no monitoring)",
+                              "screen_2020_monit_1" =
+                                "Screen & treat\n(annual monitoring)")) +
+  theme(axis.text = element_text(size = 14),
+        axis.title = element_text(size = 15))
 
-age_dalys_averted_cohort <-
-  plot_hbv_deaths_averted_cohort(counterfactual_object = out1_it,
-                          scenario_objects = list(out3_it, out5_it,
+
+# Plot of monitoring frequency across all ages (effect of diminishing returns) ----
+
+# Compared to no monitoring
+
+age_dalys_averted_cohort2 <-
+  plot_hbv_deaths_averted_cohort(counterfactual_object = out3_it,
+                          scenario_objects = list(out5_it,
                                                   out6c_it, out6b_it, out6a_it,
                                                   out6_it),
                           outcome_to_avert = "cohort_dalys",
                           outcome_to_plot = "number_averted",
-                          counterfactual_label = "no treatment")
+                          counterfactual_label = "no monitoring")
 
-age_dalys_averted_pop <-
-  plot_hbv_deaths_averted(counterfactual_object = out2,
-                                 scenario_objects = list(out3_it,
-                                                         out5_it,
+age_dalys_averted_cohort2$counterfactual <- "screen_2020_monit_0_cohort"
+
+age_dalys_averted_pop2 <-
+  plot_hbv_deaths_averted(counterfactual_object = out3_it,
+                                 scenario_objects = list(out5_it,
                                                          out6c_it, out6b_it, out6a_it,
                                                          out6_it),
                                  outcome_to_avert = "dalys",
                                  outcome_to_plot = "number_averted",
+                                 counterfactual_label = "no monitoring")
+
+age_df_daly_summary2 <- subset(rbind(
+  age_dalys_averted_cohort2,
+  age_dalys_averted_pop2[age_dalys_averted_pop2$by_year==2100,-c(1:2)]),
+                              type == "proportion_averted") %>%
+  group_by(counterfactual, scenario) %>%
+  summarise(median = median(value),
+            lower = quantile(value, 0.025),
+            upper= quantile(value, 0.975))
+
+ggplot(age_df_daly_summary2) +
+  geom_col(aes(x=reorder(scenario, median), y = median*100, group = counterfactual,
+               fill = counterfactual), position=position_dodge(width=0.9), colour="black") +
+  geom_errorbar(aes(x=reorder(scenario, median), ymin = lower*100, ymax = upper*100,
+                    group = counterfactual), position=position_dodge(width=0.9),
+                width = 0.15) +
+  theme_classic() +
+  scale_x_discrete(labels=c("screen_2020_monit_0" = "No monitoring",
+                            "screen_2020_monit_5" = "5 years",
+                            "screen_2020_monit_4" = "4 years",
+                            "screen_2020_monit_3" = "3 years",
+                            "screen_2020_monit_2" = "2 years",
+                            "screen_2020_monit_1" = "1 year")) +
+  scale_fill_manual("", labels=c("screen_2020_monit_0" = "Population-level",
+                             "screen_2020_monit_0_cohort" = "Cohort-level"),
+                    values=c("screen_2020_monit_0" = "#A180A9",
+                             "screen_2020_monit_0_cohort" = "#1F968BFF")) +
+  xlab("Monitoring interval") +
+  ylim(0,80) +
+  ylab("Additional DALYs averted by 2100\ncompared to no monitoring (%)") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        panel.border = element_rect(colour = "black", fill = NA),
+        axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        legend.text = element_text(size = 14))
+
+
+
+# Compared to no treatment
+
+age_dalys_averted_cohort <-
+  plot_hbv_deaths_averted_cohort(counterfactual_object = out1_it,
+                                 scenario_objects = list(out3_it, out5_it,
+                                                         out6c_it, out6b_it, out6a_it,
+                                                         out6_it),
+                                 outcome_to_avert = "cohort_dalys",
+                                 outcome_to_plot = "number_averted",
                                  counterfactual_label = "no treatment")
+
+age_dalys_averted_pop <-
+  plot_hbv_deaths_averted(counterfactual_object = out2,
+                          scenario_objects = list(out3_it,
+                                                  out5_it,
+                                                  out6c_it, out6b_it, out6a_it,
+                                                  out6_it),
+                          outcome_to_avert = "dalys",
+                          outcome_to_plot = "number_averted",
+                          counterfactual_label = "no treatment")
 
 age_df_daly_summary <- subset(rbind(age_dalys_averted_cohort,
                                     age_dalys_averted_pop[age_dalys_averted_pop$by_year==2100,-c(1:2)]),
@@ -3996,7 +4208,7 @@ ggplot(age_df_daly_summary) +
                             "screen_2020_monit_2" = "2 years",
                             "screen_2020_monit_1" = "1 year")) +
   scale_fill_manual("", labels=c("status_quo" = "Population-level",
-                             "status_quo_cohort" = "Cohort-level"),
+                                 "status_quo_cohort" = "Cohort-level"),
                     values=c("status_quo" = "#A180A9",
                              "status_quo_cohort" = "#1F968BFF")) +
   xlab("Monitoring interval") +
@@ -4009,6 +4221,52 @@ ggplot(age_df_daly_summary) +
         axis.text = element_text(size = 15),
         axis.title = element_text(size = 15),
         legend.text = element_text(size = 14))
+
+# Number of DALYs averted are pretty much the same between cohort and pop view
+impact_distribution <- data.frame(
+  scenario = rep(c("screen_2020_monit_5", "screen_2020_monit_1"), each= 183),
+  proportion_averted_in_initial_screen =
+    c(age_dalys_averted_cohort[age_dalys_averted_cohort$scenario=="screen_2020_monit_0"&
+                               age_dalys_averted_cohort$type=="number_averted",]$value/
+    age_dalys_averted_cohort[age_dalys_averted_cohort$scenario=="screen_2020_monit_5"&
+                               age_dalys_averted_cohort$type=="number_averted",]$value,
+    age_dalys_averted_cohort[age_dalys_averted_cohort$scenario=="screen_2020_monit_0"&
+                               age_dalys_averted_cohort$type=="number_averted",]$value/
+      age_dalys_averted_cohort[age_dalys_averted_cohort$scenario=="screen_2020_monit_1"&
+                                 age_dalys_averted_cohort$type=="number_averted",]$value)
+) %>%
+  group_by(scenario) %>%
+  summarise(median_proportion_initial = median(proportion_averted_in_initial_screen),
+            lower_proportion_initial= quantile(proportion_averted_in_initial_screen, 0.025),
+            upper_proportion_initial= quantile(proportion_averted_in_initial_screen, 0.975)) %>%
+  mutate(proportion_total=1)
+
+ggplot(impact_distribution) +
+  geom_col(aes(x=reorder(scenario, -median_proportion_initial), y = proportion_total*100), fill = "#1F968BFF",
+           alpha = 0.2) +
+  geom_col(aes(x=reorder(scenario, -median_proportion_initial), y = median_proportion_initial*100), fill = "#1F968BFF",
+           colour="black") +
+  geom_errorbar(aes(x=reorder(scenario, -median_proportion_initial), ymin = lower_proportion_initial*100,
+                    ymax = upper_proportion_initial*100),
+                width = 0.15) +
+  theme_classic() +
+  scale_x_discrete(labels=c("screen_2020_monit_5" = "5 years",
+                            "screen_2020_monit_1" = "1 year")) +
+#  scale_fill_manual("", labels=c("status_quo" = "Population-level",
+#                                 "status_quo_cohort" = "Cohort-level"),
+#                    values=c("status_quo" = "#A180A9",
+#                             "status_quo_cohort" = "#1F968BFF")) +
+  xlab("Monitoring interval") +
+  ylim(0,100) +
+  ylab("Percentage of DALYs averted by the\ninitial screening & treatment (%)") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        panel.border = element_rect(colour = "black", fill = NA),
+        axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        legend.text = element_text(size = 14))
+
 
 ## 5) Screening by age: cost-effectiveness of including <30 year olds in one-time screen ----
 
