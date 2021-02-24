@@ -4106,9 +4106,14 @@ ggplot(total_cohort_dalys) +
 
 # Compared to no monitoring
 
+out4b_it <- readRDS(paste0(out_path, "a1_it_out4b_screen_2020_monit_20_230221.rds"))
+out4b_it <- out4b_it[[1]]   # 20 years
+out4_it <- readRDS(paste0(out_path, "a1_it_out4_screen_2020_monit_10_140121.rds"))
+out4_it <- out4_it[[1]]   # 10 years
+
 age_dalys_averted_cohort2 <-
   plot_hbv_deaths_averted_cohort(counterfactual_object = out3_it,
-                          scenario_objects = list(out5_it,
+                          scenario_objects = list(out4b_it, out4_it, out5_it,
                                                   out6c_it, out6b_it, out6a_it,
                                                   out6_it),
                           outcome_to_avert = "cohort_dalys",
@@ -4119,7 +4124,7 @@ age_dalys_averted_cohort2$counterfactual <- "screen_2020_monit_0_cohort"
 
 age_dalys_averted_pop2 <-
   plot_hbv_deaths_averted(counterfactual_object = out3_it,
-                                 scenario_objects = list(out5_it,
+                                 scenario_objects = list(out4b_it, out4_it, out5_it,
                                                          out6c_it, out6b_it, out6a_it,
                                                          out6_it),
                                  outcome_to_avert = "dalys",

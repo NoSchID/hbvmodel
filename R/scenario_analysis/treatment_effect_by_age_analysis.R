@@ -72,7 +72,7 @@ a5_monit_sim7_pop <- a5_monit_sim7_pop[[1]]
 a1_out3_pop <- readRDS(paste0(out_path_monit, "a1_it_out3_screen_2020_monit_0_180121.rds"))
 a1_out3_pop <- a1_out3_pop[[1]]   # No monitoring
 
-a1_out6_pop <- readRDS(paste0(out_path_monit, "a1_it_out6_screen_2020_monit_1_130121.rds"))
+a1_out6_pop <- readRDS(paste0(out_path_monit, "a1_it_out6_screen_2020_monit_1_240221.rds"))
 a1_out6_pop <- a1_out6_pop[[1]]  # 1 year
 
 # With monitoring in separate age groups
@@ -94,8 +94,9 @@ monit_out8 <- monit_out8[[1]]
 # a1_out6_pop
 out4b_it <- readRDS(paste0(out_path_monit, "a1_it_out4b_screen_2020_monit_20_230221.rds"))
 out4b_it <- out4b_it[[1]]   # 20 years
-out4_it <- readRDS(paste0(out_path_monit, "a1_it_out4_screen_2020_monit_10_140121.rds"))
+out4_it <- readRDS(paste0(out_path_monit, "a1_it_out4_screen_2020_monit_10_240221.rds"))
 out4_it <- out4_it[[1]]   # 10 years
+# Need to update these 2:
 out5_it <- readRDS(paste0(out_path_monit, "a1_it_out5_screen_2020_monit_5_161220.rds"))
 out5_it <- out5_it[[1]]   # 5 years
 out6a_it <- readRDS(paste0(out_path_monit, "a1_it_out6a_screen_2020_monit_2_161220.rds"))
@@ -245,6 +246,64 @@ ages <- seq(0,99.5,0.5)
 # x2 = deaths in those screened but not treated if those who need treatment receive it
 # x3 = deaths that would occur in those who need treatment but don't receive it
 # x4 = deaths that occur with treatment in those treated
+
+# HBV deaths combined by age
+a1_x1 <- a4_out1$cum_cohort_hbv_deaths_male_by_age_2100+
+  a4_out1$cum_cohort_hbv_deaths_female_by_age_2100+
+  a5_out1$cum_cohort_hbv_deaths_male_by_age_2100+
+  a5_out1$cum_cohort_hbv_deaths_female_by_age_2100+
+  a2_out1$cum_cohort_hbv_deaths_male_by_age_2100+
+  a2_out1$cum_cohort_hbv_deaths_female_by_age_2100
+a1_x2 <- a4_out3$cum_screened_hbv_deaths_male_by_age_2100 +
+  a4_out3$cum_screened_hbv_deaths_female_by_age_2100+
+  a5_out3$cum_screened_hbv_deaths_male_by_age_2100 +
+  a5_out3$cum_screened_hbv_deaths_female_by_age_2100+
+  a2_out3$cum_screened_hbv_deaths_male_by_age_2100 +
+  a2_out3$cum_screened_hbv_deaths_female_by_age_2100
+a1_x3 <- a1_x1-a1_x2
+a1_x4 <- a4_out3$cum_treated_hbv_deaths_male_by_age_2100+
+  a4_out3$cum_treated_hbv_deaths_female_by_age_2100+
+  a5_out3$cum_treated_hbv_deaths_male_by_age_2100+
+  a5_out3$cum_treated_hbv_deaths_female_by_age_2100+
+  a2_out3$cum_treated_hbv_deaths_male_by_age_2100+
+  a2_out3$cum_treated_hbv_deaths_female_by_age_2100
+a1_x3$sim <- rownames(a1_x3)
+a1_x4$sim <- rownames(a1_x4)
+
+df_a1 <- rbind(
+  data.frame(type="No treatment",
+             gather(a1_x3,key="age", value = "value",-sim)),
+  data.frame(type="With treatment",
+             gather(a1_x4,key="age", value = "value",-sim)))
+df_a1$age <- rep(ages, each = 183)
+
+
+ggplot(df_a1) +
+  stat_summary(aes(x=age, y = value/0.5, colour=type), fun="median",
+               geom = "line", size = 1)+
+  stat_summary(aes(x=age, y = value/0.5, fill=type, colour = type),
+               fun.min= function(x) quantile(x,0.025),
+               fun.max= function(x) quantile(x,0.975),
+               geom = "ribbon", alpha = 0.1, lty ="dashed")+
+  ylab("Cumulative HBV-related deaths by 2100") +
+  xlab("Age at HBV death (years)") +
+  #labs(title="In the cohort") +
+  geom_rect(aes(xmin=0, xmax=15, ymin=-Inf, ymax=Inf), fill = "grey") +
+  scale_fill_manual("Scenario", values= c("No treatment"= "#A180A9",
+                              "With treatment" ="#1F968BFF")) +
+  scale_color_manual("Scenario", values= c("No treatment"= "#A180A9",
+                               "With treatment" ="#1F968BFF")) +
+  theme_bw()+
+  theme(legend.position = c(0.85, 0.8),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        panel.border = element_rect(colour = "black", fill = NA),
+        axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        legend.text = element_text(size = 14),
+        legend.title = element_text(size = 14))
+
 
 # HCC CASES
 
@@ -1003,6 +1062,85 @@ x5 <- ggplot(subset(interactions_by_age_rel, with_monitoring == "No" & interacti
 # Combined plot
 grid.arrange(x3, grid.arrange(x1,x2, ncol = 1), grid.arrange(x4,x5, ncol = 1), ncol = 3)
 
+# Test for DALYS averted per PY on treatment
+
+test <- data.frame(subset(interactions_by_age, scenario %in% c("a4_screen_2020_monit_sim7",
+                                            "a5_screen_2020_monit_sim7",
+                                            "a2_screen_2020_monit_sim7") &
+         interaction_type=="py_on_treatment"),
+      dalys_averted = subset(outcomes_by_age, scenario %in% c("a4_screen_2020_monit_sim7",
+                                              "a5_screen_2020_monit_sim7",
+                                              "a2_screen_2020_monit_sim7") &
+               outcome=="dalys_averted")$value)
+test$dalys_averted_per_py_on_treatment <- test$dalys_averted/test$value
+
+ggplot(test) +
+  geom_boxplot(aes(x=age_group, y = dalys_averted_per_py_on_treatment)) +
+  ylim(0,0.8)
+
+# Test for distribution of carriers by treatment eligibility and cirrhosis status
+
+# Add treatment eligible carriers by age in 2020
+carriers_cirrhotic_male_by_age_2020 <-
+#  do.call(rbind.data.frame,
+#          lapply(out2_comps_by_age$cc_female,
+#                 function(x) x[which(out2_comps_by_age$time==2020),]))+
+  do.call(rbind.data.frame,
+          lapply(out2_comps_by_age$cc_male,
+                 function(x) x[which(out2_comps_by_age$time==2020),]))+
+#  do.call(rbind.data.frame,
+ #         lapply(out2_comps_by_age$dcc_female,
+ #                function(x) x[which(out2_comps_by_age$time==2020),]))#+
+  do.call(rbind.data.frame,
+          lapply(out2_comps_by_age$dcc_male,
+                 function(x) x[which(out2_comps_by_age$time==2020),]))
+
+carriers_cirrhotic_female_by_age_2020 <-
+   do.call(rbind.data.frame,
+          lapply(out2_comps_by_age$cc_female,
+                 function(x) x[which(out2_comps_by_age$time==2020),]))+
+   do.call(rbind.data.frame,
+         lapply(out2_comps_by_age$dcc_female,
+                function(x) x[which(out2_comps_by_age$time==2020),]))
+
+# Combine into dataframes
+carriers_cirrhotic_by_age_group_2020 <-
+  rbind(data.frame(age_group = "15-30",
+                   sim = rownames(carriers_cirrhotic_by_age_2020[,which(ages==15): which(ages==30-da)]),
+                   carriers_cirrhotic_male = rowSums(carriers_cirrhotic_male_by_age_2020[,which(ages==15): which(ages==30-da)]),
+        carriers_cirrhotic_female = rowSums(carriers_cirrhotic_female_by_age_2020[,which(ages==15): which(ages==30-da)])),
+        data.frame(age_group = "30-45",
+                   sim = rownames(carriers_cirrhotic_by_age_2020[,which(ages==30): which(ages==45-da)]),
+                   carriers_cirrhotic_male  = rowSums(carriers_cirrhotic_male_by_age_2020[,which(ages==30): which(ages==45-da)]),
+                   carriers_cirrhotic_female = rowSums(carriers_cirrhotic_female_by_age_2020[,which(ages==30): which(ages==45-da)])),
+        data.frame(age_group = "45-65",
+                   sim = rownames(carriers_cirrhotic_by_age_2020[,which(ages==45): which(ages==65-da)]),
+                   carriers_cirrhotic_male  = rowSums(carriers_cirrhotic_male_by_age_2020[,which(ages==45): which(ages==65-da)]),
+                   carriers_cirrhotic_female = rowSums(carriers_cirrhotic_female_by_age_2020[,which(ages==45): which(ages==65-da)]))
+  )
+
+test2 <- left_join(left_join(carriers_by_age_group_2020, carriers_eligible_by_age_group_2020,
+          by = c("age_group", "sim")),
+          carriers_cirrhotic_by_age_group_2020, by = c("age_group", "sim"))
+test2$carriers_eligible_noncirrhotic <- test2$carriers_eligible-test2$carriers_cirrhotic_male-
+  test2$carriers_cirrhotic_female
+#test2$prop_eligible_cirrhotic <- test2$carriers_cirrhotic/test2$carriers
+#test2$prop_eligible_noncirrhotic <- test2$carriers_eligible_noncirrhotic/test2$carriers
+test2p <- gather(test2, key="outcome", value = "value", -age_group, -sim)
+
+ggplot(subset(test2p, outcome  %in% c("carriers_eligible_noncirrhotic",
+                                      "carriers_cirrhotic_male","carriers_cirrhotic_female",
+                                      "carriers"))) +
+  stat_summary(aes(x=age_group, y = value, fill = reorder(outcome, -value)),
+               fun= "median", geom="bar",
+               position="fill") +
+  geom_hline(yintercept=0.04)
+
+ggplot(subset(test2p, outcome %in% c("carriers_eligible_noncirrhotic",
+                                     "carriers_cirrhotic"))) +
+  stat_summary(aes(x=age_group, y = value, fill = reorder(outcome, -value)), fun= "median", geom="bar",
+               position="fill")
+
 # Distribution of resource utilisation ----
 total_interactions_errorbar <- subset(interactions_by_age, interaction_type == "total_interactions") %>%
   group_by(scenario, age_group) %>%
@@ -1729,7 +1867,7 @@ grid.arrange(p,px,p0,p7,p9,
 
 # out3_it, a1_out6_pop, out4b_it, out4_it, out5_it, out6a_it
 
-# UPDATE THESE WITH RESIMULATED YEARLY AND 10-YEARLY MONITORING #
+# UPDATE THESE WITH RESIMULATED 5 and AND 2-YEARLY MONITORING #
 
 incremental_df <-rbind(
   data.frame(scenario = "screen_2020_monit_20",

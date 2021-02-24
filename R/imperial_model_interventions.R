@@ -3030,7 +3030,65 @@ run_alternative_outcomes_on_cluster <- function(..., default_parameter_list, cal
   rm(out2)
   gc()
 
-  # Extract outcomes for repeat screening and prevalence
+  ## Extract cumulative HBV deaths by age
+
+  index_cum_hbv_deathsm  <- which(grepl("^cum_hbv_deathsm.",names(out[[1]]$full_output)))
+  index_cum_screened_hbv_deathsm  <- which(grepl("^cum_screened_hbv_deathsm.",names(out[[1]]$full_output)))
+  index_cum_treated_hbv_deathsm  <- which(grepl("^cum_treated_hbv_deathsm.",names(out[[1]]$full_output)))
+  index_cum_negative_hbv_deathsm  <- which(grepl("^cum_negative_hbv_deathsm.",names(out[[1]]$full_output)))
+
+  index_cum_hbv_deathsf  <- which(grepl("^cum_hbv_deathsf.",names(out[[1]]$full_output)))
+  index_cum_screened_hbv_deathsf  <- which(grepl("^cum_screened_hbv_deathsf.",names(out[[1]]$full_output)))
+  index_cum_treated_hbv_deathsf  <- which(grepl("^cum_treated_hbv_deathsf.",names(out[[1]]$full_output)))
+  index_cum_negative_hbv_deathsf  <- which(grepl("^cum_negative_screened_hbv_deathsf.",names(out[[1]]$full_output)))
+
+  # Extract based on indices
+  cum_hbv_deaths_male <- lapply(lapply(out, "[[", "full_output"), "[",
+                                         index_cum_hbv_deathsm)
+  cum_screened_hbv_deaths_male <- lapply(lapply(out, "[[", "full_output"), "[",
+                                         index_cum_screened_hbv_deathsm)
+  cum_treated_hbv_deaths_male <- lapply(lapply(out, "[[", "full_output"), "[",
+                                        index_cum_treated_hbv_deathsm)
+  cum_negative_hbv_deaths_male <- lapply(lapply(out, "[[", "full_output"), "[",
+                                         index_cum_negative_hbv_deathsm)
+
+  cum_hbv_deaths_female <- lapply(lapply(out, "[[", "full_output"), "[",
+                                           index_cum_hbv_deathsf)
+  cum_screened_hbv_deaths_female <- lapply(lapply(out, "[[", "full_output"), "[",
+                                           index_cum_screened_hbv_deathsf)
+  cum_treated_hbv_deaths_female <- lapply(lapply(out, "[[", "full_output"), "[",
+                                          index_cum_treated_hbv_deathsf)
+  cum_negative_hbv_deaths_female <- lapply(lapply(out, "[[", "full_output"), "[",
+                                           index_cum_negative_hbv_deathsf)
+
+
+  # Extract cumulative outcomes by age by 2100 (cohort and separate)
+  cum_total_hbv_deaths_male_by_age_2100 <- do.call("rbind", lapply(cum_screened_hbv_deaths_male,function(x) x[which(out[[1]]$time==2100),]))+
+    do.call("rbind", lapply(cum_treated_hbv_deaths_male, function(x) x[which(out[[1]]$time==2100),]))+
+    do.call("rbind", lapply(cum_hbv_deaths_male,function(x) x[which(out[[1]]$time==2100),]))+
+    do.call("rbind", lapply(cum_negative_hbv_deaths_male,function(x) x[which(out[[1]]$time==2100),]))
+
+  cum_total_hbv_deaths_female_by_age_2100 <- do.call("rbind", lapply(cum_screened_hbv_deaths_female,function(x) x[which(out[[1]]$time==2100),]))+
+    do.call("rbind", lapply(cum_treated_hbv_deaths_female, function(x) x[which(out[[1]]$time==2100),]))+
+    do.call("rbind", lapply(cum_hbv_deaths_female, function(x) x[which(out[[1]]$time==2100),]))+
+    do.call("rbind", lapply(cum_negative_hbv_deaths_female, function(x) x[which(out[[1]]$time==2100),]))
+
+  gc()
+
+  # Combine outcomes
+  extracted_outcomes <- list(
+    cum_total_hbv_deaths_male_by_age_2100 = cum_total_hbv_deaths_male_by_age_2100,
+    cum_total_hbv_deaths_female_by_age_2100 = cum_total_hbv_deaths_female_by_age_2100)
+
+  outlist <- list("screen" = extracted_outcomes)
+  names(outlist) <- label
+
+  return(outlist)
+
+
+  ######
+
+  ## Extract outcomes for repeat screening and prevalence
   timevec <- out[[1]]$time[which(out[[1]]$time>=2015)]
 
   # Cumulative HBV deaths, YLL and DALYs by 2100 (to calculate averted numbers and %)
@@ -3190,9 +3248,7 @@ run_alternative_outcomes_on_cluster <- function(..., default_parameter_list, cal
   return(outlist)
 
 
-  #######################
-
-  # Extract outcomes for treatment effect in cohort
+  ## Extract outcomes for treatment effect in cohort
   index_cum_screened_hbv_deathsm  <- which(grepl("^cum_screened_hbv_deathsm.",names(out[[1]]$full_output)))
   index_cum_treated_hbv_deathsm  <- which(grepl("^cum_treated_hbv_deathsm.",names(out[[1]]$full_output)))
 
