@@ -3040,7 +3040,7 @@ run_alternative_outcomes_on_cluster <- function(..., default_parameter_list, cal
   index_cum_hbv_deathsf  <- which(grepl("^cum_hbv_deathsf.",names(out[[1]]$full_output)))
   index_cum_screened_hbv_deathsf  <- which(grepl("^cum_screened_hbv_deathsf.",names(out[[1]]$full_output)))
   index_cum_treated_hbv_deathsf  <- which(grepl("^cum_treated_hbv_deathsf.",names(out[[1]]$full_output)))
-  index_cum_negative_hbv_deathsf  <- which(grepl("^cum_negative_screened_hbv_deathsf.",names(out[[1]]$full_output)))
+  index_cum_negative_hbv_deathsf  <- which(grepl("^cum_negative_hbv_deathsf.",names(out[[1]]$full_output)))
 
   # Extract based on indices
   cum_hbv_deaths_male <- lapply(lapply(out, "[[", "full_output"), "[",

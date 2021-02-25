@@ -96,10 +96,9 @@ out4b_it <- readRDS(paste0(out_path_monit, "a1_it_out4b_screen_2020_monit_20_230
 out4b_it <- out4b_it[[1]]   # 20 years
 out4_it <- readRDS(paste0(out_path_monit, "a1_it_out4_screen_2020_monit_10_240221.rds"))
 out4_it <- out4_it[[1]]   # 10 years
-# Need to update these 2:
-out5_it <- readRDS(paste0(out_path_monit, "a1_it_out5_screen_2020_monit_5_161220.rds"))
+out5_it <- readRDS(paste0(out_path_monit, "a1_it_out5_screen_2020_monit_5_250221.rds"))
 out5_it <- out5_it[[1]]   # 5 years
-out6a_it <- readRDS(paste0(out_path_monit, "a1_it_out6a_screen_2020_monit_2_161220.rds"))
+out6a_it <- readRDS(paste0(out_path_monit, "a1_it_out6a_screen_2020_monit_2_250221.rds"))
 out6a_it <- out6a_it[[1]]  # 2 years
 
 ## 1) Simulate the effect of treatment in the screened+treated cohort ----
@@ -277,7 +276,6 @@ df_a1 <- rbind(
              gather(a1_x4,key="age", value = "value",-sim)))
 df_a1$age <- rep(ages, each = 183)
 
-
 ggplot(df_a1) +
   stat_summary(aes(x=age, y = value/0.5, colour=type), fun="median",
                geom = "line", size = 1)+
@@ -288,11 +286,13 @@ ggplot(df_a1) +
   ylab("Cumulative HBV-related deaths by 2100") +
   xlab("Age at HBV death (years)") +
   #labs(title="In the cohort") +
+  geom_vline(xintercept=30) +
+  geom_vline(xintercept=45) +
   geom_rect(aes(xmin=0, xmax=15, ymin=-Inf, ymax=Inf), fill = "grey") +
   scale_fill_manual("Scenario", values= c("No treatment"= "#A180A9",
-                              "With treatment" ="#1F968BFF")) +
+                                          "With treatment" ="#1F968BFF")) +
   scale_color_manual("Scenario", values= c("No treatment"= "#A180A9",
-                               "With treatment" ="#1F968BFF")) +
+                                           "With treatment" ="#1F968BFF")) +
   theme_bw()+
   theme(legend.position = c(0.85, 0.8),
         panel.grid.major = element_blank(),
@@ -304,6 +304,74 @@ ggplot(df_a1) +
         legend.text = element_text(size = 14),
         legend.title = element_text(size = 14))
 
+group_by(df_a1,type, age) %>%
+  summarise(median(value/0.5)) %>%
+  filter(age==45)
+
+ggplot(df_a1) +
+  stat_summary(data=subset(df_a1, type=="No treatment"),
+      aes(x=age, y = value/0.5, fill="Averted deaths"), fun="median",
+               geom = "area", size = 1, alpha = 1)+
+  stat_summary(data=subset(df_a1, type=="With treatment"),
+               aes(x=age, y = value/0.5), fun="median", fill="white",
+               geom = "area", size = 1, alpha = 1)+
+  stat_summary(aes(x=age, y = value/0.5, colour=type), fun="median",
+               geom = "line", size = 2)+
+#  stat_summary(aes(x=age, y = value/0.5, fill=type, colour = type),
+ #              fun.min= function(x) quantile(x,0.025),
+#               fun.max= function(x) quantile(x,0.975),
+#               geom = "ribbon", alpha = 0, lty ="dashed")+
+  ylab("Cumulative HBV-related deaths by 2100") +
+  #labs(title="In the cohort") +
+  geom_segment(aes(x = 30, y = 3.93, xend = 30, yend = 48.6)) +
+  geom_segment(aes(x = 45, y = 16.6, xend = 45, yend = 131)) +
+  geom_hline(yintercept=0) +
+  scale_fill_manual("", values= c("Averted deaths" = "grey70")) +
+  scale_color_manual("Scenario", values= c("No treatment"= "#A180A9",
+                                           "With treatment" ="#1F968BFF")) +
+  scale_x_continuous("Age at HBV death (years)", breaks=c(15,30,45,90),
+                     limits=c(15,90)) +
+  theme_bw()+
+  theme(legend.position = c(0.85, 0.8),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        panel.border = element_rect(colour = "black", fill = NA),
+        axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        legend.text = element_text(size = 14),
+        legend.title = element_text(size = 14))
+
+
+# What proportion of averted deaths would have occurred before the age of 30/45?
+deaths_averted_distribution_by_age <- rbind(
+  data.frame(age_group = "15-30",
+             value = apply(a1_x3[,which(ages==15):which(ages==29.5)]-
+                            a1_x4[,which(ages==15):which(ages==29.5)],1,sum)), # total deaths averted by age
+  data.frame(age_group = "30-45",
+             value = apply(a1_x3[,which(ages==30):which(ages==44.5)]-
+                             a1_x4[,which(ages==30):which(ages==44.5)],1,sum)),
+  data.frame(age_group = "45+",
+             value = apply(a1_x3[,which(ages==45):which(ages==99.5)]-
+                             a1_x4[,which(ages==45):which(ages==99.5)],1,sum))
+  )
+
+ggplot(deaths_averted_distribution_by_age) +
+  stat_summary(aes(x="15-65", y = value, fill = reorder(age_group,-value)), fun="median",
+               geom = "bar", position = "fill") +
+  ylab("Percentage of averted HBV deaths") +
+  xlab("Screened age group (years)") +
+  scale_fill_viridis_d("Age") +
+  theme_classic() +
+  theme(legend.position = c(0.85, 0.8),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        panel.border = element_rect(colour = "black", fill = NA),
+        axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        legend.text = element_text(size = 14),
+        legend.title = element_text(size = 14))
 
 # HCC CASES
 
@@ -464,6 +532,7 @@ hbv_deaths_2020_group <- rbind(
   data.frame(age = "65+",
         value = apply(hbv_deaths_2020[,which(ages==65):which(ages==99.5)],1,sum))
 )
+
 
 hcc_2020 <-
   (do.call("rbind", lapply(out2_disease_outcomes$cum_hcc_cases_male,
@@ -1866,8 +1935,6 @@ grid.arrange(p,px,p0,p7,p9,
 # every 2 vs every 5, every 1 vs every 2
 
 # out3_it, a1_out6_pop, out4b_it, out4_it, out5_it, out6a_it
-
-# UPDATE THESE WITH RESIMULATED 5 and AND 2-YEARLY MONITORING #
 
 incremental_df <-rbind(
   data.frame(scenario = "screen_2020_monit_20",

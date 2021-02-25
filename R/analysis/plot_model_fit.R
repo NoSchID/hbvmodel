@@ -122,6 +122,22 @@ globocan_out_mat_long$ci_lower <- c(out_mat$globocan_hcc_incidence$ci_lower,
 globocan_out_mat_long$ci_upper<- c(out_mat$globocan_hcc_incidence$ci_upper,
                                     ci_upper_model_values[grepl("^globocan_hcc_incidence.*",names(ci_upper_model_values))])
 
+
+gbd_cirrhosis_out_mat <- select(out_mat$gbd_cirrhosis_mortality, -ci_lower, -ci_upper)
+# Turn into long format then remove the mock value column
+gbd_cirrhosis_out_mat_long <- gather(gbd_cirrhosis_out_mat, key = "type", value = "value",
+                                c("data_value", "model_value"))
+#globocan_out_mat_long$ci_lower[globocan_out_mat_long$type == "model_value"] <- NA
+#globocan_out_mat_long$ci_upper[globocan_out_mat_long$type == "model_value"] <- NA
+gbd_cirrhosis_out_mat_long$value <- NULL
+
+gbd_cirrhosis_out_mat_long$median <- c(out_mat$gbd_cirrhosis_mortality$data_value,
+                                  median_model_values[grepl("^gbd_cirrhosis_mortality.*",names(median_model_values))])
+gbd_cirrhosis_out_mat_long$ci_lower <- c(out_mat$gbd_cirrhosis_mortality$ci_lower,
+                                    ci_lower_model_values[grepl("^gbd_cirrhosis_mortality.*",names(ci_lower_model_values))])
+gbd_cirrhosis_out_mat_long$ci_upper<- c(out_mat$gbd_cirrhosis_mortality$ci_upper,
+                                   ci_upper_model_values[grepl("^gbd_cirrhosis_mortality.*",names(ci_upper_model_values))])
+
 # Seromarker prevalence
 seromarker_out_mat <- out_mat$seromarker_prevalence
 seromarker_out_mat$model_median <- median_model_values[grepl("^seromarker_prevalence.*",names(median_model_values))]
@@ -660,6 +676,45 @@ ggplot(data = globocan_out_mat_long[globocan_out_mat_long$time != 2018,],
         legend.margin=margin(t = 0, unit="cm"))
 
 
+# GBD rates ----
+ggplot(data = gbd_cirrhosis_out_mat_long[gbd_cirrhosis_out_mat_long$time == 2017,],
+       aes(x = paste(age_min,"-",age_max))) +
+  geom_col(data= subset(gbd_cirrhosis_out_mat_long, time == 2017 &
+                          type == "data_value"),
+           aes(y = median*100000, group = type, fill= type),
+           position = "dodge") +
+  geom_line(data= subset(gbd_cirrhosis_out_mat_long, time == 2017 &
+                            type == "model_value"),
+            aes(y = median*100000, group = type)) +
+  geom_errorbar(data= subset(gbd_cirrhosis_out_mat_long, time == 2017 &
+                               type == "data_value"),
+                aes(ymin = ci_lower*100000, ymax = ci_upper*100000,
+                    group = type, colour = type), position = position_dodge(width=0.9), width = 0.3,
+                show.legend = FALSE)+
+  geom_ribbon(data= subset(gbd_cirrhosis_out_mat_long, time == 2017 &
+                              type == "model_value"),
+              aes(ymin=ci_lower*100000, ymax=ci_upper*100000, group = type,
+                  colour = type), alpha = 0.2) +
+  facet_grid(~ sex) +
+  #  facet_grid(outcome ~ sex,
+  #             labeller = labeller(outcome =globocan_outcome_facet_labels)) +
+  scale_fill_manual("", values = c("model_value" = "gray35", "data_value" = "red2"),
+                    labels = c("model_value" = "Model projection",
+                               "data_value" = "Observed data")) +
+  scale_colour_manual("", values = c("model_value" = "black", "data_value" = "black")) +
+  theme_classic() +
+  labs(title = "HBV-related cirrhosis mortality rates in 2018",
+       y = "Deaths per 100,000", x = "Age group (years)"
+       #subtitle = "GLOBOCAN estimated rates were multiplied by PAF from Ryder 1992 and Kirk 2004 (GLCS)"
+       ) +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        plot.subtitle = element_text(hjust = 0.5, size = 12),
+        legend.margin=margin(t = 0, unit="cm"),
+        legend.position = "bottom",
+        axis.title = element_text(size = 15),
+        axis.text = element_text(size = 15),
+        legend.text = element_text(size = 15),
+        strip.text = element_text(size = 15))
 # Risk of chronic carriage ----
 #tiff(here("output", "fits", "lsr_plots", "p_chronic_plot.tiff"), height = 9, width = 14, units = 'in', res=300)
 ggplot(p_chronic_out_mat) +

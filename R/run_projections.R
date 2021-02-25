@@ -66,11 +66,10 @@ sim <- apply(params_mat_accepted_kmeans[5,],1,
                                 #max_age_to_repeat_screen = 49.5,
                                 repeat_screening_years = c(2030)),
                                 drop_timesteps_before = 1960,
-                         scenario = "vacc"))
+                         scenario = "vacc_screen"))
 
 out <- code_model_output(sim[[1]])
 outpath <- out
-
 
 ## Code for lifetime risk of HBV death in treatment eligible vs treatment ineligible compartments ##
 
