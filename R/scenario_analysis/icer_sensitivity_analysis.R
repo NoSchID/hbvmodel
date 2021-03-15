@@ -25,6 +25,8 @@ out_path_monit <-
 # Status quo is the same
 out2 <- readRDS(paste0(out_path_monit, "out2_status_quo_301120.rds"))
 out2 <- out2[[1]]
+out1_it <- readRDS(paste0(out_path_monit, "a1_it_out1_status_quo_cohort_200121.rds"))
+out1_it <- out1_it[[1]]
 
 # Default simulations for comparison:
 out3_it <- readRDS(paste0(out_path_monit, "a1_it_out3_screen_2020_monit_0_180121.rds"))
@@ -107,6 +109,10 @@ monit_out7_thccr_dcc_upper <- monit_out7_thccr_dcc_upper[[1]]
 # Technically out3 is dominated, but get ICER compared to SQ anyway for comparison purposes
 # The ICER for monit_sim7 compared to monit_sim6 in the other file is: 338 (161-844)
 # If monit_sim6 was excluded it would be: 271 (163-519)
+
+# Sensitivity analysis for NO INFECTIVITY from treated carriers:
+out3_no_inf <- readRDS(paste0(out_path, "a1_it_screen_2020_monit_0_no_treated_infectivity_100321.rds"))
+out3_no_inf <- out3_no_inf[[1]]
 
 # Create dataframes with cost (load functions from other script) ----
 annual_discounting_rate <- 0.03
@@ -667,4 +673,140 @@ diff_outcome_significant_parms <- arrange(diff_outcome_significant_parms, -abs(p
 # averted in the POPULATION instead of the cohort. But here we are really interested
 # in the cohort effects.
 
+
+
+# Qualitative sensitivity analysis of treatment impact on infections ----
+# Compare out3_it (default) and out3_no_inf, where treated carriers
+# do not transmit HBV at all
+
+# How many more DALYs are averted by out3_no_inf?
+quantile((out2$dalys[[16]][,-c(1:3)]-out3_no_inf$dalys[[16]][,-c(1:3)])-
+(out2$dalys[[16]][,-c(1:3)]-out3_it$dalys[[16]][,-c(1:3)]), c(0.5,0.025,0.975))
+# 3372 (487-13120) by 2100
+
+quantile(((out2$dalys[[16]][,-c(1:3)]-out3_no_inf$dalys[[16]][,-c(1:3)])-
+           (out2$dalys[[16]][,-c(1:3)]-out3_it$dalys[[16]][,-c(1:3)]))/
+           (out2$dalys[[16]][,-c(1:3)]-out3_it$dalys[[16]][,-c(1:3)]), c(0.5,0.025,0.975))
+# In % that is 3% (0.6-11%) more than what is achieved in the default
+
+# What % of DALYS are averted in the treated cohort?
+# With infectivity:
+quantile((out1_it$cohort_dalys[,-1]-out3_it$cohort_dalys[,-1])/
+  (out2$dalys[[16]][,-c(1:3)]-out3_it$dalys[[16]][,-c(1:3)]), c(0.5,0.025,0.975))
+# 99% (95-104%)
+
+# Without treated infectivity:
+quantile((out1_it$cohort_dalys[,-1]-out3_no_inf$cohort_dalys[,-1])/
+           (out2$dalys[[16]][,-c(1:3)]-out3_no_inf$dalys[[16]][,-c(1:3)]), c(0.5,0.025,0.975))
+# 96% (88-99.9%)
+
+# Infections averted with treated infectivity by 2100
+quantile(apply(out2$timeseries$total_chronic_infections[out2$timeseries$total_chronic_infections$time>=2020 &
+                                                   out2$timeseries$total_chronic_infections$time<2100,-c(1,2)]-
+  out3_it$timeseries$total_chronic_infections[out3_it$timeseries$total_chronic_infections$time>=2020 &
+                                                   out3_it$timeseries$total_chronic_infections$time<2100,-c(1,2)],2,sum),
+  c(0.5,0.025,0.975))
+# 228 (-111-1303)
+
+
+# Infections averted without treated infectivity by 2100
+quantile(apply(out2$timeseries$total_chronic_infections[out2$timeseries$total_chronic_infections$time>=2020 &
+                                                          out2$timeseries$total_chronic_infections$time<2100,-c(1,2)]-
+                 out3_no_inf$timeseries$total_chronic_infections[out3_no_inf$timeseries$total_chronic_infections$time>=2020 &
+                                                               out3_no_inf$timeseries$total_chronic_infections$time<2100,-c(1,2)],2,sum),
+         c(0.5,0.025,0.975))
+# 973 (258-3217)
+
+# What % of all new infections does this represent?
+quantile(apply(out2$timeseries$total_chronic_infections[out2$timeseries$total_chronic_infections$time>=2020 &
+                                                          out2$timeseries$total_chronic_infections$time<2100,-c(1,2)]-
+                 out3_no_inf$timeseries$total_chronic_infections[out3_no_inf$timeseries$total_chronic_infections$time>=2020 &
+                                                                   out3_no_inf$timeseries$total_chronic_infections$time<2100,-c(1,2)],
+      2,sum)/
+  apply(out2$timeseries$total_chronic_infections[out2$timeseries$total_chronic_infections$time>=2020 &
+                                                   out2$timeseries$total_chronic_infections$time<2100,-c(1,2)],
+        2,sum), c(0.5,0.025,0.975))
+# 7% (5-13%)
+
+# What about by 2030?
+# With infectivity
+quantile(apply(out2$timeseries$total_chronic_infections[out2$timeseries$total_chronic_infections$time>=2020 &
+                                                          out2$timeseries$total_chronic_infections$time<2030,-c(1,2)]-
+                 out3_it$timeseries$total_chronic_infections[out3_it$timeseries$total_chronic_infections$time>=2020 &
+                                                                   out3_it$timeseries$total_chronic_infections$time<2030,-c(1,2)],
+               2,sum)/
+           apply(out2$timeseries$total_chronic_infections[out2$timeseries$total_chronic_infections$time>=2020 &
+                                                            out2$timeseries$total_chronic_infections$time<2030,-c(1,2)],
+                 2,sum), c(0.5,0.025,0.975))
+# 4% (0.02-14%)
+
+# No infectivity:
+quantile(apply(out2$timeseries$total_chronic_infections[out2$timeseries$total_chronic_infections$time>=2020 &
+                                                          out2$timeseries$total_chronic_infections$time<2030,-c(1,2)]-
+                 out3_no_inf$timeseries$total_chronic_infections[out3_no_inf$timeseries$total_chronic_infections$time>=2020 &
+                                                                   out3_no_inf$timeseries$total_chronic_infections$time<2030,-c(1,2)],
+               2,sum)/
+           apply(out2$timeseries$total_chronic_infections[out2$timeseries$total_chronic_infections$time>=2020 &
+                                                            out2$timeseries$total_chronic_infections$time<2030,-c(1,2)],
+                 2,sum), c(0.5,0.025,0.975))
+# 10% (6-17%)
+
+# Chronic infection incidence rate over time
+# Shows that averting of infections happens in the short term (by 2030)
+hbv_inc_over_time <-
+  rbind(gather(out2$timeseries$total_chronic_infections_rate, key="sim", value = "value", -time,-scenario),
+        gather(out3_it$timeseries$total_chronic_infections_rate, key="sim", value = "value", -time,-scenario),
+        gather(out3_no_inf$timeseries$total_chronic_infections_rate, key="sim", value = "value", -time,-scenario))
+
+hbv_inc_rate_reduction <- gather((out2$timeseries$total_chronic_infections_rate[,-c(1,2)]-
+                                    out3_no_inf$timeseries$total_chronic_infections_rate[,-c(1,2)])/
+    out2$timeseries$total_chronic_infections_rate[,-c(1,2)], key="sim", value = "value")
+hbv_inc_rate_reduction$time <- rep(out2$timeseries$total_chronic_infections_rate$time, 183)
+
+quantile(hbv_inc_rate_reduction[hbv_inc_rate_reduction$time==2030,]$value, c(0.5,0.025,0.975))
+quantile(hbv_inc_rate_reduction[hbv_inc_rate_reduction$time==2050,]$value, c(0.5,0.025,0.975))
+
+hbv_inc_over_time <- hbv_inc_over_time %>%
+  group_by(time, scenario) %>%
+  summarise(median=median(value),
+            lower=quantile(value, 0.025),
+            upper=quantile(value,0.975))
+
+# Incidence plot:
+ggplot() +
+  geom_ribbon(data=subset(hbv_inc_over_time, scenario == "status_quo"),
+              aes(x=time, ymin=lower/0.5, ymax=upper/0.5,fill = scenario, colour=scenario),
+              linetype = "solid", alpha = 0) +
+  geom_line(data=subset(hbv_inc_over_time, scenario == "status_quo"),
+            aes(x=time, y = median/0.5), colour="#B2182B",
+            linetype = "solid", size=0.75) +
+  geom_ribbon(data=subset(hbv_inc_over_time, scenario == "screen_2020_monit_0_no_treated_infectivity"),
+              aes(x=time, ymin=lower/0.5, ymax=upper/0.5, fill = scenario, colour=scenario),
+              linetype = "solid",alpha = 0) +
+  geom_line(data=subset(hbv_inc_over_time, scenario == "screen_2020_monit_0_no_treated_infectivity"),
+            aes(x=time, y = median/0.5), colour="#2166AC",
+            linetype = "solid", size=0.75) +
+#  scale_fill_manual("Scenario",
+#                    labels = c("status_quo" = "Infant vaccination only",
+#                               "screen_2020_monit_sim7" = "Screening & treatment in 2020\n(monitor every 5 years\nin <45 year olds)"),
+#                    values=c("status_quo" = "#D6604D",
+#                             "screen_2020_monit_sim7" = "#92C5DE")) +
+#  scale_colour_manual("Scenario",
+#                      labels = c("status_quo" = "Infant vaccination only",
+#                                 "screen_2020_monit_sim7" = "Screening & treatment in 2020\n(monitor every 5 years\nin <45 year olds)"),
+#                      values=c("status_quo" = "#B2182B",
+#                               "screen_2020_monit_sim7" = "#2166AC")) +
+ # guides(fill=FALSE, colour = FALSE) +
+  geom_vline(xintercept=2019.5, linetype="dashed") +
+  ylab("New chronic HBV infections per person per year") +
+  ylim(0,0.0015) +
+  xlim(2015,2040) +
+  theme_classic() +
+  theme(legend.position=c(.78,.8),
+        axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        legend.text = element_text(size = 11),
+        legend.title = element_text(size = 13))
+
+# Probably at some point it's also a question of built up immunity in the population.
 

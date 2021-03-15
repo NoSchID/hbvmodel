@@ -89,6 +89,10 @@ monit_out6 <- monit_out6[[1]]
 monit_out8 <- readRDS(paste0(out_path_monit, "a1_it_monit_out8_210121.rds"))
 monit_out8 <- monit_out8[[1]]
 
+# Every 5 years in <45 year olds
+monit_out7 <- readRDS(paste0(out_path_monit, "a1_it_screen_2020_monit_out7_050321.rds"))
+monit_out7 <- monit_out7[[1]]
+
 # Different monitoring frequencies across all ages
 # out3_it above
 # a1_out6_pop
@@ -800,6 +804,7 @@ carriers_it_by_age_2020 <-
           lapply(out2_comps_by_age$it_male,
                  function(x) x[which(out2_comps_by_age$time==2020),]))
 
+
 # Combine into dataframes
 carriers_by_age_group_2020 <-
   rbind(data.frame(age_group = "15-30",
@@ -1394,9 +1399,22 @@ grid.arrange(x2_1,x2_2, ncol = 2)
 hbv_deaths_over_time <-
   rbind(gather(out2$timeseries$total_hbv_deaths, key="sim", value = "value", -time,-scenario),
     gather(a1_out3_pop$timeseries$total_hbv_deaths, key="sim", value = "value", -time,-scenario),
-        gather(a1_out6_pop$timeseries$total_hbv_deaths, key="sim", value = "value", -time,-scenario))
+        gather(a1_out6_pop$timeseries$total_hbv_deaths, key="sim", value = "value", -time,-scenario),
+    gather(monit_out7$timeseries$total_hbv_deaths, key="sim", value = "value", -time,-scenario))
 
 hbv_deaths_over_time <- hbv_deaths_over_time %>%
+  group_by(time, scenario) %>%
+  summarise(median=median(value),
+            lower=quantile(value, 0.025),
+            upper=quantile(value,0.975))
+
+hbv_inc_over_time <-
+  rbind(gather(out2$timeseries$total_chronic_infections, key="sim", value = "value", -time,-scenario),
+        gather(a1_out3_pop$timeseries$total_chronic_infections, key="sim", value = "value", -time,-scenario),
+        gather(a1_out6_pop$timeseries$total_chronic_infections, key="sim", value = "value", -time,-scenario),
+        gather(monit_out7$timeseries$total_chronic_infections, key="sim", value = "value", -time,-scenario))
+
+hbv_inc_over_time <- hbv_inc_over_time %>%
   group_by(time, scenario) %>%
   summarise(median=median(value),
             lower=quantile(value, 0.025),
@@ -1448,22 +1466,22 @@ ggplot() +
   geom_line(data=subset(hbv_deaths_over_time, scenario == "status_quo"),
             aes(x=time, y = median/0.5), colour="#B2182B",
             linetype = "solid", size=0.75) +
-  geom_ribbon(data=subset(hbv_deaths_over_time, scenario == "screen_2020_monit_0"),
+  geom_ribbon(data=subset(hbv_deaths_over_time, scenario == "screen_2020_monit_sim7"),
               aes(x=time, ymin=lower/0.5, ymax=upper/0.5, fill = scenario, colour=scenario),
               linetype = "solid",alpha = 0.8) +
-  geom_line(data=subset(hbv_deaths_over_time, scenario == "screen_2020_monit_0"),
+  geom_line(data=subset(hbv_deaths_over_time, scenario == "screen_2020_monit_sim7"),
             aes(x=time, y = median/0.5), colour="#2166AC",
             linetype = "solid", size=0.75) +
   scale_fill_manual("Scenario",
                     labels = c("status_quo" = "Infant vaccination only",
-                               "screen_2020_monit_0" = "Screening & treatment in 2020\n(no monitoring)"),
+                               "screen_2020_monit_sim7" = "Screening & treatment in 2020\n(monitor every 5 years\nin <45 year olds)"),
                     values=c("status_quo" = "#D6604D",
-                             "screen_2020_monit_0" = "#92C5DE")) +
+                             "screen_2020_monit_sim7" = "#92C5DE")) +
   scale_colour_manual("Scenario",
                       labels = c("status_quo" = "Infant vaccination only",
-                                 "screen_2020_monit_0" = "Screening & treatment in 2020\n(no monitoring)"),
+                                 "screen_2020_monit_sim7" = "Screening & treatment in 2020\n(monitor every 5 years\nin <45 year olds)"),
                       values=c("status_quo" = "#B2182B",
-                             "screen_2020_monit_0" = "#2166AC")) +
+                             "screen_2020_monit_sim7" = "#2166AC")) +
  # guides(fill=FALSE, colour = FALSE) +
   geom_vline(xintercept=2019.5, linetype="dashed") +
   ylab("HBV-related deaths per year") +
@@ -1477,6 +1495,77 @@ ggplot() +
         axis.title = element_text(size = 15),
         legend.text = element_text(size = 11),
         legend.title = element_text(size = 13))
+
+# Incidence plot:
+ggplot() +
+  geom_ribbon(data=subset(hbv_inc_over_time, scenario == "status_quo"),
+              aes(x=time, ymin=lower/0.5, ymax=upper/0.5,fill = scenario, colour=scenario),
+              linetype = "solid", alpha = 0.5) +
+  geom_line(data=subset(hbv_inc_over_time, scenario == "status_quo"),
+            aes(x=time, y = median/0.5), colour="#B2182B",
+            linetype = "solid", size=0.75) +
+  geom_ribbon(data=subset(hbv_inc_over_time, scenario == "screen_2020_monit_sim7"),
+              aes(x=time, ymin=lower/0.5, ymax=upper/0.5, fill = scenario, colour=scenario),
+              linetype = "solid",alpha = 0.25) +
+  geom_line(data=subset(hbv_inc_over_time, scenario == "screen_2020_monit_sim7"),
+            aes(x=time, y = median/0.5), colour="#2166AC",
+            linetype = "solid", size=0.75) +
+  scale_fill_manual("Scenario",
+                    labels = c("status_quo" = "Infant vaccination only",
+                               "screen_2020_monit_sim7" = "Screening & treatment in 2020\n(monitor every 5 years\nin <45 year olds)"),
+                    values=c("status_quo" = "#D6604D",
+                             "screen_2020_monit_sim7" = "#92C5DE")) +
+  scale_colour_manual("Scenario",
+                      labels = c("status_quo" = "Infant vaccination only",
+                                 "screen_2020_monit_sim7" = "Screening & treatment in 2020\n(monitor every 5 years\nin <45 year olds)"),
+                      values=c("status_quo" = "#B2182B",
+                               "screen_2020_monit_sim7" = "#2166AC")) +
+  # guides(fill=FALSE, colour = FALSE) +
+  geom_vline(xintercept=2019.5, linetype="dashed") +
+  ylab("New chronic HBV infections per year") +
+  scale_x_continuous("Year",
+                     breaks=c(1990, 2010, 2019.5, 2040, 2070, 2090),
+                     labels=c(1990, 2010, 2020, 2040, 2070, 2090),
+                     limits=c(1990,2090)) +
+  theme_classic() +
+  theme(legend.position=c(.78,.8),
+        axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        legend.text = element_text(size = 11),
+        legend.title = element_text(size = 13))
+
+# SQ plots of deaths and incidence
+outcomes_over_time <- rbind(
+  data.frame(outcome="HBV-related deaths",
+            gather(out2$timeseries$total_hbv_deaths, key="sim", value = "value", -time,-scenario)),
+  data.frame(outcome="New chronic HBV infections",
+             gather(out2$timeseries$total_chronic_infections, key="sim", value = "value", -time,-scenario))        )
+
+outcomes_over_time <- outcomes_over_time %>%
+  group_by(time, outcome) %>%
+  summarise(median=median(value),
+            lower=quantile(value, 0.025),
+            upper=quantile(value,0.975))
+
+ggplot() +
+  geom_ribbon(data=outcomes_over_time,
+              aes(x=time, ymin=lower/0.5, ymax=upper/0.5),
+              linetype = "solid", alpha = 0.2) +
+  geom_line(data=outcomes_over_time,
+            aes(x=time, y = median/0.5), colour="#B2182B",
+            linetype = "solid", size=0.75) +
+  facet_wrap(~outcome, scales="free_y", nrow=2) +
+  geom_vline(xintercept=1990-0.5, linetype="dashed") +
+  ylab("Incident number per year") +
+  scale_x_continuous("Year",
+                     breaks=c(1990, 2019.5, 2040, 2070, 2090),
+                     labels=c(1990, 2020, 2040, 2070, 2090),
+                     limits=c(1960,2090)) +
+  theme_classic() +
+  theme(legend.position=c(.78,.8),
+        axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        strip.text = element_text(size = 15))
 
 
 # Diagnostic plots for screening and monitoring by age ----
@@ -2002,13 +2091,8 @@ incremental_df$scenario <- factor(incremental_df$scenario,
 ggplot(incremental_df) +
   geom_boxplot(aes(x=scenario, y = treatment_initiations_per_assessment))
 
-
-ggplot(incremental_df) +
-  geom_boxplot(aes(x=scenario, y = treatment_initiations_per_assessment))
-
-# From 10 yearly monitoring onwards, the ratio of new treatment initiations per
+# From 20 yearly monitoring onwards, the ratio of new treatment initiations per
 # incremental monitoring assessment decreases
-# Though it increases between monitoring every 20 vs every 10 years
 # The incremental person-time on treatment per assessment decreases from 20-yearly
 
 # other way to visualise this:
@@ -2046,8 +2130,37 @@ interactions_df <-rbind(
                unlist(out3_it$interactions[[16]]$total_assessed[,-c(1:3)]))
 )
 
+median_values <- group_by(interactions_df, scenario) %>%
+  summarise(monitoring_assessments=median(monitoring_assessments),
+            treatment_initiations=median(treatment_initiations))
+
 ggplot(interactions_df) +
-  geom_point(aes(x=monitoring_assessments, y = treatment_initiations, colour = scenario))
+  geom_point(aes(x=monitoring_assessments/1000, y = treatment_initiations/1000,
+                 colour = reorder(scenario, monitoring_assessments))) +
+  geom_point(data=median_values, aes(x=monitoring_assessments/1000,
+                                     y = treatment_initiations/1000,
+                                     group = reorder(scenario, monitoring_assessments),
+                 colour = reorder(scenario, monitoring_assessments)), size = 5) +
+  geom_point(data=median_values, aes(x=monitoring_assessments/1000,
+                                     y = treatment_initiations/1000,
+                                     group = reorder(scenario, monitoring_assessments)),
+             size = 5, shape = 21, colour="black") +
+ scale_colour_discrete("Average\nmonitoring\ninterval",
+                       labels=c("screen_2020_monit_20" = "20 years",
+                                "screen_2020_monit_10" = "10 years",
+                                "screen_2020_monit_5" = "5 years",
+                                "screen_2020_monit_2" = "2 years",
+                                "screen_2020_monit_1" = "1 year")) +
+  ylab("Treatment initiations (thousands)") +
+  xlab("Monitoring assessments (thousands)") +
+  theme_classic() +
+  theme(axis.text = element_text(size = 15),
+                axis.title = element_text(size = 15),
+                legend.text = element_text(size = 14),
+                legend.title = element_text(size = 14))
+
+
+
 
 # Hypothesis 2: The incremental impact per additional treatment initiations declines with
 # increasing frequency
@@ -2063,62 +2176,6 @@ ggplot(incremental_df) +
 # Other visualisation:
 ggplot(interactions_df) +
   geom_point(aes(x=treatment_initiations, y = cohort_dalys_averted, colour = scenario))
-
-
-boxplot(unlist(out3_it$cohort_dalys[,-1]-out4_it$cohort_dalys[,-1])/
-          (unlist(out4_it$interactions[[16]]$total_treated[,-c(1:3)])-
-             unlist(out3_it$interactions[[16]]$total_treated[,-c(1:3)])),
-        ylim=c(0,13))
-
-boxplot(unlist(out4_it$cohort_dalys[,-1]-out5_it$cohort_dalys[,-1])/
-          (unlist(out5_it$interactions[[16]]$total_treated[,-c(1:3)])-
-             unlist(out4_it$interactions[[16]]$total_treated[,-c(1:3)])),
-        ylim=c(0,13))
-
-boxplot(unlist(out5_it$cohort_dalys[,-1]-out6_it$cohort_dalys[,-1])/
-          (unlist(out6_it$interactions[[16]]$total_treated[,-c(1:3)])-
-             unlist(out5_it$interactions[[16]]$total_treated[,-c(1:3)])),
-        ylim=c(0,13))
-
-t <-data.frame(scenario = rep(c("10", "5", "2", "1"), each=183),
-               dalys=c(unlist(out3_it$cohort_dalys[,-1]-out4_it$cohort_dalys[,-1]),
-                       unlist(out3_it$cohort_dalys[,-1]-out5_it$cohort_dalys[,-1]),
-                       unlist(out3_it$cohort_dalys[,-1]-out6a_it$cohort_dalys[,-1]),
-                       unlist(out3_it$cohort_dalys[,-1]-out6_it$cohort_dalys[,-1])),
-               treatment = c((unlist(out4_it$py_on_treatment[[16]])-
-                                unlist(out3_it$py_on_treatment[[16]])),
-                             (unlist(out5_it$py_on_treatment[[16]])-
-                                unlist(out3_it$py_on_treatment[[16]])),
-                             (unlist(out6a_it$py_on_treatment[[16]])-
-                                unlist(out3_it$py_on_treatment[[16]])),
-                             (unlist(out6_it$py_on_treatment[[16]])-
-                                unlist(out3_it$py_on_treatment[[16]]))))
-
-ggplot(t) +
-  stat_ellipse(aes(x=treatment, y = dalys, colour=scenario)) +
-  theme_classic()
-
-t2 <-data.frame(dalys_10=unlist(out3_it$cohort_dalys[,-1]-out4_it$cohort_dalys[,-1]),
-                dalys_5=unlist(out4_it$cohort_dalys[,-1]-out5_it$cohort_dalys[,-1]),
-                dalys_2=unlist(out5_it$cohort_dalys[,-1]-out6a_it$cohort_dalys[,-1]),
-                dalys_1=unlist(out6a_it$cohort_dalys[,-1]-out6_it$cohort_dalys[,-1]),
-                py_10 = (unlist(out4_it$py_on_treatment[[16]])-
-                           unlist(out3_it$py_on_treatment[[16]])),
-                py_5=(unlist(out5_it$py_on_treatment[[16]])-
-                        unlist(out4_it$py_on_treatment[[16]])),
-                py_2=(unlist(out6a_it$py_on_treatment[[16]])-
-                        unlist(out5_it$py_on_treatment[[16]])),
-                py_1=(unlist(out6_it$py_on_treatment[[16]])-
-                        unlist(out6a_it$py_on_treatment[[16]])))
-t2$ratio_10 <- t2$dalys_10/t2$py_10
-t2$ratio_5 <- t2$dalys_5/t2$py_5
-t2$ratio_2 <- t2$dalys_2/t2$py_2
-t2$ratio_1 <- t2$dalys_1/t2$py_1
-
-boxplot(t2$ratio_10, ylim=c(0,1))
-boxplot(t2$ratio_5, ylim=c(0,1))
-boxplot(t2$ratio_2, ylim=c(0,1))
-boxplot(t2$ratio_1, ylim=c(0,1))
 
 # The ratio of incremental DALYS averted per incremental time on treatment  declines
 # with increasing monitoring frequencies.

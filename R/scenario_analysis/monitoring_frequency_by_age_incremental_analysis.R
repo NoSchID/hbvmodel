@@ -11,6 +11,9 @@ library(BCEA)
 source(here("R/imperial_model_interventions.R"))
 source(here("R/scenario_analysis/calculate_outcomes.R"))
 
+load(here("calibration", "input", "accepted_parmsets_kmeans_170820.Rdata")) # params_mat_accepted_kmeans
+
+
 # Functions ----
 
 # Function to plot boxplot whiskers as 95% percentile
@@ -814,7 +817,7 @@ out6_it <- readRDS(paste0(out_path, "a1_it_out6_screen_2020_monit_1_240221.rds")
 out6_it <- out6_it[[1]]  # 1 year
 
 # Monitoring different age groups while they are of given age (IT always treated)
-monit_out7 <- readRDS(paste0(out_path, "a1_it_monit_out7_161220.rds"))
+monit_out7 <- readRDS(paste0(out_path, "a1_it_screen_2020_monit_out7_050321.rds"))
 monit_out7 <- monit_out7[[1]]
 
 monit_out17 <- readRDS(paste0(out_path, "a1_it_monit_out17_161220.rds"))
@@ -3074,7 +3077,6 @@ ggplot(dominance_prob_result) +
 # screen_2020_monit_sim10, screen_2020_monit_sim9,
 # screen_2020_monit_0
 
-
 # Calculate ICER by simulation on non-dominated strategies
 age_df2 <- subset(age_df, scenario %in% c("screen_2020_monit_1",
                                           "screen_2020_monit_2", "screen_2020_monit_3",
@@ -3179,7 +3181,7 @@ quantile(age_df[age_df$scenario=="screen_2020_monit_sim7",]$monitoring_assessmen
 opt_strategy <- list()
 opt_strategy_by_threshold <- list()
 
-threshold_vec <- c(0.25, 0.52,0.69, 1)*777.81
+threshold_vec <- c(0.25, 0.52,0.69, 1,3)*777.81
 
 for (j in 1:length(threshold_vec)) {
   for(i in 1:183) {
@@ -3200,13 +3202,52 @@ res <- opt_strategy_by_threshold %>%
   count(scenario) %>%
   mutate(prob = n/183)
 
+templ <- data.frame(threshold = rep(c(0,unique(res$threshold)),each=17),
+                    scenario = rep(unique(res$scenario), 6))
+res <- left_join(templ, res, b=c("threshold", "scenario")) %>%
+  filter(scenario != "None")
+res$prob[is.na(res$prob)] <- 0
 
+# Which strategy is the most cost-effective at each threshold?
+group_by(res, threshold) %>%
+  filter(threshold != 0 & prob == max(prob))
+# screen_2020_monit_sim7, screen_2020_monit_5, screen_2020_monit_2
 
-ggplot(res[res$scenario %in% unique(res$scenario[res$prob>0.25]) &
-                   res$scenario != "None",]) +
-  geom_point(aes(x=threshold, y = prob, colour=scenario), size =3) +
-  geom_line(aes(x=threshold, y = prob, colour=scenario)) +
-  theme_classic()
+ggplot() +
+  geom_line(data=res[!(res$scenario %in% c("screen_2020_monit_sim7",
+                                         "screen_2020_monit_5",
+                                         "screen_2020_monit_2")),],
+            aes(x=threshold, y = prob, group=scenario), colour="grey80") +
+  geom_vline(xintercept=404, linetype = "dashed", col = "black") +
+  geom_vline(xintercept=537, linetype = "dashed", col = "black") +
+  annotate(geom = "text", x = 465, y = 0.5, label = "Estimated CE thresholds",
+           angle = 90, size = 3.5) +
+  geom_vline(xintercept=778, linetype = "dashed", col = "grey40") +
+  annotate(geom = "text", x = 825, y = 0.5, label = "1 x GDP per capita",
+           angle = 90, size = 3.5, colour = "grey40") +
+  geom_vline(xintercept=2333, linetype = "dashed", col = "grey40") +
+  annotate(geom = "text", x = 2380, y = 0.5, label = "3 x GDP per capita",
+           angle = 90, size = 3.5, colour = "grey40") +
+  geom_line(data=res[res$scenario %in% c("screen_2020_monit_sim7",
+                                         "screen_2020_monit_5",
+                                         "screen_2020_monit_2"),],
+            aes(x=threshold, y = prob, colour=scenario), size = 1) +
+  scale_colour_discrete("Monitoring strategy",
+                        labels = c("screen_2020_monit_sim7" = "Every 5 years\nin <45 year olds",
+                                   "screen_2020_monit_5" = "Every 5 years\nacross all ages",
+                                   "screen_2020_monit_2" = "Every 2 years\nacross all ages")) +
+  scale_y_continuous(limits=c(0,0.6), expand = c(0, 0)) +
+  scale_x_continuous(limits=c(0,2425), expand = c(0, 0)) +
+  ylab("Probability of being\nthe most cost-effective strategy") +
+  xlab("Cost-effectiveness threshold (US$ per DALY averted)") +
+  theme_classic() +
+  theme(axis.text = element_text(size = 14),
+        axis.title = element_text(size = 14),
+        legend.text = element_text(size = 13),
+        legend.title = element_text(size = 13))
+# In grey are the strategies that are never have the highest probability to be
+# the most cost-effective
+
 
 # ICER plots (improved) ----
 
@@ -3221,6 +3262,20 @@ age_df$frontier[age_df$scenario %in% c("screen_2020_monit_1",
                                        "screen_2020_monit_sim6",
                                        "screen_2020_monit_sim2c",
                                        "No treatment")] <- "Non-dominated"
+
+age_df$frontier_deaths <- "Dominated"
+age_df$frontier_deaths[age_df$scenario %in% c("screen_2020_monit_1",
+                                       "screen_2020_monit_2", "screen_2020_monit_3",
+                                       "screen_2020_monit_4", "screen_2020_monit_5",
+                                       #"screen_2020_monit_10",
+                                       #"screen_2020_monit_sim7_10"
+                                       "screen_2020_monit_sim10",
+                                       #"screen_2020_monit_sim8",
+                                       "screen_2020_monit_sim9",
+                                       "screen_2020_monit_0",
+                                       "No treatment")] <- "Non-dominated"
+
+
 # Break into monitoring frequency and age group
 age_df$monitoring_frequency <- "No treatment"
 age_df$monitoring_frequency[age_df$scenario=="screen_2020_monit_0"] <- "No monitoring"
@@ -3265,7 +3320,7 @@ age_df$age_group[age_df$scenario %in% c("screen_2020_monit_sim10",
                                         "screen_2020_monit_sim5a","screen_2020_monit_sim5b",
                                         "screen_2020_monit_sim5c","screen_2020_monit_sim5")] <- "45+"
 
-age_df_median <- group_by(age_df, scenario, frontier, monitoring_frequency, age_group) %>%
+age_df_median <- group_by(age_df, scenario, frontier, frontier_deaths, monitoring_frequency, age_group) %>%
   summarise(deaths_averted = median(deaths_averted),
             total_interactions = median(total_interactions),
             dalys_averted = median(dalys_averted),
@@ -3281,6 +3336,7 @@ age_df_median$under_threshold[age_df_median$frontier=="Non-dominated" &
 age_df_median$under_threshold[(age_df_median$frontier=="Non-dominated" &
                                 age_df_median$scenario %in% icer_under_threshold1) |
                                 age_df_median$scenario == "No treatment"] <- "Under lower threshold"
+
 
 # All strategies - median only
 # Remove here strategies with varying frequency by age for simplicity
@@ -3325,7 +3381,7 @@ ggplot() +
   ylab("Additional cost (million US$)") +
   xlab("DALYs averted (thousands)") +
   theme_classic() +
- # xlim(75,105) + ylim(20,50) +   # Use this to zoom in
+#  xlim(75,105) + ylim(20,50) +   # Use this to zoom in
   theme(axis.text = element_text(size = 15),
         axis.title = element_text(size = 15),
         legend.text = element_text(size = 14),
@@ -3568,6 +3624,144 @@ ggplot(acceptability_curve) +
         axis.title = element_text(size = 15),
         legend.text = element_text(size = 14),
         legend.title = element_text(size = 14))
+
+# Sensitivity analysis - ICERs against pr_ic_enchb ----
+
+# Try on subset of strategies across all ages first
+age_df_subs <- subset(age_df, scenario %in%
+                        c("screen_2020_monit_0", "screen_2020_monit_5",
+                          "screen_2020_monit_4", "screen_2020_monit_3",
+                          "screen_2020_monit_2", "screen_2020_monit_1", "No treatment"))
+
+icer_list <- list()
+
+for(i in 1:183) {
+  print(i)
+  icer_list[[i]] <- age_df_subs[which(age_df_subs$sim==
+                                    unique(age_df_subs$sim)[i]),]
+  icer_list[[i]] <- calculate_icer_per_sim(icer_list[[i]],
+                                           exposure="total_cost",
+                                           outcome="dalys_averted")
+}
+icer_df <- do.call("rbind", icer_list)
+icer_result <- group_by(icer_df, scenario, comparator) %>%
+  arrange(sim,total_cost) %>%
+  summarise(icer_median = median(icer),
+            icer_lower = quantile(icer, 0.025),
+            icer_upper = quantile(icer, 0.975)) %>%
+  arrange(icer_median)
+icer_result
+
+icer_df
+
+pr_ic_enchb_values <- params_mat_accepted_kmeans
+pr_ic_enchb_values$sim <- rownames(pr_ic_enchb_values)
+pr_ic_enchb_values <- select(pr_ic_enchb_values, sim, pr_ic_enchb)
+
+icer_by_pr_ic_enchb <- left_join(icer_df, pr_ic_enchb_values, by = "sim")
+
+#icer_by_pr_ic_enchb <- subset(icer_by_pr_ic_enchb, scenario != "screen_2020_monit_1" &
+#                                scenario != "screen_2020_monit_2")
+icer_by_pr_ic_enchb$scenario <- factor(as.character(icer_by_pr_ic_enchb$scenario),
+                                       levels = c("No treatment",
+                                                  "screen_2020_monit_0",
+                                                  "screen_2020_monit_5",
+                                                  "screen_2020_monit_4",
+                                                  "screen_2020_monit_3",
+                                                  "screen_2020_monit_2",
+                                                  "screen_2020_monit_1"))
+
+ggplot(icer_by_pr_ic_enchb) +
+  geom_line(aes(x=pr_ic_enchb*100, y = icer, colour = scenario)) +
+  geom_hline(yintercept=404, linetype = "dashed", col = "grey40") +
+  geom_hline(yintercept=537, linetype = "dashed", col = "grey40") +
+  geom_hline(yintercept=778, linetype = "dashed", col = "grey40") +
+  scale_colour_discrete("Monitoring strategy",
+                        labels = c("screen_2020_monit_0" = "No monitoring",
+                                 "screen_2020_monit_5" = "Every 5 years",
+                                 "screen_2020_monit_4" = "Every 4 years",
+                                 "screen_2020_monit_3" = "Every 3 years",
+                                 "screen_2020_monit_2" = "Every 2 years\n(where ICER<5000)",
+                                 "screen_2020_monit_1" = "Every 1 year\n(where ICER<5000)")) +
+  geom_text(aes(label = "GDP per capita 2019", x = 0.9, y = 800), hjust = -1) +
+  geom_text(aes(label = "Estimated CE thresholds", x = 0.81, y = 475),
+            hjust = -1) +
+  coord_cartesian(clip = 'off') +
+  xlab("Annual progression rate from\nHBeAg-negative infection to HBeAg-negative CHB (%)") +
+  ylab("ICER compared to previous strategy\n(US$/DALY averted)") +
+  ylim(0,5000) +
+  theme_classic() +
+  theme(axis.text = element_text(size = 15),
+                axis.title = element_text(size = 15),
+                legend.text = element_text(size = 14),
+                legend.title = element_text(size = 14))
+
+# DALYS averted (not incremental):
+ggplot(icer_by_pr_ic_enchb) +
+  geom_line(aes(x=pr_ic_enchb*100, y = dalys_averted, colour = scenario)) +
+  geom_point(aes(x=pr_ic_enchb*100, y = dalys_averted, colour = scenario)) +
+ #  geom_hline(yintercept=404, linetype = "dashed", col = "grey40") +
+#  geom_hline(yintercept=537, linetype = "dashed", col = "grey40") +
+#  geom_hline(yintercept=778, linetype = "dashed", col = "grey40") +
+  scale_colour_manual("Monitoring strategy",
+                        labels = c("screen_2020_monit_0" = "No monitoring",
+                                   "screen_2020_monit_5" = "Every 5 years",
+                                   "screen_2020_monit_4" = "Every 4 years",
+                                   "screen_2020_monit_3" = "Every 3 years",
+                                   "screen_2020_monit_2" = "Every 2 years",
+                                   "screen_2020_monit_1" = "Every 1 year"),
+                        values = c("screen_2020_monit_0" = "red",
+                                   "screen_2020_monit_5" = "grey80",
+                                   "screen_2020_monit_4" = "grey60",
+                                   "screen_2020_monit_3" = "grey40",
+                                   "screen_2020_monit_2" = "grey20",
+                                   "screen_2020_monit_1" = "black")) +
+#  geom_text(aes(label = "GDP per capita 2019", x = 0.9, y = 800), hjust = -1) +
+#  geom_text(aes(label = "Estimated CE thresholds", x = 0.81, y = 475),
+#            hjust = -1) +
+#  coord_cartesian(clip = 'off') +
+  xlab("Annual progression rate from\nHBeAg-negative infection to HBeAg-negative CHB (%)") +
+  ylab("Cumulative DALYs averted") +
+  ylim(0,251000) +
+  theme_classic() +
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        legend.text = element_text(size = 14),
+        legend.title = element_text(size = 14))
+
+# Total cost (not incremental)
+ggplot(icer_by_pr_ic_enchb) +
+  geom_point(aes(x=pr_ic_enchb*100, y = total_cost, colour = scenario)) +
+  geom_line(aes(x=pr_ic_enchb*100, y = total_cost, colour = scenario)) +
+  #  geom_hline(yintercept=404, linetype = "dashed", col = "grey40") +
+  #  geom_hline(yintercept=537, linetype = "dashed", col = "grey40") +
+  #  geom_hline(yintercept=778, linetype = "dashed", col = "grey40") +
+  scale_colour_manual("Monitoring strategy",
+                      labels = c("screen_2020_monit_0" = "No monitoring",
+                                 "screen_2020_monit_5" = "Every 5 years",
+                                 "screen_2020_monit_4" = "Every 4 years",
+                                 "screen_2020_monit_3" = "Every 3 years",
+                                 "screen_2020_monit_2" = "Every 2 years",
+                                 "screen_2020_monit_1" = "Every 1 year"),
+                      values = c("screen_2020_monit_0" = "red",
+                                 "screen_2020_monit_5" = "grey80",
+                                 "screen_2020_monit_4" = "grey60",
+                                 "screen_2020_monit_3" = "grey40",
+                                 "screen_2020_monit_2" = "grey20",
+                                 "screen_2020_monit_1" = "black")) +
+  #  geom_text(aes(label = "GDP per capita 2019", x = 0.9, y = 800), hjust = -1) +
+  #  geom_text(aes(label = "Estimated CE thresholds", x = 0.81, y = 475),
+  #            hjust = -1) +
+  #  coord_cartesian(clip = 'off') +
+  xlab("Annual progression rate from\nHBeAg-negative infection to HBeAg-negative CHB (%)") +
+  ylab("Cumulative total cost (US$)") +
+  ylim(0,70000000) +
+  theme_classic() +
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        legend.text = element_text(size = 14),
+        legend.title = element_text(size = 14))
+
 
 ## 4) Plots of breakdown of impact of 5-yearly monitoring and screening by separate age group ----
 
@@ -4108,7 +4302,7 @@ ggplot(total_cohort_dalys) +
 
 out4b_it <- readRDS(paste0(out_path, "a1_it_out4b_screen_2020_monit_20_230221.rds"))
 out4b_it <- out4b_it[[1]]   # 20 years
-out4_it <- readRDS(paste0(out_path, "a1_it_out4_screen_2020_monit_10_140121.rds"))
+out4_it <- readRDS(paste0(out_path, "a1_it_out4_screen_2020_monit_10_240221.rds"))
 out4_it <- out4_it[[1]]   # 10 years
 
 age_dalys_averted_cohort2 <-
@@ -4168,10 +4362,7 @@ ggplot(age_df_daly_summary2) +
         axis.title = element_text(size = 15),
         legend.text = element_text(size = 14))
 
-
-
 # Compared to no treatment
-
 age_dalys_averted_cohort <-
   plot_hbv_deaths_averted_cohort(counterfactual_object = out1_it,
                                  scenario_objects = list(out3_it, out5_it,

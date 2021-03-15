@@ -1508,7 +1508,7 @@ p2 <- ggplot() +
                                                   colour = c("white", "white")),
                               order =2),
          fill = guide_legend(order=1)) +
-  ylab("Remaining treatment need in total\ntargeted population at time of screening (%)") +
+  ylab("Unmet treatment need in total\ntargeted population at time of screening (%)") +
   xlab("Year of screening") +
   theme_classic() +
   scale_y_continuous(expand = c(0, 0)) +
@@ -1530,3 +1530,20 @@ p2 <- ggplot() +
 
 grid.arrange(p1,p2,ncol=2)
 # Cross indicates treatment need decline with vaccination alone.
+
+# What proportion of treatment eligible carriers are on treatment over time??
+total_eligible <- out3_it$treatment_eligible_carriers_undiagnosed_over_time+
+  out3_it$treatment_eligible_carriers_screened_over_time+
+  out3_it$treated_carriers_over_time
+prop_treated <- out3_it$treated_carriers_over_time/total_eligible
+
+prop_treated <- gather(data.frame(prop_treated), key = "sim", value = "value")
+prop_treated$time <- rep(out3_it$time, 183)
+
+ggplot(prop_treated) +
+  geom_line(aes(x=time, y = value, group = sim), col = "grey50") +
+  stat_summary(aes(x=time, y = value), fun = "median", geom = "line", col = "red")
+
+prop_treated_all_carriers <- out3_it$treated_carriers_over_time/out3_it$total_carriers_over_time
+View(cbind(out3_it$time, apply(prop_treated_all_carriers, 1, median)*100))
+# Of all carriers in the population only 8% would be treated in 2020, going down from there
