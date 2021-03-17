@@ -114,6 +114,10 @@ monit_out7_thccr_dcc_upper <- monit_out7_thccr_dcc_upper[[1]]
 out3_no_inf <- readRDS(paste0(out_path, "a1_it_screen_2020_monit_0_no_treated_infectivity_100321.rds"))
 out3_no_inf <- out3_no_inf[[1]]
 
+# Sensitivity analysis for impact of vaccination compared to no vacc:
+out_no_vacc <- readRDS(paste0(out_path, "no_vacc_scenario_170321.rds"))
+out_no_vacc <- out_no_vacc[[1]]
+
 # Create dataframes with cost (load functions from other script) ----
 annual_discounting_rate <- 0.03
 
@@ -809,4 +813,51 @@ ggplot() +
         legend.title = element_text(size = 13))
 
 # Probably at some point it's also a question of built up immunity in the population.
+
+
+# For appendix: comparison of status quo with no-vaccination scenario ----
+hbv_deaths_over_time <-
+  rbind(gather(out2$timeseries$total_hbv_deaths, key="sim", value = "value", -time,-scenario),
+        gather(out_no_vacc$timeseries$total_hbv_deaths, key="sim", value = "value", -time,-scenario))
+
+hbv_deaths_over_time <- hbv_deaths_over_time %>%
+  group_by(time, scenario) %>%
+  summarise(median=median(value),
+            lower=quantile(value, 0.025),
+            upper=quantile(value,0.975))
+
+ggplot() +
+  geom_ribbon(data=subset(hbv_deaths_over_time, scenario == "no_vacc"),
+              aes(x=time, ymin=lower/0.5, ymax=upper/0.5, fill = scenario, colour=scenario),
+              linetype = "solid",alpha = 0.8) +
+  geom_line(data=subset(hbv_deaths_over_time, scenario == "no_vacc"),
+            aes(x=time, y = median/0.5), colour="#2166AC",
+            linetype = "solid", size=0.75) +
+  geom_ribbon(data=subset(hbv_deaths_over_time, scenario == "status_quo"),
+              aes(x=time, ymin=lower/0.5, ymax=upper/0.5,fill = scenario, colour=scenario),
+              linetype = "solid", alpha = 0.5) +
+  geom_line(data=subset(hbv_deaths_over_time, scenario == "status_quo"),
+            aes(x=time, y = median/0.5), colour="#B2182B",
+            linetype = "solid", size=0.75) +
+  scale_fill_manual("Scenario",
+                    labels = c("status_quo" = "Continued infant vaccination\n(base case)",
+                               "no_vacc" = "No historical intervention"),
+                    values=c("status_quo" = "#D6604D",
+                             "no_vacc" = "#92C5DE")) +
+  scale_colour_manual("Scenario",
+                      labels = c("status_quo" = "Continued infant vaccination\n(base case)",
+                                 "no_vacc" = "No historical intervention"),
+                      values=c("status_quo" = "#B2182B",
+                               "no_vacc" = "#2166AC")) +
+  geom_vline(xintercept=1990, linetype="dashed", colour="grey30") +
+  # guides(fill=FALSE, colour = FALSE) +
+  ylab("Annual HBV-related deaths") +
+  xlab("Year") +
+  xlim(1980,2100) +
+  theme_classic() +
+  theme(legend.position=c(.35,.8),
+        axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        legend.text = element_text(size = 11),
+        legend.title = element_text(size = 13))
 

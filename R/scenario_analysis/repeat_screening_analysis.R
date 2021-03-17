@@ -1531,6 +1531,8 @@ p2 <- ggplot() +
 grid.arrange(p1,p2,ncol=2)
 # Cross indicates treatment need decline with vaccination alone.
 
+##
+
 # What proportion of treatment eligible carriers are on treatment over time??
 total_eligible <- out3_it$treatment_eligible_carriers_undiagnosed_over_time+
   out3_it$treatment_eligible_carriers_screened_over_time+
@@ -1544,6 +1546,17 @@ ggplot(prop_treated) +
   geom_line(aes(x=time, y = value, group = sim), col = "grey50") +
   stat_summary(aes(x=time, y = value), fun = "median", geom = "line", col = "red")
 
+# What proportion of ALL carriers are on treatment over time?
 prop_treated_all_carriers <- out3_it$treated_carriers_over_time/out3_it$total_carriers_over_time
-View(cbind(out3_it$time, apply(prop_treated_all_carriers, 1, median)*100))
 # Of all carriers in the population only 8% would be treated in 2020, going down from there
+prop_treated_all_carriers <- gather(data.frame(prop_treated_all_carriers), key = "sim", value = "value")
+prop_treated_all_carriers$time <- rep(out3_it$time, 183)
+
+quantile(prop_treated_all_carriers[prop_treated_all_carriers$time==2020.5,]$value,
+         c(0.5,0.025,0.975))
+
+ggplot(prop_treated_all_carriers) +
+  geom_line(aes(x=time, y = value, group = sim), col = "grey50") +
+  stat_summary(aes(x=time, y = value), fun = "median", geom = "line", col = "red")
+# Actually the proportion of all carriers on treatment remains relatively similar over time!
+

@@ -14,7 +14,6 @@ load(here("analysis_input", "scenario_a1_it_parms.Rdata"))
 load(here("analysis_input", "scenario_anc1_it_parms.Rdata"))
 load(here("analysis_input", "scenario_wpl1_parms.Rdata"))
 
-
 sim <- apply(params_mat_accepted_kmeans[1,],1,
              function(x)
                run_model(sim_duration = runtime, default_parameter_list =scenario_a1_it_parms,

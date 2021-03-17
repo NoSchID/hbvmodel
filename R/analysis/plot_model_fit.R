@@ -322,11 +322,6 @@ ggplot(data = subset(seromarker_out_mat, outcome == "HBsAg_prevalence")) +
         strip.text.x = element_text(size = 15))
 #dev.off()
 
-ggplot(data = subset(seromarker_out_mat, outcome == "HBsAg_prevalence" & time < 1990)) +
-  geom_line(data = subset(seromarker_out_mat, outcome == "HBsAg_prevalence" & time == 1989),
-            aes(x = age, y = model_median, group = sex, colour = sex)) +
-  geom_point(aes(x = age, y = data_value, fill = "Data", colour = sex),
-             shape = 4, stroke = 1.5)
 
 # Anti-HBc prevalence by time and age ----
 anti_hbc_studies <- unique(data.frame(time = subset(seromarker_out_mat,
@@ -944,3 +939,204 @@ plot_ld_prop_male <-
 ## Combined liver disease demography
 p_ld_demog <- grid.arrange(plot_ld_mean_age, plot_ld_prop_male, nrow = 1, widths= 1:2,
                            top = "Characteristics of HBV-related liver disease patients\nGambia Liver Cancer Study (Mendy 2010)")
+
+# PAPER PLOT (sAg prevalence and HCC incidence) ----
+
+# For paper: combine pre-vaccination prevalence plot with post-vaccination ones
+
+# Pre-vaccination prevalence by age
+# Plotting only male model projection here but they are very similar
+hbsag_p1_facet <- "Pre-vaccination period"
+names(hbsag_p1_facet) <- c("HBsAg_prevalence")
+# Random choice of outcome to be able to add a facet label
+
+hbsag_p1 <- ggplot(data = subset(seromarker_out_mat, outcome == "HBsAg_prevalence" & time < 1990)) +
+  geom_line(data = subset(seromarker_out_mat, outcome == "HBsAg_prevalence" & time == 1989 & sex == "Male"),
+            aes(x = age, y = model_median*100, linetype = "Model"), size = 1) +
+  geom_ribbon(data = subset(seromarker_out_mat, outcome == "HBsAg_prevalence" & time == 1989 & sex == "Male"),
+              aes(x=age, ymin=model_ci_lower*100, ymax=model_ci_upper*100),  fill= "grey50",
+              alpha = 0.1) +
+  geom_point(aes(x = age, y = data_value*100, fill = "Data"), col = "#458EBF", # green=#55C667FF
+             shape = 4, stroke = 2) +   # blue = #31688EFF
+  geom_errorbar(aes(x = age, ymax = ci_upper*100, ymin = ci_lower*100), col = "#458EBF") +
+  scale_linetype_manual(name = NULL, values = c("Model" = "solid"), labels = "Model output") +
+  scale_fill_manual(name = NULL, values = c("Data" = "#458EBF"), labels = "Observed data") +
+  labs(y = "HBsAg prevalence (%)", x = "Age (years)") +
+  scale_y_continuous(breaks = c(0,20,40)) +
+  theme_classic() +
+  facet_wrap(~outcome,
+             labeller = labeller(outcome =hbsag_p1_facet)) +
+  xlim(0,65) +
+  guides(linetype = guide_legend(order = 1),
+         fill = guide_legend(order = 2),
+         colour = guide_legend(order = 3)) +
+  guides(linetype=FALSE, fill = FALSE) +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        panel.border = element_rect(colour = "black", fill = NA),
+        legend.margin=margin(t = 0, unit="cm"),
+        legend.position = "bottom",
+        axis.text = element_text(size = 14),
+        #axis.title.x = element_text(size = 14),
+        axis.title = element_blank(),
+        legend.text = element_text(size = 14),
+        legend.title = element_text(size = 14),
+        strip.text = element_text(size = 14))
+
+
+# Post-vaccination age groups affected by vaccination
+vacc_age_groups <- subset(seromarker_out_mat, outcome == "HBsAg_prevalence" & time >= 1990 &
+                            ((paper_first_author == "Peto") |
+                               (paper_first_author == "Lemoine" & time==2013) |
+                               (paper_first_author == "Bittaye")))
+
+hbsag_p2_facet <- c("17 years post-vaccination", "23 years post-vaccination", "25 years post-vaccination")
+names(hbsag_p2_facet) <- c(2007.5, 2013,2015)
+
+hbsag_p2 <- ggplot(data = subset(seromarker_out_mat, outcome == "HBsAg_prevalence" & time %in%
+                                   c(2007.5, 2013,2015))) +
+  geom_line(aes(x = age, y = model_median*100, group = sex, linetype = "Model"), size = 1) +
+  geom_point(data = vacc_age_groups, aes(x = age, y = data_value*100, fill = "Data"),
+             col = "#458EBF",shape = 4, stroke = 2) +
+  geom_ribbon(aes(x=age, ymin=model_ci_lower*100, ymax=model_ci_upper*100, group = sex),
+              fill= "grey50",
+              alpha = 0.1) +
+  geom_errorbar(data = vacc_age_groups, aes(x = age, ymax = ci_upper*100, ymin = ci_lower*100),
+                col = "#458EBF") +
+  scale_linetype_manual(name = NULL, values = c("Model" = "solid"), labels = "Model output") +
+  scale_fill_manual(name = NULL, values = c("Data" = "#458EBF"), labels = "Observed data") +
+  facet_wrap(~ time, ncol = 1, labeller = labeller(time =hbsag_p2_facet)) +
+  labs(y = "", x = "Age (years)") +
+  scale_y_continuous(breaks = c(0,20,40)) +
+  theme_classic() +
+  xlim(0,65) +
+  guides(linetype = guide_legend(order = 1),
+         fill = guide_legend(order = 2),
+         colour = guide_legend(order = 3)) +
+  #guides(linetype=FALSE, fill = FALSE) +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        panel.border = element_rect(colour = "black", fill = NA),
+        legend.margin=margin(t = 0, unit="cm"),
+        legend.position = "bottom",
+        axis.title.x = element_text(size = 14),
+        axis.title.y = element_blank(),
+        axis.text = element_text(size = 14),
+        legend.text = element_text(size = 14),
+        legend.title = element_text(size = 14),
+        strip.text.x = element_text(size = 14))
+
+#grid.arrange(hbsag_p1, hbsag_p2, ncol=2)
+
+# For other plot
+library(grid)
+hbsag_p <- grid.arrange(hbsag_p1, hbsag_p2, nrow = 2, heights = c(1,3),
+                        left = textGrob("Chronic infection prevalence (%)",
+                                        rot = 90,
+                                        gp=gpar(fontsize=14)))
+
+# Line chart of 2018 HCC incidence for paper
+hcc_inc_2018 <- globocan_out_mat_long[globocan_out_mat_long$time == 2018 &
+                                        globocan_out_mat_long$outcome == "hcc_incidence",]
+hcc_inc_2018$sex_type <- paste(hcc_inc_2018$sex, hcc_inc_2018$type)
+hcc_inc_2018$age_group <- paste0(hcc_inc_2018$age_min,"-",hcc_inc_2018$age_max)
+hcc_inc_2018$age_group[hcc_inc_2018$age_group=="70-99.5"] <- "70+"
+
+hcc_inc_plot <- ggplot(data = hcc_inc_2018,
+       aes(x = age_group)) +
+  geom_line(data= subset(hcc_inc_2018, type == "model_value"),
+            aes(y = median*100000, group = sex_type, colour= sex_type),
+            size = 1) +
+  geom_point(data= subset(hcc_inc_2018, type == "data_value"),
+             aes(y = median*100000, group = sex_type, colour= sex_type),
+             shape=4, stroke = 2) +
+  geom_errorbar(data= subset(hcc_inc_2018, type == "data_value"),
+                aes(ymin = ci_lower*100000, ymax = ci_upper*100000,
+                    group = sex_type, colour= sex_type), width = 0.15,
+                show.legend = FALSE)+
+  geom_ribbon(data= subset(hcc_inc_2018, type == "model_value"),
+              aes(ymin=ci_lower*100000, ymax=ci_upper*100000,
+                  group = sex_type, fill = sex_type),
+              alpha = 0.1) +
+  guides(color = guide_legend(override.aes = list(shape = c(4, NA, 4,NA),
+                                                  linetype =c(NA,1,NA,1))),
+         fill=FALSE) +
+  scale_colour_manual(labels=c("Female data_value" = "Observed data, women",
+                               "Female model_value" = "Model output, women",
+                               "Male data_value" = "Observed data, men",
+                               "Male model_value" = "Model output, men"),
+                      values=c("Female data_value" = "#9ecae1",  # purple=#440154
+                               "Female model_value" = "#9ecae1",
+                               "Male data_value" = "#1E4158",  #blue original = #31688EFF
+                               "Male model_value" = "#1E4158")) +
+  scale_fill_manual(values=c("Female data_value" = "#9ecae1",  # purple=#440154
+                               "Female model_value" = "#9ecae1",  # blue #458EBF"
+                               "Male data_value" = "#1E4158",  #blue = #31688EFF
+                               "Male model_value" = "#1E4158")) +
+  #scale_linetype_manual(name = NULL, values = c("Model" = "solid"), labels = "Model projection") +
+  #scale_shape_manual(name = NULL, values = c("Data" = 4), labels = "Observed data") +
+  theme_classic() +
+  labs(y = "HBV-related HCC cases\nper 100,000 in 2018", x = "Age group (years)")+
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        panel.border = element_rect(colour = "black", fill = NA),
+        plot.title = element_text(hjust = 0.5, size = 15),
+        plot.subtitle = element_text(hjust = 0.5, size = 12),
+        legend.margin=margin(t = 0, unit="cm"),
+        legend.position = c(0.25,0.85),
+        axis.title = element_text(size = 14),
+        axis.text = element_text(size = 14),
+        legend.text = element_text(size = 13),
+        legend.title = element_blank())
+
+# Correlation plot of data and accepted model values
+model_values_mat_accepted <- readRDS(file = here("calibration","output", "accepted_model_output_for_calibration_correlation_plot.rds"))
+
+# All values between 0 and 1 (all but 4)
+corrplot <- ggplot(model_values_mat_accepted[model_values_mat_accepted$data_value<1,])+
+  stat_summary(aes(x=data_value, y = value,
+                   colour = reorder(as.factor(weight), desc(as.factor(weight)))),
+               fun="median", geom="point") +
+  stat_summary(aes(x=data_value, y = value, colour = reorder(as.factor(weight), desc(as.factor(weight)))),
+               fun.min= function(x) quantile(x,0.025),
+               fun.max= function(x) quantile(x,0.975),
+               geom="errorbar") +
+  geom_abline(slope=1,intercept=0) +
+  scale_colour_viridis_d(end=0.6,
+                         labels=c("0.1" = "Lower data quality", "1" = "Higher data quality")) +
+  scale_x_continuous(breaks=c(0,0.5,1)) +
+  scale_y_continuous(breaks=c(0,0.5,1)) +
+  ylab("\nModel output") +
+  xlab("Observed data") +
+  labs(colour="Weight") +
+  theme_classic() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        panel.border = element_rect(colour = "black", fill = NA),
+        legend.margin=margin(t = 0, unit="cm"),
+        legend.position = c(0.25,0.9),
+        axis.title = element_text(size = 14),
+        axis.text = element_text(size = 14),
+        legend.text = element_text(size = 13.5),
+        legend.title = element_blank())
+
+# COMBINED PLOT
+plot_a <- arrangeGrob(corrplot, top = textGrob("A", x = unit(0.01, "npc")
+                                              , y   = unit(1, "npc"), just=c("left","top"),
+                                              gp=gpar(col="black", fontsize=18)))
+plot_b <- arrangeGrob(hcc_inc_plot, top = textGrob("B", x = unit(0.01, "npc")
+                                               , y   = unit(1, "npc"), just=c("left","top"),
+                                               gp=gpar(col="black", fontsize=18)))
+
+corr_hcc_p <- grid.arrange(plot_a, plot_b,nrow=2)
+
+plot_c <- arrangeGrob(hbsag_p, top = textGrob("C", x = unit(0.01, "npc")
+                                                   , y   = unit(1, "npc"), just=c("left","top"),
+                                                   gp=gpar(col="black", fontsize=18)))
+
+grid.arrange(corr_hcc_p,
+             plot_c, ncol=2)
