@@ -8,8 +8,6 @@ require(gridExtra)
 #source(here("R/imperial_model_interventions.R"))
 source(here("R/scenario_analysis/calculate_outcomes.R"))
 
-# For all these plots, check values line up with total!!!
-
 # Load data ----
 out_path <-
   "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/kmeans_full_output/"
@@ -45,6 +43,9 @@ a2_out1 <- a2_out1[[1]]
 # Normal population simulations of effect of screening by age
 out2 <- readRDS(paste0(out_path_monit, "out2_status_quo_301120.rds"))
 out2 <- out2[[1]]
+out1_it <- readRDS(paste0(out_path_monit, "a1_it_out1_status_quo_cohort_200121.rds"))
+out1_it <- out1_it[[1]]
+
 # Carriers by age in sq scenario:
 out2_carriers <- readRDS(paste0(out_path, "out_sq_carriers.rds"))
 out2_comps_by_age <- readRDS(paste0(out_path, "out_sq_compartment_prevalence_by_age.rds"))
@@ -573,6 +574,15 @@ hbv_deaths_2020_group <- rbind(
         value = apply(hbv_deaths_2020[,which(ages==65):which(ages==99.5)],1,sum))
 )
 
+hcc_deaths_2020 <-
+  (do.call("rbind", lapply(out2_disease_outcomes$cum_hcc_deaths_male,
+                           function(x) x[which(out2_disease_outcomes$time==2021),]))-
+     do.call("rbind", lapply(out2_disease_outcomes$cum_hcc_deaths_male,
+                             function(x) x[which(out2_disease_outcomes$time==2020),])))+
+  (do.call("rbind", lapply(out2_disease_outcomes$cum_hcc_deaths_female,
+                           function(x) x[which(out2_disease_outcomes$time==2021),]))-
+     do.call("rbind", lapply(out2_disease_outcomes$cum_hcc_deaths_female,
+                             function(x) x[which(out2_disease_outcomes$time==2020),])))
 
 hcc_2020 <-
   (do.call("rbind", lapply(out2_disease_outcomes$cum_hcc_cases_male,
@@ -1973,6 +1983,97 @@ timeplot2 <- ggplot(data=subset(unmet_need_df2,scenario != "screen_2020_monit_si
 # Combined plot:
 grid.arrange(timeplot1, timeplot2, ncol = 2, widths = 3:2)
 
+# Number instead of %
+unmet_need_df_number <- rbind(
+  data.frame(scenario = "screen_2020_monit_0", at_time = "2020",type ="number",
+             remaining_treatment_need=(out3_it_tn$treatment_eligible_carriers_undiagnosed_over_time_15_to_65[out3_it_tn$time==2020]+
+                                         out3_it_tn$treatment_eligible_carriers_screened_over_time_15_to_65[out3_it_tn$time==2020])),
+  data.frame(scenario = "screen_2020_monit_0", at_time = "2030",type ="number",
+             remaining_treatment_need=(out3_it_tn$treatment_eligible_carriers_undiagnosed_over_time_15_to_65[out3_it_tn$time==2030]+
+                                         out3_it_tn$treatment_eligible_carriers_screened_over_time_15_to_65[out3_it_tn$time==2030])),
+  data.frame(scenario = "screen_2020_monit_0", at_time = "2040",type ="number",
+             remaining_treatment_need=(out3_it_tn$treatment_eligible_carriers_undiagnosed_over_time_15_to_65[out3_it_tn$time==2040]+
+                                         out3_it_tn$treatment_eligible_carriers_screened_over_time_15_to_65[out3_it_tn$time==2040])),
+  data.frame(scenario = "screen_2020_monit_0", at_time = "2050",type ="number",
+             remaining_treatment_need=(out3_it_tn$treatment_eligible_carriers_undiagnosed_over_time_15_to_65[out3_it_tn$time==2050]+
+                                         out3_it_tn$treatment_eligible_carriers_screened_over_time_15_to_65[out3_it_tn$time==2050])),
+  data.frame(scenario = "screen_2020_monit_0", at_time = "2060",type ="number",
+             remaining_treatment_need=(out3_it_tn$treatment_eligible_carriers_undiagnosed_over_time_15_to_65[out3_it_tn$time==2060]+
+                                         out3_it_tn$treatment_eligible_carriers_screened_over_time_15_to_65[out3_it_tn$time==2060])),
+  data.frame(scenario = "screen_2020_monit_sim7", at_time = "2020",type ="number",
+             remaining_treatment_need=(monit_out7_it_tn$treatment_eligible_carriers_undiagnosed_over_time_15_to_65[monit_out7_it_tn$time==2020]+
+                                         monit_out7_it_tn$treatment_eligible_carriers_screened_over_time_15_to_65[monit_out7_it_tn$time==2020])),
+  data.frame(scenario = "screen_2020_monit_sim7", at_time = "2030",type ="number",
+             remaining_treatment_need=(monit_out7_it_tn$treatment_eligible_carriers_undiagnosed_over_time_15_to_65[monit_out7_it_tn$time==2030]+
+                                         monit_out7_it_tn$treatment_eligible_carriers_screened_over_time_15_to_65[monit_out7_it_tn$time==2030])),
+  data.frame(scenario = "screen_2020_monit_sim7", at_time = "2040",type ="number",
+             remaining_treatment_need=(monit_out7_it_tn$treatment_eligible_carriers_undiagnosed_over_time_15_to_65[monit_out7_it_tn$time==2040]+
+                                         monit_out7_it_tn$treatment_eligible_carriers_screened_over_time_15_to_65[monit_out7_it_tn$time==2040])),
+  data.frame(scenario = "screen_2020_monit_sim7", at_time = "2050",type ="number",
+             remaining_treatment_need=(monit_out7_it_tn$treatment_eligible_carriers_undiagnosed_over_time_15_to_65[monit_out7_it_tn$time==2050]+
+                                         monit_out7_it_tn$treatment_eligible_carriers_screened_over_time_15_to_65[monit_out7_it_tn$time==2050])),
+  data.frame(scenario = "screen_2020_monit_sim7", at_time = "2060",type ="number",
+             remaining_treatment_need=(monit_out7_it_tn$treatment_eligible_carriers_undiagnosed_over_time_15_to_65[monit_out7_it_tn$time==2060]+
+                                         monit_out7_it_tn$treatment_eligible_carriers_screened_over_time_15_to_65[monit_out7_it_tn$time==2060])),
+  data.frame(scenario = "sq", at_time = "2020",type ="number",
+             remaining_treatment_need=out2_it_tn$treatment_eligible_carriers_undiagnosed_over_time_15_to_65[out2_it_tn$time==2020]),
+  data.frame(scenario = "sq", at_time = "2030",type ="number",
+             remaining_treatment_need=out2_it_tn$treatment_eligible_carriers_undiagnosed_over_time_15_to_65[out2_it_tn$time==2030]),
+  data.frame(scenario = "sq", at_time = "2040",type ="number",
+             remaining_treatment_need=out2_it_tn$treatment_eligible_carriers_undiagnosed_over_time_15_to_65[out2_it_tn$time==2040]),
+  data.frame(scenario = "sq", at_time = "2050",type ="number",
+             remaining_treatment_need=out2_it_tn$treatment_eligible_carriers_undiagnosed_over_time_15_to_65[out2_it_tn$time==2050]),
+  data.frame(scenario = "sq", at_time = "2060",type ="number",
+             remaining_treatment_need=out2_it_tn$treatment_eligible_carriers_undiagnosed_over_time_15_to_65[out2_it_tn$time==2060])
+)
+
+unmet_need_df_number$scenario <- factor(unmet_need_df_number$scenario,
+                                  levels = c("sq", "screen_2020_monit_0", "screen_2020_monit_sim7"))
+
+ggplot(data=subset(unmet_need_df_number,scenario != "screen_2020_monit_sim7")) +
+  stat_summary(aes(x=reorder(scenario, -remaining_treatment_need),
+                   y = remaining_treatment_need*100,
+                   fill = scenario), colour="black",
+               fun="median", geom="bar") +
+  facet_wrap(~at_time, ncol = 5, strip.position="bottom") +
+  scale_fill_viridis_d(end=0.6, "Scenario",
+                       labels =  c("sq" = "Base case (no treatment)",
+                                   "screen_2020_monit_sim7" = "Treatment programme,\nmonitor 5-yearly in <45 year olds",
+                                   "screen_2020_monit_0" = "Treatment programme,\nno monitoring")) +
+  guides(fill=FALSE) +
+  ylab("Unmet treatment need in total population (%)") +
+  xlab("Year") +
+  theme_classic() +
+  scale_y_continuous(expand = c(0, 0)) +
+  theme(axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        strip.background = element_blank(),
+        axis.line.x = element_blank(),
+        legend.position = c(0.75, 0.75),
+        strip.text = element_text(size = 15),
+        axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        legend.text = element_text(size = 13),
+        legend.title = element_text(size = 14))
+
+
+test <- cbind(subset(unmet_need_df_number, scenario == "sq"),
+              with_treatment = subset(unmet_need_df_number, scenario == "screen_2020_monit_0")$remaining_treatment_need)
+
+# Number on treatment over time (those removed from unmet treatment need by the treatment)
+# divided by all treatment eligible in out2
+plot(x=out2_it_tn$time,
+       y=apply((out2_it_tn$treatment_eligible_carriers_undiagnosed_over_time_15_to_65-
+(out3_it_tn$treatment_eligible_carriers_undiagnosed_over_time_15_to_65+
+  out3_it_tn$treatment_eligible_carriers_screened_over_time_15_to_65))/
+  out2_it_tn$treatment_eligible_carriers_undiagnosed_over_time_15_to_65,1,median)*100)
+
+quantile(apply((out2_it_tn$treatment_eligible_carriers_undiagnosed_over_time_15_to_65-
+         (out3_it_tn$treatment_eligible_carriers_undiagnosed_over_time_15_to_65+
+            out3_it_tn$treatment_eligible_carriers_screened_over_time_15_to_65))/
+        out2_it_tn$treatment_eligible_carriers_undiagnosed_over_time_15_to_65,2,sum),
+        c(0.5,0.025,0.975))
+
 
 ### Diagnostic plots for screening and monitoring by age, or monitoring frequency ----
 # Plots of breakdown of impact of 5-yearly monitoring and screening by separate age group (previously in monitoring frequency file) ----
@@ -2705,3 +2806,100 @@ quantile((out2$dalys[[16]][,-c(1:3)]-out3_it$dalys[[16]][,-c(1:3)])/
 
 quantile(out3_it$interactions[[16]]$total_screened[,-c(1:3)],c(0.5,0.025,0.975))
 quantile(out3_it$interactions[[16]]$total_treated[,-c(1:3)],c(0.5,0.025,0.975))
+
+quantile((out2$dalys[[16]][,-c(1:3)]-out3_it$dalys[[16]][,-c(1:3)])/
+  (out2$dalys[[16]][,-c(1:3)]-a1_out6_pop$dalys[[16]][,-c(1:3)]), c(0.5,0.025,0.975))
+
+quantile((out1_it$cohort_dalys[,-1]-out3_it$cohort_dalys[,-1])/
+           (out1_it$cohort_dalys[,-1]-a1_out6_pop$cohort_dalys[,-1]), c(0.5,0.025,0.975))
+
+# Cohort outcomes table ----
+
+cohort_dalys <- rbind(out1_it$cohort_dalys,
+                      out3_it$cohort_dalys,
+                      out4_it$cohort_dalys,
+                      out5_it$cohort_dalys,
+                      out6a_it$cohort_dalys,
+                      a1_out6_pop$cohort_dalys)
+cohort_dalys <- gather(cohort_dalys, key = "sim", value="dalys",-scenario)
+
+cohort_size <- rbind(out1_it$cohort_size,
+                      out3_it$cohort_size,
+                      out4_it$cohort_size,
+                      out5_it$cohort_size,
+                      out6a_it$cohort_size,
+                      a1_out6_pop$cohort_size)
+cohort_size <- gather(cohort_size, key = "sim", value="cohort_size",-scenario)
+
+cohort_hbv_deaths <- rbind(out1_it$cohort_cum_hbv_deaths,
+                      out3_it$cohort_cum_hbv_deaths,
+                      out4_it$cohort_cum_hbv_deaths,
+                      out5_it$cohort_cum_hbv_deaths,
+                      out6a_it$cohort_cum_hbv_deaths,
+                      a1_out6_pop$cohort_cum_hbv_deaths)
+cohort_hbv_deaths <- gather(cohort_hbv_deaths, key = "sim", value="deaths",-scenario)
+
+cohort_age_at_death <-rbind(out1_it$cohort_age_at_death,
+                            out3_it$cohort_age_at_death,
+                            out4_it$cohort_age_at_death,
+                            out5_it$cohort_age_at_death,
+                            out6a_it$cohort_age_at_death,
+                            a1_out6_pop$cohort_age_at_death)
+cohort_age_at_death <- gather(cohort_age_at_death, key = "sim", value="age_at_death",-scenario)
+
+cohort_outcomes <- cohort_dalys
+cohort_outcomes$dalys_per_person <- cohort_outcomes$dalys/cohort_size$cohort_size
+cohort_outcomes$hbv_deaths <- cohort_hbv_deaths$deaths
+cohort_outcomes$hbv_death_risk <- cohort_hbv_deaths$deaths/cohort_size$cohort_size
+cohort_outcomes$average_age_at_death <- cohort_age_at_death$age_at_death
+
+View(cohort_outcomes %>% group_by(scenario) %>%
+  summarise(median_dalys = round(median(dalys),0),
+            lower_dalys = round(quantile(dalys, 0.025),0),
+            upper_dalys = round(quantile(dalys, 0.975),0),
+            median_dalys_pp = round(median(dalys_per_person),1),
+            lower_dalys_pp = round(quantile(dalys_per_person, 0.025),1),
+            upper_dalys_pp = round(quantile(dalys_per_person, 0.975),1),
+            median_hbv_deaths = round(median(hbv_deaths),0),
+            lower_hbv_deaths = round(quantile(hbv_deaths , 0.025),0),
+            upper_hbv_deaths = round(quantile(hbv_deaths , 0.975),0),
+            median_hbv_death_risk = round(median(hbv_death_risk*100),1),
+            lower_hbv_death_risk = round(quantile(hbv_death_risk*100, 0.025),1),
+            upper_hbv_death_risk = round(quantile(hbv_death_risk*100, 0.975),1),
+            median_average_age_at_death = round(median(average_age_at_death),1),
+            lower_average_age_at_death = round(quantile(average_age_at_death, 0.025),1),
+            upper_average_age_at_death = round(quantile(average_age_at_death, 0.975),1)))
+
+
+
+
+# Testplot : plot total DALYs with base case
+cohort_dalys_summary <- cohort_dalys %>%
+  group_by(scenario) %>%
+  summarise(median = median(value),
+            lower  = quantile(value, 0.025),
+            upper = quantile(value, 0.975))
+
+ggplot(subset(cohort_dalys_summary, scenario != "status_quo_cohort")) +
+  geom_point(aes(x=reorder(scenario,median), y = median), size = 3,
+             position=position_dodge(width=0.9)) +
+  geom_errorbar(aes(x=reorder(scenario, median), ymin = lower, ymax = upper),
+                width = 0.15,  position=position_dodge(width=0.9)) +
+  theme_classic() +
+  guides(colour=FALSE) +
+  scale_x_discrete(labels=c("screen_2020_monit_20" = "20 years",
+                            "screen_2020_monit_10" = "10 years",
+                            "screen_2020_monit_5" = "5 years",
+                            "screen_2020_monit_2" = "2 years",
+                            "screen_2020_monit_1" = "1 year")) +
+  xlab("Monitoring\ninterval") +
+  ylim(0,175000) +
+  #ylab("DALYs averted (%)") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        panel.border = element_rect(colour = "black", fill = NA),
+        axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        legend.text = element_text(size = 14)) +
+  coord_flip()

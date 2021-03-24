@@ -447,7 +447,7 @@ calculate_icer_per_sim <- function(df, exposure, outcome) {
   ranked_strategies$icer <-ranked_strategies$diff_exposure/ranked_strategies$diff_outcome
   ranked_strategies$icer[is.na(ranked_strategies$icer)] <- 0
   ranked_strategies$comparator <- lag(ranked_strategies$scenario)
-  icer <- select(ranked_strategies, -diff_exposure)  # -diff_outcome
+  icer <- ranked_strategies # select(ranked_strategies)  # -diff_outcome, -diff_exposure
 
   return(icer)
 
@@ -3007,7 +3007,7 @@ age_df <- create_incremental_plot_df(interactions_df=age_interactions,
                                       deaths_averted_df=age_hbv_deaths_averted,
                                       ly_saved_df = age_dalys_averted, # replace LY by DALYs
                                       hbsag_test_cost = 8.3,
-                                      clinical_assessment_cost = 33, #84.4,
+                                      clinical_assessment_cost = 33,#84.4,
                                       monitoring_assessment_cost = 25.5, #40.1,
                                       treatment_py_cost = 66.5,#60,
                                       #scenario_labels_obj = scenario_labels,
@@ -3024,6 +3024,7 @@ age_df <- subset(age_df, !(scenario %in% c("screen_2020_monit_lifetime_30",
 age_df <- subset(age_df, !(scenario %in% c("screen_2020_monit_sim7_10",
                                            "screen_2020_monit_10",
                                            "screen_2020_monit_sim8")))
+
 
 # Analysis: calculate probability of each strategy being non-dominated and ICERs ----
 
@@ -3051,6 +3052,8 @@ ggplot(dominance_prob_result) +
   geom_col(aes(x=reorder(scenario, desc(prob_non_dominated)), y = prob_non_dominated)) +
   theme_bw() +
   theme(axis.text.x=element_text(angle = 90, hjust =1))
+
+View(dominance_prob_result)
 
 # Find dominated strategies (<50% non-dominated) with 3% discounting and
 # monit_sim7_10 and out4 included + using updated costs from Liem.
@@ -3083,7 +3086,8 @@ age_df2 <- subset(age_df, scenario %in% c("screen_2020_monit_1",
                                           "screen_2020_monit_4", "screen_2020_monit_5",
                                           "screen_2020_monit_sim7",
                                           "screen_2020_monit_sim6",
-                                          "screen_2020_monit_sim2c"))
+                                          "screen_2020_monit_sim2c"
+                                          ))
 # If monit_10, sim7_10 and sim8 are included:
 #age_df2 <- subset(age_df, scenario %in% c("screen_2020_monit_1",
 #                                          "screen_2020_monit_2", "screen_2020_monit_3",
@@ -3111,6 +3115,12 @@ icer_result <- group_by(icer_df, scenario, comparator) %>%
   arrange(icer_median)
 icer_result
 
+View(group_by(icer_df, scenario, comparator) %>%
+  arrange(sim,total_cost) %>%
+  summarise(diff_dalys_median = median(diff_outcome/1000),
+            diff_dalys_lower = quantile(diff_outcome/1000, 0.025),
+            diff_dalys_upper = quantile(diff_outcome/1000, 0.975)))
+
 # For table (not incremental):
 View(age_df %>% group_by(scenario) %>%
   summarise(cost_median= round(median(total_cost/1000000),1),
@@ -3127,6 +3137,14 @@ View(age_df %>% group_by(scenario) %>%
            dalys = paste(dalys_median, paste0("(", dalys_lower,"-",dalys_upper,")")),
            deaths = paste(deaths_median, paste0("(", deaths_lower,"-", deaths_upper,")"))) %>%
     select(scenario, cost, dalys, deaths))
+
+age_df %>% filter(scenario == "screen_2020_monit_0") %>%
+       summarise(cer_median= median(total_cost/dalys_averted),
+                 cer_lower = round(quantile(total_cost/dalys_averted, 0.025),1),
+                 cer_upper = round(quantile(total_cost/dalys_averted, 0.975),1),
+                 dalys_median =round(median(dalys_averted),1),
+                 dalys_lower = round(quantile(dalys_averted, 0.025),1),
+                 dalys_upper = round(quantile(dalys_averted, 0.975),1))
 
 # NOTE NEW COST-EFFECTIVENESS THRESHOLDS ARE: 404 and 537
 
@@ -3175,6 +3193,9 @@ quantile(age_df[age_df$scenario=="screen_2020_monit_sim7",]$monitoring_assessmen
          c(0.5,0.025,0.975))
 # About 1.55 per person at 80% probability for the 5-yearly frequency in the same age group
 
+quantile(age_df[age_df$scenario=="screen_2020_monit_sim7",]$monitoring_assessments/
+           rowSums(out3_it$cohort_size_screened[,which(ages==15):which(ages==45-da)]),
+         c(0.5,0.025,0.975))
 
 # Analysis: calculate probability of each strategy being the most cost-effective for given threshold ----
 
@@ -4475,16 +4496,16 @@ cost <- cbind(rep(0,183),
               t((a4_out3_it$interactions[[16]]$total_screened[,-c(1:3)]+
                    a5_out3_it$interactions[[16]]$total_screened[,-c(1:3)])*8.3+
                   (a4_out3_it$interactions[[16]]$total_assessed[,-c(1:3)]+
-                     a5_out3_it$interactions[[16]]$total_assessed[,-c(1:3)])*84.4+
-                  (a4_out3_it$py_on_treatment[[16]]+a5_out3_it$py_on_treatment[[16]])*60),
+                     a5_out3_it$interactions[[16]]$total_assessed[,-c(1:3)])*33+
+                  (a4_out3_it$py_on_treatment[[16]]+a5_out3_it$py_on_treatment[[16]])*66.5),
               t((a4_out3_it$interactions[[16]]$total_screened[,-c(1:3)]+
                    a5_out3_it$interactions[[16]]$total_screened[,-c(1:3)]+
                    a2_out3_it$interactions[[16]]$total_screened[,-c(1:3)])*8.3+
                   (a4_out3_it$interactions[[16]]$total_assessed[,-c(1:3)]+
                      a5_out3_it$interactions[[16]]$total_assessed[,-c(1:3)]+
-                     a2_out3_it$interactions[[16]]$total_assessed[,-c(1:3)])*84.4+
+                     a2_out3_it$interactions[[16]]$total_assessed[,-c(1:3)])*33+
                   (a4_out3_it$py_on_treatment[[16]]+
-                     a5_out3_it$py_on_treatment[[16]]+a2_out3_it$py_on_treatment[[16]])*60))
+                     a5_out3_it$py_on_treatment[[16]]+a2_out3_it$py_on_treatment[[16]])*66.5))
 
 ceef.plot(bcea(e=dalys_averted,
                c=cost,

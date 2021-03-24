@@ -106,6 +106,9 @@ monit_out7_thccr_dcc_lower <- monit_out7_thccr_dcc_lower[[1]]
 monit_out7_thccr_dcc_upper <- readRDS(paste0(out_path, "a1_it_screen_2020_monit_out7_thccr_dcc_upper_080221.rds"))
 monit_out7_thccr_dcc_upper <- monit_out7_thccr_dcc_upper[[1]]
 
+# One-way sensitivity analysis of cost (median ICERs and uncertainty bounds)
+cost_sensitivity_icer <- read.csv(file=paste0(out_path, "cost_sensitivity_results_170321.csv"))
+
 # Technically out3 is dominated, but get ICER compared to SQ anyway for comparison purposes
 # The ICER for monit_sim7 compared to monit_sim6 in the other file is: 338 (161-844)
 # If monit_sim6 was excluded it would be: 271 (163-519)
@@ -678,6 +681,207 @@ diff_outcome_significant_parms <- arrange(diff_outcome_significant_parms, -abs(p
 # in the cohort effects.
 
 
+
+# One-way sensitivity analysis of cost on ICERs (bar charts) ----
+
+cost_sensitivity_icer$sensitivity_scenario <-
+  factor(cost_sensitivity_icer$sensitivity_scenario,
+         levels = c("screening_lower", "screening_higher",
+                    "assessment_lower", "assessment_higher",
+                    "treatment_lower", "treatment_higher",
+                    "monitoring_lower", "monitoring_higher",
+                    "assessment_monitoring_lower","assessment_monitoring_higher"))
+
+cost_sensitivity_icer$scenario <-
+  factor(cost_sensitivity_icer$scenario,
+         levels = c("screen_2020_monit_0", "screen_2020_monit_sim6",  "screen_2020_monit_sim7",
+                    "screen_2020_monit_sim2c", "screen_2020_monit_5","screen_2020_monit_4",
+                    "screen_2020_monit_3","screen_2020_monit_2","screen_2020_monit_1"))
+
+facet_labels_costs <- c("Screening = $4", "Screening = $17",
+                        "Assessment = $16.5", "Assessment = $200",
+                        "Monitoring = $12.75", "Monitoring = $51",
+                        "Treatment = $51", "Treatment = $155",
+                        "Assessment = $16.5\nMonitoring = $12.75",
+                        "Assessment = $200\nMonitoring = $155")
+names(facet_labels_costs) <- c("screening_lower", "screening_higher",
+                               "assessment_lower", "assessment_higher",
+                               "treatment_lower", "treatment_higher",
+                               "monitoring_lower", "monitoring_higher",
+                               "assessment_monitoring_lower",
+                               "assessment_monitoring_higher")
+
+# Every 2 and every 1 year frequencies are not shown to keep scales manageable
+# Monitoring is in all ages unless otherwise indicated
+# Changes in screening and assessment cost does not change ICER between incremental monitoring
+# strategies.
+# Only showing non-dominated strategies - Blank spaces are if dominated
+ggplot(subset(cost_sensitivity_icer, scenario != "screen_2020_monit_1" &
+                scenario != "screen_2020_monit_2" &
+                sensitivity_scenario != "assessment_monitoring_lower" &
+                sensitivity_scenario != "assessment_monitoring_higher")) +
+  geom_col(aes(x=scenario, y = icer_median, fill = scenario),
+           width=0.95, col="black") +
+  geom_errorbar(aes(x=scenario, ymin=icer_lower,
+                    ymax=icer_upper), width=0.15) +
+  geom_hline(yintercept=404, linetype="dashed", colour = "grey40") +
+  geom_hline(yintercept=537, linetype="dashed", colour = "grey40") +
+  geom_hline(yintercept=778, linetype="dashed", colour = "grey40") +
+  scale_fill_manual(labels=c("screen_2020_monit_0" = "No monitoring",
+                             "screen_2020_monit_sim6" = "5-yearly (15-30)",
+                             "screen_2020_monit_sim7"= "5-yearly (15-45)",
+                             "screen_2020_monit_sim2c"="4-yearly (15-45)",
+                             "screen_2020_monit_5"="5-yearly",
+                             "screen_2020_monit_4"="4-yearly",
+                             "screen_2020_monit_3"="3-yearly"),
+                    values=rev(brewer.pal(7, "Blues"))) +
+  scale_x_discrete(labels=c("screen_2020_monit_0" = "No\nmonitoring",
+                             "screen_2020_monit_sim6" = "5 (<30)",
+                             "screen_2020_monit_sim7"= "5 (<45)",
+                             "screen_2020_monit_sim2c"="4 (<45)",
+                             "screen_2020_monit_5"="5",
+                             "screen_2020_monit_4"="4",
+                             "screen_2020_monit_3"="3")) +
+  ylab("Incremental cost-effectiveness ratio") +
+  xlab("Monitoring frequency (age group)") +
+  facet_wrap(~sensitivity_scenario, scales="free_y", ncol=2,
+             labeller = labeller(sensitivity_scenario = facet_labels_costs)) +
+  theme_classic() +
+  theme(legend.title=element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        #strip.background = element_blank(),
+        panel.border = element_rect(colour = "black", fill = NA),
+        axis.text = element_text(size = 12),
+        legend.text = element_text(size = 14),
+        axis.title = element_text(size = 14),
+        strip.text = element_text(size = 13))
+
+
+# Show joint variation in assessment and monitoring separately (key message)
+ggplot(subset(cost_sensitivity_icer, (scenario != "screen_2020_monit_1" &
+                scenario != "screen_2020_monit_2" &
+                scenario != "screen_2020_monit_3") &
+                (sensitivity_scenario == "assessment_monitoring_lower" |
+                sensitivity_scenario == "assessment_monitoring_higher"))) +
+  geom_col(aes(x=scenario, y = icer_median, fill = scenario),
+           width=0.95, col="black") +
+  geom_errorbar(aes(x=scenario, ymin=icer_lower,
+                    ymax=icer_upper), width=0.15) +
+  geom_hline(yintercept=404, linetype="dashed", colour = "grey40") +
+  geom_hline(yintercept=537, linetype="dashed", colour = "grey40") +
+  geom_hline(yintercept=778, linetype="dashed", colour = "grey40") +
+  scale_fill_manual(labels=c("screen_2020_monit_0" = "No monitoring",
+                             "screen_2020_monit_sim6" = "5-yearly\n(15-30)",
+                             "screen_2020_monit_sim7"= "5-yearly\n(15-45)",
+                             "screen_2020_monit_sim2c"="4-yearly\n(15-45)",
+                             "screen_2020_monit_5"="5-yearly",
+                             "screen_2020_monit_4"="4-yearly"),
+                    values=rev(brewer.pal(6, "Blues"))) +
+  scale_x_discrete(labels=c("screen_2020_monit_0" = "No\nmonitoring",
+                            "screen_2020_monit_sim6" = "5-yearly\n(15-30)",
+                            "screen_2020_monit_sim7"= "5-yearly\n(15-45)",
+                            "screen_2020_monit_sim2c"="4-yearly\n(15-45)",
+                            "screen_2020_monit_5"="5-yearly",
+                            "screen_2020_monit_4"="4-yearly")) +
+  ylab("Incremental cost-effectiveness ratio") +
+  xlab("Scenario") +
+  facet_wrap(~sensitivity_scenario, scales="free_y", ncol=2,
+             labeller = labeller(sensitivity_scenario = facet_labels_costs)) +
+  theme_classic() +
+  theme(legend.title=element_blank())
+
+# Tornado plot for costs ----
+
+# Needed to run median ICERS separately here for:
+# no monitoring vs no treatment and
+# 5-yearly in <45 vs no monitoring
+
+# Median ICERS:
+subset(cost_sensitivity_icer, scenario == "screen_2020_monit_0")
+# Treatment lower median ICER = 238
+# Monitoring lower median ICER =264
+# Screening higher median ICER = 379
+# Assessment higher median ICER = 408
+
+tornado_cost_out3 <- data.frame(outcome = "monit_0",
+                              parm = c("screening","assessment","treatment","monitoring"),
+                              lower_icer = c(209,252,238,264),
+                              default_icer = c(264,264,264,264),
+                              upper_icer = c(379,408,432,264))
+tornado_cost_out3$parm <- factor(tornado_cost_out3$parm,
+                               levels = c("screening","assessment","treatment","monitoring"))
+
+# sim7 vs. no monitoring median ICERs:
+# Screening lower = 321
+# Assessment lower = 321
+# Treatment lower =280
+# Monitoring lower =243
+# Screening upper =321
+# Assessment upper =321
+# Treatment upper =540
+# Monitoring upper =476
+tornado_cost_monit_sim7 <- data.frame(outcome = "monit_sim7",
+                                parm = c("screening","assessment","treatment","monitoring"),
+                                lower_icer = c(321,321,280,243),
+                                default_icer = c(321,321,321,321),
+                                upper_icer = c(321,321,540,476))
+tornado_cost_monit_sim7$parm <- factor(tornado_cost_monit_sim7$parm,
+                                 levels = c("screening","assessment","treatment","monitoring"))
+
+
+lower_wtp <- 404
+
+ggplot(tornado_cost_out3) +
+  geom_col(aes(x=parm, y = upper_icer-default_icer), fill = "blue") +
+  geom_col(aes(x=parm, y = lower_icer-default_icer), fill = "red") +
+  geom_text(aes(label = c(17,200,155,51), x = parm, y = upper_icer-default_icer),
+            position = position_dodge(width = 0.8), hjust = -0.5) +
+  geom_text(aes(label = c(4,16.5,51,12.75), x = parm, y = lower_icer-default_icer),
+            position = position_dodge(width = 0.8), hjust = 1.5) +
+  geom_hline(yintercept=lower_wtp-264, lty="dashed") +
+  geom_hline(yintercept=0) +
+  scale_x_discrete("Cost per person (2020 US$)",
+                   labels = c("screening" = "Screening (8.3)",
+                              "assessment" = "Initial assessment (33)",
+                              "treatment" = "Treatment\nper year (66.5)",
+                              "monitoring" = "Monitoring assessment\nper visit (25.5)"),
+                   limits = rev)+
+  scale_y_continuous(breaks = c(200-264,0,lower_wtp-264,440-264),
+                     labels = c(200,264,lower_wtp,440),
+                     limits=c(200-264,(440-264+10))) +
+  ylab("Median incremental cost per averted DALY") +
+  labs(title = "2020 screening and treatment without monitoring\nvs. status quo of no treatment") +
+  theme_classic() +
+  theme(axis.text = element_text(size=11),
+        axis.title = element_text(size=12)) +
+  coord_flip()
+
+
+ggplot(tornado_cost_monit_sim7) +
+  geom_col(aes(x=parm, y = upper_icer-default_icer), fill = "blue") +
+  geom_col(aes(x=parm, y = lower_icer-default_icer), fill = "red") +
+  geom_text(aes(label = c(17,200,155,51), x = parm, y = upper_icer-default_icer),
+            position = position_dodge(width = 0.8), hjust = -0.5) +
+  geom_text(aes(label = c(4,16.5,51,12.75), x = parm, y = lower_icer-default_icer),
+            position = position_dodge(width = 0.8), hjust = 1.5) +
+  geom_hline(yintercept=lower_wtp-321, lty="dashed") +
+  geom_hline(yintercept=0) +
+  scale_x_discrete("Cost per person (2020 US$)",
+                   labels = c("screening" = "Screening (8.3)",
+                              "assessment" = "Initial assessment (33)",
+                              "treatment" = "Treatment\nper year (66.5)",
+                              "monitoring" = "Monitoring assessment\nper visit (25.5)"),
+                   limits = rev)+
+  scale_y_continuous(breaks = c(200-321,0,lower_wtp-321,580-321),
+                     labels = c(200,321,lower_wtp,580),
+                     limits=c(200-321,(580-321+10))) +
+  ylab("Median incremental cost per averted DALY") +
+  labs(title = "2020 screening and treatment with optimal* monitoring\nscenario vs. treatment programme without monitoring") +
+  theme_classic() +
+  theme(axis.text = element_text(size=11),
+        axis.title = element_text(size=12)) +
+  coord_flip()
 
 # Qualitative sensitivity analysis of treatment impact on infections ----
 # Compare out3_it (default) and out3_no_inf, where treated carriers
