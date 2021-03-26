@@ -435,9 +435,9 @@ incremental_df_no_monit <- create_incremental_plot_df(interactions_df=interactio
                                       deaths_averted_df=deaths_averted_no_monit,
                                       ly_saved_df = dalys_averted_no_monit, # replace LY by DALYs
                                       hbsag_test_cost = 8.3,
-                                      clinical_assessment_cost = 84.4,
-                                      monitoring_assessment_cost = 40.1,
-                                      treatment_py_cost = 60,
+                                      clinical_assessment_cost = 33,
+                                      monitoring_assessment_cost = 25.5,
+                                      treatment_py_cost = 66.5,
                                       ref_label = "No treatment")
 colnames(incremental_df_no_monit)[colnames(incremental_df_no_monit)=="ly_saved"] <- "dalys_averted"
 

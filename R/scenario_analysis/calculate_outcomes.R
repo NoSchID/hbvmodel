@@ -438,6 +438,12 @@ extract_time_series <- function(output_file, scenario_label) {
                            prev = head(output_file$infectioncat_total$carriers,-1)/
                              head(output_file$pop_total$pop_total,-1))
 
+  # HBsAg prevalence in under-5 year olds (less than or equal to 5 years)
+  prev_under_5 <- data.frame(number_infected_under5 = head(apply(output_file$carriers[,which(ages==0):which(ages==5)],1,sum),-1),
+             prev_under5 = head(apply(output_file$carriers[,which(ages==0):which(ages==5)],1,sum),-1)/
+               head(apply(output_file$pop[,which(ages==0):which(ages==5)],1,sum),-1))
+
+
   # New cases of chronic HBV carriage per timestep and per population
   total_chronic_incidence <-
     data.frame(total_chronic_infections =
@@ -542,7 +548,7 @@ extract_time_series <- function(output_file, scenario_label) {
 
   outcome_df <- cbind(time = head(output_file$time, -1),
                       scenario = scenario_label,
-                      total_prev, total_chronic_incidence, total_hbv_deaths, total_births)
+                      total_prev,prev_under_5, total_chronic_incidence, total_hbv_deaths, total_births)
 
 
   #return(list(total_prev = total_prev,

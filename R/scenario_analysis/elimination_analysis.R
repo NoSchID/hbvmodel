@@ -23,7 +23,7 @@ out_bd <- out_bd[[1]]
 
 # When would elimination be achieved with the one-off treatment programme?
 # Monitoring every 5 years til age 45
-out_treat <- readRDS("C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/monitoring_frequency/a1_it_monit_out7_161220.rds")
+out_treat <- readRDS("C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/monitoring_frequency/a1_it_screen_2020_monit_out7_050321.rds")
 out_treat <- out_treat[[1]]
 
 # Target A1: Reduce chronic infection incidence by 90% from 2015 ----

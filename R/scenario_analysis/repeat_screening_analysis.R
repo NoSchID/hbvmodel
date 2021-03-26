@@ -1531,7 +1531,89 @@ p2 <- ggplot() +
 grid.arrange(p1,p2,ncol=2)
 # Cross indicates treatment need decline with vaccination alone.
 
-##
+# With only 90% coverage
+p1b <- ggplot() +
+  stat_summary(data=subset(total_df, type == "proportion"& outcome =="deaths_averted" & scenario != "sq" &
+                             screening_coverage=="90%"),
+               aes(x=monitoring, y = value*100,
+                   fill = screening_coverage_monitoring,colour="l1"),
+               fun="median", geom="bar")+
+  facet_wrap(~screening_end_year, ncol = 5, strip.position="bottom") +
+  scale_fill_manual("Monitoring strategy",
+                    values = c("50% 5<45" = "#A180A9",
+                               "50% No" = "#90C7C5",
+                               "90% 5<45" = "#440154",
+                               "90% No" = "#21908C"),
+                    breaks = c("90% 5<45", "90% No"),
+                    labels =  c("90% 5<45" = "Every 5 years\nin <45 year olds",
+                                "90% No" = "No monitoring")) +
+  scale_colour_manual("Screening coverage",
+                      values = c("l1" = "black",
+                                 "l2" = "black"),
+                      labels = c("l1" = "50%",
+                                 "l2" = "90%")) +
+  guides(color = guide_legend(override.aes = list(fill = c("grey80", "black"),
+                                                  colour = c("white", "white")),
+                              order =2),
+         fill = guide_legend(order=1)) +
+  ylab("Cumulative HBV-related deaths\naverted by 2100 (%)") +
+  xlab("End year of screening") +
+  theme_classic() +
+  scale_y_continuous(expand = c(0, 0)) +
+  theme(axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        strip.background = element_blank(),
+        axis.line.x = element_blank(),
+        legend.position = "none",
+        strip.text = element_text(size = 15),
+        axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        legend.text = element_text(size = 13),
+        legend.title = element_text(size = 14))
+
+# RIGHT: Remaining treatment need
+p2b <- ggplot() +
+  stat_summary(data=subset(total_df, type == "proportion"& outcome =="remaining_treatment_need" &
+                             scenario != "sq" &
+                             screening_coverage=="90%"),
+               aes(x=monitoring, y = value*100,
+                   fill = screening_coverage_monitoring),
+               fun="median", geom="bar", col="black") +
+  stat_summary(data=subset(total_df, type == "proportion" & outcome == "remaining_treatment_need" &
+                             scenario == "sq"),
+               aes(x=1.5, y = value*100), shape = 4, size=3,
+               fun="median", geom="point",colour="black")+
+  facet_wrap(~screening_end_year, ncol = 5, strip.position="bottom") +
+  scale_fill_manual("Monitoring strategy",
+                    values = c("50% 5<45" = "#A180A9",
+                               "50% No" = "#90C7C5",
+                               "90% 5<45" = "#440154",
+                               "90% No" = "#21908C"),
+                    breaks = c("90% 5<45", "90% No"),
+                    labels =  c("90% 5<45" = "Every 5 years\nin <45 year olds",
+                                "90% No" = "No monitoring")) +
+#  guides(color = guide_legend(override.aes = list(fill = c("grey80", "black"),
+#                                                  colour = c("white", "white")),
+#                              order =2),
+#         fill = guide_legend(order=1)) +
+  ylab("Unmet treatment need in total\ntargeted population at time of screening (%)") +
+  xlab("Year of screening") +
+  theme_classic() +
+  scale_y_continuous(expand = c(0, 0)) +
+  theme(axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        strip.background = element_blank(),
+        axis.line.x = element_blank(),
+        legend.position = c(0.75, 0.75),
+        strip.text = element_text(size = 15),
+        axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        legend.text = element_text(size = 13),
+        legend.title = element_text(size = 14))
+
+grid.arrange(p1b,p2b)
+
+###
 
 # What proportion of treatment eligible carriers are on treatment over time??
 total_eligible <- out3_it$treatment_eligible_carriers_undiagnosed_over_time+
