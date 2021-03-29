@@ -15,6 +15,10 @@ out_path <-
 out_path_monit <-
   "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/monitoring_frequency/"
 
+out_path_repeat_screen <-
+  "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/repeat_screening_analysis/"
+
+
 # Screening (no monitoring) in separate age groups
 # A4 = 15-30
 # A5 = 30-45
@@ -105,6 +109,11 @@ out5_it <- readRDS(paste0(out_path_monit, "a1_it_out5_screen_2020_monit_5_250221
 out5_it <- out5_it[[1]]   # 5 years
 out6a_it <- readRDS(paste0(out_path_monit, "a1_it_out6a_screen_2020_monit_2_250221.rds"))
 out6a_it <- out6a_it[[1]]  # 2 years
+
+# Repeat screening strategies
+# monit_sim7 repeated in 2020+2030
+out8b_2030_monit_sim7 <- readRDS(paste0(out_path_repeat_screen, "a1_it_out8b_monit_sim7_screen_10b_2030_290321.rds"))
+out8b_2030_monit_sim7 <- out8b_2030_monit_sim7[[1]]
 
 ### Treatment effect in the screened+treated cohort (HCC delayed vs prevented) ----
 # Total incident HBV/HCC deaths averted over time ----
@@ -1675,7 +1684,8 @@ hbv_deaths_over_time <-
   rbind(gather(out2$timeseries$total_hbv_deaths, key="sim", value = "value", -time,-scenario),
     gather(a1_out3_pop$timeseries$total_hbv_deaths, key="sim", value = "value", -time,-scenario),
         gather(a1_out6_pop$timeseries$total_hbv_deaths, key="sim", value = "value", -time,-scenario),
-    gather(monit_out7$timeseries$total_hbv_deaths, key="sim", value = "value", -time,-scenario))
+    gather(monit_out7$timeseries$total_hbv_deaths, key="sim", value = "value", -time,-scenario),
+    gather(out8b_2030_monit_sim7$timeseries$total_hbv_deaths, key="sim", value = "value", -time,-scenario))
 
 hbv_deaths_over_time <- hbv_deaths_over_time %>%
   group_by(time, scenario) %>%
@@ -1844,7 +1854,7 @@ ggplot() +
         strip.text = element_text(size = 15))
 
 
-# Paper plot: HBV deaths and treatment need over time ----
+# Paper plot: HBV deaths and treatment need over time (with repeat screening) ----
 
 # Scenarios are status quo and treatment programme with optimal monitoring (or maybe different options)
 
@@ -1854,8 +1864,10 @@ ggplot() +
 
 hbv_deaths_over_time$scenario <- factor(hbv_deaths_over_time$scenario)
 
+# V1 (no repeat screening)
 timeplot1 <- ggplot(data=subset(hbv_deaths_over_time, scenario != "screen_2020_monit_1" &
-                                  scenario != "screen_2020_monit_sim7")) +
+                                  scenario != "screen_2020_monit_sim7" &
+                                  scenario != "monit_sim7_screen_10b_2030")) +
   geom_line(aes(x=time, y = median/0.5, colour = reorder(scenario,-median)), size = 1) +
   ylab("HBV-related deaths per year") +
   scale_x_continuous("Year",
@@ -1874,6 +1886,32 @@ timeplot1 <- ggplot(data=subset(hbv_deaths_over_time, scenario != "screen_2020_m
         legend.text = element_text(size = 14),
         legend.title = element_text(size = 13))
 
+# V2 (with repeat screening)
+# Get viridis colours for 4 scenarios:
+scales::viridis_pal(end=0.9)(length(1:4))
+# "#440154FF" "#35608DFF" "#22A884FF" "#BBDF27FF"
+
+timeplot1_v2 <- ggplot(data=subset(hbv_deaths_over_time, scenario != "screen_2020_monit_1")) +
+  geom_line(aes(x=time, y = median/0.5, colour = reorder(scenario,-median)), size = 1) +
+  ylab("HBV-related deaths per year") +
+  scale_x_continuous("Year",
+                     breaks=c(1990, 2019.5, 2050, 2080),
+                     labels=c(1990, 2020, 2050, 2080),
+                     limits=c(1990,2100)) +
+  scale_colour_viridis_d(end=0.9, "",
+                         labels =  c("status_quo" = "Base case",
+                                     "screen_2020_monit_sim7" = "Screening 2020,\nmonitor 5-yearly in <45 year olds",
+                                     "screen_2020_monit_0" = "Screening 2020, no monitoring",
+                                     "monit_sim7_screen_10b_2030" = "Screening 2020+2030,\nmonitor 5-yearly in <45 year olds")) +
+  #  guides(colour=FALSE) +
+  theme_classic() +
+  theme(legend.position=c(.75,.9),
+        axis.text = element_text(size = 14.5),
+        axis.title = element_text(size = 14.5),
+        legend.text = element_text(size = 13),
+        legend.title = element_text(size = 13))
+
+
 # Right side: % of unmet treatment need over time
 # (line or maybe bar chart).
 # % of unmet treatment need among the whole Gambian population indicates there
@@ -1891,6 +1929,8 @@ out3_it_tn <- readRDS(paste0(out_path_full_output, "a1_it_out3_screen_2020_monit
 out3_it_tn <- out3_it_tn[[1]]
 monit_out7_it_tn <- readRDS(paste0(out_path_full_output, "a1_it_out3_screen_2020_monit_sim7_repeat_screens_comparison_290121.rds"))
 monit_out7_it_tn <- monit_out7_it_tn[[1]]
+out8b_it_2030_monit_sim7_tn <- readRDS(paste0(out_path_full_output, "a1_it_out8b_monit_sim7_screen_10b_2030_repeat_screens_comparison_290121.rds"))
+out8b_it_2030_monit_sim7_tn  <- out8b_it_2030_monit_sim7_tn[[1]]
 
 
 unmet_need_df2 <- rbind(
@@ -1934,6 +1974,28 @@ unmet_need_df2 <- rbind(
              remaining_treatment_need=(monit_out7_it_tn$treatment_eligible_carriers_undiagnosed_over_time_15_to_65[monit_out7_it_tn$time==2060]+
                                          monit_out7_it_tn$treatment_eligible_carriers_screened_over_time_15_to_65[monit_out7_it_tn$time==2060])/
                monit_out7_it_tn$total_pop_15_to_65_over_time[monit_out7_it_tn$time==2060]),
+
+    data.frame(scenario = "screen_2020_2030_monit_sim7", at_time = "2020",type ="proportion",
+             remaining_treatment_need=(out8b_it_2030_monit_sim7_tn$treatment_eligible_carriers_undiagnosed_over_time_15_to_65[out8b_it_2030_monit_sim7_tn$time==2020]+
+                                         out8b_it_2030_monit_sim7_tn$treatment_eligible_carriers_screened_over_time_15_to_65[out8b_it_2030_monit_sim7_tn$time==2020])/
+               out8b_it_2030_monit_sim7_tn$total_pop_15_to_65_over_time[out8b_it_2030_monit_sim7_tn$time==2020]),
+  data.frame(scenario = "screen_2020_2030_monit_sim7", at_time = "2030",type ="proportion",
+             remaining_treatment_need=(out8b_it_2030_monit_sim7_tn$treatment_eligible_carriers_undiagnosed_over_time_15_to_65[out8b_it_2030_monit_sim7_tn$time==2030]+
+                                         out8b_it_2030_monit_sim7_tn$treatment_eligible_carriers_screened_over_time_15_to_65[out8b_it_2030_monit_sim7_tn$time==2030])/
+               out8b_it_2030_monit_sim7_tn$total_pop_15_to_65_over_time[out8b_it_2030_monit_sim7_tn$time==2030]),
+  data.frame(scenario = "screen_2020_2030_monit_sim7", at_time = "2040",type ="proportion",
+             remaining_treatment_need=(out8b_it_2030_monit_sim7_tn$treatment_eligible_carriers_undiagnosed_over_time_15_to_65[out8b_it_2030_monit_sim7_tn$time==2040]+
+                                         out8b_it_2030_monit_sim7_tn$treatment_eligible_carriers_screened_over_time_15_to_65[out8b_it_2030_monit_sim7_tn$time==2040])/
+               out8b_it_2030_monit_sim7_tn$total_pop_15_to_65_over_time[out8b_it_2030_monit_sim7_tn$time==2040]),
+  data.frame(scenario = "screen_2020_2030_monit_sim7", at_time = "2050",type ="proportion",
+             remaining_treatment_need=(out8b_it_2030_monit_sim7_tn$treatment_eligible_carriers_undiagnosed_over_time_15_to_65[out8b_it_2030_monit_sim7_tn$time==2050]+
+                                         out8b_it_2030_monit_sim7_tn$treatment_eligible_carriers_screened_over_time_15_to_65[out8b_it_2030_monit_sim7_tn$time==2050])/
+               out8b_it_2030_monit_sim7_tn$total_pop_15_to_65_over_time[out8b_it_2030_monit_sim7_tn$time==2050]),
+  data.frame(scenario = "screen_2020_2030_monit_sim7", at_time = "2060",type ="proportion",
+             remaining_treatment_need=(out8b_it_2030_monit_sim7_tn$treatment_eligible_carriers_undiagnosed_over_time_15_to_65[out8b_it_2030_monit_sim7_tn$time==2060]+
+                                         out8b_it_2030_monit_sim7_tn$treatment_eligible_carriers_screened_over_time_15_to_65[out8b_it_2030_monit_sim7_tn$time==2060])/
+               out8b_it_2030_monit_sim7_tn$total_pop_15_to_65_over_time[out8b_it_2030_monit_sim7_tn$time==2060]),
+
   data.frame(scenario = "sq", at_time = "2020",type ="proportion",
              remaining_treatment_need=out2_it_tn$treatment_eligible_carriers_undiagnosed_over_time_15_to_65[out2_it_tn$time==2020]/
                out2_it_tn$total_pop_15_to_65_over_time[out2_it_tn$time==2020]),
@@ -1952,9 +2014,12 @@ unmet_need_df2 <- rbind(
 )
 
 unmet_need_df2$scenario <- factor(unmet_need_df2$scenario,
-                                  levels = c("sq", "screen_2020_monit_0", "screen_2020_monit_sim7"))
+                                  levels = c("sq", "screen_2020_monit_0", "screen_2020_monit_sim7",
+                                             "screen_2020_2030_monit_sim7"))
 
-timeplot2 <- ggplot(data=subset(unmet_need_df2,scenario != "screen_2020_monit_sim7")) +
+# V1: no repeat screening
+timeplot2 <- ggplot(data=subset(unmet_need_df2,scenario != "screen_2020_monit_sim7" &
+                                  scenario != "screen_2020_2030_monit_sim7")) +
   stat_summary(aes(x=reorder(scenario, -remaining_treatment_need),
                    y = remaining_treatment_need*100,
                    fill = scenario), colour="black",
@@ -1980,8 +2045,41 @@ timeplot2 <- ggplot(data=subset(unmet_need_df2,scenario != "screen_2020_monit_si
         legend.text = element_text(size = 13),
         legend.title = element_text(size = 14))
 
+# V2: with repeat screening
+timeplot2_v2 <- ggplot(data=subset(unmet_need_df2)) +
+  stat_summary(aes(x=reorder(scenario, -remaining_treatment_need),
+                   y = remaining_treatment_need*100,
+                   fill = scenario), colour="black",
+               fun="median", geom="bar") +
+  facet_wrap(~at_time, ncol = 5, strip.position="bottom") +
+  scale_fill_viridis_d(end=0.8, "Scenario",
+                       labels =  c("sq" = "Base case",
+                                   "screen_2020_monit_sim7" = "Screening 2020,\nmonitor 5-yearly in <45 year olds",
+                                   "screen_2020_2030_monit_sim7" = "Screening 2020+2030,\nmonitor 5-yearly in <45 year olds",
+                                   "screen_2020_monit_0" = "Screening 2020,\nno monitoring")) +
+  guides(fill=FALSE) +
+  ylab("Unmet treatment need in total population (%)") +
+  xlab("Year") +
+  theme_classic() +
+  scale_y_continuous(expand = c(0, 0)) +
+  theme(axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        strip.background = element_blank(),
+        axis.line.x = element_blank(),
+        legend.position = c(0.75, 0.75),
+        strip.text = element_text(size = 15),
+        axis.text = element_text(size = 14.5),
+        axis.title = element_text(size = 14.5),
+        legend.text = element_text(size = 13),
+        legend.title = element_text(size = 14))
+
+
 # Combined plot:
 grid.arrange(timeplot1, timeplot2, ncol = 2, widths = 3:2)
+
+#tiff(file = "timeplot.tiff", width=300, height=125, units = "mm", res=300, pointsize = 0.99)
+grid.arrange(timeplot1_v2, timeplot2_v2, ncol = 2, widths = 3:2)
+#dev.off()
 
 # Number instead of %
 unmet_need_df_number <- rbind(
@@ -2068,11 +2166,19 @@ plot(x=out2_it_tn$time,
   out3_it_tn$treatment_eligible_carriers_screened_over_time_15_to_65))/
   out2_it_tn$treatment_eligible_carriers_undiagnosed_over_time_15_to_65,1,median)*100)
 
+# Percent of all treatment eligible carriers by 2100 identified by initial screen
 quantile(apply((out2_it_tn$treatment_eligible_carriers_undiagnosed_over_time_15_to_65-
          (out3_it_tn$treatment_eligible_carriers_undiagnosed_over_time_15_to_65+
             out3_it_tn$treatment_eligible_carriers_screened_over_time_15_to_65))/
         out2_it_tn$treatment_eligible_carriers_undiagnosed_over_time_15_to_65,2,sum),
         c(0.5,0.025,0.975))
+
+quantile(apply((out2_it_tn$treatment_eligible_carriers_undiagnosed_over_time_15_to_65-
+                  (monit_out7_it_tn$treatment_eligible_carriers_undiagnosed_over_time_15_to_65+
+                     monit_out7_it_tn$treatment_eligible_carriers_screened_over_time_15_to_65))/
+                 out2_it_tn$treatment_eligible_carriers_undiagnosed_over_time_15_to_65,2,sum),
+         c(0.5,0.025,0.975))
+
 
 
 ### Diagnostic plots for screening and monitoring by age, or monitoring frequency ----

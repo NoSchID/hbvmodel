@@ -13,7 +13,6 @@ source(here("R/scenario_analysis/calculate_outcomes.R"))
 
 load(here("calibration", "input", "accepted_parmsets_kmeans_170820.Rdata")) # params_mat_accepted_kmeans
 
-
 # Functions ----
 
 # Function to plot boxplot whiskers as 95% percentile
@@ -575,7 +574,7 @@ create_incremental_plot_df <- function(interactions_df, py_on_treatment_df,
 # Function to discount outcomes (deaths averted or LY saved) or interactions
 discount_outcome_2020_to_2100 <- function(scenario_object,object_to_subtract,
                                           outcome, interaction_outcome, yearly_discount_rate,
-                                          interaction_colname) {
+                                          interaction_colname, end_year = 2100) {
   # This function takes output calculated every 5 years from 2025 to 2100 and
   # sums to outcome between 2020 and 2100
   # comparator_object should be the one with the higher value  # outcome can be "cum_hbv_deaths" or "ly"
@@ -630,6 +629,7 @@ discount_outcome_2020_to_2100 <- function(scenario_object,object_to_subtract,
 
     # Calculate the yearly discount rate, then take the mean for every 5 years.
     # This assumes that the indicence is constant over those 5 years, though that is not necessarily true.
+    output_seq <- seq(2025,2100,by=5)
     total_years <- c(2020:2099)
     n_total_years <- length(total_years) - 1
     discount_df <- data.frame(total_years=total_years,
@@ -639,7 +639,7 @@ discount_outcome_2020_to_2100 <- function(scenario_object,object_to_subtract,
       summarise(discounts = mean(discount_by_year))
     # Apply this to the incident outcome every 5 years, then sum all incident events between 2020 to 2100
     # to get the cumulative discounted deaths averted/LY saved
-    discounted_cum_outcome <- apply(discount_vec$discounts*inc_outcome,2,sum)
+    discounted_cum_outcome <- apply((discount_vec$discounts*inc_outcome)[1:which(output_seq==end_year),],2,sum)
     discounted_cum_outcome <- as.data.frame(discounted_cum_outcome)
     colnames(discounted_cum_outcome) <- ifelse(test <- outcome=="interactions", yes=interaction_colname,
                                                no=outcome)
@@ -1215,7 +1215,8 @@ annual_discounting_rate <- 0.03
 # This function is made for this specific analysis:
 assemble_discounted_interactions_for_monitoring_frequencies <- function(scenario_object,
                                                                         discount_rate = annual_discounting_rate,
-                                                                        no_monitoring_object = out3) {
+                                                                        no_monitoring_object = out3,
+                                                                        time_horizon=2100) {
   # Compares monitoring to out3 and everything else to status quo
   # at given discount rate
   out <- left_join(
@@ -1225,25 +1226,29 @@ assemble_discounted_interactions_for_monitoring_frequencies <- function(scenario
                                               outcome="interactions",
                                               interaction_outcome="total_screened",
                                               yearly_discount_rate=discount_rate,
-                                              interaction_colname = "hbsag_tests"),
+                                              interaction_colname = "hbsag_tests",
+                                              end_year=time_horizon),
                 discount_outcome_2020_to_2100(scenario_object=no_monitoring_object,
                                               object_to_subtract=NULL,
                                               outcome="interactions",
                                               interaction_outcome="total_assessed",
                                               yearly_discount_rate=discount_rate,
-                                              interaction_colname = "clinical_assessments")),
+                                              interaction_colname = "clinical_assessments",
+                                              end_year=time_horizon)),
       discount_outcome_2020_to_2100(scenario_object=scenario_object,
                                     object_to_subtract=no_monitoring_object,
                                     outcome="interactions",
                                     interaction_outcome="total_assessed",
                                     yearly_discount_rate=discount_rate,
-                                    interaction_colname = "monitoring_assessments")),
+                                    interaction_colname = "monitoring_assessments",
+                                    end_year=time_horizon)),
     discount_outcome_2020_to_2100(scenario_object=scenario_object,
                                   object_to_subtract=NULL,
                                   outcome="interactions",
                                   interaction_outcome="total_treated",
                                   yearly_discount_rate=discount_rate,
-                                  interaction_colname = "treatment_initiations"))
+                                  interaction_colname = "treatment_initiations",
+                                  end_year=time_horizon))
 
   return(out)
 }
@@ -4514,3 +4519,158 @@ ceef.plot(bcea(e=dalys_averted,
                Kmax=100000000000000),
           graph="base", relative = FALSE)
 # Extending the screen to all ages is still below WTP (on the mean)
+
+## 6) Sensitivty analysis on monitoring strategies: different time horizons ----
+# Need to load function
+annual_discounting_rate <- 0.03
+time_horizon_year <- 2050
+
+object_list <- list(out3_it, out4_it, out5_it, out6c_it, out6b_it,
+                    out6a_it, out6_it, monit_out7, monit_out17, monit_out2a,
+                    monit_out9, monit_out18, monit_out4a, monit_out10, monit_out5a,
+                    monit_out6,monit_out1a, monit_out8, monit_out7_10,
+                    monit_out4c, monit_out5c, monit_out2c, monit_out1c,
+                    monit_out4b, monit_out2b,monit_out5b, monit_out1b,
+                    monit_out4, monit_out5, monit_out2, monit_out1,
+                    out_it_lt_monit_30,out_it_lt_monit_45, out_it_lt_monit_30_45)
+
+# Extract interactions and person-years on treatment, and HBV-related deaths
+# ad DALYs averted, in a for loop
+age_interactions <- list()
+age_interactions_py_on_treatment <- list()
+age_hbv_deaths_averted <- list()
+age_dalys_averted <- list()
+
+for (i in 1:length(object_list)) {
+  age_interactions[[i]] <-
+    cbind(scenario = object_list[[i]]$cohort_age_at_death$scenario,
+          assemble_discounted_interactions_for_monitoring_frequencies(object_list[[i]],
+                                                                      no_monitoring_object = out3_it,
+                                                                      time_horizon = time_horizon_year))
+  age_interactions_py_on_treatment[[i]] <-
+    data.frame(scenario = object_list[[i]]$cohort_age_at_death$scenario,
+               discount_outcome_2020_to_2100(scenario_object=object_list[[i]],
+                                             object_to_subtract=NULL,
+                                             outcome="py_on_treatment",
+                                             yearly_discount_rate=annual_discounting_rate,
+                                             end_year = time_horizon_year))
+  age_hbv_deaths_averted[[i]] <-
+    cbind(scenario = object_list[[i]]$cohort_age_at_death$scenario,
+          discount_outcome_2020_to_2100(scenario_object=out2,
+                                        object_to_subtract=object_list[[i]],
+                                        outcome="cum_hbv_deaths",
+                                        yearly_discount_rate=annual_discounting_rate,
+                                        end_year = time_horizon_year))
+  age_dalys_averted[[i]] <-
+    cbind(scenario = object_list[[i]]$cohort_age_at_death$scenario,
+          discount_outcome_2020_to_2100(scenario_object=out2,
+                                        object_to_subtract=object_list[[i]],
+                                        outcome="dalys",
+                                        yearly_discount_rate=annual_discounting_rate,
+                                        end_year = time_horizon_year))
+}
+age_interactions <- do.call("rbind", age_interactions)
+age_interactions_py_on_treatment <- do.call("rbind", age_interactions_py_on_treatment)
+age_hbv_deaths_averted <- do.call("rbind", age_hbv_deaths_averted)
+age_dalys_averted <- do.call("rbind", age_dalys_averted)
+
+age_interactions_py_on_treatment$sim <- gsub("[^0-9]", "", age_interactions_py_on_treatment$sim)
+age_hbv_deaths_averted$sim <- gsub("[^0-9]", "", age_hbv_deaths_averted$sim)
+colnames(age_hbv_deaths_averted)[colnames(age_hbv_deaths_averted) == "cum_hbv_deaths"] <-
+  "value"
+
+age_dalys_averted$sim <- gsub("[^0-9]", "", age_dalys_averted$sim)
+colnames(age_dalys_averted)[colnames(age_dalys_averted) == "dalys"] <-
+  "value"
+
+# Full data frame with costs:
+age_df <- create_incremental_plot_df(interactions_df=age_interactions,
+                                     py_on_treatment_df=age_interactions_py_on_treatment,
+                                     deaths_averted_df=age_hbv_deaths_averted,
+                                     ly_saved_df = age_dalys_averted, # replace LY by DALYs
+                                     hbsag_test_cost = 8.3,
+                                     clinical_assessment_cost = 33,#84.4,
+                                     monitoring_assessment_cost = 25.5, #40.1,
+                                     treatment_py_cost = 66.5,#60,
+                                     #scenario_labels_obj = scenario_labels,
+                                     ref_label = "No treatment")
+colnames(age_df)[colnames(age_df)=="ly_saved"] <- "dalys_averted"
+
+# Lifetime monitoring simulations are wrong - drop these
+# Exclude monit_sim8 cause least realistic and very similar to others
+# Exclude 10 yearly frequencies though can show this in a sensitivity analysis
+age_df <- subset(age_df, !(scenario %in% c("screen_2020_monit_lifetime_30",
+                                           "screen_2020_monit_lifetime_45",
+                                           "screen_2020_monit_lifetime_30_45",
+                                           "screen_2020_monit_sim7_10",
+                                           "screen_2020_monit_10",
+                                           "screen_2020_monit_sim8",
+                                           "screen_2020_monit_sim17",
+                                           "screen_2020_monit_sim18")))
+
+# Calculate probability of being dominated
+dominance_prob_list <- list()
+
+for(i in 1:183) {
+  print(i)
+  dominance_prob_list[[i]] <- age_df[which(age_df$sim==
+                                             unique(age_df$sim)[i]),]
+  dominance_prob_list[[i]] <- assign_dominated_strategies(dominance_prob_list[[i]],
+                                                          exposure="total_cost",
+                                                          outcome="dalys_averted")
+}
+dominance_prob_df <- do.call("rbind", dominance_prob_list)
+dominance_prob_result <- group_by(dominance_prob_df, scenario, dominated) %>%
+  tally() %>%
+  spread(key = "dominated", value = "n") %>%
+  replace_na(list(No = 0, Yes = 0))
+dominance_prob_result$prob_non_dominated <- dominance_prob_result$No/
+  (dominance_prob_result$Yes+dominance_prob_result$No)
+# Any less than 50% chance of being non-dominated?
+any(dominance_prob_result$prob_non_dominated<0.5)
+
+ggplot(dominance_prob_result) +
+  geom_col(aes(x=reorder(scenario, desc(prob_non_dominated)), y = prob_non_dominated)) +
+  theme_bw() +
+  theme(axis.text.x=element_text(angle = 90, hjust =1))
+
+# ICER of non-dominated strategies
+# 2030 time horizon
+#age_df2 <- subset(age_df, scenario %in% c("screen_2020_monit_1",
+#                                          "screen_2020_monit_0",
+#                                          "screen_2020_monit_2", "screen_2020_monit_3",
+#                                          "screen_2020_monit_sim7",
+#                                          "screen_2020_monit_sim6",
+#                                          "screen_2020_monit_sim2c",
+#                                          "screen_2020_monit_sim2b",
+#                                          "screen_2020_monit_sim1c"
+#))
+# 2050 time horizon
+age_df2 <- subset(age_df, scenario %in% c("screen_2020_monit_1",
+                                          "screen_2020_monit_2", "screen_2020_monit_3",
+                                          "screen_2020_monit_4", "screen_2020_monit_5",
+                                          "screen_2020_monit_sim7",
+                                          "screen_2020_monit_sim6",
+                                          "screen_2020_monit_sim2c"
+))
+
+
+icer_list <- list()
+
+for(i in 1:183) {
+  print(i)
+  icer_list[[i]] <- age_df2[which(age_df2$sim==
+                                    unique(age_df2$sim)[i]),]
+  icer_list[[i]] <- calculate_icer_per_sim(icer_list[[i]],
+                                           exposure="total_cost",
+                                           outcome="dalys_averted")
+}
+icer_df <- do.call("rbind", icer_list)
+icer_result <- group_by(icer_df, scenario, comparator) %>%
+  arrange(sim,total_cost) %>%
+  summarise(icer_median = median(icer),
+            icer_lower = quantile(icer, 0.025),
+            icer_upper = quantile(icer, 0.975)) %>%
+  arrange(icer_median)
+icer_result
+

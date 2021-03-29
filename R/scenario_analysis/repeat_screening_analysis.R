@@ -1280,6 +1280,12 @@ hbv_deaths_averted_sq <- gather(hbv_deaths_averted_sq, key = "sim", value = "val
                                 -screening_end_year_monitoring,-screening_coverage_monitoring)
 hbv_deaths_averted_sq$sim <- gsub("[^0-9]", "", hbv_deaths_averted_sq$sim)
 
+subset(hbv_deaths_averted_sq, type=="proportion") %>%
+  group_by(scenario) %>%
+  summarise(median=median(value),
+            lower = quantile(value, 0.025),
+            upper= quantile(value, 0.975))
+
 ggplot(subset(hbv_deaths_averted_sq, type == "proportion")) +
   #geom_boxplot(aes(x=screening_coverage_end_year, y = value, fill = monitoring))
   stat_summary(aes(x=screening_coverage_end_year, y = value, fill = monitoring), fun = "median",
