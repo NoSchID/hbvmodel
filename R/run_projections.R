@@ -74,6 +74,7 @@ outpath <- out
 siml <- list(sim[[1]], sim[[1]])
 out <- lapply(siml, code_model_output)
 
+
 # Need to extract eAg-positives, eAg-negatives+ treated carriers
 # eAg negatives are carriers-eAgpositives - treated carriers
 

@@ -31,9 +31,9 @@ out1_it <- out1_it[[1]]
 # Default simulations for comparison:
 out3_it <- readRDS(paste0(out_path_monit, "a1_it_out3_screen_2020_monit_0_180121.rds"))
 out3_it <- out3_it[[1]]   # No monitoring
-monit_out7 <- readRDS(paste0(out_path_monit, "a1_it_monit_out7_161220.rds"))
+monit_out7 <- readRDS(paste0(out_path_monit, "a1_it_screen_2020_monit_out7_050321.rds"))
 monit_out7 <- monit_out7[[1]]
-out5_it <- readRDS(paste0(out_path_monit, "a1_it_out5_screen_2020_monit_5_161220.rds"))
+out5_it <- readRDS(paste0(out_path_monit, "a1_it_out6_screen_2020_monit_1_240221.rds"))
 out5_it <- out5_it[[1]]
 
 # For PRCC:
@@ -106,6 +106,36 @@ monit_out7_thccr_dcc_lower <- monit_out7_thccr_dcc_lower[[1]]
 monit_out7_thccr_dcc_upper <- readRDS(paste0(out_path, "a1_it_screen_2020_monit_out7_thccr_dcc_upper_080221.rds"))
 monit_out7_thccr_dcc_upper <- monit_out7_thccr_dcc_upper[[1]]
 
+# Vary screening coverage to 0.5 and 1
+#out3_screening_lower <- readRDS(paste0(out_path, ".rds"))
+#out3_screening_lower <- out3_screening_lower[[1]]
+#out3_screening_upper <- readRDS(paste0(out_path, ".rds"))
+#out3_screening_upper <- out3_screening_upper[[1]]
+#monit_out7_screening_lower <- readRDS(paste0(out_path, ".rds"))
+#monit_out7_screening_lower <- monit_out7_screening_lower[[1]]
+monit_out7_screening_upper <- readRDS(paste0(out_path, "a1_it_screen_2020_monit_out7_screening_coverage_higher_310321.rds"))
+monit_out7_screening_upper <- monit_out7_screening_upper[[1]]
+# Vary linkage to care to 0.5 and 1
+out3_assessment_lower <- readRDS(paste0(out_path, "a1_it_screen_2020_monit_0_link_to_care_prob_lower_310321.rds"))
+out3_assessment_lower <- out3_assessment_lower[[1]]
+out3_assessment_upper <- readRDS(paste0(out_path, "a1_it_screen_2020_monit_0_link_to_care_prob_higher_310321.rds"))
+out3_assessment_upper <- out3_assessment_upper[[1]]
+monit_out7_assessment_lower <- readRDS(paste0(out_path, "a1_it_screen_2020_monit_out7_link_to_care_prob_lower_310321.rds"))
+monit_out7_assessment_lower <- monit_out7_assessment_lower[[1]]
+monit_out7_assessment_upper <- readRDS(paste0(out_path, "a1_it_screen_2020_monit_out7_link_to_care_prob_higher_310321.rds"))
+monit_out7_assessment_upper <- monit_out7_assessment_upper[[1]]
+# Vary treatment initiation prob to 0.5
+out3_treatment_lower <- readRDS(paste0(out_path, "a1_it_screen_2020_monit_0_treatment_prob_lower_310321.rds"))
+out3_treatment_lower <- out3_treatment_lower[[1]]
+monit_out7_treatment_lower <- readRDS(paste0(out_path, "a1_it_screen_2020_monit_out7_treatment_prob_lower_310321.rds"))
+monit_out7_treatment_lower <- monit_out7_treatment_lower[[1]]
+# Vary monitoring prob to 0.5 and 1
+monit_out7_monitoring_lower <- readRDS(paste0(out_path, "a1_it_screen_2020_monit_out7_monitoring_prob_lower_310321.rds"))
+monit_out7_monitoring_lower <- monit_out7_monitoring_lower[[1]]
+monit_out7_monitoring_upper <- readRDS(paste0(out_path, "a1_it_screen_2020_monit_out7_monitoring_prob_higher_310321.rds"))
+monit_out7_monitoring_upper <- monit_out7_monitoring_upper[[1]]
+
+
 # One-way sensitivity analysis of cost (median ICERs and uncertainty bounds)
 cost_sensitivity_icer <- read.csv(file=paste0(out_path, "cost_sensitivity_results_170321.csv"))
 
@@ -131,6 +161,7 @@ annual_discounting_rate <- 0.03
 #object_list <- list(out3_s2, monit_out7_s2)
 #object_list <- list(out3_s3, monit_out7_s3)
 # One-way:
+# Treatment parms:
 #object_list <- list(out3_tmu_dcc_lower, monit_out7_tmu_dcc_lower)
 #object_list <- list(out3_tmu_dcc_upper, monit_out7_tmu_dcc_upper)
 #object_list <- list(out3_thccr_chb_lower, monit_out7_thccr_chb_lower)
@@ -140,7 +171,14 @@ annual_discounting_rate <- 0.03
 #object_list <- list(out3_thccr_cc_lower, monit_out7_thccr_cc_lower)
 #object_list <- list(out3_thccr_cc_upper, monit_out7_thccr_cc_upper)
 #object_list <- list(out3_thccr_dcc_lower, monit_out7_thccr_dcc_lower)
-object_list <- list(out3_thccr_dcc_upper, monit_out7_thccr_dcc_upper)
+#object_list <- list(out3_thccr_dcc_upper, monit_out7_thccr_dcc_upper)
+# Coverage parms:
+# Add screening
+#object_list <- list(out3_assessment_lower, monit_out7_assessment_lower)
+#object_list <- list(out3_assessment_upper, monit_out7_assessment_upper)
+#object_list <- list(out3_treatment_lower, monit_out7_treatment_lower)
+#object_list <- list(out3_it, monit_out7_monitoring_lower)
+#object_list <- list(out3_it, monit_out7_monitoring_upper)
 
 # Extract interactions and person-years on treatment, and HBV-related deaths
 # ad DALYs averted, in a for loop
@@ -199,6 +237,10 @@ age_df <- create_incremental_plot_df(interactions_df=age_interactions,
                                      ref_label = "No treatment")
 colnames(age_df)[colnames(age_df)=="ly_saved"] <- "dalys_averted"
 
+age_df %>% group_by(scenario) %>%
+  summarise(cost=median(total_cost),
+            dalys = median(dalys_averted))
+
 icer_list <- list()
 
 for(i in 1:183) {
@@ -217,6 +259,7 @@ icer_result <- group_by(icer_df, scenario, comparator) %>%
             icer_upper = quantile(icer, 0.975)) %>%
   arrange(icer_median)
 icer_result
+
 
 # Tornado plot ----
 # ICERS are:
@@ -791,7 +834,92 @@ ggplot(subset(cost_sensitivity_icer, (scenario != "screen_2020_monit_1" &
   theme_classic() +
   theme(legend.title=element_blank())
 
-# Tornado plot for costs ----
+# Tornado plot for costs and coverage parameters ----
+
+# ICERS for coverage:
+# assessment_lower: out3 = 338 (203-642), monit_out7 =  321 (155-767)
+# Monitoring probably gets more favourable when assessment is lower
+# assessment_upper: out3 = 242 (149-449), monit_out7 =  321 (155-767)
+# treatment_lower: out3 =  409 (243-784), monit_out7 =  409 (197-920)
+# monitoring_lower: monit_out7 = 289 (143-679)
+# monitoring_upper: monit_out7 = 342 (163-826)
+# ICER gets more unfavourable with more monitoring because it just increases frequency
+
+# Replace with actual screening values
+tornado_cov_out3 <- data.frame(outcome = "monit_0",
+                                parm = c("screening","assessment","treatment","monitoring"),
+                                lower_icer = c(264,338,409,264),
+                                default_icer = c(264,264,264,264),
+                                upper_icer = c(264,242,264,264))
+tornado_cov_out3$parm <- factor(tornado_cov_out3$parm,
+                                 levels = c("screening","assessment","treatment","monitoring"))
+
+tornado_cov_monit_sim7 <- data.frame(outcome = "monit_sim7",
+                                      parm = c("screening","assessment","treatment","monitoring"),
+                                      lower_icer = c(321,321,409,289),
+                                      default_icer = c(321,321,321,321),
+                                      upper_icer = c(321,321,321,342))
+tornado_cov_monit_sim7$parm <- factor(tornado_cov_monit_sim7$parm,
+                                       levels = c("screening","assessment","treatment","monitoring"))
+
+
+
+lower_wtp <- 404
+
+ggplot(tornado_cov_out3) +
+  geom_col(aes(x=parm, y = upper_icer-default_icer), fill = "blue") +
+  geom_col(aes(x=parm, y = lower_icer-default_icer), fill = "red") +
+  geom_text(aes(label = c(100,100,100,100), x = parm, y = upper_icer-default_icer),
+            position = position_dodge(width = 0.8), hjust = -0.5) +
+  geom_text(aes(label = c(50,50,50,50), x = parm, y = lower_icer-default_icer),
+            position = position_dodge(width = 0.8), hjust = 1.5) +
+  geom_hline(yintercept=lower_wtp-264, lty="dashed") +
+  geom_hline(yintercept=0) +
+  scale_x_discrete("Coverage (%)",
+                   labels = c("screening" = "Screening (90)",
+                              "assessment" = "Linkage to care (80)",
+                              "treatment" = "Treatment initiation (100)",
+                              "monitoring" = "Monitoring (80)"),
+                   limits = rev)+
+  scale_y_continuous(breaks = c(200-264,0,lower_wtp-264),
+                     labels = c(200,264,lower_wtp),
+                     limits=c(200-264,(420-264+10))) +
+  ylab("Median incremental cost per averted DALY") +
+  labs(title = "2020 screening and treatment without monitoring\nvs. status quo of no treatment") +
+  theme_classic() +
+  theme(axis.text = element_text(size=11),
+        axis.title = element_text(size=12)) +
+  coord_flip()
+
+# Note that assessment probability does not affect the CER of monit_sim7 compared to out3,
+# but it makes monitoring more favourable compared to no monitoring.
+ggplot(tornado_cov_monit_sim7) +
+  geom_col(aes(x=parm, y = upper_icer-default_icer), fill = "blue") +
+  geom_col(aes(x=parm, y = lower_icer-default_icer), fill = "red") +
+  geom_text(aes(label = c(100,100,100,100), x = parm, y = upper_icer-default_icer),
+            position = position_dodge(width = 0.8), hjust = -0.5) +
+  geom_text(aes(label = c(50,50,50,50), x = parm, y = lower_icer-default_icer),
+            position = position_dodge(width = 0.8), hjust = 1.5) +
+  geom_hline(yintercept=lower_wtp-321, lty="dashed") +
+  geom_hline(yintercept=0) +
+  scale_x_discrete("Coverage (%)",
+                   labels = c("screening" = "Screening (90)",
+                              "assessment" = "Linkage to care (80)",
+                              "treatment" = "Treatment initiation (100)",
+                              "monitoring" = "Monitoring (80)"),
+                   limits = rev)+
+  scale_y_continuous(breaks = c(200-321,0,lower_wtp-321),
+                     labels = c(200,321,lower_wtp),
+                     limits=c(200-321,(420-321+10))) +
+  ylab("Median incremental cost per averted DALY") +
+  labs(title = "2020 screening and treatment with optimal* monitoring\nscenario vs. treatment programme without monitoring") +
+  theme_classic() +
+  theme(axis.text = element_text(size=11),
+        axis.title = element_text(size=12)) +
+  coord_flip()
+
+
+## COSTS
 
 # Needed to run median ICERS separately here for:
 # no monitoring vs no treatment and
@@ -882,6 +1010,61 @@ ggplot(tornado_cost_monit_sim7) +
   theme(axis.text = element_text(size=11),
         axis.title = element_text(size=12)) +
   coord_flip()
+
+# Coverage variation and impact and CER plots ----
+dalys_averted_cov <-
+  plot_hbv_deaths_averted(counterfactual_object = out2,
+                          scenario_objects = list(monit_out7, monit_out7_assessment_lower,
+                                                  monit_out7_treatment_lower,
+                                                  monit_out7_monitoring_lower,
+                                                  out3_it, out3_assessment_lower,
+                                                  out3_treatment_lower),
+                          outcome_to_avert = "dalys",
+                          outcome_to_plot = "number_averted",
+                          counterfactual_label = "no treatment")
+dalys_averted_cov <- dalys_averted_cov %>%
+  filter(by_year==2100) %>%
+  group_by(scenario, type) %>%
+  summarise(median = median(value),
+            cri_lower = quantile(value, 0.025),
+            cri_upper = quantile(value, 0.975))
+dalys_averted_cov$monitoring <- "Yes"
+dalys_averted_cov$monitoring[dalys_averted_cov$scenario %in%
+                               c("screen_2020_monit_0",
+                                 "screen_2020_monit_0_link_to_care_prob_lower",
+                                 "screen_2020_monit_0_treatment_prob_lower")] <- "No"
+dalys_averted_cov$cov <- "Ambitious"
+dalys_averted_cov$cov[dalys_averted_cov$scenario %in% c(
+  "screen_2020_monit_sim7_link_to_care_prob_lower",
+  "screen_2020_monit_0_link_to_care_prob_lower")] <- "Reduced linkage\nto care"
+dalys_averted_cov$cov[dalys_averted_cov$scenario %in% c(
+  "screen_2020_monit_sim7_treatment_prob_lower",
+  "screen_2020_monit_0_treatment_prob_lower")] <- "Reduced treatment initiation"
+dalys_averted_cov$cov[dalys_averted_cov$scenario %in% c(
+  "screen_2020_monit_sim7_monitoring_prob_lower")] <- "Reduced monitoring uptake"
+
+ggplot(subset(dalys_averted_cov, type=="proportion_averted"))+
+  geom_col(aes(x=cov, y = median, fill = monitoring)) +
+  geom_errorbar(aes(x=cov, ymin=cri_lower, ymax=cri_upper,
+                    group = monitoring), width = 0.15) +
+  facet_wrap(~monitoring, scales="free_x") +
+  theme_classic()
+
+# ADD SCREENING
+
+# Plot of median cost against median DALYs averted
+# Costs here are discounted
+coverage_cost_effect <- read.csv(file=paste0(out_path, "coverage_sensitivity_results_310321.csv"))
+
+ggplot(subset(coverage_cost_effect, !(scenario == "screen_2020_monit_0" &
+                                        sensitivity_scenario == "monitoring_lower"))) +
+  geom_point(aes(x=dalys_averted/1000, y = total_cost/1000000,
+                 shape=scenario, colour=sensitivity_scenario), size=5) +
+  theme_classic() +
+  ylab("Cost (millions)") +
+  xlab("DALYs averted (thousands)") +
+  #facet_wrap(~sensitivity_scenario) +
+  expand_limits(y = 0, x = 0)
 
 # Qualitative sensitivity analysis of treatment impact on infections ----
 # Compare out3_it (default) and out3_no_inf, where treated carriers

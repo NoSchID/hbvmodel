@@ -570,6 +570,7 @@ hbv_deaths_2020 <-
   do.call("rbind", lapply(out2_disease_outcomes$cum_hbv_deaths_female,
                           function(x) x[which(out2_disease_outcomes$time==2020),])))
 
+
 hbv_deaths_2020_group <- rbind(
   data.frame(age = "<15",
         value = apply(hbv_deaths_2020[,which(ages==0):which(ages==14.5)],1,sum)),
@@ -592,6 +593,7 @@ hcc_deaths_2020 <-
                            function(x) x[which(out2_disease_outcomes$time==2021),]))-
      do.call("rbind", lapply(out2_disease_outcomes$cum_hcc_deaths_female,
                              function(x) x[which(out2_disease_outcomes$time==2020),])))
+
 
 hcc_2020 <-
   (do.call("rbind", lapply(out2_disease_outcomes$cum_hcc_cases_male,
@@ -622,6 +624,128 @@ hbv_deaths_2020 <-
          key="age", value = "value")
 hbv_deaths_2020$sim <- rep(1:183, 200)
 hbv_deaths_2020$age <- rep(seq(0,99.5,0.5), each=183)
+
+# Proportion of HBV deaths due to HCC:
+total_hcc_deaths_2020 <-
+  # Incident HCC deaths in men
+    apply((do.call("rbind", lapply(out2_disease_outcomes$cum_hcc_deaths_male,
+                           function(x) x[which(out2_disease_outcomes$time==2021),]))-
+     do.call("rbind", lapply(out2_disease_outcomes$cum_hcc_deaths_male,
+                             function(x) x[which(out2_disease_outcomes$time==2020),]))),1,sum) +
+  # Incident HCC deaths in women
+  apply((do.call("rbind", lapply(out2_disease_outcomes$cum_hcc_deaths_female,
+                           function(x) x[which(out2_disease_outcomes$time==2021),]))-
+     do.call("rbind", lapply(out2_disease_outcomes$cum_hcc_deaths_female,
+                             function(x) x[which(out2_disease_outcomes$time==2020),]))),1,sum)
+
+total_hbv_deaths_2020 <-
+  # Incident HBV deaths in men
+  apply((do.call("rbind", lapply(out2_disease_outcomes$cum_hbv_deaths_male,
+                                 function(x) x[which(out2_disease_outcomes$time==2021),]))-
+           do.call("rbind", lapply(out2_disease_outcomes$cum_hbv_deaths_male,
+                                   function(x) x[which(out2_disease_outcomes$time==2020),]))),1,sum) +
+  # Incident HBV deaths in women
+  apply((do.call("rbind", lapply(out2_disease_outcomes$cum_hbv_deaths_female,
+                                 function(x) x[which(out2_disease_outcomes$time==2021),]))-
+           do.call("rbind", lapply(out2_disease_outcomes$cum_hbv_deaths_female,
+                                   function(x) x[which(out2_disease_outcomes$time==2020),]))),1,sum)
+
+prop_deaths_from_hcc <- total_hcc_deaths_2020/total_hbv_deaths_2020
+quantile(prop_deaths_from_hcc, c(0.50,0.025,0.975))
+
+# Proportion of deaths in men:
+quantile(apply((do.call("rbind", lapply(out2_disease_outcomes$cum_hbv_deaths_male,
+                               function(x) x[which(out2_disease_outcomes$time==2021),]))-
+         do.call("rbind", lapply(out2_disease_outcomes$cum_hbv_deaths_male,
+                                 function(x) x[which(out2_disease_outcomes$time==2020),]))),1,sum)/
+  total_hbv_deaths_2020, c(0.5,0.025,0.975))
+
+# Cirrhosis mortality compared to GBD (2018)
+hcc_deaths_2018 <- (apply((do.call("rbind", lapply(out2_disease_outcomes$cum_hcc_deaths_male,
+                                                   function(x) x[which(out2_disease_outcomes$time==2019),]))-
+                             do.call("rbind", lapply(out2_disease_outcomes$cum_hcc_deaths_male,
+                                                     function(x) x[which(out2_disease_outcomes$time==2018),]))),1,sum) +
+                      apply((do.call("rbind", lapply(out2_disease_outcomes$cum_hcc_deaths_female,
+                                                     function(x) x[which(out2_disease_outcomes$time==2019),]))-
+                               do.call("rbind", lapply(out2_disease_outcomes$cum_hcc_deaths_female,
+                                                       function(x) x[which(out2_disease_outcomes$time==2018),]))),1,sum))
+
+cirrhosis_deaths_2018 <- (apply((do.call("rbind", lapply(out2_disease_outcomes$cum_hbv_deaths_male,
+                                                        function(x) x[which(out2_disease_outcomes$time==2019),]))-
+                                  do.call("rbind", lapply(out2_disease_outcomes$cum_hbv_deaths_male,
+                                                          function(x) x[which(out2_disease_outcomes$time==2018),]))),1,sum) +
+  apply((do.call("rbind", lapply(out2_disease_outcomes$cum_hbv_deaths_female,
+                                 function(x) x[which(out2_disease_outcomes$time==2019),]))-
+           do.call("rbind", lapply(out2_disease_outcomes$cum_hbv_deaths_female,
+                                   function(x) x[which(out2_disease_outcomes$time==2018),]))),1,sum))-
+  hcc_deaths_2018
+
+pop_male <- lapply(out2_carriers, "[[", "pop_male")
+pop_female <- lapply(out2_carriers, "[[", "pop_female")
+
+pop_2018 <-
+  apply(do.call(rbind.data.frame, (lapply(pop_male, function(x)
+    x[which(out2_carriers[[1]]$time==2018.5),]))),1,sum)+
+  apply(do.call(rbind.data.frame, (lapply(pop_female, function(x)
+    x[which(out2_carriers[[1]]$time==2018.5),]))),1,sum)
+
+quantile(cirrhosis_deaths_2018/pop_2018*100000, c(0.5,0.025,0.975))
+quantile(hcc_deaths_2018/pop_2018*100000, c(0.5,0.025,0.975))
+
+# Male HCC mort rate:
+quantile(apply((do.call("rbind", lapply(out2_disease_outcomes$cum_hcc_deaths_male,
+                                function(x) x[which(out2_disease_outcomes$time==2019),]))-
+          do.call("rbind", lapply(out2_disease_outcomes$cum_hcc_deaths_male,
+                                  function(x) x[which(out2_disease_outcomes$time==2018),]))),1,sum)/
+    apply(do.call(rbind.data.frame, (lapply(pop_male, function(x)
+      x[which(out2_carriers[[1]]$time==2018.5),]))),1,sum)*100000, c(0.5,0.025,0.975))
+# Female HCC mort rate:
+quantile(apply((do.call("rbind", lapply(out2_disease_outcomes$cum_hcc_deaths_female,
+                                        function(x) x[which(out2_disease_outcomes$time==2019),]))-
+                  do.call("rbind", lapply(out2_disease_outcomes$cum_hcc_deaths_female,
+                                          function(x) x[which(out2_disease_outcomes$time==2018),]))),1,sum)/
+           apply(do.call(rbind.data.frame, (lapply(pop_female, function(x)
+             x[which(out2_carriers[[1]]$time==2018.5),]))),1,sum)*100000, c(0.5,0.025,0.975))
+
+
+# Cirrhosis deaths by age
+cirrhosis_deaths_by_age_2018 <- ((do.call("rbind", lapply(out2_disease_outcomes$cum_hbv_deaths_male,
+                                                         function(x) x[which(out2_disease_outcomes$time==2019),]))-
+                                   do.call("rbind", lapply(out2_disease_outcomes$cum_hbv_deaths_male,
+                                                           function(x) x[which(out2_disease_outcomes$time==2018),]))) +
+                            (do.call("rbind", lapply(out2_disease_outcomes$cum_hbv_deaths_female,
+                                                           function(x) x[which(out2_disease_outcomes$time==2019),]))-
+                                     do.call("rbind", lapply(out2_disease_outcomes$cum_hbv_deaths_female,
+                                                             function(x) x[which(out2_disease_outcomes$time==2018),]))))-
+  ((do.call("rbind", lapply(out2_disease_outcomes$cum_hcc_deaths_male,
+                                  function(x) x[which(out2_disease_outcomes$time==2019),]))-
+            do.call("rbind", lapply(out2_disease_outcomes$cum_hcc_deaths_male,
+                                    function(x) x[which(out2_disease_outcomes$time==2018),]))) +
+     (do.call("rbind", lapply(out2_disease_outcomes$cum_hcc_deaths_female,
+                                    function(x) x[which(out2_disease_outcomes$time==2019),]))-
+              do.call("rbind", lapply(out2_disease_outcomes$cum_hcc_deaths_female,
+                                      function(x) x[which(out2_disease_outcomes$time==2018),]))))
+
+carriers_male <- lapply(out2_carriers, "[[", "carriers_male")
+carriers_female <- lapply(out2_carriers, "[[", "carriers_female")
+
+carriers_by_age_2018 <-
+  do.call(rbind.data.frame, (lapply(carriers_male, function(x)
+    x[which(out2_carriers[[1]]$time==2018.5),])))+
+  do.call(rbind.data.frame, (lapply(carriers_female, function(x)
+    x[which(out2_carriers[[1]]$time==2018.5),])))
+
+cirrhosis_mort_carriers <- cirrhosis_deaths_by_age_2018/carriers_by_age_2018
+cirrhosis_mort_carriers$sim <- rownames(cirrhosis_mort_carriers)
+cirrhosis_mort_carriers <- gather(cirrhosis_mort_carriers, key = "age", value = "value", -sim)
+cirrhosis_mort_carriers$age <- rep(ages, each = 183)
+
+ggplot(cirrhosis_mort_carriers) +
+  geom_line(aes(x=age, y = value, group = sim), col = "grey") +
+  stat_summary(aes(x=age, y = value), fun = "median", geom="line", col = "red") +
+  theme_classic()
+
+# Carriers:
 
 carriers_male <- lapply(out2_carriers, "[[", "carriers_male")
 carriers_female <- lapply(out2_carriers, "[[", "carriers_female")

@@ -6,6 +6,7 @@ library(corrplot)
 library(ggplot2)
 library(sensitivity)
 library(ggrepel)
+library(gridExtra)
 
 # Load parameter sets chosen based on kmeans clustering
 load(here("calibration", "input", "accepted_parmsets_kmeans_170820.Rdata")) # params_mat_accepted_kmeans
@@ -21,7 +22,7 @@ disease_outcomes_by_age <- readRDS("C:/Users/Nora Schmit/Documents/Model develop
 prior <- params_mat
 posterior <- params_mat_accepted_kmeans
 
-# Test for cost averted: Incident HCC cases in 1999
+# Test for cost averted: Incident HCC cases in 1999 (ignore) ----
 # Cum cases in 1992-cum cases in 1991
 quantile((sapply(disease_outcomes_by_age$cum_hcc_cases_male,
        function(x) rowSums(x[which(disease_outcomes_by_age$time==1992),]))-
@@ -79,7 +80,7 @@ hist(prior[,"pr_ir_cc_age_threshold"], breaks=seq(min(prior[,"pr_ir_cc_age_thres
                                                   max(prior[,"pr_ir_cc_age_threshold"])+0.5, by=1))
 
 
-#pdf(file = here("calibration", "output", "prior_posterior_density_plots_240720.pdf"), title="Prior and posterior density")
+#pdf(file = here("calibration", "output", "prior_posterior_density_plots_300321.pdf"), title="Prior and posterior density")
 par(mfrow=c(3,3))
 plot(x=0,y=0, col = "white", xlab = "", ylab = "")
 legend("center", legend=c("prior density","posterior density"),
@@ -119,7 +120,183 @@ plot_prior_posterior("vacc_eff")
 par(mfrow=c(1,1))
 #dev.off()
 
+# Plot of prior and posterior median and 95% CrI
+# Name for plots
+transmission_parameters <- c("alpha", "b1", "b2", "b3", "mtct_prob_s",
+                             "mtct_prob_e", "vacc_eff", "p_chronic_function_r",
+                             "p_chronic_function_s", "p_chronic_in_mtct")
+parameter_names <- list(
+                    # Transmission parameters
+                     "beta1" = "b1",
+                     "beta2" = "b2",
+                     "beta3" = "b3",
+                     "Relative infectiousness\nin HBeAg+" = "alpha",
+                     "MTCT risk from\nHBeAg+ mother" = "mtct_prob_e",
+                     "MTCT risk from\nHBeAg- mother" = "mtct_prob_s",
+                     "Risk of chronic\ncarriage at birth" = "p_chronic_in_mtct",
+                     "Coefficient for risk\nof chronic carriage (cr)" = "p_chronic_function_r",
+                     "Coefficient for risk\nof chronic carriage (cs)" = "p_chronic_function_s",
+                     "Vaccine efficacy" = "vacc_eff",
+                     # Natural history
+                     "Rate from HBeAg+\ninfection to CHB at age 0" = "pr_it_ir",
+                     "Rate from HBeAg+ CHB to\nHBeAg- infection at age 0" = "pr_ir_ic",
+                     "Coefficient for progression\nthrough HBeAg+ compartments" = "eag_prog_function_rate",
+                     "Rate from HBeAg+\nto HBeAg- CHB" = "pr_ir_enchb",
+                     "Parameter for\nHBsAg loss" = "sag_loss_slope",
+                     "Rate from HBeAg-\ninfection to CHB" = "pr_ic_enchb",
+                     # Liver disease
+                     "Rate from HBeAg+ CHB\nto CC in women" = "pr_ir_cc_female",
+                     "Minimum age for\ncirrhosis (HBeAg+)" = "pr_ir_cc_age_threshold",
+                     "Rate from HBeAg- CHB\nto CC in women" = "pr_enchb_cc_female",
+                     "Rate ratio for\ncirrhosis in men" = "cirrhosis_male_cofactor",
+                     "Rate of decompensation" = "pr_cc_dcc",
+                     "Coefficient for progression\nto HCC in women" = "cancer_prog_coefficient_female",
+                     "Minimum age for HCC" = "cancer_age_threshold",
+                     "Rate ratio for\nHCC in men" = "cancer_male_cofactor",
+                     "Rate ratio for HCC\nin HBeAg+ infection" = "hccr_it",
+                     "Rate ratio for HCC\nin HBeAg+ CHB" = "hccr_ir",
+                     "Rate ratio for HCC\nin HBeAg- CHB" = "hccr_enchb",
+                     "Rate ratio for\nHCC in CC" = "hccr_cc",
+                     "Rate from\nDCC to HCC" = "hccr_dcc",
+                     "Mortality rate\nfrom CC" = "mu_cc",
+                     "Mortality rate\nfrom DCC" = "mu_dcc",
+                     "Mortality rate\nfrom HCC" = "mu_hcc")
 
+
+# Rename all levels, by name
+prior_posterior_summary2 <- prior_posterior_summary
+prior_posterior_summary2$parameter_category <- "natural_history"
+prior_posterior_summary2$parameter_category[prior_posterior_summary2$parameter %in%
+                                              transmission_parameters] <- "transmission"
+prior_posterior_summary2$parameter <- factor(prior_posterior_summary2$parameter)
+levels(prior_posterior_summary2$parameter) <- parameter_names
+
+
+pp_plot1 <- ggplot(subset(prior_posterior_summary2, parameter_category=="transmission")) +
+  geom_point(aes(x=parameter, y = prior_median), col = "grey70") +
+  geom_errorbar(aes(x=parameter, ymin=prior_cri_lower, ymax=prior_cri_upper), width= 0.15,
+                col = "grey70", linetype="dashed") +
+  geom_point(aes(x=1.1, y = post_median)) +
+  geom_errorbar(aes(x=1.1, ymin=post_cri_lower, ymax=post_cri_upper), width= 0.15) +
+  facet_wrap(~parameter, scales = "free", ncol =5) +
+  labs(title="Transmission parameters") +
+  theme_classic() +
+  theme(axis.ticks.x=element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_blank(),
+        axis.text.x = element_text(size = 12),
+        axis.text.y = element_text(size = 11),
+        axis.title = element_blank())
+
+pp_plot2 <- ggplot(subset(prior_posterior_summary2, parameter_category=="natural_history")) +
+  geom_point(aes(x=parameter, y = prior_median, col = "Prior"), size=2) +
+  geom_errorbar(aes(x=parameter, ymin=prior_cri_lower, ymax=prior_cri_upper, col = "Prior"),
+                width= 0.15,
+                linetype="dashed") +
+  geom_point(aes(x=1.1, y = post_median, col = "Posterior"), size = 2) +
+  geom_errorbar(aes(x=1.1, ymin=post_cri_lower, ymax=post_cri_upper, col = "Posterior"),
+                width= 0.15) +
+  scale_colour_manual(values=c("Prior"="grey70",
+                               "Posterior"="black")) +
+  guides(color = guide_legend(reverse = TRUE)) +
+  facet_wrap(~parameter, scales = "free", ncol =5) +
+  labs(title="Natural history parameters") +
+  theme_classic() +
+  theme(legend.position=c(0.65,0.05),
+        legend.direction = "horizontal",
+        legend.title=element_blank(),
+        legend.text=element_text(size=15),
+        axis.ticks.x=element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_blank(),
+        axis.text.x = element_text(size = 12),
+        axis.text.y = element_text(size = 11),
+        axis.title = element_blank())
+
+#tiff(file = "prior_posterior_plot.tiff", width=260, height=300, units = "mm", res=200, pointsize = 0.99)
+grid.arrange(pp_plot1, pp_plot2, nrow=2, heights= c(2,5))
+#dev.off()
+
+prior_posterior_summary$prior_range <- prior_posterior_summary$prior_cri_upper-
+  prior_posterior_summary$prior_cri_lower
+prior_posterior_summary$posterior_range <- prior_posterior_summary$post_cri_upper-
+  prior_posterior_summary$post_cri_lower
+prior_posterior_summary$abs_red <- prior_posterior_summary$prior_range-
+  prior_posterior_summary$posterior_range
+prior_posterior_summary$rel_red <- prior_posterior_summary$abs_red/
+  prior_posterior_summary$prior_range
+
+# Analysis of the prior and posterior standard deviation/coefficient of variation ----
+# Coefficient of variation = relative standard deviation
+
+posterior_sd <- gather(params_mat_accepted_kmeans, key = "parameter", value = "sim") %>%
+  group_by(parameter) %>%
+  summarise(post_sd = sd(sim),
+            post_cov = sd(sim)/mean(sim))
+
+prior_sd <- gather(params_mat, key = "parameter", value = "sim") %>%
+  group_by(parameter) %>%
+  summarise(prior_sd = sd(sim),
+            prior_cov = sd(sim)/mean(sim))
+
+prior_posterior_sd <- left_join(prior_sd, posterior_sd, by ="parameter")
+prior_posterior_sd$abs_red <- prior_posterior_sd$prior_sd-
+  prior_posterior_sd$post_sd
+prior_posterior_sd$rel_red <- prior_posterior_sd$abs_red/
+  prior_posterior_sd$prior_sd
+# Note: reduction in dispersion is calculated on reduction in standard deviation compared to
+# prior SD. Overall variance in prior and posterior is shown by COV.
+
+
+# Mood's median test corrected for multiple testing ----
+median.test <- function(x, y){
+  z <- c(x, y)
+  g <- rep(1:2, c(length(x), length(y)))
+  m <- median(z)
+  fisher.test(z < m, g)$p.value
+}
+
+p <- rep(0,32)
+for (i in 1:32) {
+  p[i] <- median.test(prior[,i], posterior[,i])
+  names(p)[i] <- colnames(prior[,i])
+}
+p_adjusted <- p.adjust(p, method = "holm", n = length(p))
+
+View(cbind(colnames(posterior), p_adjusted))
+
+# Combine in table
+prior_posterior_summary$parameter==prior_posterior_sd$parameter
+prior_posterior_summary$parameter==colnames(prior)
+
+result_df <- data.frame(parameter=prior_posterior_summary$parameter,
+                        prior_median=prior_posterior_summary$prior_median,
+                        posterior_median=prior_posterior_summary$post_median,
+                        rel_red_cri = prior_posterior_summary$rel_red, # reduction in credible interval between prior and posterior
+                        rel_red_sd = prior_posterior_sd$rel_red,# reduction in SD between prior and posterior
+                        prior_cov = prior_posterior_sd$prior_cov,  # coefficient of variation of priors
+                        posterior_cov  = prior_posterior_sd$post_cov) # coefficient of variation of posteriors
+
+# Add Mood test with Holm's correction
+p_adjusted <- data.frame(parameter=colnames(prior), adjusted_p_value = p_adjusted)
+result_df <- left_join(result_df, p_adjusted, by = "parameter")
+result_df$parameter <- factor(result_df$parameter)
+levels(result_df$parameter) <- parameter_names
+result_df <- arrange(result_df, -rel_red_cri)
+#write.csv(result_df, file=here("calibration", "output", "prior_posterior_stats_300321.csv"), row.names = FALSE)
+
+result_df$parameter[result_df$rel_red_sd>=0.5]
+result_df$parameter[result_df$posterior_cov>=0.7]
+# Is reduction associated with COV of prior? Yes somewhat - higher COV usually leads to larger reduction.
+plot(y=result_df$rel_red_sd, x = result_df$prior_cov)
+abline(h=0)
+points(x=result_df$prior_cov[result_df$rel_red_sd>=0.4],
+       y=result_df$rel_red_sd[result_df$rel_red_sd>=0.4], col = "red")
+
+plot(y=result_df$posterior_cov, x = result_df$prior_cov)
+
+cor.test(result_df$prior_cov, result_df$rel_red_sd)
+cor.test(result_df$prior_cov, result_df$posterior_cov)
 
 # Analysis of the prior and posterior interquartile range ----
 iqr_prior_post <- rbind(t(apply(prior, 2, quantile, prob = c(0.25, 0.5, 0.75))),
@@ -147,6 +324,7 @@ posterior_iqr_width <- filter(iqr_prior_post, type=="post") %>%
   mutate(relative_posterior_width = iqr_width/median)
 
 posterior_iqr_width$parm[rank(posterior_iqr_width$relative_posterior_width)>18]
+
 
 # Plots
 # Median and IQR prior and posterior for all parameters
@@ -183,6 +361,35 @@ ggplot(posterior_long) +
 
 # Posterior correlation plot ----
 corrmatrix_post <- cor(posterior) # methods Spearman and Pearson look similar, only Kendall focuses on the highest correlations
+
+which(apply(corrmatrix_post, 2, function(r) any(r > 0.4 & r <1)))
+which(apply(corrmatrix_post, 2, function(r) any(r < (-0.4))))
+# Over 25% correlation:
+# b1, b2, b3, mtct_prob_e, p_chronic_function_s, pr_ic_enchb, cancer_prog_coefficient_female,
+# hccr_ir, hccr_enchb, hccr_cc, mu_cc
+# alpha, p_chronic_function_r, pr_it_ir, eag_prog_function_rate, cirrhosis_male_cofactor
+# Over 40% correlation:
+# b1, b2, b3, alpha, hccr_ir, hccr_enchb, hccr_cc
+
+# Correlation plot with over 0.4 correlation coefficient
+corrmatrix_post_40 <- corrmatrix_post[rownames(corrmatrix_post) %in%
+                                        c("b1", "b2", "b3", "alpha", "hccr_ir",
+                                          "hccr_enchb", "hccr_cc"),colnames(corrmatrix_post) %in%
+                                        c("b1", "b2", "b3", "alpha", "hccr_ir",
+                                          "hccr_enchb", "hccr_cc")]
+rownames(corrmatrix_post_40) <- c("beta1", "beta2", "beta3", "Relative infectiousness\nin HBeAg+",
+                                  "Rate ratio for HCC\nin HBeAg+ CHB",
+                                  "Rate ratio for HCC\nin HBeAg- CHB",
+                                  "Rate ratio for\nHCC in CC")
+colnames(corrmatrix_post_40) <- c("beta1", "beta2", "beta3", "Relative infectiousness\nin HBeAg+",
+                                  "Rate ratio for HCC\nin HBeAg+ CHB",
+                                  "Rate ratio for HCC\nin HBeAg- CHB",
+                                  "Rate ratio for\nHCC in CC")
+#tiff(file = "posterior_correlation_plot.tiff", width=300, height=300, units = "mm", res=300, pointsize = 0.99)
+corrplot(corrmatrix_post_40, method = "circle", tl.col="black",
+         tl.cex = 2, cl.cex = 1.5) # no clustering
+#dev.off()
+
 # Correlation plot
 corrplot(corrmatrix_post, method = "circle")
 # Clustered correlation plot (https://stackoverflow.com/questions/45896231/r-corrplot-with-clustering-default-dissimilarity-measure-for-correlation-matrix)
@@ -200,23 +407,10 @@ n_agecat <- length(ages)
 da <- 0.5
 
 # Risk of chronic carriage by age is a calibration target: Omit here
-#p_chronic_function <- matrix(NA, ncol = 183, nrow = n_agecat)
-#for (i in 1:183) {
-#  p_chronic_function[,i] <- c(rep(posterior$p_chronic_in_mtct[i],0.5/da),
-#                              exp(-posterior$p_chronic_function_r[i] *
-#                                    ages[which(ages == 0.5):n_agecat]^posterior$p_chronic_function_s[i]))
-#}
-
-#p_chronic_function <- gather(data.frame(p_chronic_function), key = "sim", value = "value")
-#p_chronic_function$age <- rep(ages)
-# Check:
-#nrow(p_chronic_function[p_chronic_function$age == 50,]) == 183
-#ggplot(p_chronic_function) +
-#  geom_line(aes(x=age, y = value, group = sim), col = "grey") +
-#  theme_classic()
 
 # Age-specific function of progression through IT and IR (IT=>IR and IR=>IC)
 # Rate from IT to IR
+
 eag_prog_function_it_ir <- matrix(NA, ncol = 183, nrow = n_agecat)
 for (i in 1:183) {
   eag_prog_function_it_ir[,i] <- posterior$pr_it_ir[i] * exp(posterior$eag_prog_function_rate[i] * ages)
@@ -236,6 +430,112 @@ eag_prog_function_ir_ic$age <- rep(ages)
 # Check:
 nrow(eag_prog_function_ir_ic[eag_prog_function_ir_ic$age == 50,]) == 183
 
+# Same with random prior sample:
+set.seed(123)
+random_sample <- sample(c(1:1000000), 183)
+prior_sample <- prior[random_sample,]
+
+eag_prog_function_it_ir2 <- matrix(NA, ncol = 183, nrow = n_agecat)
+for (i in 1:183) {
+  eag_prog_function_it_ir2[,i] <- prior_sample$pr_it_ir[i] * exp(prior_sample$eag_prog_function_rate[i] * ages)
+}
+eag_prog_function_it_ir2 <- gather(data.frame(eag_prog_function_it_ir2), key = "sim", value = "value")
+eag_prog_function_it_ir2$age <- rep(ages)
+
+# Rate from IR to IC
+eag_prog_function_ir_ic2 <- matrix(NA, ncol = 183, nrow = n_agecat)
+for (i in 1:183) {
+  eag_prog_function_ir_ic2[,i] <- prior_sample$pr_ir_ic[i] * exp(prior_sample$eag_prog_function_rate[i] * ages)
+}
+eag_prog_function_ir_ic2 <- gather(data.frame(eag_prog_function_ir_ic2), key = "sim", value = "value")
+eag_prog_function_ir_ic2$age <- rep(ages)
+
+# Age-specific progression from IR to CC (HBeAg-positive cirrhosis)
+
+pr_ir_cc_female_prior <- matrix(NA, ncol = 183, nrow = n_agecat)
+pr_ir_cc_female_posterior <- matrix(NA, ncol = 183, nrow = n_agecat)
+pr_ir_cc_male_prior <- matrix(NA, ncol = 183, nrow = n_agecat)
+pr_ir_cc_male_posterior <- matrix(NA, ncol = 183, nrow = n_agecat)
+
+for (i in 1:183) {
+  pr_ir_cc_female_prior[,i] <- c(rep(0, times = prior_sample$pr_ir_cc_age_threshold[i]/da),
+                                                        rep(prior_sample$pr_ir_cc_female[i], times = n_agecat - prior_sample$pr_ir_cc_age_threshold[i]/da))
+  pr_ir_cc_female_prior[,i] <- sapply(pr_ir_cc_female_prior[,i], function(x) min(x,5))  # annual rate cannot exceed 5
+  pr_ir_cc_male_prior[,i] <-  sapply(pr_ir_cc_female_prior[,i]*
+                                       prior_sample$cirrhosis_male_cofactor[i],
+                                       function(x) min(x,5))
+
+  pr_ir_cc_female_posterior[,i] <- c(rep(0, times = posterior$pr_ir_cc_age_threshold[i]/da),
+                                 rep(posterior$pr_ir_cc_female[i], times = n_agecat - posterior$pr_ir_cc_age_threshold[i]/da))
+  pr_ir_cc_female_posterior[,i] <- sapply(pr_ir_cc_female_posterior[,i], function(x) min(x,5))  # annual rate cannot exceed 5
+  pr_ir_cc_male_posterior[,i] <-  sapply(pr_ir_cc_female_posterior[,i]*
+                                           posterior$cirrhosis_male_cofactor[i],
+                                     function(x) min(x,5))
+}
+pr_ir_cc_female_prior <- gather(data.frame(pr_ir_cc_female_prior), key = "sim", value = "value")
+pr_ir_cc_female_prior$age <- rep(ages)
+pr_ir_cc_male_prior <- gather(data.frame(pr_ir_cc_male_prior), key = "sim", value = "value")
+pr_ir_cc_male_prior$age <- rep(ages)
+pr_ir_cc_female_posterior <- gather(data.frame(pr_ir_cc_female_posterior), key = "sim", value = "value")
+pr_ir_cc_female_posterior$age <- rep(ages)
+pr_ir_cc_male_posterior <- gather(data.frame(pr_ir_cc_male_posterior), key = "sim", value = "value")
+pr_ir_cc_male_posterior$age <- rep(ages)
+
+# Progression from ENCHB to CC varies by sex but not by age in the model
+
+# Combine all:
+progression_functions_combined <- rbind(
+  data.frame(type="Posterior", transition = "HBeAg+ infection to\nHBeAg+ CHB",
+             eag_prog_function_it_ir),
+  data.frame(type="Prior", transition = "HBeAg+ infection to\nHBeAg+ CHB",
+             eag_prog_function_it_ir2),
+  data.frame(type="Posterior", transition= "HBeAg+ CHB to\nHBeAg- infection",
+             eag_prog_function_ir_ic),
+  data.frame(type="Prior", transition="HBeAg+ CHB to\nHBeAg- infection",
+             eag_prog_function_ir_ic2),
+  data.frame(type="Posterior", transition= "HBeAg+ CHB to CC\n(female)",
+             pr_ir_cc_female_posterior),
+  data.frame(type="Prior", transition="HBeAg+ CHB to CC\n(female)",
+             pr_ir_cc_female_prior),
+  data.frame(type="Posterior", transition= "HBeAg+ CHB to CC\n(male)",
+             pr_ir_cc_male_posterior),
+  data.frame(type="Prior", transition="HBeAg+ CHB to CC\n(male)",
+             pr_ir_cc_male_prior)
+)
+progression_functions_combined$transition <- factor(progression_functions_combined$transition,
+                                                levels=c("HBeAg+ infection to\nHBeAg+ CHB",
+                                                         "HBeAg+ CHB to\nHBeAg- infection",
+                                                         "HBeAg+ CHB to CC\n(female)",
+                                                         "HBeAg+ CHB to CC\n(male)"))
+
+
+# Plot for thesis:
+#tiff(file = "prior_posterior_progression_rates.tiff", width=300, height=180, units = "mm", res=300, pointsize = 0.99)
+ggplot(progression_functions_combined) +
+  stat_summary(aes(x=age, y = value, fill = type, colour=type),
+               fun.min = function(x) quantile(x, 0.025),
+               fun.max = function(x) quantile(x, 0.975),
+               geom="ribbon", alpha = 0.1, linetype="dashed") +
+  stat_summary(aes(x=age, y = value, colour=type), fun = "median", geom="line") +
+  scale_fill_manual(values=c("Prior" = "grey30",
+                             "Posterior" = "red")) +
+  scale_colour_manual(values=c("Prior" = "black",
+                               "Posterior" = "red")) +
+  guides(color = guide_legend(reverse = TRUE),
+         fill = guide_legend(reverse = TRUE)) +
+  facet_wrap(~transition, ncol=2, scales="free") +
+  theme_classic() +
+  xlab("Age (years)") +
+  xlim(0,75) +
+  ylab("Progression rate (per person-year)") +
+  theme(legend.title=element_blank(),
+      legend.text=element_text(size=13),
+      strip.text = element_text(size = 13),
+      axis.text = element_text(size = 12),
+      axis.title = element_text(size = 13))
+#dev.off()
+
+# Just posterior:
 ggplot(eag_prog_function_it_ir) +
   stat_summary(aes(x=age, y = value),
                fun.min = function(x) quantile(x, 0.025),
@@ -262,41 +562,206 @@ ggplot(eag_prog_function_ir_ic) +
 # Though depends also what was possible in prior
 
 # Age-specific progression to HCC from all carrier compartments other than DCC
-# Represented by a shifted quadratic function that increases with age and
-# prevents people younger than 10 years to progress to HCC
-# ADAPTATION 18/06/19: add an intercept to allow switching off of age dependence
-#cancer_prog_function <- (parameters$cancer_prog_coefficient_female * (ages - parameters$cancer_age_threshold))^2  # Rate in females
-#cancer_prog_function <- cancer_prog_function *
-#  c(rep(0, times = parameters$cancer_age_threshold/da),
-#    rep(1, times = n_agecat - parameters$cancer_age_threshold/da))  # Set transition to 0 in <10 year olds
-#cancer_prog_female <- sapply(cancer_prog_function, function(x) min(x,1)) # Set maximum annual rate is 1
-#cancer_prog_male <- sapply(parameters$cancer_male_cofactor*cancer_prog_female, function(x) min(x,1))  # Rate in males, cannot exceed 1
-#cancer_prog_rates <- matrix(data = c(cancer_prog_female, cancer_prog_male),
-#                            nrow = n_agecat, ncol = 2)  # store in a matrix to apply to compartment
-#parameters$cancer_prog_rates <- cancer_prog_rates
 
-# Age-specific progression from IR to CC (HBeAg-positive cirrhosis)
-# ADAPTATION 18/06/19: addition of the cirrhosis male cofactor
-#pr_ir_cc_function <- c(rep(0, times = parameters$pr_ir_cc_age_threshold/da),
-#                       rep(parameters$pr_ir_cc_female, times = n_agecat - parameters$pr_ir_cc_age_threshold/da))
-#pr_ir_cc_function_female <- sapply(pr_ir_cc_function, function(x) min(x,5))  # annual rate cannot exceed 5
-#pr_ir_cc_function_male <- sapply(pr_ir_cc_function_female*parameters$cirrhosis_male_cofactor,
-#                                 function(x) min(x,5))
-#parameters$pr_ir_cc_function <- matrix(data = c(pr_ir_cc_function_female,
-#                                                pr_ir_cc_function_male),
-#                                       nrow = n_agecat, ncol = 2)  # store in a matrix to apply to compartment
+cancer_rates_female_ic_prior <- matrix(NA, ncol = 183, nrow = n_agecat)
+cancer_rates_female_ic_posterior <- matrix(NA, ncol = 183, nrow = n_agecat)
+cancer_rates_male_ic_prior <- matrix(NA, ncol = 183, nrow = n_agecat)
+cancer_rates_male_ic_posterior <- matrix(NA, ncol = 183, nrow = n_agecat)
+cancer_rates_female_it_prior <- matrix(NA, ncol = 183, nrow = n_agecat)
+cancer_rates_female_it_posterior <- matrix(NA, ncol = 183, nrow = n_agecat)
+cancer_rates_male_it_prior <- matrix(NA, ncol = 183, nrow = n_agecat)
+cancer_rates_male_it_posterior <- matrix(NA, ncol = 183, nrow = n_agecat)
+cancer_rates_female_ir_prior <- matrix(NA, ncol = 183, nrow = n_agecat)
+cancer_rates_female_ir_posterior <- matrix(NA, ncol = 183, nrow = n_agecat)
+cancer_rates_male_ir_prior <- matrix(NA, ncol = 183, nrow = n_agecat)
+cancer_rates_male_ir_posterior <- matrix(NA, ncol = 183, nrow = n_agecat)
+cancer_rates_female_enchb_prior <- matrix(NA, ncol = 183, nrow = n_agecat)
+cancer_rates_female_enchb_posterior <- matrix(NA, ncol = 183, nrow = n_agecat)
+cancer_rates_male_enchb_prior <- matrix(NA, ncol = 183, nrow = n_agecat)
+cancer_rates_male_enchb_posterior <- matrix(NA, ncol = 183, nrow = n_agecat)
+cancer_rates_female_cc_prior <- matrix(NA, ncol = 183, nrow = n_agecat)
+cancer_rates_female_cc_posterior <- matrix(NA, ncol = 183, nrow = n_agecat)
+cancer_rates_male_cc_prior <- matrix(NA, ncol = 183, nrow = n_agecat)
+cancer_rates_male_cc_posterior <- matrix(NA, ncol = 183, nrow = n_agecat)
 
-# Sex-specific progression from ENCHB to CC (no age effect)
-# Shimakawa 2016 found no association between current age and development of significant liver fibrosis,
-# so I remove this age dependence
-#pr_enchb_cc_function <- c(rep(parameters$pr_enchb_cc_female, n_agecat))  # same rate at each age
-#pr_enchb_cc_function_female <- sapply(pr_enchb_cc_function, function(x) min(x,5)) # Set maximum annual rate to 5
-#pr_enchb_cc_function_male <- sapply(parameters$cirrhosis_male_cofactor *
-#                                      pr_enchb_cc_function_female, function(x) min(x,5))  # Rate in males, cannot exceed 5
-#pr_enchb_cc_rates <- matrix(data = c(pr_enchb_cc_function_female,
-#                                     pr_enchb_cc_function_male),
-#                            nrow = n_agecat, ncol = 2)
-#parameters$pr_enchb_cc_rates <- pr_enchb_cc_rates
+for (i in 1:183) {
+  cancer_rates_female_ic_prior[,i] <- (prior_sample$cancer_prog_coefficient_female[i] * (ages - prior_sample$cancer_age_threshold[i]))^2  # Rate in females
+  cancer_rates_female_ic_prior[,i]  <- cancer_rates_female_ic_prior[,i] *
+    c(rep(0, times = prior_sample$cancer_age_threshold[i]/da),
+      rep(1, times = n_agecat - prior_sample$cancer_age_threshold[i]/da))  # Set transition to 0 in <10 year olds
+  cancer_rates_female_ic_prior[,i]  <- sapply(cancer_rates_female_ic_prior[,i], function(x) min(x,1)) # Set maximum annual rate is 1
+
+  cancer_rates_male_ic_prior[,i] <- sapply(prior_sample$cancer_male_cofactor[i]*
+                                             cancer_rates_female_ic_prior[,i], function(x) min(x,1))  # Rate in males, cannot exceed 1
+
+  cancer_rates_female_it_prior[,i] <- prior_sample$hccr_it[i]*
+                                             cancer_rates_female_ic_prior[,i]
+  cancer_rates_male_it_prior[,i] <- prior_sample$hccr_it[i]*
+                                               cancer_rates_male_ic_prior[,i]
+
+  cancer_rates_female_ir_prior[,i] <- prior_sample$hccr_ir[i]*
+    cancer_rates_female_ic_prior[,i]
+  cancer_rates_male_ir_prior[,i] <- prior_sample$hccr_ir[i]*
+    cancer_rates_male_ic_prior[,i]
+
+  cancer_rates_female_enchb_prior[,i] <- prior_sample$hccr_enchb[i]*
+    cancer_rates_female_ic_prior[,i]
+  cancer_rates_male_enchb_prior[,i] <- prior_sample$hccr_enchb[i]*
+    cancer_rates_male_ic_prior[,i]
+
+  cancer_rates_female_cc_prior[,i] <- prior_sample$hccr_cc[i]*
+    cancer_rates_female_ic_prior[,i]
+  cancer_rates_male_cc_prior[,i] <- prior_sample$hccr_cc[i]*
+    cancer_rates_male_ic_prior[,i]
+
+  cancer_rates_female_ic_posterior[,i] <- (posterior$cancer_prog_coefficient_female[i] * (ages - posterior$cancer_age_threshold[i]))^2  # Rate in females
+  cancer_rates_female_ic_posterior[,i]  <- cancer_rates_female_ic_posterior[,i] *
+    c(rep(0, times = posterior$cancer_age_threshold[i]/da),
+      rep(1, times = n_agecat - posterior$cancer_age_threshold[i]/da))  # Set transition to 0 in <10 year olds
+  cancer_rates_female_ic_posterior[,i]  <- sapply(cancer_rates_female_ic_posterior[,i], function(x) min(x,1)) # Set maximum annual rate is 1
+
+  cancer_rates_male_ic_posterior[,i] <- sapply(posterior$cancer_male_cofactor[i]*
+                                             cancer_rates_female_ic_posterior[,i], function(x) min(x,1))  # Rate in males, cannot exceed 1
+
+  cancer_rates_female_it_posterior[,i] <- posterior$hccr_it[i]*
+    cancer_rates_female_ic_posterior[,i]
+  cancer_rates_male_it_posterior[,i] <- posterior$hccr_it[i]*
+    cancer_rates_male_ic_posterior[,i]
+
+  cancer_rates_female_ir_posterior[,i] <- posterior$hccr_ir[i]*
+    cancer_rates_female_ic_posterior[,i]
+  cancer_rates_male_ir_posterior[,i] <- posterior$hccr_ir[i]*
+    cancer_rates_male_ic_posterior[,i]
+
+  cancer_rates_female_enchb_posterior[,i] <- posterior$hccr_enchb[i]*
+    cancer_rates_female_ic_posterior[,i]
+  cancer_rates_male_enchb_posterior[,i] <- posterior$hccr_enchb[i]*
+    cancer_rates_male_ic_posterior[,i]
+
+  cancer_rates_female_cc_posterior[,i] <- posterior$hccr_cc[i]*
+    cancer_rates_female_ic_posterior[,i]
+  cancer_rates_male_cc_posterior[,i] <- posterior$hccr_cc[i]*
+    cancer_rates_male_ic_posterior[,i]
+
+}
+# Long format:
+cancer_rates_female_ic_prior <- gather(data.frame(cancer_rates_female_ic_prior), key = "sim", value = "value")
+cancer_rates_female_ic_prior$age <- rep(ages)
+cancer_rates_male_ic_prior <- gather(data.frame(cancer_rates_male_ic_prior), key = "sim", value = "value")
+cancer_rates_male_ic_prior$age <- rep(ages)
+cancer_rates_female_it_prior <- gather(data.frame(cancer_rates_female_it_prior), key = "sim", value = "value")
+cancer_rates_female_it_prior$age <- rep(ages)
+cancer_rates_male_it_prior <- gather(data.frame(cancer_rates_male_it_prior), key = "sim", value = "value")
+cancer_rates_male_it_prior$age <- rep(ages)
+cancer_rates_female_ir_prior <- gather(data.frame(cancer_rates_female_ir_prior), key = "sim", value = "value")
+cancer_rates_female_ir_prior$age <- rep(ages)
+cancer_rates_male_ir_prior <- gather(data.frame(cancer_rates_male_ir_prior), key = "sim", value = "value")
+cancer_rates_male_ir_prior$age <- rep(ages)
+cancer_rates_female_enchb_prior <- gather(data.frame(cancer_rates_female_enchb_prior), key = "sim", value = "value")
+cancer_rates_female_enchb_prior$age <- rep(ages)
+cancer_rates_male_enchb_prior <- gather(data.frame(cancer_rates_male_enchb_prior), key = "sim", value = "value")
+cancer_rates_male_enchb_prior$age <- rep(ages)
+cancer_rates_female_cc_prior <- gather(data.frame(cancer_rates_female_cc_prior), key = "sim", value = "value")
+cancer_rates_female_cc_prior$age <- rep(ages)
+cancer_rates_male_cc_prior <- gather(data.frame(cancer_rates_male_cc_prior), key = "sim", value = "value")
+cancer_rates_male_cc_prior$age <- rep(ages)
+
+cancer_rates_female_ic_posterior <- gather(data.frame(cancer_rates_female_ic_posterior), key = "sim", value = "value")
+cancer_rates_female_ic_posterior$age <- rep(ages)
+cancer_rates_male_ic_posterior <- gather(data.frame(cancer_rates_male_ic_posterior), key = "sim", value = "value")
+cancer_rates_male_ic_posterior$age <- rep(ages)
+cancer_rates_female_it_posterior <- gather(data.frame(cancer_rates_female_it_posterior), key = "sim", value = "value")
+cancer_rates_female_it_posterior$age <- rep(ages)
+cancer_rates_male_it_posterior <- gather(data.frame(cancer_rates_male_it_posterior), key = "sim", value = "value")
+cancer_rates_male_it_posterior$age <- rep(ages)
+cancer_rates_female_ir_posterior <- gather(data.frame(cancer_rates_female_ir_posterior), key = "sim", value = "value")
+cancer_rates_female_ir_posterior$age <- rep(ages)
+cancer_rates_male_ir_posterior <- gather(data.frame(cancer_rates_male_ir_posterior), key = "sim", value = "value")
+cancer_rates_male_ir_posterior$age <- rep(ages)
+cancer_rates_female_enchb_posterior <- gather(data.frame(cancer_rates_female_enchb_posterior), key = "sim", value = "value")
+cancer_rates_female_enchb_posterior$age <- rep(ages)
+cancer_rates_male_enchb_posterior <- gather(data.frame(cancer_rates_male_enchb_posterior), key = "sim", value = "value")
+cancer_rates_male_enchb_posterior$age <- rep(ages)
+cancer_rates_female_cc_posterior <- gather(data.frame(cancer_rates_female_cc_posterior), key = "sim", value = "value")
+cancer_rates_female_cc_posterior$age <- rep(ages)
+cancer_rates_male_cc_posterior <- gather(data.frame(cancer_rates_male_cc_posterior), key = "sim", value = "value")
+cancer_rates_male_cc_posterior$age <- rep(ages)
+
+# Combine into dataframe: (type, sex, disease_state)
+cancer_rates <-rbind(
+  data.frame(type="Prior", sex="Female", disease_state="ic",
+             cancer_rates_female_ic_prior),
+  data.frame(type="Prior", sex="Female", disease_state="it",
+             cancer_rates_female_it_prior),
+  data.frame(type="Prior", sex="Female", disease_state="ir",
+             cancer_rates_female_ir_prior),
+  data.frame(type="Prior", sex="Female", disease_state="enchb",
+             cancer_rates_female_enchb_prior),
+  data.frame(type="Prior", sex="Female", disease_state="cc",
+             cancer_rates_female_cc_prior),
+  data.frame(type="Prior", sex="Male", disease_state="ic",
+             cancer_rates_male_ic_prior),
+  data.frame(type="Prior", sex="Male", disease_state="it",
+             cancer_rates_male_it_prior),
+  data.frame(type="Prior", sex="Male", disease_state="ir",
+             cancer_rates_male_ir_prior),
+  data.frame(type="Prior", sex="Male", disease_state="enchb",
+             cancer_rates_male_enchb_prior),
+  data.frame(type="Prior", sex="Male", disease_state="cc",
+             cancer_rates_male_cc_prior),
+  data.frame(type="Posterior", sex="Female", disease_state="ic",
+             cancer_rates_female_ic_posterior),
+  data.frame(type="Posterior", sex="Female", disease_state="it",
+             cancer_rates_female_it_posterior),
+  data.frame(type="Posterior", sex="Female", disease_state="ir",
+             cancer_rates_female_ir_posterior),
+  data.frame(type="Posterior", sex="Female", disease_state="enchb",
+             cancer_rates_female_enchb_posterior),
+  data.frame(type="Posterior", sex="Female", disease_state="cc",
+             cancer_rates_female_cc_posterior),
+  data.frame(type="Posterior", sex="Male", disease_state="ic",
+             cancer_rates_male_ic_posterior),
+  data.frame(type="Posterior", sex="Male", disease_state="it",
+             cancer_rates_male_it_posterior),
+  data.frame(type="Posterior", sex="Male", disease_state="ir",
+             cancer_rates_male_ir_posterior),
+  data.frame(type="Posterior", sex="Male", disease_state="enchb",
+             cancer_rates_male_enchb_posterior),
+  data.frame(type="Posterior", sex="Male", disease_state="cc",
+             cancer_rates_male_cc_posterior)
+)
+
+cancer_rates$disease_state <- factor(cancer_rates$disease_state)
+levels(cancer_rates$disease_state) <- list("HBeAg- infection"="ic",
+                        "HBeAg+ infection"="it",
+                        "HBeAg- CHB"="enchb",
+                        "HBeAg+ CHB"="ir",
+                        "CC"="cc")
+
+#tiff(file = "prior_posterior_cancer_rates.tiff", width=300, height=130, units = "mm", res=300, pointsize = 0.99)
+ggplot(cancer_rates) +
+  stat_summary(aes(x=age, y = value*100, fill = type, colour=type),
+               fun.min = function(x) quantile(x, 0.025),
+               fun.max = function(x) quantile(x, 0.975),
+               geom="ribbon", alpha = 0.1, linetype="dashed") +
+  stat_summary(aes(x=age, y = value*100, colour=type), fun = "median", geom="line") +
+  scale_fill_manual(values=c("Prior" = "grey30",
+                             "Posterior" = "red")) +
+  scale_colour_manual(values=c("Prior" = "black",
+                               "Posterior" = "red")) +
+  guides(color = guide_legend(reverse = TRUE),
+         fill = guide_legend(reverse = TRUE)) +
+  facet_wrap(sex~disease_state, ncol=5, scales="free_y") +
+  theme_classic() +
+  xlab("Age (years)") +
+  xlim(0,75) +
+  ylab("Progression rates to hepatocellular carcinoma\n(per 100 person-years)") +
+  theme(legend.title=element_blank(),
+        legend.text=element_text(size=13),
+        strip.text = element_text(size = 13),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size = 13))
+#dev.off()
 
 # Age-specific HBsAg loss (addition by me)
 # ADAPTATION 26/06/19: express this as a linear function with age based on analysis of Yusuke's data
