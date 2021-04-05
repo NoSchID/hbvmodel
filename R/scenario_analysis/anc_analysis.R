@@ -61,12 +61,17 @@ anc_2030_monit_sim7 <- readRDS(paste0(out_path, "anc1_2030_no_rescreen_monit_sim
 anc_2030_monit_sim7 <- anc_2030_monit_sim7[[1]]
 anc_2040_monit_sim7 <- readRDS(paste0(out_path, "anc1_2040_no_rescreen_monit_sim7_290321.rds"))
 anc_2040_monit_sim7 <- anc_2040_monit_sim7[[1]]
+
+
+# PREVENTION SIMULATIONS
 anc_2100_monit_sim7 <- readRDS(paste0(out_path, "anc1_2100_no_rescreen_monit_sim7_290321.rds"))
 anc_2100_monit_sim7 <- anc_2100_monit_sim7[[1]]
+anc_2100_monit_sim7_bd <- readRDS(paste0(out_path, "anc1_2100_no_rescreen_monit_sim7_bd_290321.rds"))
+anc_2100_monit_sim7_bd <- anc_2100_monit_sim7_bd[[1]]
+anc_2100_monit_sim7_ppt <- readRDS(paste0(out_path, "anc1_2100_no_rescreen_monit_sim7_bd_ppt_290321.rds"))
+anc_2100_monit_sim7_ppt <- anc_2100_monit_sim7_ppt[[1]]
 
-
-
-# 1) Cost-effectiveness of ANC compared to population-based screening (no PMTCT) ----
+## 1) Cost-effectiveness of ANC compared to population-based screening (no PMTCT) ----
 # Create data frame with discounted costs and outcomes ----
 annual_discounting_rate <- 0.03
 time_horizon_year <- 2100
@@ -333,3 +338,129 @@ icer_result
 # Strategies up until combination of 2020 population-based screen + ANC until 2040
 # are cost-effective. Repeat population-based screen in 2030 is not dominated
 # but under current CE threshold not cost-effective compared to ANC strategies
+
+## 2) Elimination analysis with BD and PPT ----
+# Reduce chronic infection incidence by 90% from 2015 ----
+
+# New chronic infections in 2015
+out2$timeseries$total_chronic_infections[out2$timeseries$total_chronic_infections$time==2015,
+                                         -c(1:2)]
+# Reduction by given year (status quo):
+quantile((out2$timeseries$total_chronic_infections[out2$timeseries$total_chronic_infections$time==2015,
+                                                   -c(1:2)]-
+            out2$timeseries$total_chronic_infections[out2$timeseries$total_chronic_infections$time==2030,
+                                                     -c(1:2)])/
+           out2$timeseries$total_chronic_infections[out2$timeseries$total_chronic_infections$time==2015,
+                                                    -c(1:2)],
+         c(0.5,0.025,0.975))
+# In 2030: 60% (41-74%)
+# Median >=90% in 2054
+# Lower percentile >=90% in year 2077
+
+# Treatment in ANC without added prevention:
+quantile((anc_2100_monit_sim7$timeseries$total_chronic_infections[
+  anc_2100_monit_sim7$timeseries$total_chronic_infections$time==2015,
+                                                   -c(1:2)]-
+    anc_2100_monit_sim7$timeseries$total_chronic_infections[
+      anc_2100_monit_sim7$timeseries$total_chronic_infections$time==2053,
+                                                     -c(1:2)])/
+    anc_2100_monit_sim7$timeseries$total_chronic_infections[
+      anc_2100_monit_sim7$timeseries$total_chronic_infections$time==2015,
+                                                    -c(1:2)],
+         c(0.5,0.025,0.975))
+# In 2030: 62% (42-77%)
+# Median >=90% in 2053
+
+# Treatment in ANC with added BD:
+quantile((anc_2100_monit_sim7_bd$timeseries$total_chronic_infections[
+  anc_2100_monit_sim7_bd$timeseries$total_chronic_infections$time==2015,
+  -c(1:2)]-
+    anc_2100_monit_sim7_bd$timeseries$total_chronic_infections[
+      anc_2100_monit_sim7_bd$timeseries$total_chronic_infections$time==2038,
+      -c(1:2)])/
+    anc_2100_monit_sim7_bd$timeseries$total_chronic_infections[
+      anc_2100_monit_sim7_bd$timeseries$total_chronic_infections$time==2015,
+      -c(1:2)],
+  c(0.5,0.025,0.975))
+# In 2030: 83% (68-89%)
+# Median >=90% in 2039
+
+# Treatment in ANC with added BD and PPT:
+quantile((anc_2100_monit_sim7_ppt$timeseries$total_chronic_infections[
+  anc_2100_monit_sim7_ppt$timeseries$total_chronic_infections$time==2015,
+  -c(1:2)]-
+    anc_2100_monit_sim7_ppt$timeseries$total_chronic_infections[
+      anc_2100_monit_sim7_ppt$timeseries$total_chronic_infections$time==2037,
+      -c(1:2)])/
+    anc_2100_monit_sim7_ppt$timeseries$total_chronic_infections[
+      anc_2100_monit_sim7_ppt$timeseries$total_chronic_infections$time==2015,
+      -c(1:2)],
+  c(0.5,0.025,0.975))
+# In 2030: 85% (69-90%)
+# Median >=90% in 2037
+
+# Achieve <=0.1% HBsAg prevalence among <5 year olds ----
+
+# Add out2_carriers
+
+# Treatment only
+quantile(anc_2100_monit_sim7$timeseries$prev_under5[
+  anc_2100_monit_sim7$timeseries$prev_under5$time==2049,-c(1,2)]*100,
+  c(0.5,0.025,0.975))
+# In 2030: 0.41% (0.08-1.55)
+# Median <= 0.1% in 2049
+
+# Treatment + BD
+quantile(anc_2100_monit_sim7_bd$timeseries$prev_under5[
+  anc_2100_monit_sim7_bd$timeseries$prev_under5$time==2032,-c(1,2)]*100,
+  c(0.5,0.025,0.975))
+# In 2030: 0.13% (0.03-0.49)
+# Median <= 0.1% in 2032
+
+# Treatment + BD + PPT
+quantile(anc_2100_monit_sim7_ppt$timeseries$prev_under5[
+  anc_2100_monit_sim7_ppt$timeseries$prev_under5$time==2031,-c(1,2)]*100,
+  c(0.5,0.025,0.975))
+# In 2030: 0.11% (0.02-0.40)
+# Median <= 0.1% in 2031
+
+
+
+# Reduce HBV deaths by 65% from 2015 ----
+
+# Status quo:
+quantile((out2$timeseries$total_hbv_deaths[out2$timeseries$total_hbv_deaths$time==2015,
+                                           -c(1:2)]-
+            out2$timeseries$total_hbv_deaths[out2$timeseries$total_hbv_deaths$time==2030,
+                                             -c(1:2)])/
+           out2$timeseries$total_hbv_deaths[out2$timeseries$total_hbv_deaths$time==2015,
+                                            -c(1:2)],
+         c(0.5,0.025,0.975))
+# In 2030: 10% (-7-34%)
+# Median >=65% in 2062
+
+# Treatment only:
+quantile((anc_2100_monit_sim7$timeseries$total_hbv_deaths[
+  anc_2100_monit_sim7$timeseries$total_hbv_deaths$time==2015,-c(1:2)]-
+    anc_2100_monit_sim7$timeseries$total_hbv_deaths[
+      anc_2100_monit_sim7$timeseries$total_hbv_deaths$time==2049,-c(1:2)])/
+    anc_2100_monit_sim7$timeseries$total_hbv_deaths[
+      anc_2100_monit_sim7$timeseries$total_hbv_deaths$time==2015,-c(1:2)],
+         c(0.5,0.025,0.975))
+# In 2030: 60% (48-68%)
+# Median >=65% in 2049
+
+plot(x=anc_2100_monit_sim7$timeseries$total_hbv_deaths$time,
+     y = anc_2100_monit_sim7$timeseries$total_hbv_deaths[,3])
+plot(x=monit_out7$timeseries$total_hbv_deaths$time,
+     y = monit_out7$timeseries$total_hbv_deaths[,3])
+plot(x=anc_2020_monit_0$timeseries$total_hbv_deaths$time,
+     y = anc_2020_monit_0$timeseries$total_hbv_deaths[,3])
+# Something seems off about the ANC - how can mortality be reduced as much as for the pop one?
+
+plot(x=anc_2040_monit_sim7$timeseries$total_hbv_deaths$time,
+     y = anc_2040_monit_sim7$timeseries$total_hbv_deaths[,5])
+
+# CHECK ISSUE HERE WITH INCIDENCE CALCULATION OF DEATHS
+
+

@@ -457,6 +457,22 @@ extract_time_series <- function(output_file, scenario_label) {
   # Total births
   total_births <- data.frame(total_births = tail(output_file$births$incident_number,-1))
 
+  # HBV-related deaths per timestep and per population
+  total_hbv_deaths <- data.frame(total_hbv_deaths = tail(output_file$hbv_deaths$incident_number_total+
+                                                           output_file$screened_hbv_deaths$incident_number_total+
+                                                           output_file$treated_hbv_deaths$incident_number_total+
+                                                           output_file$negative_hbv_deaths$incident_number_total, -1),
+                                 hbv_deaths_male = tail(output_file$hbv_deaths$incident_number_male+
+                                                          output_file$screened_hbv_deaths$incident_number_male+
+                                                          output_file$treated_hbv_deaths$incident_number_male+
+                                                          output_file$negative_hbv_deaths$incident_number_male, -1))
+  total_hbv_deaths$total_hbv_deaths_rate <- total_hbv_deaths$total_hbv_deaths/
+    head(output_file$pop_total$pop_total,-1)
+  total_hbv_deaths$hbv_deaths_rate_male <-  total_hbv_deaths$hbv_deaths_male/
+    head(output_file$pop_total$pop_male,-1)
+  total_hbv_deaths$total_hbv_deaths_age_standardised_rate <-
+    calculate_age_standardised_hbv_deaths_rate(output_file)
+
   # If there are repeat screening events, need to adapt those numbers to account for
   # reset of cumulative count:
   # In this case overwrite previous values
@@ -471,6 +487,16 @@ extract_time_series <- function(output_file, scenario_label) {
     out_cum_chronic_births <- unlist(output_file$full_output[,grepl("^cum_chronic_births",names(output_file$full_output))])
 
     out_cum_births <- unlist(select(output_file$full_output, contains("cum_births")))
+
+    out_cum_total_hbv_deathsf <- output_file$full_output[,grepl("^cum_hbv_deathsf.",names(output_file$full_output))]+
+      output_file$full_output[,grepl("^cum_screened_hbv_deathsf.",names(output_file$full_output))]+
+      output_file$full_output[,grepl("^cum_treated_hbv_deathsf.",names(output_file$full_output))] +
+      output_file$full_output[,grepl("^cum_negative_hbv_deathsf.",names(output_file$full_output))]
+
+    out_cum_total_hbv_deathsm <- output_file$full_output[,grepl("^cum_hbv_deathsm.",names(output_file$full_output))]+
+      output_file$full_output[,grepl("^cum_screened_hbv_deathsm.",names(output_file$full_output))]+
+      output_file$full_output[,grepl("^cum_treated_hbv_deathsm.",names(output_file$full_output))] +
+      output_file$full_output[,grepl("^cum_negative_hbv_deathsm.",names(output_file$full_output))]
 
     # Calculate incidence
     horizontal_chronic_infections_female <- data.frame(incident_number = calculate_incident_numbers(out_cum_chronic_infectionsf))
@@ -493,6 +519,14 @@ extract_time_series <- function(output_file, scenario_label) {
                          incident_number = calculate_incident_numbers(out_cum_births))
     names(births) <- c("time", "incident_number")
 
+    total_hbv_deaths_female <- data.frame(incident_number =
+                                            calculate_incident_numbers(out_cum_total_hbv_deathsf))
+    names(total_hbv_deaths_female) <- sprintf("incident_number%g",ages)
+
+    total_hbv_deaths_male <- data.frame(incident_number =
+                                            calculate_incident_numbers(out_cum_total_hbv_deathsm))
+    names(total_hbv_deaths_male) <- sprintf("incident_number%g",ages)
+
     # Total number of incident chronic infections from horizontal transmission and MTCT per time step
     incident_chronic_infections <- data.frame(time = output_file$time,
                                               horizontal_chronic_infections = rowSums(horizontal_chronic_infections_female) +
@@ -500,6 +534,11 @@ extract_time_series <- function(output_file, scenario_label) {
                                               horizontal_negative_chronic_infections = rowSums(horizontal_negative_chronic_infections_female) +
                                                 rowSums(horizontal_negative_chronic_infections_male),
                                               chronic_births = inc_chronic_births)
+
+    incident_hbv_deaths <- data.frame(time = output_file$time,
+                                      total_hbv_deaths = rowSums(total_hbv_deaths_male) +
+                                        rowSums(total_hbv_deaths_female),
+                                      hbv_deaths_male = rowSums(total_hbv_deaths_male))
 
     # Adapt numbers in years with count reset
     years_of_reset <- c(output_file$input_parameters$screening_years, output_file$input_parameters$repeat_screening_years)+0.5
@@ -516,6 +555,12 @@ extract_time_series <- function(output_file, scenario_label) {
     births$incident_number[which(output_file$time %in% c(years_of_reset))] <-
       out_cum_births[which(output_file$time %in% c(years_of_reset))]
 
+    incident_hbv_deaths$total_hbv_deaths[which(output_file$time %in% c(years_of_reset))] <-
+      rowSums(out_cum_total_hbv_deathsf+out_cum_total_hbv_deathsm)[which(output_file$time %in% c(years_of_reset))]
+
+    incident_hbv_deaths$hbv_deaths_male[which(output_file$time %in% c(years_of_reset))] <-
+      rowSums(out_cum_total_hbv_deathsm)[which(output_file$time %in% c(years_of_reset))]
+
       # Overwrite output objects
     total_chronic_incidence <-
       data.frame(total_chronic_infections =
@@ -528,27 +573,23 @@ extract_time_series <- function(output_file, scenario_label) {
 
     total_births <- data.frame(total_births = tail(births$incident_number,-1))
 
-  }
+    total_hbv_deaths <- data.frame(total_hbv_deaths = tail(incident_hbv_deaths$total_hbv_deaths, -1),
+                                   hbv_deaths_male = tail(incident_hbv_deaths$hbv_deaths_male, -1))
+    total_hbv_deaths$total_hbv_deaths_rate <- total_hbv_deaths$total_hbv_deaths/
+      head(output_file$pop_total$pop_total,-1)
+    total_hbv_deaths$hbv_deaths_rate_male <-  total_hbv_deaths$hbv_deaths_male/
+      head(output_file$pop_total$pop_male,-1)
 
-  # HBV-related deaths per timestep and per population
-  total_hbv_deaths <- data.frame(total_hbv_deaths = tail(output_file$hbv_deaths$incident_number_total+
-                                   output_file$screened_hbv_deaths$incident_number_total+
-                                   output_file$treated_hbv_deaths$incident_number_total+
-                                     output_file$negative_hbv_deaths$incident_number_total, -1),
-                                 hbv_deaths_male = tail(output_file$hbv_deaths$incident_number_male+
-                                   output_file$screened_hbv_deaths$incident_number_male+
-                                   output_file$treated_hbv_deaths$incident_number_male+
-                                     output_file$negative_hbv_deaths$incident_number_male, -1))
-  total_hbv_deaths$total_hbv_deaths_rate <- total_hbv_deaths$total_hbv_deaths/
-                                                head(output_file$pop_total$pop_total,-1)
-  total_hbv_deaths$hbv_deaths_rate_male <-  total_hbv_deaths$hbv_deaths_male/
-    head(output_file$pop_total$pop_male,-1)
-  total_hbv_deaths$total_hbv_deaths_age_standardised_rate <-
-    calculate_age_standardised_hbv_deaths_rate(output_file)
+    # Age-standardised rate not updated
+    #total_hbv_deaths$total_hbv_deaths_age_standardised_rate <-
+    #  calculate_age_standardised_hbv_deaths_rate(output_file)
+
+  }
 
   outcome_df <- cbind(time = head(output_file$time, -1),
                       scenario = scenario_label,
-                      total_prev,prev_under_5, total_chronic_incidence, total_hbv_deaths, total_births)
+                      total_prev,prev_under_5, total_chronic_incidence, total_hbv_deaths,
+                      total_births)
 
 
   #return(list(total_prev = total_prev,
