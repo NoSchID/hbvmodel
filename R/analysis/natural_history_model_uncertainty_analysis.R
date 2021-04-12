@@ -248,7 +248,9 @@ prior_posterior_sd$rel_red <- prior_posterior_sd$abs_red/
 # prior SD. Overall variance in prior and posterior is shown by COV.
 
 
-# Mood's median test corrected for multiple testing ----
+# Fligner Killeen test for equality of variance corrected for multiple testing and summary table ----
+
+# Mood's median test: drop this one
 median.test <- function(x, y){
   z <- c(x, y)
   g <- rep(1:2, c(length(x), length(y)))
@@ -264,6 +266,25 @@ for (i in 1:32) {
 p_adjusted <- p.adjust(p, method = "holm", n = length(p))
 
 View(cbind(colnames(posterior), p_adjusted))
+
+# Fligner Killeen test for homogeneity of variance
+# Combine prior and posterior into 1 df
+prior_posterior_full_df <- rbind(cbind(type="prior", gather(prior, key = "parameter", value = "sim")),
+  cbind(type="posterior", gather(posterior, key = "parameter", value = "sim")))
+
+p <- rep(0,32)
+for (i in 1:32) {
+  p[i] <- fligner.test(sim ~ type, data = subset(prior_posterior_full_df,
+                                                 parameter==unique(prior_posterior_full_df$parameter)[i]))$p.value
+  names(p)[i] <- unique(prior_posterior_full_df$parameter)[i]
+}
+p_adjusted <- p.adjust(p, method = "holm", n = length(p))
+
+# Add this manually in Excel table
+p_adjusted
+test <- data.frame(parameter=names(p_adjusted), adjusted_p_value = p_adjusted)
+test$parameter <- factor(test$parameter)
+levels(test$parameter) <- parameter_names
 
 # Combine in table
 prior_posterior_summary$parameter==prior_posterior_sd$parameter

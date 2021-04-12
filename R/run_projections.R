@@ -16,7 +16,7 @@ load(here("analysis_input", "scenario_wpl1_parms.Rdata"))
 
 sim <- apply(params_mat_accepted_kmeans[1,],1,
              function(x)
-               run_model(sim_duration = runtime, default_parameter_list =scenario_a1_it_parms,
+               run_model(sim_duration = runtime, default_parameter_list =scenario_anc1_it_parms,
                          parms_to_change =
                            list(b1 = as.list(x)$b1,
                                 b2 = as.list(x)$b2,
@@ -59,22 +59,20 @@ sim <- apply(params_mat_accepted_kmeans[1,],1,
                                 #monitoring_rate = c(rep(0, length(which(ages==0):which(ages==14.5))),
                                 #                    rep(1/5, length(which(ages==15):which(ages==29.5))),
                                 #                    rep(0, length(which(ages==30):which(ages==99.5)))),
-                                apply_repeat_screen = 0,
+                                apply_repeat_screen = 1,
                                 #min_age_to_screen = 15,
                                 #max_age_to_screen = 29.5,
                                 #min_age_to_repeat_screen = 15,
                                 #max_age_to_repeat_screen = 49.5,
-                                repeat_screening_years = c(2030)),
+                                repeat_screening_years = seq(2020.5,2039.5,0.5)),
                                 drop_timesteps_before = 1960,
-                         scenario = "vacc"))
+                         scenario = "vacc_screen"))
 
 out <- code_model_output(sim[[1]])
 outpath <- out
 
 siml <- list(sim[[1]], sim[[1]])
 out <- lapply(siml, code_model_output)
-
-
 # Need to extract eAg-positives, eAg-negatives+ treated carriers
 # eAg negatives are carriers-eAgpositives - treated carriers
 
