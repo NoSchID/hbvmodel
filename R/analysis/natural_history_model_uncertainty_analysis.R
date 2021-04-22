@@ -18,9 +18,12 @@ carriers_by_age <- readRDS("C:/Users/Nora Schmit/Documents/Model development/hbv
 compartments_by_age <- readRDS("C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/kmeans_full_output/out_sq_compartment_prevalence_by_age.rds")
 disease_outcomes_by_age <- readRDS("C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/kmeans_full_output/out_sq_disease_outcomes_by_age.rds")
 
+out2 <- readRDS("C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/monitoring_frequency/out2_status_quo_301120.rds")
+out2 <- out2[[1]]
 
 prior <- params_mat
 posterior <- params_mat_accepted_kmeans
+
 
 # Test for cost averted: Incident HCC cases in 1999 (ignore) ----
 # Cum cases in 1992-cum cases in 1991
@@ -248,7 +251,138 @@ prior_posterior_sd$rel_red <- prior_posterior_sd$abs_red/
 # prior SD. Overall variance in prior and posterior is shown by COV.
 
 
-# Fligner Killeen test for equality of variance corrected for multiple testing and summary table ----
+# Analysis of the prior and posterior interquartile range ----
+
+posterior_iqr <- gather(params_mat_accepted_kmeans, key = "parameter", value = "sim") %>%
+  group_by(parameter) %>%
+  summarise(post_iqr = quantile(sim, prob = 0.75)-quantile(sim, prob = 0.25),
+            post_rel_iqr = (quantile(sim, prob = 0.75)-quantile(sim, prob = 0.25))/
+              median(sim))
+
+prior_iqr <- gather(params_mat, key = "parameter", value = "sim") %>%
+  group_by(parameter) %>%
+  summarise(prior_iqr = quantile(sim, prob = 0.75)-quantile(sim, prob = 0.25),
+            prior_rel_iqr = (quantile(sim, prob = 0.75)-quantile(sim, prob = 0.25))/
+              median(sim))
+
+prior_posterior_iqr <- left_join(prior_iqr, posterior_iqr, by ="parameter")
+prior_posterior_iqr$abs_red <- prior_posterior_iqr$prior_iqr-
+  prior_posterior_iqr$post_iqr
+prior_posterior_iqr$rel_red <- prior_posterior_iqr$abs_red/
+  prior_posterior_iqr$prior_iqr
+
+# Kolmogorov-Smirnov Test
+p <- rep(0,32)
+for (i in 1:32) {
+  p[i] <- ks.test(prior[,colnames(prior)==unique(colnames(prior))[i]],
+                  posterior[,colnames(posterior)==unique(colnames(prior))[i]])$p.value
+  names(p)[i] <- unique(colnames(prior))[i]
+}
+p_adjusted <- p.adjust(p, method = "holm", n = length(p))
+p_adjusted[which(p_adjusted==0)] # these should be <0.001
+
+# Combine in table
+prior_posterior_summary$parameter==prior_posterior_iqr$parameter
+
+prior_posterior_summary$parameter==colnames(prior) # FALSE
+
+# Table should be: relative reduction in CRI, relative reduction in IQR,
+# prior relative IQR, posterior relative IQR, prior median, posterior median
+result_df <- data.frame(parameter=prior_posterior_summary$parameter,
+                        rel_red_cri = prior_posterior_summary$rel_red, # reduction in credible interval between prior and posterior
+                        rel_red_iqr = prior_posterior_iqr$rel_red,# reduction in IQR between prior and posterior
+                        prior_rel_iqr = prior_posterior_iqr$prior_rel_iqr,  # relative IQR of priors
+                        posterior_rel_iqr  = prior_posterior_iqr$post_rel_iqr, # relative IQR of posteriors
+                        prior_median=prior_posterior_summary$prior_median,
+                        posterior_median=prior_posterior_summary$post_median)
+
+# Add KS test with Holm's correction
+p_adjusted <- data.frame(parameter=names(p_adjusted), adjusted_p_value = p_adjusted)
+result_df <- left_join(result_df, p_adjusted, by = "parameter")
+result_df$parameter <- factor(result_df$parameter)
+levels(result_df$parameter) <- parameter_names
+result_df$parameter <- gsub("\n", " ", result_df$parameter)
+result_df <- arrange(result_df, -rel_red_cri)
+#write.csv(result_df, file=here("calibration", "output", "prior_posterior_stats_iqr_150421.csv"), row.names = FALSE)
+
+result_df$parameter[result_df$rel_red_iqr>=0.5]
+result_df$parameter[result_df$posterior_rel_iqr>=0.7]
+# Is reduction associated with variability of prior? Only somewhat - some with
+# higher relative IQR
+# also have larger reduction.
+plot(y=result_df$rel_red_iqr, x = result_df$prior_rel_iqr)
+abline(h=0)
+points(x=result_df$prior_rel_iqr[result_df$rel_red_iqr>=0.5],
+       y=result_df$rel_red_iqr[result_df$rel_red_iqr>=0.5], col = "red")
+
+plot(y=result_df$posterior_rel_iqr, x = result_df$prior_rel_iqr)
+
+cor.test(result_df$prior_rel_iqr, result_df$rel_red_iqr)
+
+View(result_df[result_df$prior_rel_iqr>1,])
+
+
+
+## Previous calc:
+iqr_prior_post <- rbind(t(apply(prior, 2, quantile, prob = c(0.25, 0.5, 0.75))),
+                        t(apply(posterior, 2, quantile, prob = c(0.25, 0.5, 0.75))))
+colnames(iqr_prior_post) <- c("lower", "median", "upper")
+iqr_prior_post <- as.data.frame(iqr_prior_post)
+iqr_prior_post$type <- c(rep("prior", 32), rep("post", 32))
+iqr_prior_post$parm <- c(colnames(prior), colnames(posterior))
+iqr_prior_post$iqr_width <- iqr_prior_post$upper-iqr_prior_post$lower
+
+# Calculate reduction in IQR width between prior and posterior for each parameter
+iqr_width_reduction <- select(iqr_prior_post, parm, type, iqr_width) %>%
+  spread(key = "type", value = "iqr_width")
+iqr_width_reduction$abs_red <- round(iqr_width_reduction$prior-iqr_width_reduction$post,5)
+iqr_width_reduction$rel_red <- round(iqr_width_reduction$abs_red/iqr_width_reduction$prior,4)
+# relative to prior width
+iqr_width_reduction$rel_red_rank <- rank(-iqr_width_reduction$rel_red)
+
+# Parameters with a more thsn 10% reduction in the IQR range compared to prior width
+iqr_width_reduction$parm[iqr_width_reduction$rel_red>0.1]
+
+# Posterior width compared to posterior median
+posterior_iqr_width <- filter(iqr_prior_post, type=="post") %>%
+  select(parm, median, iqr_width) %>%
+  mutate(relative_posterior_width = iqr_width/median)
+
+posterior_iqr_width$parm[rank(posterior_iqr_width$relative_posterior_width)>18]
+
+# Plots
+# Median and IQR prior and posterior for all parameters
+ggplot(iqr_prior_post) +
+  geom_point(aes(x=type, y = median)) +
+  geom_errorbar(aes(x=type, ymin = lower, ymax = upper)) +
+  facet_wrap(~parm, scales = "free")
+
+# Parameters with at least a 10% reduction in IQR width and ranked by reduction
+iqr_prior_post <- left_join(iqr_prior_post, select(iqr_width_reduction, parm, rel_red_rank), by = "parm")
+ggplot(iqr_prior_post[iqr_prior_post$rel_red_rank <=20,]) +
+  geom_point(aes(x=reorder(type, desc(type)), y = median)) +
+  geom_errorbar(aes(x=type, ymin = lower, ymax = upper))+
+  facet_wrap(~reorder(parm, rel_red_rank), scales = "free") +
+  ylab("Parameter value") +
+  xlab("") +
+  scale_x_discrete(labels = c("prior" = "Prior", "post" = "Posterior")) +
+  theme_classic()
+# Order this somehow by largest reduction in width
+
+# Plot posteriors with the largest IQR
+posterior_long <- gather(posterior, key = "parm", value = "posterior_value")
+
+ggplot(posterior_long) +
+  geom_boxplot(aes(x=parm, y = posterior_value)) +
+  facet_wrap(~parm, scales= "free")
+
+(((0.000238 * (ages - 9))^2)  * c(rep(0, times = 9/da),rep(1, times = n_agecat - 9/da)))[41:121]
+# 7.341062e-05 female 45 year old IC, 0.003517926 IR, 0.002378231 ENCHB
+# 0.0013 male 45 year old IC, 0.06229759 IR, 0.04211516 ENCHB
+# In mixed female cohort assuming 90% IC, 5% IR and 5% ENCHB: 0.00036
+# In mixed male cohort: 0.0064
+
+# (ignore) Fligner Killeen test for equality of variance corrected for multiple testing and summary table ----
 
 # Mood's median test: drop this one
 median.test <- function(x, y){
@@ -318,67 +452,6 @@ plot(y=result_df$posterior_cov, x = result_df$prior_cov)
 
 cor.test(result_df$prior_cov, result_df$rel_red_sd)
 cor.test(result_df$prior_cov, result_df$posterior_cov)
-
-# Analysis of the prior and posterior interquartile range ----
-iqr_prior_post <- rbind(t(apply(prior, 2, quantile, prob = c(0.25, 0.5, 0.75))),
-                         t(apply(posterior, 2, quantile, prob = c(0.25, 0.5, 0.75))))
-colnames(iqr_prior_post) <- c("lower", "median", "upper")
-iqr_prior_post <- as.data.frame(iqr_prior_post)
-iqr_prior_post$type <- c(rep("prior", 32), rep("post", 32))
-iqr_prior_post$parm <- c(colnames(prior), colnames(posterior))
-iqr_prior_post$iqr_width <- iqr_prior_post$upper-iqr_prior_post$lower
-
-# Calculate reduction in IQR width between prior and posterior for each parameter
-iqr_width_reduction <- select(iqr_prior_post, parm, type, iqr_width) %>%
-  spread(key = "type", value = "iqr_width")
-iqr_width_reduction$abs_red <- round(iqr_width_reduction$prior-iqr_width_reduction$post,5)
-iqr_width_reduction$rel_red <- round(iqr_width_reduction$abs_red/iqr_width_reduction$prior,4)
-  # relative to prior width
-iqr_width_reduction$rel_red_rank <- rank(-iqr_width_reduction$rel_red)
-
-# Parameters with a more thsn 10% reduction in the IQR range compared to prior width
-iqr_width_reduction$parm[iqr_width_reduction$rel_red>0.1]
-
-# Posterior width compared to posterior median
-posterior_iqr_width <- filter(iqr_prior_post, type=="post") %>%
-  select(parm, median, iqr_width) %>%
-  mutate(relative_posterior_width = iqr_width/median)
-
-posterior_iqr_width$parm[rank(posterior_iqr_width$relative_posterior_width)>18]
-
-
-# Plots
-# Median and IQR prior and posterior for all parameters
-ggplot(iqr_prior_post) +
-  geom_point(aes(x=type, y = median)) +
-  geom_errorbar(aes(x=type, ymin = lower, ymax = upper)) +
-  facet_wrap(~parm, scales = "free")
-
-# Parameters with at least a 10% reduction in IQR width and ranked by reduction
-iqr_prior_post <- left_join(iqr_prior_post, select(iqr_width_reduction, parm, rel_red_rank), by = "parm")
-ggplot(iqr_prior_post[iqr_prior_post$rel_red_rank <=20,]) +
-  geom_point(aes(x=reorder(type, desc(type)), y = median)) +
-  geom_errorbar(aes(x=type, ymin = lower, ymax = upper))+
-  facet_wrap(~reorder(parm, rel_red_rank), scales = "free") +
-  ylab("Parameter value") +
-  xlab("") +
-  scale_x_discrete(labels = c("prior" = "Prior", "post" = "Posterior")) +
-  theme_classic()
-# Order this somehow by largest reduction in width
-
-# Plot posteriors with the largest IQR
-posterior_long <- gather(posterior, key = "parm", value = "posterior_value")
-
-ggplot(posterior_long) +
-  geom_boxplot(aes(x=parm, y = posterior_value)) +
-  facet_wrap(~parm, scales= "free")
-
-(((0.000238 * (ages - 9))^2)  * c(rep(0, times = 9/da),rep(1, times = n_agecat - 9/da)))[41:121]
-# 7.341062e-05 female 45 year old IC, 0.003517926 IR, 0.002378231 ENCHB
-# 0.0013 male 45 year old IC, 0.06229759 IR, 0.04211516 ENCHB
-# In mixed female cohort assuming 90% IC, 5% IR and 5% ENCHB: 0.00036
-# In mixed male cohort: 0.0064
-
 
 # Posterior correlation plot ----
 corrmatrix_post <- cor(posterior) # methods Spearman and Pearson look similar, only Kendall focuses on the highest correlations
@@ -1297,3 +1370,37 @@ ggplot(prop_cirr_carrier_by_age, aes(x=age, y = prop)) +
   geom_vline(xintercept=30) +
   geom_vline(xintercept=45) +
   geom_vline(xintercept=65)
+
+# PRCC for current HBV-related mortality and infection incidence ----
+
+# Check names are the same
+names(out2$timeseries$total_chronic_infections[
+  out2$timeseries$total_chronic_infections$time==2020,-c(1,2)])==rownames(params_mat_accepted_kmeans)
+names(out2$timeseries$total_hbv_deaths[
+  out2$timeseries$total_hbv_deaths$time==2020,-c(1,2)])==rownames(params_mat_accepted_kmeans)
+
+
+library(epiR)
+prcc_inc <- epi.prcc(cbind(params_mat_accepted_kmeans,
+                           t(out2$timeseries$total_chronic_infections[
+  out2$timeseries$total_chronic_infections$time==2020,-c(1,2)])),
+                              sided.test = 2, conf.level = 0.95)
+prcc_inc_rate <- epi.prcc(cbind(params_mat_accepted_kmeans,
+                           t(out2$timeseries$total_chronic_infections_rate[
+                             out2$timeseries$total_chronic_infections_rate$time==2020,-c(1,2)])),
+                     sided.test = 2, conf.level = 0.95)
+# Same for incidence rate and absolute number of new cases in 2020!
+
+prcc_mort <- epi.prcc(cbind(params_mat_accepted_kmeans,
+                           t(out2$timeseries$total_hbv_deaths[
+                             out2$timeseries$total_hbv_deaths$time==2020,-c(1,2)])),
+                     sided.test = 2, conf.level = 0.95)
+
+prcc_df <- data.frame(parameter= colnames(params_mat_accepted_kmeans),
+                      inc_prcc= prcc_inc$est,
+                      inc_p_value = prcc_inc$p.value,
+                      inc_rate_prcc= prcc_inc_rate$est,
+                      inc_rate_p_value = prcc_inc_rate$p.value,
+                      mort_prcc= prcc_mort$est,
+                      mort_p_value = prcc_mort$p.value)
+prcc_df <- arrange(prcc_df, -abs(inc_prcc))

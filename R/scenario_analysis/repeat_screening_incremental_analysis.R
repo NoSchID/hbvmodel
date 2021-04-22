@@ -19,7 +19,200 @@ f <- function(x) {
   r
 }
 
-# Load files (A1/E1 (10% coverage)/EA1 (50% screening coverage)) ----
+# Load files ----
+out_path <-
+  "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/repeat_screening_analysis/"
+out_path_anc <-
+  "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/anc_analysis/"
+
+# Status quo
+out2 <- readRDS(paste0(out_path_anc, "out2_status_quo_301120.rds"))
+out2 <- out2[[1]]
+
+# Population-based strategies with monitoring 5 years in <45 year olds
+monit_out7 <- readRDS(paste0(out_path_anc, "a1_it_screen_2020_monit_out7_050321.rds"))
+monit_out7 <- monit_out7[[1]]
+
+# Repeat screens:
+# 2030, no retesting
+out8b_2030_sim7 <- readRDS(paste0(out_path, "a1_it_out8b_monit_sim7_screen_10b_2030_290321.rds"))
+out8b_2030_sim7 <- out8b_2030_sim7[[1]]
+# 2030, with retesting
+out8a_2030_sim7 <- readRDS(paste0(out_path, "a1_it_out8a_monit_sim7_screen_10a_2030_130421.rds"))
+out8a_2030_sim7 <- out8a_2030_sim7[[1]]
+# 2040, no retesting
+out8b_2040_sim7 <- readRDS(paste0(out_path, "a1_it_out8b_monit_sim7_screen_10b_2040_130421.rds"))
+out8b_2040_sim7 <- out8b_2040_sim7[[1]]
+# 2040, with retesting
+out8a_2040_sim7 <- readRDS(paste0(out_path, "a1_it_out8a_monit_sim7_screen_10a_2040_130421.rds"))
+out8a_2040_sim7 <- out8a_2040_sim7[[1]]
+# 2050, no retesting
+out8b_2050_sim7 <- readRDS(paste0(out_path, "a1_it_out8b_monit_sim7_screen_10b_2050_130421.rds"))
+out8b_2050_sim7 <- out8b_2050_sim7[[1]]
+# 2060, with retesting
+out8a_2050_sim7 <- readRDS(paste0(out_path, "a1_it_out8a_monit_sim7_screen_10a_2050_130421.rds"))
+out8a_2050_sim7 <- out8a_2050_sim7[[1]]
+
+# Need to load equivalent no monitoring scenarios to be able to calculate monitoring interactions
+# In ANC:
+a1_it_out3_screen_2020_monit_0_180121
+
+# 2030, no retesting
+out8b_2030 <- readRDS(paste0(out_path, "a1_it_out8b_monit_0_screen_10b_2030_080121.rds"))
+out8b_2030 <- out8b_2030[[1]]
+# 2030, with retesting
+out8a_2030 <- readRDS(paste0(out_path, "a1_it_out8a_monit_0_screen_10a_2030_080121.rds"))
+out8a_2030 <- out8a_2030[[1]]
+
+
+# Cost-effectiveness analysis of repeat screening (THESIS) ----
+# Comparing: repeat screens until 2050 with/without retesting
+# All with monitoring every 5 years in <45 year olds!
+
+# Create dataframe with discounted costs and outcomes ----
+annual_discounting_rate <- 0.03
+time_horizon_year <- 2100
+
+assemble_discounted_interactions_for_screening_strategies <- function(scenario_object,
+                                                                      discount_rate = annual_discounting_rate,
+                                                                      assessment_object,
+                                                                      time_horizon=time_horizon_year) {
+  # Compares monitoring to out3 and everything else to status quo
+  # at discount rate of 3%
+  out <- left_join(
+    left_join(
+      left_join(discount_outcome_2020_to_2100(scenario_object=scenario_object,
+                                              object_to_subtract=NULL,
+                                              outcome="interactions",
+                                              interaction_outcome="total_screened",
+                                              yearly_discount_rate=discount_rate,
+                                              interaction_colname = "hbsag_tests",
+                                              end_year = time_horizon),
+                discount_outcome_2020_to_2100(scenario_object=assessment_object,
+                                              object_to_subtract=NULL,
+                                              outcome="interactions",
+                                              interaction_outcome="total_assessed",
+                                              yearly_discount_rate=discount_rate,
+                                              interaction_colname = "clinical_assessments",
+                                              end_year = time_horizon)),
+      discount_outcome_2020_to_2100(scenario_object=scenario_object,
+                                    object_to_subtract=assessment_object,
+                                    outcome="interactions",
+                                    interaction_outcome="total_assessed",
+                                    yearly_discount_rate=discount_rate,
+                                    interaction_colname = "monitoring_assessments",
+                                    end_year = time_horizon)),
+    discount_outcome_2020_to_2100(scenario_object=scenario_object,
+                                  object_to_subtract=NULL,
+                                  outcome="interactions",
+                                  interaction_outcome="total_treated",
+                                  yearly_discount_rate=discount_rate,
+                                  interaction_colname = "treatment_initiations",
+                                  end_year = time_horizon))
+
+  return(out)
+}
+
+# NEED TO CHANGE ASSESSMENT OBJECT FOR ALL STRATEGIES INVOLVING MONITORING
+# Comparator objects are: out3, out8b_2030_monit_0, pop_2020_anc_2030_monit_0, pop_2020_anc_2040_monit_0
+
+# Analysis objects are:
+# monit_out7, out8b_2030_sim7, pop_2020_anc_2030_sim7, pop_2020_anc_2040_sim7,
+# anc_2020_monit_0, anc_2030_monit_0, anc_2040_monit_0,
+# anc_2020_monit_sim7, anc_2030_monit_sim7, anc_2040_monit_sim7
+# For anc_2100_monit_sim7 need to run without monitoring first
+
+anc_interactions <- rbind(
+  # Population-based screening:
+  cbind(scenario = "screen_2020_monit_0",   # delete this one later
+        assemble_discounted_interactions_for_screening_strategies(out3_it,
+                                                                  assessment_object = out3_it)),
+  cbind(scenario = "screen_2020_monit_sim7",
+        assemble_discounted_interactions_for_screening_strategies(monit_out7,
+                                                                  assessment_object = out3_it)),
+  cbind(scenario = "monit_sim7_screen_10b_2030",
+        assemble_discounted_interactions_for_screening_strategies(out8b_2030_sim7,
+                                                                  assessment_object = out8b_2030_monit_0)),
+  # Combination of pop and ANC testing:
+  cbind(scenario = "pop_2020_anc_2030_no_rescreen_monit_sim7",
+        assemble_discounted_interactions_for_screening_strategies(pop_2020_anc_2030_sim7,
+                                                                  assessment_object = pop_2020_anc_2030_monit_0)),
+  cbind(scenario = "pop_2020_anc_2040_no_rescreen_monit_sim7",
+        assemble_discounted_interactions_for_screening_strategies(pop_2020_anc_2040_sim7,
+                                                                  assessment_object = pop_2020_anc_2040_monit_0)),  # ANC strategies
+  # ANC strategies:
+  cbind(scenario = "screen_2020_anc_monit_0",
+        assemble_discounted_interactions_for_screening_strategies(anc_2020_monit_0,
+                                                                  assessment_object = anc_2020_monit_0)),
+  cbind(scenario = "screen_2020_anc_monit_sim7",
+        assemble_discounted_interactions_for_screening_strategies(anc_2020_monit_sim7,
+                                                                  assessment_object = anc_2020_monit_0)),
+  cbind(scenario = "anc_2030_no_rescreen_monit_0",
+        assemble_discounted_interactions_for_screening_strategies(anc_2030_monit_0,
+                                                                  assessment_object = anc_2030_monit_0)),
+  cbind(scenario = "anc_2030_no_rescreen_monit_sim7",
+        assemble_discounted_interactions_for_screening_strategies(anc_2030_monit_sim7,
+                                                                  assessment_object = anc_2030_monit_0)),
+  cbind(scenario = "anc_2040_no_rescreen_monit_0",
+        assemble_discounted_interactions_for_screening_strategies(anc_2040_monit_0,
+                                                                  assessment_object = anc_2040_monit_0)),
+  cbind(scenario = "anc_2040_no_rescreen_monit_sim7",
+        assemble_discounted_interactions_for_screening_strategies(anc_2040_monit_sim7,
+                                                                  assessment_object = anc_2040_monit_0))
+
+)
+
+
+# PY on treatment, DALYS and deaths averted:
+object_list <- list(out3_it, monit_out7, out8b_2030_sim7,
+                    pop_2020_anc_2030_sim7, pop_2020_anc_2040_sim7,
+                    anc_2020_monit_0, anc_2020_monit_sim7, anc_2030_monit_0, anc_2030_monit_sim7,
+                    anc_2040_monit_0, anc_2040_monit_sim7)
+
+# Extract interactions and person-years on treatment, and HBV-related deaths
+# ad DALYs averted, in a for loop
+anc_py_on_treatment <- list()
+anc_hbv_deaths_averted <- list()
+anc_dalys_averted <- list()
+
+for (i in 1:length(object_list)) {
+  anc_py_on_treatment[[i]] <-
+    data.frame(scenario = object_list[[i]]$cohort_age_at_death$scenario,
+               discount_outcome_2020_to_2100(scenario_object=object_list[[i]],
+                                             object_to_subtract=NULL,
+                                             outcome="py_on_treatment",
+                                             yearly_discount_rate=annual_discounting_rate,
+                                             end_year = time_horizon_year))
+  anc_hbv_deaths_averted[[i]] <-
+    cbind(scenario = object_list[[i]]$cohort_age_at_death$scenario,
+          discount_outcome_2020_to_2100(scenario_object=out2,
+                                        object_to_subtract=object_list[[i]],
+                                        outcome="cum_hbv_deaths",
+                                        yearly_discount_rate=annual_discounting_rate,
+                                        end_year = time_horizon_year))
+  anc_dalys_averted[[i]] <-
+    cbind(scenario = object_list[[i]]$cohort_age_at_death$scenario,
+          discount_outcome_2020_to_2100(scenario_object=out2,
+                                        object_to_subtract=object_list[[i]],
+                                        outcome="dalys",
+                                        yearly_discount_rate=annual_discounting_rate,
+                                        end_year = time_horizon_year))
+}
+anc_py_on_treatment <- do.call("rbind", anc_py_on_treatment)
+anc_hbv_deaths_averted <- do.call("rbind", anc_hbv_deaths_averted)
+anc_dalys_averted <- do.call("rbind", anc_dalys_averted)
+
+anc_py_on_treatment$sim <- gsub("[^0-9]", "", anc_py_on_treatment$sim)
+anc_hbv_deaths_averted$sim <- gsub("[^0-9]", "", anc_hbv_deaths_averted$sim)
+colnames(anc_hbv_deaths_averted)[colnames(anc_hbv_deaths_averted) == "cum_hbv_deaths"] <-
+  "value"
+
+anc_dalys_averted$sim <- gsub("[^0-9]", "", anc_dalys_averted$sim)
+colnames(anc_dalys_averted)[colnames(anc_dalys_averted) == "dalys"] <-
+  "value"
+
+
+### OLD FILES: Load files (A1/E1 (10% coverage)/EA1 (50% screening coverage)) ----
 
 out_path <-
   "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/repeat_screening_analysis/"
@@ -327,6 +520,7 @@ names(period_labs) <- c(as.character(timepoints[1]), as.character(timepoints[2])
 
 
 
+### OLD ANALYSES ----
 # For 90% coverage and no monitoring, is a repeat screen cost-effective? ----
 # Comparing: out3, out8b_2030, out8b_2040, out8b_2050
 interactions_no_monit <- rbind(
@@ -2003,7 +2197,7 @@ ggplot(deaths_averted_per_cost,
   theme_bw() +
   theme(axis.text.x=element_text(angle=90, hjust = 1))
 
-## Compare regular antenatal care screening (76% antenatal coverage) with the population-based screen ----
+## (now in anc_analysis) Compare regular antenatal care screening (76% antenatal coverage) with the population-based screen ----
 # Note that screening in ANC only requires the cost of the test.
 # Repeat screening simulations here don't include IT treatment yet so need to compare this
 # to the one-off screen from monitoring_frequency:

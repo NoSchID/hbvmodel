@@ -497,6 +497,8 @@ quantile((anc_2100_monit_sim7_ppt$timeseries$total_hbv_deaths[
 # Median >=65% in 2054
 
 
+
+
 plot(x=anc_2100_monit_sim7$timeseries$total_hbv_deaths$time,
      y = anc_2100_monit_sim7$timeseries$total_hbv_deaths[,3])
 plot(x=monit_out7$timeseries$total_hbv_deaths$time,
@@ -511,3 +513,23 @@ plot(x=anc_2040_monit_sim7$timeseries$total_hbv_deaths$time,
      y = anc_2040_monit_sim7$timeseries$total_hbv_deaths[,5])
 plot(x=pop_2020_anc_2040_sim7$timeseries$total_hbv_deaths$time,
      y = pop_2020_anc_2040_sim7$timeseries$total_hbv_deaths[,3])
+
+# Reduce HBV mortality to ≤5 per 100 000 (CDA absolute target) ----
+quantile(out2$timeseries$total_hbv_deaths_rate[
+  out2$timeseries$total_hbv_deaths_rate$time==2040,-c(1:2)]*100000,
+         c(0.5,0.025,0.975))
+# In 2030: 7.4 (3.7-13.0)
+# Median <5 in 2040
+
+# ANC Treatment only:
+quantile(anc_2100_monit_sim7$timeseries$total_hbv_deaths_rate[
+      anc_2100_monit_sim7$timeseries$total_hbv_deaths_rate$time==2035,-c(1:2)]*100000,
+  c(0.5,0.025,0.975))
+# In 2030: 6.3 (3.3-10.4)
+# Median <5 in 2035
+
+# One-off population treatment:
+quantile(monit_out7$timeseries$total_hbv_deaths_rate[
+  monit_out7$timeseries$total_hbv_deaths_rate$time==2022,-c(1:2)]*100000,
+  c(0.5,0.025,0.975))
+# Median <5 in 2022

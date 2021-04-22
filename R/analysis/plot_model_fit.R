@@ -5,6 +5,8 @@ library(here)
 library(tidyr)
 library(dplyr)
 library(ggplot2)
+library(gridExtra)
+library(grid)
 #load(file = here("output", "fits", "best_fits_50_of_100000_wed_domain_weights_210819.Rdata"))  # this was from LSR
 #load(here("calibration", "output", "model_fit_output_123_180520.Rdata")) # out_mat
 load(here("calibration", "output", "model_fit_output_kmeans_221220.Rdata")) # out_mat
@@ -1105,6 +1107,100 @@ hcc_cirr_p2 <-ggplot(data = cirr_mort_2017,
         legend.title = element_blank())
 
 
+# Survival curves* ----
+## Mortality curves
+
+# Add articifial zeros at first timestep to allow plotting of step curves
+mortality_curves_zeros <- mort_curves_out_mat
+mortality_curves_zeros$time_interval_years <- 0
+mortality_curves_zeros$median <- 0
+mortality_curves_zeros$ci_lower <- NA
+mortality_curves_zeros$ci_upper <- NA
+mortality_curves_zeros$number_at_risk <- mortality_curves_zeros$sample_size
+mortality_curves_zeros <- unique(mortality_curves_zeros)
+
+mort_curves_out_mat <- rbind(mort_curves_out_mat, mortality_curves_zeros)
+
+# Add labels for panels with reference and study population
+mort_curves_labels <- c("Mortality in compensated\ncirrhosis patients\n(Shimakawa, 2016)",
+                        "Mortality in HCC patients\n(Yang, 2017)",
+                        "HCC incidence in\ncirrhosis patients\n(Diarra, 2010)",
+                        "Mortality in\ncirrhosis patients\n(Diarra, 2010)",
+                        "Mortality in HCC patients\n(Bah, 2011)")
+names(mort_curves_labels) <- c("shadow4_cum_mortality", "shadow5_cum_mortality",
+                               "shadow6_cum_hcc_incidence", "shadow6_cum_mortality",
+                               "shadow7_cum_mortality")
+
+mort_curve_cirrhosis <- ggplot() +
+  geom_step(data=subset(mort_curves_out_mat, outcome %in% c("shadow4_cum_mortality",
+                    "shadow6_cum_hcc_incidence", "shadow6_cum_mortality") &
+                    type == "model_value"),
+            aes(x = time_interval_years, y = median, linetype = "Model projection")) +
+  geom_step(data=subset(mort_curves_out_mat, outcome %in% c("shadow4_cum_mortality",
+                                                            "shadow6_cum_hcc_incidence", "shadow6_cum_mortality") &
+                          type == "model_value"),
+            aes(x = time_interval_years, y = ci_lower), colour="grey", linetype="dashed") +
+  geom_step(data=subset(mort_curves_out_mat, outcome %in% c("shadow4_cum_mortality",
+                                                            "shadow6_cum_hcc_incidence", "shadow6_cum_mortality") &
+                          type == "model_value"),
+            aes(x = time_interval_years, y = ci_upper), colour="grey", linetype="dashed") +
+  geom_point(data=subset(mort_curves_out_mat, outcome %in% c("shadow4_cum_mortality",
+                                                             "shadow6_cum_hcc_incidence", "shadow6_cum_mortality") &
+                           type == "data_value" &
+                           time_interval_years != 0),
+               aes(x = time_interval_years, y = median, colour = "Observed data"),
+             shape = 4, stroke = 2) +
+  facet_grid(~ outcome,
+             labeller = labeller(outcome = mort_curves_labels)) +
+  scale_colour_manual(name = "", values = c("Observed data" = "red")) +
+  scale_linetype_manual(name = "", values = c("Model projection" = "solid")) +
+  labs(y = "Cumulative probability", x = "Follow-up time (years)") +
+  theme_classic() +
+  ylim(0,1) +
+  theme(legend.margin=margin(t = 0, unit="cm"),
+        panel.border = element_rect(colour = "black", fill = NA),
+        legend.position = "none",
+        axis.title.y = element_text(size = 20),
+        axis.text = element_text(size = 15),
+        axis.title.x = element_blank(),
+        legend.text = element_text(size = 20),
+        legend.title = element_text(size = 15),
+        strip.text = element_text(size = 17))
+
+mort_curve_hcc <- ggplot() +
+  geom_step(data=subset(mort_curves_out_mat, outcome %in% c("shadow5_cum_mortality",
+                                                            "shadow7_cum_mortality") &
+                          type == "model_value"),
+            aes(x = time_interval_years, y = median, linetype = "Model projection")) +
+  geom_step(data=subset(mort_curves_out_mat, outcome %in% c("shadow5_cum_mortality",
+                                                            "shadow7_cum_mortality") &
+                          type == "model_value"),
+            aes(x = time_interval_years, y = ci_lower), colour="grey", linetype="dashed") +
+  geom_step(data=subset(mort_curves_out_mat, outcome %in% c("shadow5_cum_mortality",
+                                                            "shadow7_cum_mortality") &
+                          type == "model_value"),
+            aes(x = time_interval_years, y = ci_upper), colour="grey", linetype="dashed") +
+  geom_point(data=subset(mort_curves_out_mat, outcome %in% c("shadow5_cum_mortality",
+                                                            "shadow7_cum_mortality") &
+                           type == "data_value" &
+                           time_interval_years != 0),
+             aes(x = time_interval_years, y = median, colour = "Observed data"),
+             shape = 4, stroke = 2) +
+  facet_grid(~ outcome, scales="free_x",
+             labeller = labeller(outcome = mort_curves_labels)) +
+  scale_colour_manual(name = "", values = c("Observed data" = "red")) +
+  scale_linetype_manual(name = "", values = c("Model projection" = "solid")) +
+  labs(y = "Cumulative probability", x = "Follow-up time (years)") +
+  theme_classic() +
+  theme(legend.margin=margin(t = 0, unit="cm"),
+        panel.border = element_rect(colour = "black", fill = NA),
+        legend.position = "bottom",
+        axis.title = element_text(size = 20),
+        axis.text = element_text(size = 15),
+        legend.text = element_text(size = 20),
+        legend.title = element_text(size = 15),
+        strip.text = element_text(size = 17))
+
 # Proportion of births due to MTCT ----
 
 # 1-1 plots: chronic infections due to vertical transmission
@@ -1477,7 +1573,19 @@ nat_hist_p2_3b <- arrangeGrob(nat_hist_p2_3, top = textGrob("B", x = unit(0.01, 
                                                 gp=gpar(col="black", fontsize=22)))
 
 
-tiff(file = "natural_history_fit.tiff", width=300, height=130, units = "mm", res=300, pointsize = 0.99)
+#tiff(file = "natural_history_fit.tiff", width=300, height=130, units = "mm", res=300, pointsize = 0.99)
 grid.arrange(nat_hist_p1a, nat_hist_p2_3b, ncol = 2, widths=c(2,3))
-dev.off()
+#dev.off()
+
+# Survival curves
+#tiff(file = "mortality_curves_fit.tiff", width=300, height=190, units = "mm", res=200, pointsize = 0.99)
+grid.arrange(mort_curve_cirrhosis, mort_curve_hcc, nrow=2)
+#dev.off()
+
+# Correlation plot for thesis
+#tiff(file = "correlation_plot_fit.tiff", width=200, height=150, units = "mm", res=200, pointsize = 0.99)
+corrplot
+#dev.off()
+
+
 
