@@ -1421,7 +1421,58 @@ hbv_deaths_over_time <- hbv_deaths_over_time %>%
             lower=quantile(value, 0.025),
             upper=quantile(value,0.975))
 
-ggplot() +
+hbv_inc_over_time <-
+  rbind(gather(out2$timeseries$total_chronic_infections, key="sim", value = "value", -time,-scenario),
+        gather(out_no_vacc$timeseries$total_chronic_infections, key="sim", value = "value", -time,-scenario))
+
+hbv_inc_over_time <- hbv_inc_over_time %>%
+  group_by(time, scenario) %>%
+  summarise(median=median(value),
+            lower=quantile(value, 0.025),
+            upper=quantile(value,0.975))
+
+
+inc_plot <- ggplot() +
+  geom_ribbon(data=subset(hbv_inc_over_time, scenario == "no_vacc"),
+              aes(x=time, ymin=lower/0.5, ymax=upper/0.5, fill = scenario, colour=scenario),
+              linetype = "solid",alpha = 0.8) +
+  geom_line(data=subset(hbv_inc_over_time, scenario == "no_vacc"),
+            aes(x=time, y = median/0.5), colour="#2166AC",
+            linetype = "solid", size=0.75) +
+  geom_ribbon(data=subset(hbv_inc_over_time, scenario == "status_quo"),
+              aes(x=time, ymin=lower/0.5, ymax=upper/0.5,fill = scenario, colour=scenario),
+              linetype = "solid", alpha = 0.5) +
+  geom_line(data=subset(hbv_inc_over_time, scenario == "status_quo"),
+            aes(x=time, y = median/0.5), colour="#DC663A",
+            linetype = "solid", size=0.75) +
+  scale_fill_manual("Scenario",
+                    labels = c("status_quo" = "Base case (infant vaccination)",
+                               "no_vacc" = "No historical intervention"),
+                    values=c("status_quo" = "#DC663A",
+                             "no_vacc" = "#92C5DE")) +
+  scale_colour_manual("Scenario",
+                      labels = c("status_quo" = "Base case (infant vaccination)",
+                                 "no_vacc" = "No historical intervention"),
+                      values=c("status_quo" = "#DC663A",
+                               "no_vacc" = "#2166AC")) +
+  geom_vline(xintercept=1990, linetype="dashed", colour="grey30") +
+  # guides(fill=FALSE, colour = FALSE) +
+  ylab("Annual incident chronic HBV infections") +
+  xlab("Year") +
+  xlim(1985,2080) +
+  theme_classic() +
+  theme(legend.position=c(.2,.85),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        panel.border = element_rect(colour = "black", fill = NA),
+        axis.text = element_text(size = 17),
+        axis.title = element_text(size = 17),
+        legend.text = element_text(size = 17),
+        legend.title = element_blank())
+
+
+deaths_plot <- ggplot() +
   geom_ribbon(data=subset(hbv_deaths_over_time, scenario == "no_vacc"),
               aes(x=time, ymin=lower/0.5, ymax=upper/0.5, fill = scenario, colour=scenario),
               linetype = "solid",alpha = 0.8) +
@@ -1432,27 +1483,42 @@ ggplot() +
               aes(x=time, ymin=lower/0.5, ymax=upper/0.5,fill = scenario, colour=scenario),
               linetype = "solid", alpha = 0.5) +
   geom_line(data=subset(hbv_deaths_over_time, scenario == "status_quo"),
-            aes(x=time, y = median/0.5), colour="#B2182B",
+            aes(x=time, y = median/0.5), colour="#DC663A",
             linetype = "solid", size=0.75) +
   scale_fill_manual("Scenario",
                     labels = c("status_quo" = "Continued infant vaccination\n(base case)",
                                "no_vacc" = "No historical intervention"),
-                    values=c("status_quo" = "#D6604D",
+                    values=c("status_quo" = "#DC663A",
                              "no_vacc" = "#92C5DE")) +
   scale_colour_manual("Scenario",
                       labels = c("status_quo" = "Continued infant vaccination\n(base case)",
                                  "no_vacc" = "No historical intervention"),
-                      values=c("status_quo" = "#B2182B",
+                      values=c("status_quo" = "#DC663A",
                                "no_vacc" = "#2166AC")) +
   geom_vline(xintercept=1990, linetype="dashed", colour="grey30") +
   # guides(fill=FALSE, colour = FALSE) +
   ylab("Annual HBV-related deaths") +
   xlab("Year") +
-  xlim(1980,2100) +
+  xlim(1985,2080) +
   theme_classic() +
-  theme(legend.position=c(.35,.8),
-        axis.text = element_text(size = 15),
-        axis.title = element_text(size = 15),
-        legend.text = element_text(size = 11),
-        legend.title = element_text(size = 13))
+  theme(legend.position="none",
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        panel.border = element_rect(colour = "black", fill = NA),
+        axis.text = element_text(size = 17),
+        axis.title = element_text(size = 17),
+        legend.text = element_text(size = 17),
+        legend.title = element_blank())
 
+library(grid)
+inc_plot_a <- arrangeGrob(inc_plot, top = textGrob("A", x = unit(0.01, "npc"),
+                                                   y   = unit(1, "npc"), just=c("left","top"),
+                                                   gp=gpar(col="black", fontsize=20)))
+deaths_plot_b <- arrangeGrob(deaths_plot, top = textGrob("B", x = unit(0.01, "npc"),
+                                                         y   = unit(1, "npc"), just=c("left","top"),
+                                                         gp=gpar(col="black", fontsize=20)))
+
+#png(file = "no_historical_intervention_plot.png", width=300, height=260, units = "mm", res=300, pointsize = 0.99)
+grid.arrange(inc_plot_a, deaths_plot_b, nrow=2)
+#dev.off()

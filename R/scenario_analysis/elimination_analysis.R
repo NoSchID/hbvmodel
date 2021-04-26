@@ -30,6 +30,10 @@ out_bd <- out_bd[[1]]
 out_bd_ppt <- readRDS("C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/elimination_analysis/elimination_bd_ppt_cov80_220421.rds")
 out_bd_ppt <- out_bd_ppt[[1]]
 
+# 80% birth dose+PPT+treatment coverage from 2020 (Shevanthi comparator scenario)
+out_bd_ppt_treat <- readRDS("C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/elimination_analysis/elimination_bd_ppt_cov80_treatment_230421.rds")
+out_bd_ppt_treat <- out_bd_ppt_treat[[1]]
+
 # When would elimination be achieved with the one-off treatment programme?
 # Monitoring every 5 years til age 45
 #out_treat <- readRDS("C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/monitoring_frequency/a1_it_screen_2020_monit_out7_050321.rds")
@@ -37,7 +41,7 @@ out_bd_ppt <- out_bd_ppt[[1]]
 
 load(here("calibration", "input", "accepted_parmsets_kmeans_170820.Rdata")) # params_mat_accepted_kmeans
 
-
+# Comparison of status quo to no historical intervention is in Sensitivity analysis script ----
 # Target A1: Reduce chronic infection incidence by 90% from 2015 ----
 
 # VALUES IN 2030
@@ -60,11 +64,23 @@ round(quantile(apply(out_bd_ppt$timeseries$total_chronic_infections[
 round(quantile(out_bd_ppt$timeseries$total_chronic_infections_rate[
   out_bd_ppt$timeseries$total_chronic_infections$time==2030,-c(1:2)],
   c(0.5,0.025,0.975))*1000000,0)
+
+round(quantile(apply(out_bd_ppt_treat$timeseries$total_chronic_infections[
+  out_bd_ppt_treat$timeseries$total_chronic_infections$time %in% c(2030,2030.5),-c(1:2)],2,sum),
+  c(0.5,0.025,0.975)),0)
+round(quantile(out_bd_ppt_treat$timeseries$total_chronic_infections_rate[
+  out_bd_ppt_treat$timeseries$total_chronic_infections$time==2030,-c(1:2)],
+  c(0.5,0.025,0.975))*1000000,0)
+
+
 round(quantile(out_bd$timeseries$prev_under5[
   out_bd$timeseries$prev_under5$time==2030,-c(1:2)],
   c(0.5,0.025,0.975))*100,2)
 round(quantile(out_bd_ppt$timeseries$prev_under5[
   out_bd_ppt$timeseries$prev_under5$time==2030,-c(1:2)],
+  c(0.5,0.025,0.975))*100,2)
+round(quantile(out_bd_ppt_treat$timeseries$prev_under5[
+  out_bd_ppt_treat$timeseries$prev_under5$time==2030,-c(1:2)],
   c(0.5,0.025,0.975))*100,2)
 
 # %Reduction by given year:
@@ -116,6 +132,20 @@ round(quantile((out_bd_ppt$timeseries$total_chronic_infections[
 # Rate (<10 per million people)
 round(quantile(out_bd_ppt$timeseries$total_chronic_infections_rate[
   out_bd_ppt$timeseries$total_chronic_infections_rate$time==2064,
+  -c(1:2)]*1000000, c(0.5,0.025,0.975)),0)
+
+# With BD+PPT+treatment:
+round(quantile((out_bd_ppt_treat$timeseries$total_chronic_infections[
+  out_bd_ppt_treat$timeseries$total_chronic_infections$time==2015,-c(1:2)]-
+    out_bd_ppt_treat$timeseries$total_chronic_infections[
+      out_bd_ppt_treat$timeseries$total_chronic_infections$time==2053,-c(1:2)])/
+    out_bd_ppt_treat$timeseries$total_chronic_infections[
+      out_bd_ppt_treat$timeseries$total_chronic_infections$time==2015,-c(1:2)],
+  c(0.5,0.025,0.975)),2)
+
+# Rate (<10 per million people)
+round(quantile(out_bd_ppt_treat$timeseries$total_chronic_infections_rate[
+  out_bd_ppt_treat$timeseries$total_chronic_infections_rate$time==2065,
   -c(1:2)]*1000000, c(0.5,0.025,0.975)),0)
 
 
@@ -179,6 +209,11 @@ round(quantile(out_bd_ppt$timeseries$prev_under5[
   out_bd_ppt$timeseries$prev_under$time==2046,
   -c(1:2)]*100, c(0.5,0.025,0.975)),1)
 
+# With BD+PPT+treatment:
+round(quantile(out_bd_ppt$timeseries$prev_under5[
+  out_bd_ppt$timeseries$prev_under$time==2046,
+  -c(1:2)]*100, c(0.5,0.025,0.975)),1)
+
 # CDA suggests <=0.1% among 1 year olds ----
 # Target B1: Reduce HBV deaths by 65% from 2015 ----
 
@@ -202,6 +237,12 @@ round(quantile(out_bd_ppt$timeseries$total_hbv_deaths_rate[
   out_bd_ppt$timeseries$total_hbv_deaths_rate$time==2030,-c(1:2)],
   c(0.5,0.025,0.975))*1000000,0)
 
+round(quantile(apply(out_bd_ppt_treat$timeseries$total_hbv_deaths[
+  out_bd_ppt_treat$timeseries$total_hbv_deaths$time %in% c(2030,2030.5),-c(1:2)],2,sum),
+  c(0.5,0.025,0.975)),0)
+round(quantile(out_bd_ppt_treat$timeseries$total_hbv_deaths_rate[
+  out_bd_ppt_treat$timeseries$total_hbv_deaths_rate$time==2030,-c(1:2)],
+  c(0.5,0.025,0.975))*1000000,0)
 
 # HBV deaths in 2015
 out2$timeseries$total_hbv_deaths[out2$timeseries$total_hbv_deaths$time==2015,
@@ -261,6 +302,30 @@ round(quantile(out_bd_ppt$timeseries$total_hbv_deaths_rate[
   out_bd_ppt$timeseries$total_hbv_deaths_rate$time==2052,
   -c(1:2)]*1000000, c(0.5,0.025,0.975)),0)
 
+# With BD+PPT+treatment
+round(quantile((out_bd_ppt_treat$timeseries$total_hbv_deaths[
+  out_bd_ppt_treat$timeseries$total_hbv_deaths$time==2015,-c(1:2)]-
+    out_bd_ppt_treat$timeseries$total_hbv_deaths[
+      out_bd_ppt_treat$timeseries$total_hbv_deaths$time==2030, -c(1:2)])/
+    out_bd_ppt_treat$timeseries$total_hbv_deaths[
+      out_bd_ppt_treat$timeseries$total_hbv_deaths$time==2015,-c(1:2)],
+  c(0.5,0.025,0.975)),2)
+# <50 per million people
+round(quantile(out_bd_ppt_treat$timeseries$total_hbv_deaths_rate[
+  out_bd_ppt_treat$timeseries$total_hbv_deaths_rate$time==2020,
+  -c(1:2)]*1000000, c(0.5,0.025,0.975)),0)
+
+plot(x=out2$timeseries$total_hbv_deaths$time,
+     y=apply(out2$timeseries$total_hbv_deaths[,-c(1,2)],1,median),
+     xlim = c(2020,2080), type="l")
+lines(x=out_bd_ppt_treat$timeseries$total_hbv_deaths$time,
+     y=apply(out_bd_ppt_treat$timeseries$total_hbv_deaths[,-c(1,2)],1,median), col = "red")
+
+# <50 per million people
+round(quantile(out_bd_ppt_treat$timeseries$total_hbv_deaths_rate[
+  out_bd_ppt_treat$timeseries$total_hbv_deaths_rate$time==2052,
+  -c(1:2)]*1000000, c(0.5,0.025,0.975)),0)
+
 
 # With treatment:
 quantile((out_treat$timeseries$total_hbv_deaths[out_treat$timeseries$total_hbv_deaths$time==2015,
@@ -315,6 +380,27 @@ quantile(out_treat$timeseries$total_hbv_deaths_rate[
 
 # Incidence plots ----
 
+# Check: correlation between prop_mtct and relative impact of BD
+effect <- (out2$timeseries$total_chronic_infections[
+  out2$timeseries$total_chronic_infections$time==2030,-c(1:2)]-
+  out_bd$timeseries$total_chronic_infections[
+    out_bd$timeseries$total_chronic_infections$time==2030,-c(1:2)])/
+  out2$timeseries$total_chronic_infections[
+    out2$timeseries$total_chronic_infections$time==2030,-c(1:2)]
+
+median_prop <- apply(out2$timeseries$chronic_births[
+  out2$timeseries$chronic_births$time %in% seq(2020,2030,0.5),-c(1:2)]/
+        out2$timeseries$total_chronic_infections[
+          out2$timeseries$total_chronic_infections$time%in% seq(2020,2030,0.5),-c(1:2)],2,median)
+median_prop <- out2$timeseries$chronic_births[
+  out2$timeseries$chronic_births$time==2020,-c(1:2)]/
+    out2$timeseries$total_chronic_infections[
+      out2$timeseries$total_chronic_infections$time==2020,-c(1:2)]
+plot(x=c(median_prop),
+  y = effect, ylim =c(0,1), xlim=c(0,1))
+
+cor.test(as.numeric(median_prop), as.numeric(effect))
+
 # What is the reduction in infection incidence in 2030 and 2040 achieved with BD compared to SQ?
 quantile((out2$timeseries$total_chronic_infections[
   out2$timeseries$total_chronic_infections$time==2040,-c(1:2)]-
@@ -333,8 +419,110 @@ quantile((out2$timeseries$total_hbv_deaths[
       out2$timeseries$total_hbv_deaths$time==2070,-c(1:2)],
   c(0.5,0.025,0.975))
 
+# What is the reduction in deaths in 2030 and 2050 achieved with treatment scenario compared to SQ?
+quantile((out2$timeseries$total_hbv_deaths[
+  out2$timeseries$total_hbv_deaths$time==2050,-c(1:2)]-
+    out_bd_ppt_treat$timeseries$total_hbv_deaths[
+      out_bd_ppt_treat$timeseries$total_hbv_deaths$time==2050,-c(1:2)])/
+    out2$timeseries$total_hbv_deaths[
+      out2$timeseries$total_hbv_deaths$time==2050,-c(1:2)],
+  c(0.5,0.025,0.975))
+
+inc_summary <- gather(rbind(out2$timeseries$total_chronic_infections,
+      out_bd$timeseries$total_chronic_infections,
+      out_bd_ppt$timeseries$total_chronic_infections,
+      out_bd_ppt_treat$timeseries$total_chronic_infections), key="sim", value = "value",
+      -time,-scenario) %>%
+  group_by(scenario, time) %>%
+  summarise(median=median(value),
+            lower=quantile(value, 0.025),
+            upper=quantile(value, 0.975))
+
+deaths_summary <- gather(rbind(out2$timeseries$total_hbv_deaths,
+                            out_bd$timeseries$total_hbv_deaths,
+                            out_bd_ppt$timeseries$total_hbv_deaths,
+                            out_bd_ppt_treat$timeseries$total_hbv_deaths), key="sim", value = "value",
+                      -time,-scenario) %>%
+  group_by(scenario, time) %>%
+  summarise(median=median(value),
+            lower=quantile(value, 0.025),
+            upper=quantile(value, 0.975))
+
+inc_summary$scenario <- factor(inc_summary$scenario, levels =
+                                 c("status_quo", "elimination_birth_dose_80",
+                                   "elimination_birth_dose_ppt_80",
+                                   "elimination_birth_dose_ppt_treatment"))
+deaths_summary$scenario <- factor(deaths_summary$scenario, levels =
+                                 c("status_quo", "elimination_birth_dose_80",
+                                   "elimination_birth_dose_ppt_80",
+                                   "elimination_birth_dose_ppt_treatment"))
+
+inc_plot <- ggplot(inc_summary) +
+  geom_line(aes(x=time, y = median/0.5, colour=scenario), size=1) +
+  #geom_ribbon(aes(x=time, ymin = lower, ymax=upper, fill=scenario),alpha=0.5) +
+  scale_colour_manual("", labels=c("status_quo" = "Base case (infant vaccination)",
+                               "elimination_birth_dose_80" = "Infant+birth dose vaccination",
+                               "elimination_birth_dose_ppt_80" = "Infant+birth dose vaccination+PAP",
+                               "elimination_birth_dose_ppt_treatment" = "Infant+birth dose vaccination+PAP+treatment"),
+                      values=c("status_quo" = "#DC663A",
+                               "elimination_birth_dose_80" = "#EBAA0D",
+                               "elimination_birth_dose_ppt_80" = "#731D84",
+                               "elimination_birth_dose_ppt_treatment" = "#6BA51D")) +
+  ylab("Annual incident chronic HBV infections") +
+  scale_x_continuous("Year", breaks=seq(2020,2080,10),
+                     limits=c(2015,2080)) +
+  theme_classic() +
+  theme(legend.position = c(0.62, 0.8),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        panel.border = element_rect(colour = "black", fill = NA),
+        axis.text = element_text(size = 17),
+        axis.title = element_text(size = 17),
+        legend.text = element_text(size = 17),
+        legend.title = element_text(size = 17)) +
+  ylim(0,1200)
+
+deaths_plot <- ggplot(deaths_summary) +
+  geom_line(aes(x=time, y = median/0.5, colour=scenario), size=1) +
+  #geom_ribbon(aes(x=time, ymin = lower, ymax=upper, fill=scenario),alpha=0.5) +
+  scale_colour_manual("", labels=c("status_quo" = "Base case (infant vaccination)",
+                                   "elimination_birth_dose_80" = "Infant+birth dose vaccination",
+                                   "elimination_birth_dose_ppt_80" = "Infant+birth dose vaccination+PAP",
+                                   "elimination_birth_dose_ppt_treatment" = "Infant+birth dose vaccination+PAP+treatment"),
+                      values=c("status_quo" = "#DC663A",
+                               "elimination_birth_dose_80" = "#EBAA0D",
+                               "elimination_birth_dose_ppt_80" = "#731D84",
+                               "elimination_birth_dose_ppt_treatment" = "#6BA51D")) +
+  ylab("Annual HBV-related deaths") +
+  scale_x_continuous("Year", breaks=seq(2020,2080,10),
+                     limits=c(2015,2080)) +
+  theme_classic() +
+  theme(legend.position = "none",
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        panel.border = element_rect(colour = "black", fill = NA),
+        axis.text = element_text(size = 17),
+        axis.title = element_text(size = 17),
+        legend.text = element_text(size = 17),
+        legend.title = element_text(size = 17)) +
+  ylim(0,500)
+
+library(grid)
+inc_plot_a <- arrangeGrob(inc_plot, top = textGrob("A", x = unit(0.01, "npc"),
+                                                  y   = unit(1, "npc"), just=c("left","top"),
+                                                  gp=gpar(col="black", fontsize=20)))
+deaths_plot_b <- arrangeGrob(deaths_plot, top = textGrob("B", x = unit(0.01, "npc"),
+                                                   y   = unit(1, "npc"), just=c("left","top"),
+                                                   gp=gpar(col="black", fontsize=20)))
+
+#png(file = "elimination_scenarios_plot.png", width=300, height=260, units = "mm", res=300, pointsize = 0.99)
+grid.arrange(inc_plot_a, deaths_plot_b, nrow=2)
+#dev.off()
+
 ## SENSITIVITY ANALYSIS -----
-# PRCC for baseline projections (epiR packaage)----
+# PRCC for baseline projections (epiR package)----
 # Possible outcomes is: reduction between 2015 and 2030 or time to elimination according to
 # this definition.
 
@@ -498,3 +686,30 @@ grid.arrange(ep1, ep2, nrow = 1)
 # women, MTCT risk from HBeAg-negative and -positive mothers,
 #the progression rate from HBeAg-positive CHB to HBeAg-negative infection and the
 #rate from HBeAg-negative infection to HBeAg-negative CHB.
+
+
+# TESTS
+effect <- (out2$timeseries$total_chronic_infections[
+  out2$timeseries$total_chronic_infections$time==2030,-c(1:2)]-
+    out_bd$timeseries$total_chronic_infections[
+      out_bd$timeseries$total_chronic_infections$time==2030,-c(1:2)])/
+  out2$timeseries$total_chronic_infections[
+    out2$timeseries$total_chronic_infections$time==2030,-c(1:2)]
+
+effect <- (out2$timeseries$total_hbv_deaths[
+  out2$timeseries$total_hbv_deaths$time==2050,-c(1:2)]-
+    out_bd$timeseries$total_hbv_deaths[
+      out_bd$timeseries$total_hbv_deaths$time==2050,-c(1:2)])/
+  out2$timeseries$total_hbv_deaths[
+    out2$timeseries$total_hbv_deaths$time==2050,-c(1:2)]
+
+prcc <- epi.prcc(cbind(params_mat_accepted_kmeans, t(effect)),
+                                       sided.test = 2, conf.level = 0.95)
+
+prcc <- data.frame(parameter= colnames(params_mat_accepted_kmeans),
+                                         prcc = prcc$est,
+                                         p_value = prcc$p.value)
+prcc <- arrange(prcc, -abs(prcc))
+
+
+plot(x=as.numeric(median_prop), y = as.numeric(effect), xlim =c(0,1), ylim = c(0,1))
