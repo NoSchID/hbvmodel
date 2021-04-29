@@ -2308,6 +2308,7 @@ quantile(apply((out2_it_tn$treatment_eligible_carriers_undiagnosed_over_time_15_
 ### Diagnostic plots for screening and monitoring by age, or monitoring frequency ----
 # Plots of breakdown of impact of 5-yearly monitoring and screening by separate age group (previously in monitoring frequency file) ----
 
+
 # EFFECT OF MONITORING BY AGE (monitoring compared to no monitoring)
 
 # DALYs averted by monitoring
@@ -2393,91 +2394,225 @@ levels(df_by_age_group$scenario) <- list("15-30" = "screen_2020_monit_sim6",
                                          "30-45" = "screen_2020_monit_sim8",
                                          "45+" = "screen_2020_monit_sim10")
 
+# All outcomes and interactions are incremental to the no monitoring scenario.
 
 # DALYs averted
 p <- ggplot(df_by_age_group) +
-  geom_boxplot(aes(x=scenario, y = dalys_averted)) +
-  ylab("Inc. DALYs averted") +
+  geom_boxplot(aes(x=scenario, y = dalys_averted/1000), fill = "grey", lwd=1) +
+  ylab("DALYs averted\n(thousands)") +
   xlab("Monitored age group") +
-  ylim(0,61000)
+  ylim(0,61) +
+  theme_classic() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        panel.border = element_rect(colour = "black", fill = NA),
+        axis.text = element_text(size = 15),
+        axis.title.y = element_text(size = 15),
+        axis.title.x = element_blank(),
+        strip.text.y = element_text(size = 14),
+        strip.text.x = element_text(size = 15))
 
 px <- ggplot(df_by_age_group) +
-  geom_boxplot(aes(x=scenario, y = deaths_averted)) +
-  ylab("Inc. HBV deaths averted") +
+  geom_boxplot(aes(x=scenario, y = deaths_averted/1000), fill = "grey", lwd=1) +
+  ylab("HBV deaths averted\n(thousands)") +
   xlab("Monitored age group") +
-  ylim(0,4100)
+  ylim(0,4.1) +
+  theme_classic() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        panel.border = element_rect(colour = "black", fill = NA),
+        axis.text = element_text(size = 15),
+        axis.title.y = element_text(size = 15),
+        axis.title.x = element_blank(),
+        strip.text.y = element_text(size = 14),
+        strip.text.x = element_text(size = 15))
 
 p0 <- ggplot(df_by_age_group) +
-  geom_boxplot(aes(x=scenario, y = monitoring_assessments)) +
-  ylab("Monitoring assessments") +
+  geom_boxplot(aes(x=scenario, y = monitoring_assessments/1000), fill = "grey", lwd=1) +
+  ylab("Monitoring assessments\n(thousands)") +
   xlab("Monitored age group") +
-  ylim(0,400000)
+  ylim(0,400)+
+  theme_classic() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        panel.border = element_rect(colour = "black", fill = NA),
+        axis.text = element_text(size = 15),
+        axis.title.y = element_text(size = 15),
+        axis.title.x = element_blank(),
+        strip.text.y = element_text(size = 14),
+        strip.text.x = element_text(size = 15))
 
 # Incremental DALYs averted per monitoring assessment
 p1 <- ggplot(df_by_age_group) +
-  geom_boxplot(aes(x=scenario, y = dalys_averted/monitoring_assessments)) +
-  ylab("Inc. DALYs averted\nper monitoring assessment") +
+  geom_boxplot(aes(x=scenario, y = dalys_averted/monitoring_assessments), fill = "grey", lwd=1) +
+  ylab("DALYs averted\nper monitoring assessment") +
   xlab("Monitored age group") +
-  ylim(0,1)
+  ylim(0,1)+
+  theme_classic() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        panel.border = element_rect(colour = "black", fill = NA),
+        axis.text = element_text(size = 15),
+        axis.title.y = element_text(size = 15),
+        axis.title.x = element_blank(),
+        strip.text.y = element_text(size = 14),
+        strip.text.x = element_text(size = 15))
 
 # Incremental DALYs averted per treatment initiations
 p2 <- ggplot(df_by_age_group) +
-  geom_boxplot(aes(x=scenario, y = dalys_averted/treatment_initiations)) +
-  ylab("Inc. DALYs averted\nper inc. treatment initiation") +
+  geom_boxplot(aes(x=scenario, y = dalys_averted/treatment_initiations), fill = "grey", lwd=1) +
+  ylab("DALYs averted\nper treatment initiation") +
   xlab("Monitored age group") +
-  ylim(0,30)
+  ylim(0,30)+
+  theme_classic() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        panel.border = element_rect(colour = "black", fill = NA),
+        axis.text = element_text(size = 15),
+        axis.title.y = element_text(size = 15),
+        axis.title.x = element_blank(),
+        strip.text.y = element_text(size = 14),
+        strip.text.x = element_text(size = 15))
 
 # Incremental DALYs averted per PY on treatment
 p3 <- ggplot(df_by_age_group) +
-  geom_boxplot(aes(x=scenario, y = dalys_averted/py_on_treatment)) +
-  ylab("Inc. DALYs averted\nper inc. PY on treatment") +
+  geom_boxplot(aes(x=scenario, y = dalys_averted/py_on_treatment), fill = "grey", lwd=1) +
+  ylab("DALYs averted\nper PY on treatment") +
   xlab("Monitored age group") +
-  ylim(0,0.75)
+  ylim(0,0.75)+
+  theme_classic() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        panel.border = element_rect(colour = "black", fill = NA),
+        axis.text = element_text(size = 15),
+        axis.title.y = element_text(size = 15),
+        axis.title.x = element_blank(),
+        strip.text.y = element_text(size = 14),
+        strip.text.x = element_text(size = 15))
 
 # Incremental deaths averted per monitoring assessment
 p4 <- ggplot(df_by_age_group) +
-  geom_boxplot(aes(x=scenario, y = deaths_averted/monitoring_assessments)) +
-  ylab("Inc. HBV-related deaths averted\nper monitoring assessment") +
+  geom_boxplot(aes(x=scenario, y = deaths_averted/monitoring_assessments), fill = "grey", lwd=1) +
+  ylab("HBV deaths averted\nper monitoring assessment") +
   xlab("Monitored age group") +
-  ylim(0,0.04)
+  ylim(0,0.04)+
+  theme_classic() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        panel.border = element_rect(colour = "black", fill = NA),
+        axis.text = element_text(size = 15),
+        axis.title.y = element_text(size = 15),
+        axis.title.x = element_blank(),
+        strip.text.y = element_text(size = 14),
+        strip.text.x = element_text(size = 15))
 
 # Incremental deaths  averted per treatment initiations
 p5 <- ggplot(df_by_age_group) +
-  geom_boxplot(aes(x=scenario, y = deaths_averted/treatment_initiations)) +
-  ylab("Inc. HBV-related deaths averted\nper inc. treatment initiation") +
+  geom_boxplot(aes(x=scenario, y = deaths_averted/treatment_initiations), fill = "grey", lwd=1) +
+  ylab("HBV deaths averted\nper treatment initiation") +
   xlab("Monitored age group") +
-  ylim(0,0.7)
+  ylim(0,0.7)+
+  theme_classic() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        panel.border = element_rect(colour = "black", fill = NA),
+        axis.text = element_text(size = 15),
+        axis.title.y = element_text(size = 15),
+        axis.title.x = element_blank(),
+        strip.text.y = element_text(size = 14),
+        strip.text.x = element_text(size = 15))
 
 # Incremental deaths  averted per PY on treatment
 p6 <- ggplot(df_by_age_group) +
-  geom_boxplot(aes(x=scenario, y = deaths_averted/py_on_treatment)) +
-  ylab("Inc. HBV-related deaths averted\nper inc. PY on treatment") +
+  geom_boxplot(aes(x=scenario, y = deaths_averted/py_on_treatment), fill = "grey", lwd=1) +
+  ylab("HBV deaths averted\nper PY on treatment") +
   xlab("Monitored age group") +
-  ylim(0,0.05)
+  ylim(0,0.05)+
+  theme_classic() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        panel.border = element_rect(colour = "black", fill = NA),
+        axis.text = element_text(size = 15),
+        axis.title.y = element_text(size = 15),
+        axis.title.x = element_blank(),
+        strip.text.y = element_text(size = 14),
+        strip.text.x = element_text(size = 15))
 
 # Incremental treatment initiations per monitoring assessment
 p7 <- ggplot(df_by_age_group) +
-  geom_boxplot(aes(x=scenario, y = treatment_initiations/monitoring_assessments)) +
-  ylab("New treatment initiations\nper monitoring assessment") +
+  geom_boxplot(aes(x=scenario, y = treatment_initiations/monitoring_assessments), fill = "grey", lwd=1) +
+  ylab("Treatment initiations\nper monitoring assessment") +
   xlab("Monitored age group") +
-  ylim(0,0.07)
+  ylim(0,0.07)+
+  theme_classic() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        panel.border = element_rect(colour = "black", fill = NA),
+        axis.text = element_text(size = 15),
+        axis.title.y = element_text(size = 15),
+        axis.title.x = element_blank(),
+        strip.text.y = element_text(size = 14),
+        strip.text.x = element_text(size = 15))
 
 # Incremental PY on treatment per monitoring assessment
 p8 <- ggplot(df_by_age_group) +
-  geom_boxplot(aes(x=scenario, y = py_on_treatment/monitoring_assessments)) +
-  ylab("Inc. PY on treatment\nper monitoring assessment") +
+  geom_boxplot(aes(x=scenario, y = py_on_treatment/monitoring_assessments), fill = "grey", lwd=1) +
+  ylab("PY on treatment\nper monitoring assessment") +
   xlab("Monitored age group") +
-  ylim(0,1.75)
+  ylim(0,1.75)+
+  theme_classic() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        panel.border = element_rect(colour = "black", fill = NA),
+        axis.text = element_text(size = 15),
+        axis.title.y = element_text(size = 15),
+        axis.title.x = element_blank(),
+        strip.text.y = element_text(size = 14),
+        strip.text.x = element_text(size = 15))
 
 # Incremental PY on treatment per treatment initiation
 p9 <- ggplot(df_by_age_group) +
-  geom_boxplot(aes(x=scenario, y = py_on_treatment/treatment_initiations)) +
-  ylab("Inc. PY on treatment\nper inc. treatment initiation") +
+  geom_boxplot(aes(x=scenario, y = py_on_treatment/treatment_initiations), fill = "grey", lwd=1) +
+  ylab("PY on treatment\nper treatment initiation") +
   xlab("Monitored age group") +
-  ylim(0,35)
+  ylim(0,35)+
+  theme_classic() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        panel.border = element_rect(colour = "black", fill = NA),
+        axis.text = element_text(size = 15),
+        axis.title.y = element_text(size = 15),
+        axis.title.x = element_blank(),
+        strip.text.y = element_text(size = 14),
+        strip.text.x = element_text(size = 15))
 
 grid.arrange(p1,p2,p3,p4,p5,p6, ncol = 3)
 grid.arrange(p7,p8, ncol = 1)
+
+# THESIS PLOT
+# Monitor
+library(grid)
+#png(file = "monitoring_by_age_plot.png", width=360, height=220, units = "mm", res=300, pointsize = 0.99)
+grid.arrange(p,px,p0,p7,p9,
+             p1,p2,p3,
+             p4,p5,p6,
+             layout_matrix = rbind(c(1,1,1,2,2,2,3,3,3,4,4,4,5,5,5),
+                                   c(6,6,6,6,6,7,7,7,7,7,8,8,8,8,8),
+                                   c(9,9,9,9,9,10,10,10,10,10,11,11,11,11,11)),
+             bottom = textGrob("Monitored age group", gp=gpar(fontsize=15)))
+#dev.off()
 
 # Compare this with previous result!! Totally different because of change in
 # initial treatment initiations (out3_it) - this would be case in all scenarios including
@@ -2822,7 +2957,7 @@ interactions_df_summary <- group_by(interactions_df, scenario) %>%
 interactions_df_summary$outcome <- "treatment_initiations_per_1000_monitoring_assessments"
 
 monitoring_prop_dalys_averted_summary <- rbind(monitoring_prop_dalys_averted_summary,
-                                               interactions_df_summary)
+                                               interactions_df_summary, interactions_df_summary2)
 monitoring_prop_dalys_averted_summary$scenario <- factor(monitoring_prop_dalys_averted_summary$scenario,
                                                          levels = c("screen_2020_monit_20",
                                                                     "screen_2020_monit_10",
@@ -2854,6 +2989,41 @@ ggplot(subset(monitoring_prop_dalys_averted_summary, outcome == "percentage_daly
         axis.title = element_text(size = 15),
         legend.text = element_text(size = 14)) +
   coord_flip()
+
+dalys_against_assessments <- subset(monitoring_prop_dalys_averted_summary, outcome == "percentage_dalys_averted")
+dalys_against_assessments$median_monitoring_assessments <- data.frame(group_by(interactions_df, scenario) %>%
+  summarise(median = median(monitoring_assessments)))[,"median"]
+
+# THESIS PLOT
+
+#png(file = "monitoring_freq_plot.png", width=300, height=80, units = "mm", res=300, pointsize = 0.99)
+ggplot(dalys_against_assessments) +
+  geom_point(aes(x= median_monitoring_assessments/1000,
+                 y = median, colour = scenario), size = 4) +
+  geom_errorbar(aes(x=median_monitoring_assessments/1000,
+                    ymin = lower, ymax = upper, colour = scenario), width = 20) +
+  theme_classic() +
+  #guides(colour=FALSE) +
+  scale_colour_viridis_d("Monitoring\ninterval",
+                        labels=c("screen_2020_monit_20" = "20 years",
+                            "screen_2020_monit_10" = "10 years",
+                            "screen_2020_monit_5" = "5 years",
+                            "screen_2020_monit_2" = "2 years",
+                            "screen_2020_monit_1" = "1 year")) +
+  xlab("Monitoring assessments (thousands)") +
+  ylim(0,80) +
+  xlim(0,1500)+
+  ylab("DALYs averted (%)") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        panel.border = element_rect(colour = "black", fill = NA),
+        axis.text = element_text(size = 18),
+        axis.title = element_text(size = 18),
+        legend.text = element_text(size = 18),
+        legend.title = element_text(size = 18))
+#dev.off()
+
 
 # Hypothesis 1: incremental new treatment initiations per incremental assessments
 # decline with increasing frequency
@@ -2939,7 +3109,7 @@ median_values <- group_by(interactions_df, scenario) %>%
             treatment_initiations=median(treatment_initiations),
             cohort_dalys_averted = median(cohort_dalys_averted))
 
-ggplot(interactions_df) +
+monit_exp_p1 <- ggplot(interactions_df) +
   geom_point(aes(x=monitoring_assessments/1000, y = treatment_initiations/1000,
                  colour = reorder(scenario, monitoring_assessments))) +
   geom_point(data=median_values, aes(x=monitoring_assessments/1000,
@@ -2950,7 +3120,7 @@ ggplot(interactions_df) +
                                      y = treatment_initiations/1000,
                                      group = reorder(scenario, monitoring_assessments)),
              size = 5, shape = 21, colour="black") +
- scale_colour_discrete("Average\nmonitoring\ninterval",
+ scale_colour_viridis_d("Average monitoring interval",
                        labels=c("screen_2020_monit_20" = "20 years",
                                 "screen_2020_monit_10" = "10 years",
                                 "screen_2020_monit_5" = "5 years",
@@ -2959,10 +3129,14 @@ ggplot(interactions_df) +
   ylab("Treatment initiations (thousands)") +
   xlab("Monitoring assessments (thousands)") +
   theme_classic() +
-  theme(axis.text = element_text(size = 15),
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        panel.border = element_rect(colour = "black", fill = NA),
+        axis.text = element_text(size = 15),
                 axis.title = element_text(size = 15),
-                legend.text = element_text(size = 14),
-                legend.title = element_text(size = 14))
+                legend.text = element_text(size = 15),
+                legend.title = element_text(size = 15))
 
 
 
@@ -2979,7 +3153,7 @@ ggplot(incremental_df) +
   geom_boxplot(aes(x=scenario, y = dalys_averted_per_py_on_treatment))
 
 # Other visualisation:
-ggplot(interactions_df) +
+monit_exp_p2 <- ggplot(interactions_df) +
   geom_point(aes(x=treatment_initiations/1000, y = cohort_dalys_averted/1000,
                  colour = reorder(scenario, treatment_initiations))) +
   geom_point(data=median_values,
@@ -2993,7 +3167,7 @@ ggplot(interactions_df) +
                  group = reorder(scenario, treatment_initiations),
                  colour = reorder(scenario, treatment_initiations)), size = 5,
              shape=21, col = "black") +
-  scale_colour_discrete("Average\nmonitoring\ninterval",
+  scale_colour_viridis_d("Average monitoring interval",
                         labels=c("screen_2020_monit_20" = "20 years",
                                  "screen_2020_monit_10" = "10 years",
                                  "screen_2020_monit_5" = "5 years",
@@ -3002,15 +3176,23 @@ ggplot(interactions_df) +
   xlab("Treatment initiations (thousands)") +
   ylab("DALYs averted (thousands)") +
   theme_classic() +
-  theme(axis.text = element_text(size = 15),
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        panel.border = element_rect(colour = "black", fill = NA),
+        axis.text = element_text(size = 15),
         axis.title = element_text(size = 15),
-        legend.text = element_text(size = 14),
-        legend.title = element_text(size = 14))
+        legend.text = element_text(size = 15),
+        legend.title = element_text(size = 15))
 
 # The ratio of incremental DALYS averted per incremental time on treatment  declines
 # with increasing monitoring frequencies.
 
-
+# THESIS PLOT:
+library(ggpubr)
+#png(file = "monitoring_freq_explanatory_plot.png", width=300, height=150, units = "mm", res=300, pointsize = 0.99)
+ggarrange(monit_exp_p1, monit_exp_p2,nrow=1, common.legend = TRUE, legend="bottom")
+#dev.off()
 
 # Base case stats ----
 quantile(out2$timeseries$total_chronic_infections[out2$timeseries$total_chronic_infections$time==2020,-c(1,2)]+
@@ -3082,6 +3264,12 @@ cohort_outcomes$dalys_per_person <- cohort_outcomes$dalys/cohort_size$cohort_siz
 cohort_outcomes$hbv_deaths <- cohort_hbv_deaths$deaths
 cohort_outcomes$hbv_death_risk <- cohort_hbv_deaths$deaths/cohort_size$cohort_size
 cohort_outcomes$average_age_at_death <- cohort_age_at_death$age_at_death
+
+quantile(out3_it$cohort_age_at_death[,-1]-out1_it$cohort_age_at_death[,-1],
+         c(0.5,0.025,0.975))
+quantile(a1_out6_pop$cohort_age_at_death[,-1]-out1_it$cohort_age_at_death[,-1],
+         c(0.5,0.025,0.975))
+
 
 View(cohort_outcomes %>% group_by(scenario) %>%
   summarise(median_dalys = round(median(dalys),0),

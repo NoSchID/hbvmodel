@@ -14,7 +14,7 @@ source(here("R/scenario_analysis/calculate_outcomes.R"))
 
 # Load data ----
 out_path <-
-  "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/anc_analysis/"
+  "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/repeat_screening_anc_analysis/"
 
 # Status quo
 out2 <- readRDS(paste0(out_path, "out2_status_quo_301120.rds"))
@@ -24,8 +24,19 @@ out2 <- out2[[1]]
 monit_out7 <- readRDS(paste0(out_path, "a1_it_screen_2020_monit_out7_050321.rds"))
 monit_out7 <- monit_out7[[1]]
 
+# Repeat screening strategies
 out8b_2030_sim7 <- readRDS(paste0(out_path, "a1_it_out8b_monit_sim7_screen_10b_2030_290321.rds"))
 out8b_2030_sim7 <- out8b_2030_sim7[[1]]
+out8a_2030_sim7 <- readRDS(paste0(out_path, "a1_it_out8a_monit_sim7_screen_10a_2030_130421.rds"))
+out8a_2030_sim7 <- out8a_2030_sim7[[1]]
+out8b_2040_sim7 <- readRDS(paste0(out_path, "a1_it_out8b_monit_sim7_screen_10b_2040_130421.rds"))
+out8b_2040_sim7 <- out8b_2040_sim7[[1]]
+out8a_2040_sim7 <- readRDS(paste0(out_path, "a1_it_out8a_monit_sim7_screen_10a_2040_130421.rds"))
+out8a_2040_sim7 <- out8a_2040_sim7[[1]]
+out8b_2050_sim7 <- readRDS(paste0(out_path, "a1_it_out8b_monit_sim7_screen_10b_2050_130421.rds"))
+out8b_2050_sim7 <- out8b_2050_sim7[[1]]
+out8a_2050_sim7 <- readRDS(paste0(out_path, "a1_it_out8a_monit_sim7_screen_10a_2050_130421.rds"))
+out8a_2050_sim7 <- out8a_2050_sim7[[1]]
 
 # Combination of population-based and ANC strategies with monitoring 5 years in <45 year olds
 pop_2020_anc_2030_sim7 <- readRDS(paste0(out_path, "pop_2020_anc_2030_no_rescreen_monit_sim7_210121.rds"))
@@ -37,8 +48,18 @@ pop_2020_anc_2040_sim7 <- pop_2020_anc_2040_sim7[[1]]
 # simulations to extract monitoring assessments:
 out3_it <- readRDS(paste0(out_path, "a1_it_out3_screen_2020_monit_0_180121.rds"))
 out3_it <- out3_it[[1]]
-out8b_2030_monit_0 <- readRDS(paste0(out_path, "a1_it_out8b_monit_0_screen_10b_2030_080121.rds"))
+out8b_2030_monit_0 <- readRDS(paste0(out_path, "a1_it_out8b_monit_0_screen_10b_2030_220421.rds"))
 out8b_2030_monit_0 <- out8b_2030_monit_0[[1]]
+out8a_2030_monit_0 <- readRDS(paste0(out_path, "a1_it_out8a_monit_0_screen_10a_2030_220421.rds"))
+out8a_2030_monit_0 <- out8a_2030_monit_0[[1]]
+out8b_2040_monit_0 <- readRDS(paste0(out_path, "a1_it_out8b_monit_0_screen_10b_2040_220421.rds"))
+out8b_2040_monit_0 <- out8b_2040_monit_0[[1]]
+out8a_2040_monit_0 <- readRDS(paste0(out_path, "a1_it_out8a_monit_0_screen_10a_2040_220421.rds"))
+out8a_2040_monit_0 <- out8a_2040_monit_0[[1]]
+out8b_2050_monit_0 <- readRDS(paste0(out_path, "a1_it_out8b_monit_0_screen_10b_2050_220421.rds"))
+out8b_2050_monit_0 <- out8b_2050_monit_0[[1]]
+out8a_2050_monit_0 <- readRDS(paste0(out_path, "a1_it_out8a_monit_0_screen_10a_2050_220421.rds"))
+out8a_2050_monit_0 <- out8a_2050_monit_0[[1]]
 pop_2020_anc_2030_monit_0 <- readRDS(paste0(out_path, "pop_2020_anc_2030_no_rescreen_monit_0_210121.rds"))
 pop_2020_anc_2030_monit_0 <- pop_2020_anc_2030_monit_0[[1]]
 pop_2020_anc_2040_monit_0 <- readRDS(paste0(out_path, "pop_2020_anc_2040_no_rescreen_monit_0_210121.rds"))
@@ -71,7 +92,7 @@ anc_2100_monit_sim7_bd <- anc_2100_monit_sim7_bd[[1]]
 anc_2100_monit_sim7_ppt <- readRDS(paste0(out_path, "anc1_2100_no_rescreen_monit_sim7_bd_ppt_090421.rds"))
 anc_2100_monit_sim7_ppt <- anc_2100_monit_sim7_ppt[[1]]
 
-## 1) Cost-effectiveness of ANC compared to population-based screening (no PMTCT) ----
+## 1) Cost-effectiveness of ANC compared to repeat population-based screening (no PMTCT) ----
 # Create data frame with discounted costs and outcomes ----
 annual_discounting_rate <- 0.03
 time_horizon_year <- 2100
@@ -133,10 +154,26 @@ anc_interactions <- rbind(
   cbind(scenario = "screen_2020_monit_sim7",
         assemble_discounted_interactions_for_screening_strategies(monit_out7,
                                                                   assessment_object = out3_it)),
+  # Repeat population screening:
   cbind(scenario = "monit_sim7_screen_10b_2030",
         assemble_discounted_interactions_for_screening_strategies(out8b_2030_sim7,
                                                                   assessment_object = out8b_2030_monit_0)),
-  # Combination of pop and ANC testing:
+  cbind(scenario = "monit_sim7_screen_10a_2030",
+        assemble_discounted_interactions_for_screening_strategies(out8a_2030_sim7,
+                                                                  assessment_object = out8a_2030_monit_0)),
+  cbind(scenario = "monit_sim7_screen_10b_2040",
+        assemble_discounted_interactions_for_screening_strategies(out8b_2040_sim7,
+                                                                  assessment_object = out8b_2040_monit_0)),
+  cbind(scenario = "monit_sim7_screen_10a_2040",
+        assemble_discounted_interactions_for_screening_strategies(out8a_2040_sim7,
+                                                                  assessment_object = out8a_2040_monit_0)),
+  cbind(scenario = "monit_sim7_screen_10b_2050",
+        assemble_discounted_interactions_for_screening_strategies(out8b_2050_sim7,
+                                                                  assessment_object = out8b_2050_monit_0)),
+  cbind(scenario = "monit_sim7_screen_10a_2050",
+        assemble_discounted_interactions_for_screening_strategies(out8a_2050_sim7,
+                                                                  assessment_object = out8a_2050_monit_0)),
+    # Combination of pop and ANC testing:
   cbind(scenario = "pop_2020_anc_2030_no_rescreen_monit_sim7",
         assemble_discounted_interactions_for_screening_strategies(pop_2020_anc_2030_sim7,
                                                                   assessment_object = pop_2020_anc_2030_monit_0)),
@@ -167,7 +204,8 @@ cbind(scenario = "anc_2040_no_rescreen_monit_sim7",
 
 
 # PY on treatment, DALYS and deaths averted:
-object_list <- list(out3_it, monit_out7, out8b_2030_sim7,
+object_list <- list(out3_it, monit_out7, out8b_2030_sim7, out8a_2030_sim7,
+                    out8b_2040_sim7,out8a_2040_sim7,out8b_2050_sim7,out8a_2050_sim7,
                     pop_2020_anc_2030_sim7, pop_2020_anc_2040_sim7,
                     anc_2020_monit_0, anc_2020_monit_sim7, anc_2030_monit_0, anc_2030_monit_sim7,
                     anc_2040_monit_0, anc_2040_monit_sim7)
@@ -310,11 +348,20 @@ ggplot(dominance_prob_result) +
   theme(axis.text.x=element_text(angle = 90, hjust =1))
 
 # Calculate ICER by simulation on non-dominated strategies
-anc_df2 <- subset(anc_df, scenario %in% c("monit_sim7_screen_10b_2030",
+anc_df2 <- subset(anc_df, scenario %in% c("monit_sim7_screen_10a_2050",
+                                          "monit_sim7_screen_10b_2050",
+                                          "monit_sim7_screen_10b_2040",
                                           "screen_2020_anc_monit_0",
                                           "pop_2020_anc_2040_no_rescreen_monit_sim7",
                                           "anc_2030_no_rescreen_monit_0",
                                           "anc_2040_no_rescreen_monit_0"))
+
+
+#anc_df2 <- subset(anc_df, scenario %in% c("monit_sim7_screen_10b_2030",
+#                                          "screen_2020_anc_monit_0",
+#                                          "pop_2020_anc_2040_no_rescreen_monit_sim7",
+#                                          "anc_2030_no_rescreen_monit_0",
+#                                          "anc_2040_no_rescreen_monit_0"))
 
 icer_list <- list()
 
