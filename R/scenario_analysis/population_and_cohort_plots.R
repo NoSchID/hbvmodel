@@ -2201,8 +2201,14 @@ timeplot2_v2 <- ggplot(data=subset(unmet_need_df2)) +
 # Combined plot:
 grid.arrange(timeplot1, timeplot2, ncol = 2, widths = 3:2)
 
+# PAPER PLOT:
 #tiff(file = "timeplot.tiff", width=300, height=125, units = "mm", res=300, pointsize = 0.99)
 grid.arrange(timeplot1_v2, timeplot2_v2, ncol = 2, widths = 3:2)
+#dev.off()
+
+# THESIS PLOT (combined with plot from repeat_screening_analysis.R):
+#png(file = "scenarios_timeplot.tiff", width=300/1.2, height=125/1.2, units = "mm", res=300, pointsize =0.99)
+print(timeplot1_v2)
 #dev.off()
 
 # Number instead of %

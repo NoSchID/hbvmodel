@@ -1232,6 +1232,7 @@ ggplot(comb_carriers) +
                position = "dodge")
 # Need to look at carriers who can still be targeted in screening (those not in cohort)
 
+## THESIS PLOT ----
 ## NEW WITH IT TREATED: Plot of repeat screening impact compared to prevalence and treatment need ----
 
 obj_list <- list(out3_it, out8b_it_2030, out8b_it_2040, out8b_it_2050, out8b_it_2060,
@@ -1434,6 +1435,9 @@ ggplot() +
 # MAIN PLOT
 # LEFT: Deaths averted - overlay 50% coverage (which should be lighter)
 
+# Remove 2060 timepoint:
+total_df <- subset(total_df, screening_end_year != 2060)
+
 p1 <- ggplot() +
   stat_summary(data=subset(total_df, type == "proportion"& outcome =="deaths_averted" & scenario != "sq" &
                              screening_coverage=="90%"),
@@ -1447,10 +1451,10 @@ p1 <- ggplot() +
                fun="median", geom="bar")+
   facet_wrap(~screening_end_year, ncol = 5, strip.position="bottom") +
   scale_fill_manual("Monitoring strategy",
-                    values = c("50% 5<45" = "#A180A9",
-                               "50% No" = "#90C7C5",
-                               "90% 5<45" = "#440154",
-                               "90% No" = "#21908C"),
+                    values = c("50% No" = "#A180A9",
+                               "50% 5<45" = "#90C7C5",
+                               "90% No" = "#440154",
+                               "90% 5<45" = "#21908C"),
                     breaks = c("90% 5<45", "90% No"),
                     labels =  c("90% 5<45" = "Every 5 years\nin <45 year olds",
                                 "90% No" = "No monitoring")) +
@@ -1463,7 +1467,7 @@ p1 <- ggplot() +
                                                   colour = c("white", "white")),
                                                   order =2),
          fill = guide_legend(order=1)) +
-  ylab("Cumulative HBV-related deaths\naverted by 2100 (%)") +
+  ylab("Cumulative HBV-related deaths averted (%)") + # averted by 2100
   xlab("End year of screening") +
   theme_classic() +
   scale_y_continuous(expand = c(0, 0)) +
@@ -1472,10 +1476,10 @@ p1 <- ggplot() +
         strip.background = element_blank(),
         axis.line.x = element_blank(),
         legend.position = "none",
-        strip.text = element_text(size = 15),
-        axis.text = element_text(size = 15),
-        axis.title = element_text(size = 15),
-        legend.text = element_text(size = 13),
+        strip.text = element_text(size = 16),
+        axis.text = element_text(size = 16),
+        axis.title = element_text(size = 16),
+        legend.text = element_text(size = 14),
         legend.title = element_text(size = 14))
 
 # RIGHT: Remaining treatment need
@@ -1492,41 +1496,44 @@ p2 <- ggplot() +
                aes(x=monitoring, y = value*100,
                    fill = screening_coverage_monitoring,colour="l1"),
                fun="median", geom="bar") +
-  stat_summary(data=subset(total_df, type == "proportion" & outcome == "remaining_treatment_need" &
-                             scenario == "sq"),
-            aes(x=1.5, y = value*100), shape = 4, size=3,
-               fun="median", geom="point",colour="black")+
+  stat_summary(data=subset(total_df, type == "proportion" &
+                             outcome == "remaining_treatment_need" & scenario == "sq"),
+            aes(x=1.5, y = value*100, shape = "Base case"), size=5,
+               fun="median", geom="point", colour="black")+
   facet_wrap(~screening_end_year, ncol = 5, strip.position="bottom") +
-  scale_fill_manual("Monitoring strategy",
-                    values = c("50% 5<45" = "#A180A9",
-                               "50% No" = "#90C7C5",
-                               "90% 5<45" = "#440154",
-                               "90% No" = "#21908C"),
+  scale_fill_manual(values = c("50% No" = "#A180A9",
+                               "50% 5<45" = "#90C7C5",
+                               "90% No" = "#440154",
+                               "90% 5<45" = "#21908C"),
                     breaks = c("90% 5<45", "90% No"),
-                    labels =  c("90% 5<45" = "Every 5 years\nin <45 year olds",
-                                "90% No" = "No monitoring")) +
+                    labels =  c("90% 5<45" = "Screening and treatment,\nmonitor 5-yearly in <45 year olds",
+                                "90% No" = "Screening and treatment,\nno monitoring")) +
   scale_colour_manual("Screening coverage",
                       values = c("l1" = "black",
                                  "l2" = "black"),
                       labels = c("l1" = "50%",
                                  "l2" = "90%")) +
+  scale_shape_manual("", values=c("Base case" = 18)) +
   guides(color = guide_legend(override.aes = list(fill = c("grey80", "black"),
                                                   colour = c("white", "white")),
-                              order =2),
-         fill = guide_legend(order=1)) +
-  ylab("Unmet treatment need in total\ntargeted population at time of screening (%)") +
+                              order =3),
+         fill = guide_legend(title=NULL, order=2, reverse = T),
+         shape =guide_legend(title=NULL, order=1)) +
+  ylab("Unmet treatment need in total population (%)") + # Unmet need in total targeted population at time of screening
   xlab("Year of screening") +
   theme_classic() +
   scale_y_continuous(expand = c(0, 0)) +
+  coord_cartesian(ylim = c(0,1.15)) +
   theme(axis.text.x=element_blank(),
         axis.ticks.x=element_blank(),
         strip.background = element_blank(),
         axis.line.x = element_blank(),
-        legend.position = c(0.75, 0.75),
-        strip.text = element_text(size = 15),
-        axis.text = element_text(size = 15),
-        axis.title = element_text(size = 15),
-        legend.text = element_text(size = 13),
+        legend.position = c(0.73, 0.85),
+        legend.spacing.y = unit(0, "pt"),
+        strip.text = element_text(size = 16),
+        axis.text = element_text(size = 16),
+        axis.title = element_text(size = 16),
+        legend.text = element_text(size = 14),
         legend.title = element_text(size = 14))
 # It is surprising how few of the eligible carriers are identified by the programme.
 # Is this because of losses in the cascade? Or uncertainty?
@@ -1534,7 +1541,18 @@ p2 <- ggplot() +
 # effect here too). Though related to vaccination showing the PROPORTION has similar
 # effect.
 
-grid.arrange(p1,p2,ncol=2)
+library(grid)
+p1a <- arrangeGrob(p1, top = textGrob("A", x = unit(0.01, "npc"),
+                                                  y   = unit(1, "npc"), just=c("left","top"),
+                                                  gp=gpar(col="black", fontsize=18)))
+p2b <- arrangeGrob(p2, top = textGrob("B", x = unit(0.01, "npc"),
+                                      y   = unit(1, "npc"), just=c("left","top"),
+                                      gp=gpar(col="black", fontsize=18)))
+
+# THESIS PLOT
+#png(file = "repeat_screen_effect.png", width=315, height=135, units = "mm", res=300, pointsize = 0.99)
+grid.arrange(p1a,p2b,ncol=2)
+#dev.off()
 # Cross indicates treatment need decline with vaccination alone.
 
 # With only 90% coverage

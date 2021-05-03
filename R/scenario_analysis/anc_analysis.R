@@ -43,6 +43,17 @@ pop_2020_anc_2030_sim7 <- readRDS(paste0(out_path, "pop_2020_anc_2030_no_rescree
 pop_2020_anc_2030_sim7 <- pop_2020_anc_2030_sim7[[1]]
 pop_2020_anc_2040_sim7 <- readRDS(paste0(out_path, "pop_2020_anc_2040_no_rescreen_monit_sim7_220121.rds"))
 pop_2020_anc_2040_sim7 <- pop_2020_anc_2040_sim7[[1]]
+pop_2020_anc_2050_sim7 <- readRDS(paste0(out_path, "pop_2020_anc_2050_no_rescreen_monit_sim7_300421.rds"))
+pop_2020_anc_2050_sim7 <- pop_2020_anc_2050_sim7[[1]]
+# With rescreens:
+pop_2020_anc_2030_sim7a <- readRDS(paste0(out_path, "pop_2020_anc_2030_with_rescreen_monit_sim7_300421.rds"))
+pop_2020_anc_2030_sim7a <- pop_2020_anc_2030_sim7a[[1]]
+pop_2020_anc_2040_sim7a <- readRDS(paste0(out_path, "pop_2020_anc_2040_with_rescreen_monit_sim7_300421.rds"))
+pop_2020_anc_2040_sim7a <- pop_2020_anc_2040_sim7a[[1]]
+pop_2020_anc_2050_sim7a <- readRDS(paste0(out_path, "pop_2020_anc_2050_with_rescreen_monit_sim7_300421.rds"))
+pop_2020_anc_2050_sim7a <- pop_2020_anc_2050_sim7a[[1]]
+
+# THESE NEED NO MONITORING COMPARATOR!!
 
 # For strategies involving population-based screening, need no monitoring
 # simulations to extract monitoring assessments:
@@ -82,7 +93,6 @@ anc_2030_monit_sim7 <- readRDS(paste0(out_path, "anc1_2030_no_rescreen_monit_sim
 anc_2030_monit_sim7 <- anc_2030_monit_sim7[[1]]
 anc_2040_monit_sim7 <- readRDS(paste0(out_path, "anc1_2040_no_rescreen_monit_sim7_290321.rds"))
 anc_2040_monit_sim7 <- anc_2040_monit_sim7[[1]]
-
 
 # PREVENTION SIMULATIONS
 anc_2100_monit_sim7 <- readRDS(paste0(out_path, "anc1_2100_no_rescreen_monit_sim7_090421.rds"))
@@ -179,7 +189,11 @@ anc_interactions <- rbind(
                                                                   assessment_object = pop_2020_anc_2030_monit_0)),
   cbind(scenario = "pop_2020_anc_2040_no_rescreen_monit_sim7",
         assemble_discounted_interactions_for_screening_strategies(pop_2020_anc_2040_sim7,
-                                                                  assessment_object = pop_2020_anc_2040_monit_0)),  # ANC strategies
+                                                                  assessment_object = pop_2020_anc_2040_monit_0)),
+#  cbind(scenario = "pop_2020_anc_2050_no_rescreen_monit_sim7",
+#        assemble_discounted_interactions_for_screening_strategies(pop_2020_anc_2050_sim7,
+#                                                                  assessment_object = pop_2020_anc_2050_monit_0)),
+# ADD WITH RESCREEN STRATEGIES HERE
 # ANC strategies:
   cbind(scenario = "screen_2020_anc_monit_0",
         assemble_discounted_interactions_for_screening_strategies(anc_2020_monit_0,
@@ -385,6 +399,35 @@ icer_result
 # Strategies up until combination of 2020 population-based screen + ANC until 2040
 # are cost-effective. Repeat population-based screen in 2030 is not dominated
 # but under current CE threshold not cost-effective compared to ANC strategies
+
+# CE plane plot ----
+
+ggplot(subset(anc_df, scenario != "No treatment")) +
+  stat_ellipse(aes(x = dalys_averted, y = total_cost,
+                   group = reorder(scenario, total_cost),
+                   fill= reorder(scenario, total_cost)),
+               geom = "polygon",
+               alpha = 0.2) +
+  geom_point(data= group_by(anc_df, scenario) %>%
+               summarise(dalys_averted=median(dalys_averted),
+                         total_cost = median(total_cost)),
+             aes(x=dalys_averted, y = total_cost, group = reorder(scenario, total_cost),
+                 colour = reorder(scenario, total_cost)), size = 5) +
+  scale_fill_manual(values = c(rev(brewer.pal(11,"RdYlBu")), brewer.pal(4, "Paired"))) +
+  scale_colour_manual("Scenarios",
+                      #                      labels = c("screen_2020_monit_0" = "2020 screen, no monitoring",
+                      #                                 "screen_2020_monit_10" = "2020 screen, monitor every 10 years",
+                      #                                 "monit_0_screen_10b_2030" = "2020+2030 screen, no monitoring",
+                      #                                 "monit_0_screen_10b_2040" = "2020+2030+2040 screen, no monitoring",
+                      #                                 "monit_10_screen_10b_2030" = "2020+2030 screen, monitor every 10 years",
+                      #                                 "monit_10_screen_10b_2040" = "2020+2030+2040 screen, monitor every 10 years"),
+                      values = c("black", rev(brewer.pal(11,"RdYlBu")), brewer.pal(4, "Paired"))) +
+  ylab("Total cost (USD 2019)") +
+  xlab("DALYs averted") +
+  guides(fill=FALSE) +
+#  geom_abline(slope=391, linetype = "dashed") +
+#  geom_abline(slope=518, linetype = "dashed") +
+  theme_classic()
 
 ## 2) Elimination analysis with BD and PPT ----
 # Reduce chronic infection incidence by 90% from 2015 ----

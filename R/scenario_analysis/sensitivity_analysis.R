@@ -273,7 +273,47 @@ prcc_df <- data.frame(parameter= colnames(params_mat_accepted_kmeans),
           monit_sim7_icer_p_value = prcc_icer_monit_sim7$p.value)
 prcc_df <- arrange(prcc_df, -abs(out3_icer_prcc))
 
-#write.csv(prcc_df, file = "prcc_estimates_050421.csv")
+parameter_names <- list(
+  # Transmission parameters
+  "beta1" = "b1",
+  "beta2" = "b2",
+  "beta3" = "b3",
+  "Relative infectiousness in HBeAg+" = "alpha",
+  "MTCT risk from HBeAg+ mother" = "mtct_prob_e",
+  "MTCT risk from HBeAg- mother" = "mtct_prob_s",
+  "Risk of chronic carriage at birth" = "p_chronic_in_mtct",
+  "Coefficient for risk of chronic carriage (cr)" = "p_chronic_function_r",
+  "Coefficient for risk of chronic carriage (cs)" = "p_chronic_function_s",
+  "Vaccine efficacy" = "vacc_eff",
+  # Natural history
+  "Rate from HBeAg+ infection to CHB at age 0" = "pr_it_ir",
+  "Rate from HBeAg+ CHB to HBeAg- infection at age 0" = "pr_ir_ic",
+  "Coefficient for progression through HBeAg+ compartments" = "eag_prog_function_rate",
+  "Rate from HBeAg+ to HBeAg- CHB" = "pr_ir_enchb",
+  "Parameter for HBsAg loss" = "sag_loss_slope",
+  "Rate from HBeAg- infection to CHB" = "pr_ic_enchb",
+  # Liver disease
+  "Rate from HBeAg+ CHB to CC in women" = "pr_ir_cc_female",
+  "Minimum age for cirrhosis (HBeAg+)" = "pr_ir_cc_age_threshold",
+  "Rate from HBeAg- CHB to CC in women" = "pr_enchb_cc_female",
+  "Rate ratio for cirrhosis in men" = "cirrhosis_male_cofactor",
+  "Rate of decompensation" = "pr_cc_dcc",
+  "Coefficient for progression to HCC in women" = "cancer_prog_coefficient_female",
+  "Minimum age for HCC" = "cancer_age_threshold",
+  "Rate ratio for HCC in men" = "cancer_male_cofactor",
+  "Rate ratio for HCC in HBeAg+ infection" = "hccr_it",
+  "Rate ratio for HCC in HBeAg+ CHB" = "hccr_ir",
+  "Rate ratio for HCC in HBeAg- CHB" = "hccr_enchb",
+  "Rate ratio for HCC in CC" = "hccr_cc",
+  "Rate from DCC to HCC" = "hccr_dcc",
+  "Mortality rate from CC" = "mu_cc",
+  "Mortality rate from DCC" = "mu_dcc",
+  "Mortality rate from HCC" = "mu_hcc")
+
+prcc_df$parameter <- factor(prcc_df$parameter)
+levels(prcc_df$parameter) <- parameter_names
+
+#write.csv(prcc_df, file = "prcc_estimates_030521.csv")
 
 abs(prcc_df$monit_sim7_icer_prcc[rank(abs(prcc_df$monit_sim7_icer_prcc))==23])
 
@@ -1409,6 +1449,25 @@ ggplot() +
 
 # Probably at some point it's also a question of built up immunity in the population.
 
+## SOURCES OF INFECTION
+inf_source <- out2 <- readRDS("C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/kmeans_full_output/a1_it_screen_2020_monit_0_infection_sources_160321.rds")
+inf_source <- inf_source [[1]]
+
+# Rows = time, columns = simulations
+timevec <- inf_source[[1]]$time
+new_inf_i2 <- as.data.frame(sapply(inf_source, "[[", "new_inf_i2"))
+new_inf_i3 <- as.data.frame(sapply(inf_source, "[[", "new_inf_i3"))
+new_inf_i4 <- as.data.frame(sapply(inf_source, "[[", "new_inf_i4"))
+new_inf_mtct <- as.data.frame(sapply(inf_source, "[[", "mtct"))
+
+total_of_medians <- apply(new_inf_i2,1,median)+apply(new_inf_i3,1,median)+
+  apply(new_inf_i4,1,median)+apply(new_inf_mtct,1,median)
+
+plot(x=timevec, y=apply(new_inf_i2,1,median)/total_of_medians, xlim=c(1980,2050), type="l",
+     ylim=c(0,1))
+lines(x=timevec, y=apply(new_inf_i3,1,median)/total_of_medians, xlim=c(1980,2050), col="red")
+lines(x=timevec, y=apply(new_inf_i4,1,median)/total_of_medians, xlim=c(1980,2050), col="blue")
+lines(x=timevec, y=apply(new_inf_mtct,1,median)/total_of_medians, xlim=c(1980,2050), col="pink")
 
 # For appendix: comparison of status quo with no-vaccination scenario ----
 hbv_deaths_over_time <-
