@@ -53,6 +53,7 @@ pop_2020_anc_2040_sim7a <- pop_2020_anc_2040_sim7a[[1]]
 pop_2020_anc_2050_sim7a <- readRDS(paste0(out_path, "pop_2020_anc_2050_with_rescreen_monit_sim7_300421.rds"))
 pop_2020_anc_2050_sim7a <- pop_2020_anc_2050_sim7a[[1]]
 
+
 # THESE NEED NO MONITORING COMPARATOR!!
 
 # For strategies involving population-based screening, need no monitoring
@@ -75,7 +76,15 @@ pop_2020_anc_2030_monit_0 <- readRDS(paste0(out_path, "pop_2020_anc_2030_no_resc
 pop_2020_anc_2030_monit_0 <- pop_2020_anc_2030_monit_0[[1]]
 pop_2020_anc_2040_monit_0 <- readRDS(paste0(out_path, "pop_2020_anc_2040_no_rescreen_monit_0_210121.rds"))
 pop_2020_anc_2040_monit_0 <- pop_2020_anc_2040_monit_0[[1]]
-
+pop_2020_anc_2050_monit_0 <- readRDS(paste0(out_path, "pop_2020_anc_2050_no_rescreen_monit_0_040521.rds"))
+pop_2020_anc_2050_monit_0 <- pop_2020_anc_2050_monit_0[[1]]
+# With rescreens:
+#pop_2020_anc_2030_monit_0a <- readRDS(paste0(out_path, "pop_2020_anc_2030_with_rescreen_monit_0_050521.rds"))
+#pop_2020_anc_2030_monit_0a <- pop_2020_anc_2030_monit_0a[[1]]
+pop_2020_anc_2040_monit_0a <- readRDS(paste0(out_path, "pop_2020_anc_2040_with_rescreen_monit_0_040521.rds"))
+pop_2020_anc_2040_monit_0a <- pop_2020_anc_2040_monit_0a[[1]]
+pop_2020_anc_2050_monit_0a <- readRDS(paste0(out_path, "pop_2020_anc_2050_with_rescreen_monit_0_040521.rds"))
+pop_2020_anc_2050_monit_0a <- pop_2020_anc_2050_monit_0a[[1]]
 
 # ANC strategies
 # No monitoring
@@ -85,6 +94,11 @@ anc_2030_monit_0 <- readRDS(paste0(out_path, "anc1_2030_no_rescreen_monit_0_1501
 anc_2030_monit_0 <- anc_2030_monit_0[[1]]
 anc_2040_monit_0 <- readRDS(paste0(out_path, "anc1_2040_no_rescreen_monit_0_150121.rds"))
 anc_2040_monit_0 <- anc_2040_monit_0[[1]]
+# With rescreen:
+anc_2030_monit_0a <- readRDS(paste0(out_path, "anc1_2030_with_rescreen_monit_0_140121.rds"))
+anc_2030_monit_0a <- anc_2030_monit_0a[[1]]
+anc_2040_monit_0a <- readRDS(paste0(out_path, "anc1_2040_with_rescreen_monit_0_140121.rds"))
+anc_2040_monit_0a <- anc_2040_monit_0a[[1]]
 
 # Monitor 5-yearly in <45 year olds
 anc_2020_monit_sim7 <- readRDS(paste0(out_path, "anc1_out3_screen_2020_monit_sim7_290321.rds"))
@@ -190,11 +204,19 @@ anc_interactions <- rbind(
   cbind(scenario = "pop_2020_anc_2040_no_rescreen_monit_sim7",
         assemble_discounted_interactions_for_screening_strategies(pop_2020_anc_2040_sim7,
                                                                   assessment_object = pop_2020_anc_2040_monit_0)),
-#  cbind(scenario = "pop_2020_anc_2050_no_rescreen_monit_sim7",
-#        assemble_discounted_interactions_for_screening_strategies(pop_2020_anc_2050_sim7,
-#                                                                  assessment_object = pop_2020_anc_2050_monit_0)),
-# ADD WITH RESCREEN STRATEGIES HERE
-# ANC strategies:
+  cbind(scenario = "pop_2020_anc_2050_no_rescreen_monit_sim7",
+        assemble_discounted_interactions_for_screening_strategies(pop_2020_anc_2050_sim7,
+                                                                  assessment_object = pop_2020_anc_2050_monit_0)),
+ #  cbind(scenario = "pop_2020_anc_2030_with_rescreen_monit_sim7",
+ #       assemble_discounted_interactions_for_screening_strategies(pop_2020_anc_2030_sim7a,
+ #                                                                 assessment_object = pop_2020_anc_2030_monit_0a)),
+  cbind(scenario = "pop_2020_anc_2040_with_rescreen_monit_sim7",
+        assemble_discounted_interactions_for_screening_strategies(pop_2020_anc_2040_sim7a,
+                                                                  assessment_object = pop_2020_anc_2040_monit_0a)),
+  cbind(scenario = "pop_2020_anc_2050_with_rescreen_monit_sim7",
+        assemble_discounted_interactions_for_screening_strategies(pop_2020_anc_2050_sim7a,
+                                                                  assessment_object = pop_2020_anc_2050_monit_0a)),
+ # ANC strategies
   cbind(scenario = "screen_2020_anc_monit_0",
         assemble_discounted_interactions_for_screening_strategies(anc_2020_monit_0,
                                                                   assessment_object = anc_2020_monit_0)),
@@ -207,22 +229,30 @@ cbind(scenario = "anc_2030_no_rescreen_monit_0",
 cbind(scenario = "anc_2030_no_rescreen_monit_sim7",
       assemble_discounted_interactions_for_screening_strategies(anc_2030_monit_sim7,
                                                                 assessment_object = anc_2030_monit_0)),
+cbind(scenario = "anc_2030_with_rescreen_monit_0",
+      assemble_discounted_interactions_for_screening_strategies(anc_2030_monit_0a,
+                                                                assessment_object = anc_2030_monit_0a)),
 cbind(scenario = "anc_2040_no_rescreen_monit_0",
       assemble_discounted_interactions_for_screening_strategies(anc_2040_monit_0,
                                                                 assessment_object = anc_2040_monit_0)),
 cbind(scenario = "anc_2040_no_rescreen_monit_sim7",
       assemble_discounted_interactions_for_screening_strategies(anc_2040_monit_sim7,
-                                                                assessment_object = anc_2040_monit_0))
-
+                                                                assessment_object = anc_2040_monit_0)),
+cbind(scenario = "anc_2040_with_rescreen_monit_0",
+      assemble_discounted_interactions_for_screening_strategies(anc_2040_monit_0a,
+                                                                assessment_object = anc_2040_monit_0a))
 )
 
 
 # PY on treatment, DALYS and deaths averted:
 object_list <- list(out3_it, monit_out7, out8b_2030_sim7, out8a_2030_sim7,
                     out8b_2040_sim7,out8a_2040_sim7,out8b_2050_sim7,out8a_2050_sim7,
-                    pop_2020_anc_2030_sim7, pop_2020_anc_2040_sim7,
-                    anc_2020_monit_0, anc_2020_monit_sim7, anc_2030_monit_0, anc_2030_monit_sim7,
-                    anc_2040_monit_0, anc_2040_monit_sim7)
+                    pop_2020_anc_2030_sim7, pop_2020_anc_2040_sim7, pop_2020_anc_2050_sim7,
+                    #pop_2020_anc_2030_sim7a,
+                    pop_2020_anc_2040_sim7a, pop_2020_anc_2050_sim7a,
+                    anc_2020_monit_0, anc_2020_monit_sim7,
+                    anc_2030_monit_0, anc_2030_monit_sim7, anc_2030_monit_0a,
+                    anc_2040_monit_0, anc_2040_monit_sim7, anc_2040_monit_0a)
 
 # Extract interactions and person-years on treatment, and HBV-related deaths
 # ad DALYs averted, in a for loop
@@ -285,7 +315,8 @@ colnames(anc_df)[colnames(anc_df)=="ly_saved"] <- "dalys_averted"
 # Strategies with only ANC testing:
 anc_only_strategies <- c("screen_2020_anc_monit_0", "screen_2020_anc_monit_sim7",
   "anc_2030_no_rescreen_monit_0", "anc_2030_no_rescreen_monit_sim7",
-  "anc_2040_no_rescreen_monit_0", "anc_2030_no_rescreen_monit_sim7")
+  "anc_2040_no_rescreen_monit_0", "anc_2030_no_rescreen_monit_sim7",
+  "anc_2030_with_rescreen_monit_0", "anc_2040_with_rescreen_monit_0")
 
 anc_df[
   anc_df$scenario %in% anc_only_strategies,]$screening_cost <-
@@ -308,7 +339,11 @@ anc_df[
 # (compare to screening cost in one-time pop test)
 # Normal cost from the pop-based test + reduced cost for subsequent ANC screens
 pop_anc_combi_strategies <- c("pop_2020_anc_2030_no_rescreen_monit_sim7",
-                              "pop_2020_anc_2040_no_rescreen_monit_sim7")
+                              "pop_2020_anc_2040_no_rescreen_monit_sim7",
+                              "pop_2020_anc_2050_no_rescreen_monit_sim7",
+                              #"pop_2020_anc_2030_with_rescreen_monit_sim7",
+                              "pop_2020_anc_2040_with_rescreen_monit_sim7",
+                              "pop_2020_anc_2050_with_rescreen_monit_sim7")
 
 for (i in 1:length(pop_anc_combi_strategies)) {
   anc_df[
@@ -366,9 +401,10 @@ anc_df2 <- subset(anc_df, scenario %in% c("monit_sim7_screen_10a_2050",
                                           "monit_sim7_screen_10b_2050",
                                           "monit_sim7_screen_10b_2040",
                                           "screen_2020_anc_monit_0",
-                                          "pop_2020_anc_2040_no_rescreen_monit_sim7",
                                           "anc_2030_no_rescreen_monit_0",
-                                          "anc_2040_no_rescreen_monit_0"))
+                                          "pop_2020_anc_2050_no_rescreen_monit_sim7",
+                                          "anc_2040_no_rescreen_monit_0",
+                                          "pop_2020_anc_2040_no_rescreen_monit_sim7"))
 
 
 #anc_df2 <- subset(anc_df, scenario %in% c("monit_sim7_screen_10b_2030",
@@ -402,6 +438,79 @@ icer_result
 
 # CE plane plot ----
 
+# Group strategies by target population and rescreen (for shape)
+
+pop_with_rescreen <- c("monit_sim7_screen_10a_2030",
+                       "monit_sim7_screen_10a_2040",
+                       "monit_sim7_screen_10a_2050")
+anc_with_rescreen <- c("anc_2030_with_rescreen_monit_0", "anc_2040_with_rescreen_monit_0")
+pop_anc_combi_with_rescreen <- c(
+                              #"pop_2020_anc_2030_with_rescreen_monit_sim7",
+                              "pop_2020_anc_2040_with_rescreen_monit_sim7",
+                              "pop_2020_anc_2050_with_rescreen_monit_sim7")
+
+anc_df$rescreen_group <- "no_rescreen"
+anc_df$rescreen_group[anc_df$scenario %in% c(pop_with_rescreen,
+                                             anc_with_rescreen,
+                                             pop_anc_combi_with_rescreen )] <- "with_rescreen"
+
+anc_df$scenario_without_rescreen_cat <- anc_df$scenario
+
+levels(anc_df$scenario_without_rescreen_cat) <- list(
+  "ANC 2020-2030, no monitoring" = "anc_2030_no_rescreen_monit_0",
+  "ANC 2020-2030, with monitoring"="anc_2030_no_rescreen_monit_sim7",
+  "ANC 2020-2030, no monitoring"="anc_2030_with_rescreen_monit_0",
+  "ANC 2020-2040, no monitoring"= "anc_2040_no_rescreen_monit_0",
+  "ANC 2020-2040, with monitoring"="anc_2040_no_rescreen_monit_sim7",
+  "ANC 2020-2040, no monitoring"="anc_2040_with_rescreen_monit_0",
+  "All adults 2020+2030, with monitoring" ="monit_sim7_screen_10a_2030" ,
+  "All adults 2020+2030+2040, with monitoring" ="monit_sim7_screen_10a_2040" ,
+  "All adults 2020+2030+2040+2050, with monitoring"="monit_sim7_screen_10a_2050" ,
+  "All adults 2020+2030, with monitoring"="monit_sim7_screen_10b_2030" ,
+  "All adults 2020+2030+2040, with monitoring"="monit_sim7_screen_10b_2040" ,
+  "All adults 2020+2030+2040+2050, with monitoring" ="monit_sim7_screen_10b_2050" ,
+  "No treatment"="No treatment" ,
+  "All adults 2020 + ANC 2020-2030, with monitoring" ="pop_2020_anc_2030_no_rescreen_monit_sim7" ,
+  "All adults 2020 + ANC 2020-2040, with monitoring"="pop_2020_anc_2040_no_rescreen_monit_sim7",
+  "All adults 2020 + ANC 2020-2040, with monitoring"="pop_2020_anc_2040_with_rescreen_monit_sim7",
+  "All adults 2020 + ANC 2020-2050, with monitoring"="pop_2020_anc_2050_no_rescreen_monit_sim7",
+  "All adults 2020 + ANC 2020-2050, with monitoring"="pop_2020_anc_2050_with_rescreen_monit_sim7",
+  "ANC 2020, no monitoring"="screen_2020_anc_monit_0",
+  "ANC 2020, with monitoring"= "screen_2020_anc_monit_sim7"  ,
+  "All adults 2020, no monitoring" ="screen_2020_monit_0" ,
+  "All adults 2020, with monitoring"="screen_2020_monit_sim7")
+
+anc_df_medians <- group_by(anc_df, rescreen_group,
+                           scenario_without_rescreen_cat, scenario) %>%
+            summarise(dalys_averted=median(dalys_averted),
+            total_cost = median(total_cost)) %>%
+  filter(scenario != "No treatment")
+
+
+
+# THESIS PLOT
+# Plot medians only with different shapes for ANC/repeat/combi strategies
+ggplot() +
+  geom_point(data=anc_df_medians,
+             aes(x=dalys_averted, y = total_cost,
+                 colour = reorder(scenario_without_rescreen_cat, total_cost)), size = 5) +
+    geom_point(data=subset(anc_df_medians, rescreen_group == "with_rescreen"),
+               aes(x=dalys_averted, y = total_cost, shape = rescreen_group), size = 5,
+               #shape = 21,
+               colour="black") +
+  scale_colour_manual(values = c("black", brewer.pal(12,"Paired")))+
+  scale_shape_manual(labels = c("with_rescreen" = "With individual re-testing"),
+                     values=c("with_rescreen" = 21))+
+  ylab("Total cost (USD 2019)") +
+  xlab("DALYs averted") +
+  guides(shape = guide_legend(order = 0),
+         colour = guide_legend(order = 1)) +
+  theme_classic() +
+  theme(legend.position = c(0.2, 0.75),
+        #legend.box = "horizontal",
+        legend.title = element_blank())
+
+# Plot with full uncertainty
 ggplot(subset(anc_df, scenario != "No treatment")) +
   stat_ellipse(aes(x = dalys_averted, y = total_cost,
                    group = reorder(scenario, total_cost),
