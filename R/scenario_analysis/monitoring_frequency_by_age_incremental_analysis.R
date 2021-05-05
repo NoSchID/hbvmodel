@@ -3207,8 +3207,11 @@ quantile(age_df[age_df$scenario=="screen_2020_monit_sim7",]$monitoring_assessmen
 opt_strategy <- list()
 opt_strategy_by_threshold <- list()
 
-threshold_vec <- c(0.25, 0.52,0.69, 1,3)*777.81
+#threshold_vec <- c(0.25, 0.52,0.69, 1,3)*777.81
 
+threshold_vec <- c(0.1,0.2,0.3,0.4,0.52,0.6,0.69,0.8,0.9,seq(1,3,by=0.1))*777.81
+# 0.1 steps took 70min
+tic()
 for (j in 1:length(threshold_vec)) {
   for(i in 1:183) {
     print(i)
@@ -3223,59 +3226,83 @@ for (j in 1:length(threshold_vec)) {
 }
 opt_strategy_by_threshold <- do.call("rbind",opt_strategy_by_threshold)
 
+#saveRDS(opt_strategy_by_threshold, "plot_probability_of_being_most_cost_effective_strategy_050521.rds")
+
 res <- opt_strategy_by_threshold %>%
   group_by(threshold) %>%
   count(scenario) %>%
   mutate(prob = n/183)
 
 templ <- data.frame(threshold = rep(c(0,unique(res$threshold)),each=17),
-                    scenario = rep(unique(res$scenario), 6))
+                    scenario = rep(unique(res$scenario), length(threshold_vec)+1))
 res <- left_join(templ, res, b=c("threshold", "scenario")) %>%
   filter(scenario != "None")
 res$prob[is.na(res$prob)] <- 0
 
 # Which strategy is the most cost-effective at each threshold?
-group_by(res, threshold) %>%
-  filter(threshold != 0 & prob == max(prob))
-# screen_2020_monit_sim7, screen_2020_monit_5, screen_2020_monit_2
+View(group_by(res, threshold) %>%
+  filter(threshold != 0 & prob == max(prob)))
+# screen_2020_monit_sim7, screen_2020_monit_5, screen_2020_monit_2,
+# screen_2020_monit_4, screen_2020_monit_3
 
+# THESIS PLOT / PAPER PLOT
+
+#png(file = "cost_acceptability_curve.png", width=300, height=170, units = "mm", res=300, pointsize = 0.99)
 ggplot() +
   geom_line(data=res[!(res$scenario %in% c("screen_2020_monit_sim7",
                                          "screen_2020_monit_5",
+                                         "screen_2020_monit_4",
+                                         "screen_2020_monit_3",
                                          "screen_2020_monit_2")),],
             aes(x=threshold, y = prob, group=scenario), colour="grey80") +
   geom_vline(xintercept=404, linetype = "dashed", col = "black") +
   geom_vline(xintercept=537, linetype = "dashed", col = "black") +
   annotate(geom = "text", x = 465, y = 0.5, label = "Estimated CE thresholds",
-           angle = 90, size = 3.5) +
+           angle = 90, size = 4.5) +
   geom_vline(xintercept=778, linetype = "dashed", col = "grey40") +
   annotate(geom = "text", x = 825, y = 0.5, label = "1 x GDP per capita",
-           angle = 90, size = 3.5, colour = "grey40") +
+           angle = 90, size = 4.5, colour = "grey40") +
   geom_vline(xintercept=2333, linetype = "dashed", col = "grey40") +
   annotate(geom = "text", x = 2380, y = 0.5, label = "3 x GDP per capita",
-           angle = 90, size = 3.5, colour = "grey40") +
+           angle = 90, size = 4.5, colour = "grey40") +
   geom_line(data=res[res$scenario %in% c("screen_2020_monit_sim7",
                                          "screen_2020_monit_5",
+                                         "screen_2020_monit_4",
+                                         "screen_2020_monit_3",
                                          "screen_2020_monit_2"),],
             aes(x=threshold, y = prob, colour=scenario), size = 1) +
-  scale_colour_discrete("Monitoring strategy",
+  scale_colour_manual("Monitoring strategy",
                         labels = c("screen_2020_monit_sim7" = "Every 5 years\nin <45 year olds",
                                    "screen_2020_monit_5" = "Every 5 years\nacross all ages",
-                                   "screen_2020_monit_2" = "Every 2 years\nacross all ages")) +
+                                   "screen_2020_monit_4" = "Every 4 years\nacross all ages",
+                                   "screen_2020_monit_3" = "Every 3 years\nacross all ages",
+                                   "screen_2020_monit_2" = "Every 2 years\nacross all ages"),
+                      values =  c("screen_2020_monit_sim7" = brewer.pal(name="Paired", n = 10)[10],
+                                  "screen_2020_monit_5" = brewer.pal(name="Paired", n = 5)[1],
+                                  "screen_2020_monit_4" = brewer.pal(name="Paired", n = 5)[2],
+                                  "screen_2020_monit_3" = brewer.pal(name="Paired", n = 5)[3],
+                                  "screen_2020_monit_2" = brewer.pal(name="Paired", n = 5)[4])) +
   scale_y_continuous(limits=c(0,0.6), expand = c(0, 0)) +
   scale_x_continuous(limits=c(0,2425), expand = c(0, 0)) +
+  guides(colour=guide_legend(rev=T)) +
   ylab("Probability of being\nthe most cost-effective strategy") +
   xlab("Cost-effectiveness threshold (US$ per DALY averted)") +
   theme_classic() +
-  theme(axis.text = element_text(size = 14),
-        axis.title = element_text(size = 14),
-        legend.text = element_text(size = 13),
-        legend.title = element_text(size = 13))
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        panel.border = element_rect(colour = "black", fill = NA),
+        axis.text = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        legend.text = element_text(size = 18),
+        legend.title = element_text(size = 18))
+#dev.off()
 # In grey are the strategies that are never have the highest probability to be
 # the most cost-effective
 
+brewer.pal(name="Paired", n = 5)[1]
 
-# ICER plots (improved) ----
+# ICER thesis/paper plots (improved) ----
 
 age_df$frontier <- "Dominated"
 age_df$frontier[age_df$scenario %in% c("screen_2020_monit_1",
@@ -3363,6 +3390,53 @@ age_df_median$under_threshold[(age_df_median$frontier=="Non-dominated" &
                                 age_df_median$scenario %in% icer_under_threshold1) |
                                 age_df_median$scenario == "No treatment"] <- "Under lower threshold"
 
+# THESIS PLOT (medians, zoomed in)
+# Saved this one from window
+ggplot() +
+  geom_line(data = subset(age_df_median, frontier == "Non-dominated" &
+                            under_threshold == "Over"),
+            aes(x = dalys_averted/1000, y = total_cost/1000000),
+            size=1, colour = "grey50", lty="dashed") +
+  geom_point(data = subset(age_df_median, scenario == "screen_2020_monit_0"),
+             aes(x = dalys_averted/1000, y = total_cost/1000000, shape = "No monitoring"),
+             colour = "black", size = 5) +  # shape 16
+  geom_point(data = subset(age_df_median, !(scenario %in% c("No treatment",
+                                                            "screen_2020_monit_0", "screen_2020_monit_sim17",
+                                                            "screen_2020_monit_sim18"))),
+             aes(x = dalys_averted/1000, y = total_cost/1000000,
+                 group = reorder(scenario, total_cost),
+                 colour = reorder(monitoring_frequency, total_cost),
+                 shape = age_group),
+             size = 5) +  #
+  geom_point(data = subset(age_df_median, frontier == "Non-dominated" & scenario !=
+                             "No treatment"),
+             aes(x = dalys_averted/1000, y = total_cost/1000000),
+             colour = "grey30", shape = 3, size = 3) +
+  geom_line(data = subset(age_df_median, frontier == "Non-dominated" &
+                            under_threshold == "Under lower threshold"),
+            aes(x = dalys_averted/1000, y = total_cost/1000000),
+            size=1, colour = "black") +
+  #  scale_fill_manual(values = c(brewer.pal(name="Paired", n = 12), brewer.pal(name="Set3", n = 12), brewer.pal(name="Dark2", n =4))) +
+  scale_colour_manual("Monitoring interval",
+                      values = brewer.pal(name="Paired", n = 5)) +
+  scale_shape_manual("Monitored age group\n(years)",
+                     values = c("No treatment" = 4, "No monitoring" = 16,
+                                "15-30" = 20, "15-45" = 17,
+                                "30+" = 1, "45+" = 5, "All ages" = 18)) +
+  guides(colour=guide_legend(order=1),
+         shape=guide_legend(order=2)) +
+  ylab("Additional cost (million US$)") +
+  xlab("DALYs averted (thousands)") +
+  theme_classic() +
+  xlim(75,105) + ylim(20,50) +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        panel.border = element_rect(colour = "black", fill = NA),
+        axis.text = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        legend.text = element_text(size = 14),
+        legend.title = element_text(size = 14))
 
 # All strategies - median only
 # Remove here strategies with varying frequency by age for simplicity

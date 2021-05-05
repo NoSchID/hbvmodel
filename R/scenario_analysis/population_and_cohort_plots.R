@@ -5,6 +5,7 @@ require(ggplot2)
 require(tidyr)
 require(dplyr)
 require(gridExtra)
+require(grid)
 #source(here("R/imperial_model_interventions.R"))
 source(here("R/scenario_analysis/calculate_outcomes.R"))
 
@@ -394,7 +395,7 @@ pp7 <- ggplot(subset(deaths_averted_distribution_by_age2, age %in% 0:99)) +
                      limits=c(14,90)) +
   scale_fill_viridis_d("", begin=0.6, end = 0.8) +
   theme_classic() +
-  theme(legend.position = c(0.85, 0.75),
+  theme(legend.position = c(0.85, 0.70),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         strip.background = element_blank(),
@@ -402,7 +403,7 @@ pp7 <- ggplot(subset(deaths_averted_distribution_by_age2, age %in% 0:99)) +
         axis.text = element_text(size = 14),
         axis.title = element_text(size = 14),
         legend.text = element_text(size = 13),
-        legend.title = element_text(size = 14),
+        legend.title = element_blank(),
         plot.margin = unit(c(5.5,35,5.5,5.5), "pt"))
 # COuld change this plot to show deaths averted BY screening among the different groups
 
@@ -1579,7 +1580,11 @@ grid.arrange(x2_1,x2_2, ncol = 2)
 
 
 # Paper panel plot of no monitoring programme ----
-# Need to run previous 2 sections
+
+# PAPER PLOT / THESIS PLOT
+
+# Need to run: functions in moniotirng freq script, previous 2 sections,
+# pp7 in Cumulative HBV/HCC deaths by age by 2100 to show shift in pattern section
 
 pp1 <- ggplot(data= subset(outcomes_by_age, scenario %in% c("a2_screen_2020_monit_0",
                                                      "a4_screen_2020_monit_0",
@@ -1601,8 +1606,8 @@ pp1 <- ggplot(data= subset(outcomes_by_age, scenario %in% c("a2_screen_2020_moni
         strip.background = element_blank(),
         panel.border = element_rect(colour = "black", fill = NA),
         axis.title.x = element_blank(),
-        axis.text = element_text(size = 13.5),
-        axis.title = element_text(size = 13.5),
+        axis.text = element_text(size = 14),  #13.5
+        axis.title = element_text(size = 15), #13.5
         strip.text = element_text(size = 14))
 
 pp2 <- ggplot(data= subset(outcomes_by_age, scenario %in% c("a2_screen_2020_monit_0",
@@ -1625,10 +1630,11 @@ pp2 <- ggplot(data= subset(outcomes_by_age, scenario %in% c("a2_screen_2020_moni
         strip.background = element_blank(),
         panel.border = element_rect(colour = "black", fill = NA),
         axis.title.x = element_blank(),
-        axis.text = element_text(size = 13.5),
-        axis.title = element_text(size = 13.5),
+        axis.text = element_text(size = 14),
+        axis.title = element_text(size = 15),
         strip.text = element_text(size = 14))
 
+# Affected population by stage of care
 pp3 <- ggplot() +
   geom_col(data=subset(interactions_median, scenario %in% c("a2_screen_2020_monit_0",
                                                             "a4_screen_2020_monit_0",
@@ -1649,18 +1655,19 @@ pp3 <- ggplot() +
   guides(linetype=guide_legend(title=NULL),
          fill=guide_legend(title=NULL)) +
   theme_classic() +
-  theme(legend.position=c(.8,.8)) +
+  theme(legend.position=c(.75,.8)) +
   ylab("Population affected\n(thousands)") +
   xlab("Screened age group (years)")+
   theme(panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         strip.background = element_blank(),
         panel.border = element_rect(colour = "black", fill = NA),
-        axis.text = element_text(size = 13.5),
-        axis.title = element_text(size = 13.5),
-        legend.text = element_text(size = 12),
+        axis.text = element_text(size = 14),
+        axis.title = element_text(size = 15),
+        legend.text = element_text(size = 12.5),  #12
         legend.title = element_text(size = 14))
 
+# Cost by stage of care
 pp4 <- ggplot(subset(discounted_interactions_cost_median, scenario %in% c("a2_screen_2020_monit_0",
                                                                    "a4_screen_2020_monit_0",
                                                                    "a5_screen_2020_monit_0") &
@@ -1688,15 +1695,15 @@ pp4 <- ggplot(subset(discounted_interactions_cost_median, scenario %in% c("a2_sc
          fill = FALSE) +
   theme_classic() +
   theme(legend.position=c(.78,.8)) +
-  ylab("Discounted cost\n(millions)") +
+  ylab("Discounted cost\n(million US$)") +
   xlab("Screened age group (years)")+
   theme(panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         strip.background = element_blank(),
         panel.border = element_rect(colour = "black", fill = NA),
-        axis.text = element_text(size = 13.5),
-        axis.title = element_text(size = 13.5),
-        legend.text = element_text(size = 12),
+        axis.text = element_text(size = 14),
+        axis.title = element_text(size = 15),
+        legend.text = element_text(size = 12.5),
         legend.title = element_text(size = 14))
 
 prevalence_by_age_group_2020_summary <- prevalence_by_age_group_2020 %>%
@@ -1779,30 +1786,31 @@ programme_plot <- grid.arrange(pp1,pp2,pp3,pp4,ncol=2)
 
 ppa <- arrangeGrob(programme_plot, top = textGrob("A", x = unit(0.01, "npc"),
                                        y   = unit(1, "npc"), just=c("left","top"),
-                                       gp=gpar(col="black", fontsize=18)))
+                                       gp=gpar(col="black", fontsize=20)))
 
 ppb <- arrangeGrob(pp5, top = textGrob("B", x = unit(0.1, "npc"),
                                                   y   = unit(1, "npc"), just=c("left","top"),
-                                                  gp=gpar(col="black", fontsize=18)))
+                                                  gp=gpar(col="black", fontsize=20)))
 
 
 ppc <- arrangeGrob(pp6, top = textGrob("C", x = unit(0.1, "npc"),
                                                   y   = unit(1, "npc"), just=c("left","top"),
-                                                  gp=gpar(col="black", fontsize=18)))
+                                                  gp=gpar(col="black", fontsize=20)))
 
 
 ppd <- arrangeGrob(pp7, top = textGrob("D", x = unit(0.1, "npc"),
                                                   y   = unit(1, "npc"), just=c("left","top"),
-                                                  gp=gpar(col="black", fontsize=18)))
+                                                  gp=gpar(col="black", fontsize=20)))
 
 expl_plots <- grid.arrange(ppb,ppc,ppd, ncol=1)
 
+#tiff(file = "basic_programme_explanatory_plot.tiff", width=320, height=213, units = "mm", res=300, pointsize = 0.99)
 grid.arrange(ppa, expl_plots,
              ncol =2, widths=2:1)
+#dev.off()
 
 
-
-# Population effects: Treatment effect over time ----
+### Population effects: Treatment effect over time ----
 
 hbv_deaths_over_time <-
   rbind(gather(out2$timeseries$total_hbv_deaths, key="sim", value = "value", -time,-scenario),
