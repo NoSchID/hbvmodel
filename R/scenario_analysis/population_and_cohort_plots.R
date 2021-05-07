@@ -1914,45 +1914,7 @@ ggplot() +
         legend.text = element_text(size = 11),
         legend.title = element_text(size = 13))
 
-# Incidence plot:
-ggplot() +
-  geom_ribbon(data=subset(hbv_inc_over_time, scenario == "status_quo"),
-              aes(x=time, ymin=lower/0.5, ymax=upper/0.5,fill = scenario, colour=scenario),
-              linetype = "solid", alpha = 0.5) +
-  geom_line(data=subset(hbv_inc_over_time, scenario == "status_quo"),
-            aes(x=time, y = median/0.5), colour="#B2182B",
-            linetype = "solid", size=0.75) +
-  geom_ribbon(data=subset(hbv_inc_over_time, scenario == "screen_2020_monit_sim7"),
-              aes(x=time, ymin=lower/0.5, ymax=upper/0.5, fill = scenario, colour=scenario),
-              linetype = "solid",alpha = 0.25) +
-  geom_line(data=subset(hbv_inc_over_time, scenario == "screen_2020_monit_sim7"),
-            aes(x=time, y = median/0.5), colour="#2166AC",
-            linetype = "solid", size=0.75) +
-  scale_fill_manual("Scenario",
-                    labels = c("status_quo" = "Infant vaccination only",
-                               "screen_2020_monit_sim7" = "Screening & treatment in 2020\n(monitor every 5 years\nin <45 year olds)"),
-                    values=c("status_quo" = "#D6604D",
-                             "screen_2020_monit_sim7" = "#92C5DE")) +
-  scale_colour_manual("Scenario",
-                      labels = c("status_quo" = "Infant vaccination only",
-                                 "screen_2020_monit_sim7" = "Screening & treatment in 2020\n(monitor every 5 years\nin <45 year olds)"),
-                      values=c("status_quo" = "#B2182B",
-                               "screen_2020_monit_sim7" = "#2166AC")) +
-  # guides(fill=FALSE, colour = FALSE) +
-  geom_vline(xintercept=2019.5, linetype="dashed") +
-  ylab("New chronic HBV infections per year") +
-  scale_x_continuous("Year",
-                     breaks=c(1990, 2010, 2019.5, 2040, 2070, 2090),
-                     labels=c(1990, 2010, 2020, 2040, 2070, 2090),
-                     limits=c(1990,2090)) +
-  theme_classic() +
-  theme(legend.position=c(.78,.8),
-        axis.text = element_text(size = 15),
-        axis.title = element_text(size = 15),
-        legend.text = element_text(size = 11),
-        legend.title = element_text(size = 13))
-
-# SQ plots of deaths and incidence
+# SQ plots of deaths and incidence (comparison to no historical intervention in sensitivity analysis script)
 outcomes_over_time <- rbind(
   data.frame(outcome="HBV-related deaths",
             gather(out2$timeseries$total_hbv_deaths, key="sim", value = "value", -time,-scenario)),
@@ -1985,6 +1947,110 @@ ggplot() +
         axis.title = element_text(size = 15),
         strip.text = element_text(size = 15))
 
+# Thesis plot: Incidence over time and sources of infection ----
+
+# Run previous section for incidence
+
+# Incidence plot:
+#png(file = "incidence_timeplot.tiff", width=300, height=125, units = "mm", res=300, pointsize =0.99)
+ggplot() +
+  geom_ribbon(data=subset(hbv_inc_over_time, scenario == "status_quo"),
+              aes(x=time, ymin=lower/0.5, ymax=upper/0.5,fill = scenario, colour=scenario),
+              linetype = "solid", size= 0.75, alpha = 0.25) +
+  geom_line(data=subset(hbv_inc_over_time, scenario == "status_quo"),
+            aes(x=time, y = median/0.5), colour="#B2182B",
+            linetype = "solid", size=1.1) +
+  geom_ribbon(data=subset(hbv_inc_over_time, scenario == "screen_2020_monit_0"),
+              aes(x=time, ymin=lower/0.5, ymax=upper/0.5, fill = scenario, colour=scenario),
+              linetype = "solid", size= 0.75, alpha = 0.2) +
+  geom_line(data=subset(hbv_inc_over_time, scenario == "screen_2020_monit_0"),
+            aes(x=time, y = median/0.5), colour="#2166AC",
+            linetype = "solid", size=1.1) +
+  scale_fill_manual("Scenario",
+                    labels = c("status_quo" = "Base case",
+                               "screen_2020_monit_0" = "Screening and treatment programme"),
+                    values=c("status_quo" = "#D6604D",
+                             "screen_2020_monit_0" = "#285686")) +
+  scale_colour_manual("Scenario",
+                      labels = c("status_quo" = "Base case",
+                                 "screen_2020_monit_0" = "Screening and treatment programme"),
+                      values=c("status_quo" = "#B2182B",
+                               "screen_2020_monit_0" = "#285686")) +
+  # guides(fill=FALSE, colour = FALSE) +
+  #geom_vline(xintercept=2019.5, linetype="dashed") +
+  ylab("New chronic HBV infections per year") +
+  guides(fill=guide_legend(rev=T),
+         colour=guide_legend(rev=T)) +
+  scale_x_continuous("Year",
+                     breaks=c(2019.5, 2050, 2080),
+                     labels=c(2020, 2050, 2080),
+                     limits=c(2010,2100)) +
+  ylim(0,3250) +
+  theme_classic() +
+  theme(legend.position=c(.75,.85),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        panel.border = element_rect(colour = "black", fill = NA),
+        axis.text = element_text(size = 17),
+        axis.title = element_text(size = 17),
+        legend.text = element_text(size = 17),
+        legend.title = element_blank())
+#dev.off()
+
+## SOURCES OF INFECTION
+inf_source <- out2 <- readRDS("C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/kmeans_full_output/a1_it_screen_2020_monit_0_infection_sources_160321.rds")
+inf_source <- inf_source [[1]]
+
+# Rows = time, columns = simulations
+timevec <- inf_source[[1]]$time
+new_inf_i2 <- as.data.frame(sapply(inf_source, "[[", "new_inf_i2"))
+new_inf_i2$time <- timevec
+new_inf_i2 <- gather(new_inf_i2, key="sim", value = "i2", -time)
+
+new_inf_i3 <- as.data.frame(sapply(inf_source, "[[", "new_inf_i3"))
+new_inf_i3$time <- timevec
+new_inf_i3 <- gather(new_inf_i3, key="sim", value = "i3", -time)
+
+new_inf_i4 <- as.data.frame(sapply(inf_source, "[[", "new_inf_i4"))
+new_inf_i4$time <- timevec
+new_inf_i4 <- gather(new_inf_i4, key="sim", value = "i4", -time)
+
+new_inf_mtct <- as.data.frame(sapply(inf_source, "[[", "mtct"))
+new_inf_mtct$time <- timevec
+new_inf_mtct <- gather(new_inf_mtct, key="sim", value = "mtct", -time)
+
+new_inf_source <- left_join(left_join(
+  left_join(new_inf_i2, new_inf_i3, by = c("time", "sim")),
+  new_inf_i4, by = c("time", "sim")),
+  new_inf_mtct, by =  c("time", "sim"))
+new_inf_source$mtct_i2 <- new_inf_source$mtct+new_inf_source$i2
+new_inf_source$mtct_i2_i3 <- new_inf_source$mtct+new_inf_source$i2+new_inf_source$i3
+new_inf_source$total <- new_inf_source$mtct+new_inf_source$i2+new_inf_source$i3+
+  new_inf_source$i4
+
+new_inf_source_summary <- group_by(new_inf_source, time) %>%
+  summarise(median_mtct = median(mtct),
+            median_mtct_i2 = median(mtct_i2),
+            median_mtct_i2_i3 = median(mtct_i2_i3),
+            median_total = median(total))
+
+quantile(new_inf_source$mtct[new_inf_source$time==2020]/
+  new_inf_source$total[new_inf_source$time==2020], c(0.5,0.025,0.975))
+quantile(new_inf_source$i2[new_inf_source$time==2020]/
+           new_inf_source$total[new_inf_source$time==2020], c(0.5,0.025,0.975))
+quantile(new_inf_source$i3[new_inf_source$time==2020]/
+           new_inf_source$total[new_inf_source$time==2020], c(0.5,0.025,0.975))
+quantile(new_inf_source$i4[new_inf_source$time==2020]/
+           new_inf_source$total[new_inf_source$time==2020], c(0.5,0.025,0.975))
+
+ggplot(new_inf_source_summary) +
+  geom_line(aes(x=time, y = median_mtct)) +
+  geom_line(aes(x=time, y = median_mtct_i2)) +
+  geom_line(aes(x=time, y = median_mtct_i2_i3)) +
+  geom_line(aes(x=time, y = median_total)) +
+  theme_classic() +
+  xlim(1985,2050)
 
 # Paper plot: HBV deaths and treatment need over time (with repeat screening) ----
 

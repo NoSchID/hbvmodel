@@ -818,8 +818,8 @@ cost_sensitivity_icer$scenario <-
 
 facet_labels_costs <- c("Screening = $4", "Screening = $17",
                         "Assessment = $16.5", "Assessment = $200",
-                        "Monitoring = $12.75", "Monitoring = $51",
                         "Treatment = $51", "Treatment = $155",
+                        "Monitoring = $12.75", "Monitoring = $51",
                         "Assessment = $16.5\nMonitoring = $12.75",
                         "Assessment = $200\nMonitoring = $155")
 names(facet_labels_costs) <- c("screening_lower", "screening_higher",
@@ -833,8 +833,9 @@ names(facet_labels_costs) <- c("screening_lower", "screening_higher",
 # Monitoring is in all ages unless otherwise indicated
 # Changes in screening and assessment cost does not change ICER between incremental monitoring
 # strategies.
+
 # Only showing non-dominated strategies - Blank spaces are if dominated
-ggplot(subset(cost_sensitivity_icer, scenario != "screen_2020_monit_1" &
+cost_bars1 <- ggplot(subset(cost_sensitivity_icer, scenario != "screen_2020_monit_1" &
                 scenario != "screen_2020_monit_2" &
                 sensitivity_scenario != "assessment_monitoring_lower" &
                 sensitivity_scenario != "assessment_monitoring_higher")) +
@@ -860,7 +861,7 @@ ggplot(subset(cost_sensitivity_icer, scenario != "screen_2020_monit_1" &
                              "screen_2020_monit_5"="5",
                              "screen_2020_monit_4"="4",
                              "screen_2020_monit_3"="3")) +
-  ylab("Incremental cost-effectiveness ratio") +
+  ylab("ICER") +
   xlab("Monitoring frequency (age group)") +
   facet_wrap(~sensitivity_scenario, scales="free_y", ncol=2,
              labeller = labeller(sensitivity_scenario = facet_labels_costs)) +
@@ -870,14 +871,14 @@ ggplot(subset(cost_sensitivity_icer, scenario != "screen_2020_monit_1" &
         panel.grid.minor = element_blank(),
         #strip.background = element_blank(),
         panel.border = element_rect(colour = "black", fill = NA),
-        axis.text = element_text(size = 12),
-        legend.text = element_text(size = 14),
-        axis.title = element_text(size = 14),
-        strip.text = element_text(size = 13))
+        axis.text = element_text(size = 15),
+        legend.text = element_text(size = 16),
+        axis.title = element_text(size = 18),
+        strip.text = element_text(size = 16))
 
 
 # Show joint variation in assessment and monitoring separately (key message)
-ggplot(subset(cost_sensitivity_icer, (scenario != "screen_2020_monit_1" &
+cost_bars2 <- ggplot(subset(cost_sensitivity_icer, (scenario != "screen_2020_monit_1" &
                 scenario != "screen_2020_monit_2" &
                 scenario != "screen_2020_monit_3") &
                 (sensitivity_scenario == "assessment_monitoring_lower" |
@@ -890,24 +891,43 @@ ggplot(subset(cost_sensitivity_icer, (scenario != "screen_2020_monit_1" &
   geom_hline(yintercept=537, linetype="dashed", colour = "grey40") +
   geom_hline(yintercept=778, linetype="dashed", colour = "grey40") +
   scale_fill_manual(labels=c("screen_2020_monit_0" = "No monitoring",
-                             "screen_2020_monit_sim6" = "5-yearly\n(15-30)",
-                             "screen_2020_monit_sim7"= "5-yearly\n(15-45)",
-                             "screen_2020_monit_sim2c"="4-yearly\n(15-45)",
+                             "screen_2020_monit_sim6" = "5-yearly (15-30)",
+                             "screen_2020_monit_sim7"= "5-yearly (15-45)",
+                             "screen_2020_monit_sim2c"="4-yearly (15-45)",
                              "screen_2020_monit_5"="5-yearly",
                              "screen_2020_monit_4"="4-yearly"),
                     values=rev(brewer.pal(6, "Blues"))) +
   scale_x_discrete(labels=c("screen_2020_monit_0" = "No\nmonitoring",
-                            "screen_2020_monit_sim6" = "5-yearly\n(15-30)",
-                            "screen_2020_monit_sim7"= "5-yearly\n(15-45)",
-                            "screen_2020_monit_sim2c"="4-yearly\n(15-45)",
-                            "screen_2020_monit_5"="5-yearly",
-                            "screen_2020_monit_4"="4-yearly")) +
-  ylab("Incremental cost-effectiveness ratio") +
-  xlab("Scenario") +
+                            "screen_2020_monit_sim6" = "5 (<30)",
+                            "screen_2020_monit_sim7"= "5 (<45)",
+                            "screen_2020_monit_sim2c"="5 (<45)",
+                            "screen_2020_monit_5"="5",
+                            "screen_2020_monit_4"="4")) +
+  ylab("ICER") +
+  xlab("Monitoring frequency (age group)") +
   facet_wrap(~sensitivity_scenario, scales="free_y", ncol=2,
              labeller = labeller(sensitivity_scenario = facet_labels_costs)) +
   theme_classic() +
-  theme(legend.title=element_blank())
+  theme(legend.title=element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        #strip.background = element_blank(),
+        panel.border = element_rect(colour = "black", fill = NA),
+        axis.text = element_text(size = 15),
+        legend.text = element_text(size = 16),
+        axis.title = element_text(size = 18),
+        strip.text = element_text(size = 16))
+
+cost_bars1a <- arrangeGrob(cost_bars1, top = textGrob("A", x = unit(0.01, "npc"),
+                                                      y   = unit(1, "npc"), just=c("left","top"),
+                                                      gp=gpar(col="black", fontsize=22)))
+cost_bars2b <- arrangeGrob(cost_bars2, top = textGrob("B", x = unit(0.01, "npc"),
+                                                      y   = unit(1, "npc"), just=c("left","top"),
+                                                      gp=gpar(col="black", fontsize=22)))
+
+#png(file = "sensitivity_costs_barchart.png", width=350, height=300, units = "mm", res=300, pointsize = 0.99)
+grid.arrange(cost_bars1a, cost_bars2b, nrow=2, heights=c(3,1))
+#dev.off()
 
 # Tornado plot for costs and coverage parameters ----
 
@@ -1448,26 +1468,6 @@ ggplot() +
         legend.title = element_text(size = 13))
 
 # Probably at some point it's also a question of built up immunity in the population.
-
-## SOURCES OF INFECTION
-inf_source <- out2 <- readRDS("C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/kmeans_full_output/a1_it_screen_2020_monit_0_infection_sources_160321.rds")
-inf_source <- inf_source [[1]]
-
-# Rows = time, columns = simulations
-timevec <- inf_source[[1]]$time
-new_inf_i2 <- as.data.frame(sapply(inf_source, "[[", "new_inf_i2"))
-new_inf_i3 <- as.data.frame(sapply(inf_source, "[[", "new_inf_i3"))
-new_inf_i4 <- as.data.frame(sapply(inf_source, "[[", "new_inf_i4"))
-new_inf_mtct <- as.data.frame(sapply(inf_source, "[[", "mtct"))
-
-total_of_medians <- apply(new_inf_i2,1,median)+apply(new_inf_i3,1,median)+
-  apply(new_inf_i4,1,median)+apply(new_inf_mtct,1,median)
-
-plot(x=timevec, y=apply(new_inf_i2,1,median)/total_of_medians, xlim=c(1980,2050), type="l",
-     ylim=c(0,1))
-lines(x=timevec, y=apply(new_inf_i3,1,median)/total_of_medians, xlim=c(1980,2050), col="red")
-lines(x=timevec, y=apply(new_inf_i4,1,median)/total_of_medians, xlim=c(1980,2050), col="blue")
-lines(x=timevec, y=apply(new_inf_mtct,1,median)/total_of_medians, xlim=c(1980,2050), col="pink")
 
 # For appendix: comparison of status quo with no-vaccination scenario ----
 hbv_deaths_over_time <-
