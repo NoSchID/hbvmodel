@@ -3093,13 +3093,6 @@ age_df2 <- subset(age_df, scenario %in% c("screen_2020_monit_1",
                                           "screen_2020_monit_sim6",
                                           "screen_2020_monit_sim2c"
                                           ))
-# If monit_10, sim7_10 and sim8 are included:
-#age_df2 <- subset(age_df, scenario %in% c("screen_2020_monit_1",
-#                                          "screen_2020_monit_2", "screen_2020_monit_3",
-#                                          "screen_2020_monit_4", "screen_2020_monit_5",
-#                                          "screen_2020_monit_10",
-#                                          "screen_2020_monit_sim7_10",
-#                                          "screen_2020_monit_sim7"))
 
 icer_list <- list()
 
@@ -3209,9 +3202,12 @@ opt_strategy_by_threshold <- list()
 
 #threshold_vec <- c(0.25, 0.52,0.69, 1,3)*777.81
 
-threshold_vec <- c(0.1,0.2,0.3,0.4,0.52,0.6,0.69,0.8,0.9,seq(1,3,by=0.1))*777.81
+#threshold_vec <- c(0.1,0.2,0.3,0.4,0.52,0.6,0.69,0.8,0.9,seq(1,3,by=0.1))*777.81
 # 0.1 steps took 70min
-tic()
+
+threshold_vec <- c(5225,5250,5275)
+
+#tic()
 for (j in 1:length(threshold_vec)) {
   for(i in 1:183) {
     print(i)
@@ -4566,17 +4562,19 @@ ggplot(impact_distribution) +
 
 ## 5) Screening by age: cost-effectiveness of including <30 year olds in one-time screen ----
 
+# 30+ year olds only: scenarios a2 (45-65) and a5 (30-45)
+
 dalys_averted <- cbind(rep(0,183),
-                       t((out2$dalys[[16]][,-c(1:3)]-a4_out3_it$dalys[[16]][,-c(1:3)])+
+                       t((out2$dalys[[16]][,-c(1:3)]-a2_out3_it$dalys[[16]][,-c(1:3)])+
                            (out2$dalys[[16]][,-c(1:3)]-a5_out3_it$dalys[[16]][,-c(1:3)])),
                        t(out2$dalys[[16]][,-c(1:3)]-out3_it$dalys[[16]][,-c(1:3)]))
 
 cost <- cbind(rep(0,183),
-              t((a4_out3_it$interactions[[16]]$total_screened[,-c(1:3)]+
+              t((a2_out3_it$interactions[[16]]$total_screened[,-c(1:3)]+
                    a5_out3_it$interactions[[16]]$total_screened[,-c(1:3)])*8.3+
-                  (a4_out3_it$interactions[[16]]$total_assessed[,-c(1:3)]+
+                  (a2_out3_it$interactions[[16]]$total_assessed[,-c(1:3)]+
                      a5_out3_it$interactions[[16]]$total_assessed[,-c(1:3)])*33+
-                  (a4_out3_it$py_on_treatment[[16]]+a5_out3_it$py_on_treatment[[16]])*66.5),
+                  (a2_out3_it$py_on_treatment[[16]]+a5_out3_it$py_on_treatment[[16]])*66.5),
               t((a4_out3_it$interactions[[16]]$total_screened[,-c(1:3)]+
                    a5_out3_it$interactions[[16]]$total_screened[,-c(1:3)]+
                    a2_out3_it$interactions[[16]]$total_screened[,-c(1:3)])*8.3+
@@ -4593,6 +4591,202 @@ ceef.plot(bcea(e=dalys_averted,
                Kmax=100000000000000),
           graph="base", relative = FALSE)
 # Extending the screen to all ages is still below WTP (on the mean)
+
+# Need to load function
+annual_discounting_rate <- 0.03  # can be 0
+object_list <- list(out3_it, a5_out3_it, a2_out3_it)
+
+# Extract interactions and person-years on treatment, and HBV-related deaths
+# ad DALYs averted, in a for loop
+age_interactions_py_on_treatment <- list()
+age_hbv_deaths_averted <- list()
+age_dalys_averted <- list()
+
+age_interactions <- rbind(
+  cbind(scenario = a5_out3_it$cohort_age_at_death$scenario,
+        left_join(left_join(discount_outcome_2020_to_2100(scenario_object=a5_out3_it,
+                                            object_to_subtract=NULL,
+                                            outcome="interactions",
+                                            interaction_outcome="total_screened",
+                                            yearly_discount_rate=annual_discounting_rate,
+                                            interaction_colname = "hbsag_tests",
+                                            end_year=2100),
+              discount_outcome_2020_to_2100(scenario_object=a5_out3_it,
+                                            object_to_subtract=NULL,
+                                            outcome="interactions",
+                                            interaction_outcome="total_assessed",
+                                            yearly_discount_rate=annual_discounting_rate,
+                                            interaction_colname = "clinical_assessments",
+                                            end_year=2100)),
+              discount_outcome_2020_to_2100(scenario_object=a5_out3_it,
+                                object_to_subtract=NULL,
+                                outcome="interactions",
+                                interaction_outcome="total_treated",
+                                yearly_discount_rate=annual_discounting_rate,
+                                interaction_colname = "treatment_initiations",
+                                end_year=2100))),
+  cbind(scenario = a2_out3_it$cohort_age_at_death$scenario,
+        left_join(left_join(discount_outcome_2020_to_2100(scenario_object=a2_out3_it,
+                                                          object_to_subtract=NULL,
+                                                          outcome="interactions",
+                                                          interaction_outcome="total_screened",
+                                                          yearly_discount_rate=annual_discounting_rate,
+                                                          interaction_colname = "hbsag_tests",
+                                                          end_year=2100),
+                            discount_outcome_2020_to_2100(scenario_object=a2_out3_it,
+                                                          object_to_subtract=NULL,
+                                                          outcome="interactions",
+                                                          interaction_outcome="total_assessed",
+                                                          yearly_discount_rate=annual_discounting_rate,
+                                                          interaction_colname = "clinical_assessments",
+                                                          end_year=2100)),
+                  discount_outcome_2020_to_2100(scenario_object=a2_out3_it,
+                                                object_to_subtract=NULL,
+                                                outcome="interactions",
+                                                interaction_outcome="total_treated",
+                                                yearly_discount_rate=annual_discounting_rate,
+                                                interaction_colname = "treatment_initiations",
+                                                end_year=2100))),
+  cbind(scenario = out3_it$cohort_age_at_death$scenario,
+        left_join(left_join(discount_outcome_2020_to_2100(scenario_object=out3_it,
+                                                          object_to_subtract=NULL,
+                                                          outcome="interactions",
+                                                          interaction_outcome="total_screened",
+                                                          yearly_discount_rate=annual_discounting_rate,
+                                                          interaction_colname = "hbsag_tests",
+                                                          end_year=2100),
+                            discount_outcome_2020_to_2100(scenario_object=out3_it,
+                                                          object_to_subtract=NULL,
+                                                          outcome="interactions",
+                                                          interaction_outcome="total_assessed",
+                                                          yearly_discount_rate=annual_discounting_rate,
+                                                          interaction_colname = "clinical_assessments",
+                                                          end_year=2100)),
+                  discount_outcome_2020_to_2100(scenario_object=out3_it,
+                                                object_to_subtract=NULL,
+                                                outcome="interactions",
+                                                interaction_outcome="total_treated",
+                                                yearly_discount_rate=annual_discounting_rate,
+                                                interaction_colname = "treatment_initiations",
+                                                end_year=2100)))
+)
+age_interactions$monitoring_assessments <- 0  # all without monitoring
+
+for (i in 1:length(object_list)) {
+  age_interactions_py_on_treatment[[i]] <-
+    data.frame(scenario = object_list[[i]]$cohort_age_at_death$scenario,
+               discount_outcome_2020_to_2100(scenario_object=object_list[[i]],
+                                             object_to_subtract=NULL,
+                                             outcome="py_on_treatment",
+                                             yearly_discount_rate=annual_discounting_rate))
+  age_hbv_deaths_averted[[i]] <-
+    cbind(scenario = object_list[[i]]$cohort_age_at_death$scenario,
+          discount_outcome_2020_to_2100(scenario_object=out2,
+                                        object_to_subtract=object_list[[i]],
+                                        outcome="cum_hbv_deaths",
+                                        yearly_discount_rate=annual_discounting_rate))
+  age_dalys_averted[[i]] <-
+    cbind(scenario = object_list[[i]]$cohort_age_at_death$scenario,
+          discount_outcome_2020_to_2100(scenario_object=out2,
+                                        object_to_subtract=object_list[[i]],
+                                        outcome="dalys",
+                                        yearly_discount_rate=annual_discounting_rate))
+}
+age_interactions_py_on_treatment <- do.call("rbind", age_interactions_py_on_treatment)
+age_hbv_deaths_averted <- do.call("rbind", age_hbv_deaths_averted)
+age_dalys_averted <- do.call("rbind", age_dalys_averted)
+
+age_interactions_py_on_treatment$sim <- gsub("[^0-9]", "", age_interactions_py_on_treatment$sim)
+age_hbv_deaths_averted$sim <- gsub("[^0-9]", "", age_hbv_deaths_averted$sim)
+colnames(age_hbv_deaths_averted)[colnames(age_hbv_deaths_averted) == "cum_hbv_deaths"] <-
+  "value"
+
+age_dalys_averted$sim <- gsub("[^0-9]", "", age_dalys_averted$sim)
+colnames(age_dalys_averted)[colnames(age_dalys_averted) == "dalys"] <-
+  "value"
+
+# Add values from A2 to A5!!
+subset(age_interactions, scenario == "a5_screen_2020_monit_0")$sim==
+  subset(age_interactions, scenario == "a2_screen_2020_monit_0")$sim
+subset(age_interactions_py_on_treatment, scenario == "a5_screen_2020_monit_0")$sim==
+  subset(age_interactions_py_on_treatment, scenario == "a2_screen_2020_monit_0")$sim
+subset(age_hbv_deaths_averted, scenario == "a5_screen_2020_monit_0")$sim==
+  subset(age_hbv_deaths_averted, scenario == "a2_screen_2020_monit_0")$sim
+subset(age_dalys_averted, scenario == "a5_screen_2020_monit_0")$sim==
+  subset(age_dalys_averted, scenario == "a2_screen_2020_monit_0")$sim
+
+age_interactions2 <- subset(age_interactions, scenario == "a5_screen_2020_monit_0")
+age_interactions2$hbsag_tests <-
+  subset(age_interactions, scenario == "a2_screen_2020_monit_0")$hbsag_tests
+age_interactions2$clinical_assessments <-
+  subset(age_interactions, scenario == "a2_screen_2020_monit_0")$clinical_assessments
+age_interactions2$treatment_initiations <-
+  subset(age_interactions, scenario == "a2_screen_2020_monit_0")$treatment_initiations
+age_interactions2 <- rbind(age_interactions2,
+                           subset(age_interactions, scenario == "screen_2020_monit_0"))
+
+age_interactions_py_on_treatment2 <- subset(age_interactions_py_on_treatment,
+                                            scenario == "a5_screen_2020_monit_0")
+age_interactions_py_on_treatment2$py_on_treatment <-
+  subset(age_interactions_py_on_treatment, scenario == "a2_screen_2020_monit_0")$py_on_treatment
+age_interactions_py_on_treatment2 <- rbind(age_interactions_py_on_treatment2,
+                           subset(age_interactions_py_on_treatment, scenario == "screen_2020_monit_0"))
+
+age_hbv_deaths_averted2 <- subset(age_hbv_deaths_averted,
+                                  scenario == "a5_screen_2020_monit_0")
+age_hbv_deaths_averted2$value <-
+  subset(age_hbv_deaths_averted, scenario == "a2_screen_2020_monit_0")$value
+age_hbv_deaths_averted2 <- rbind(age_hbv_deaths_averted2,
+                             subset(age_hbv_deaths_averted, scenario == "screen_2020_monit_0"))
+
+age_dalys_averted2 <- subset(age_dalys_averted,
+                                  scenario == "a5_screen_2020_monit_0")
+age_dalys_averted2$value <-
+  subset(age_dalys_averted, scenario == "a2_screen_2020_monit_0")$value
+age_dalys_averted2 <- rbind(age_dalys_averted2,
+                                 subset(age_dalys_averted, scenario == "screen_2020_monit_0"))
+
+age_df <- create_incremental_plot_df(interactions_df=age_interactions2,
+                                     py_on_treatment_df=age_interactions_py_on_treatment2,
+                                     deaths_averted_df=age_hbv_deaths_averted2,
+                                     ly_saved_df = age_dalys_averted2, # replace LY by DALYs
+                                     hbsag_test_cost = 8.3,
+                                     clinical_assessment_cost = 33,#84.4,
+                                     monitoring_assessment_cost = 25.5, #40.1,
+                                     treatment_py_cost = 66.5,#60,
+                                     #scenario_labels_obj = scenario_labels,
+                                     ref_label = "No treatment")
+colnames(age_df)[colnames(age_df)=="ly_saved"] <- "dalys_averted"
+
+# Dominance
+dominance_prob_list <- list()
+
+for(i in 1:183) {
+  print(i)
+  dominance_prob_list[[i]] <- age_df[which(age_df$sim==
+                                             unique(age_df$sim)[i]),]
+  dominance_prob_list[[i]] <- assign_dominated_strategies(dominance_prob_list[[i]],
+                                                          exposure="total_cost",
+                                                          outcome="dalys_averted")
+}
+dominance_prob_df <- do.call("rbind", dominance_prob_list)
+dominance_prob_result <- group_by(dominance_prob_df, scenario, dominated) %>%
+  tally() %>%
+  spread(key = "dominated", value = "n") %>%
+  replace_na(list(No = 0, Yes = 0))
+dominance_prob_result$prob_non_dominated <- dominance_prob_result$No/
+  (dominance_prob_result$Yes+dominance_prob_result$No)
+# Any less than 50% chance of being non-dominated?
+any(dominance_prob_result$prob_non_dominated<0.5)
+
+ggplot(dominance_prob_result) +
+  geom_col(aes(x=reorder(scenario, desc(prob_non_dominated)), y = prob_non_dominated)) +
+  theme_bw() +
+  theme(axis.text.x=element_text(angle = 90, hjust =1))
+# A5 here represents A5+A2 (30-65 year olds screened)
+# This is dominated by screening 15-65 year olds for DALYs averted (but not for deaths
+# averted)
+
 
 ## 6) Sensitivty analysis on monitoring strategies: different time horizons ----
 # Need to load function

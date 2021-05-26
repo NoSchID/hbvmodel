@@ -3861,7 +3861,7 @@ simulate_intervention_validation_outcomes <- function(..., default_parameter_lis
                                                       drop_timesteps_before = NULL,
                                                       scenario = "vacc_screen") {
 
-  sim <- apply(calibrated_parameter_sets, 1,
+  sim <- parApply(cl = NULL, calibrated_parameter_sets, 1,
                function(x) run_model(sim_duration = runtime,
                                      default_parameter_list = default_parameter_list,
                                      parms_to_change =
@@ -3909,6 +3909,7 @@ simulate_intervention_validation_outcomes <- function(..., default_parameter_lis
                                      drop_timesteps_before = drop_timesteps_before,
                                      scenario = scenario))
   out <- lapply(sim, code_model_output)
+  gc()
 
   # Progression rate to treatment eligibility after screening (from IT and IC)
   # Calculated in 2100

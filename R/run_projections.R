@@ -14,6 +14,19 @@ load(here("analysis_input", "scenario_a1_it_parms.Rdata"))
 load(here("analysis_input", "scenario_anc1_it_parms.Rdata"))
 load(here("analysis_input", "scenario_wpl1_parms.Rdata"))
 
+
+validation <- simulate_intervention_validation_outcomes(default_parameter_list = scenario_a1_it_parms,
+                                                  calibrated_parameter_sets=params_mat_accepted_kmeans,
+                                                  parms_to_change = list(...),
+                                                  years_of_test = c(2020),
+                                                  monitoring_rate = 0,
+                                                  apply_treat_it = 1,
+                                                  prop_negative_to_remove_from_rescreening = 0,
+                                                  apply_repeat_screen = 0, years_of_repeat_test = 2015,
+                                                  min_age_to_repeat_screen = 15, max_age_to_repeat_screen = 64.5,
+                                                  drop_timesteps_before = 1960,
+                                                  scenario = "vacc_screen")
+
 sim <- apply(params_mat_accepted_kmeans[1,],1,
              function(x)
                run_model(sim_duration = runtime, default_parameter_list =scenario_anc1_it_parms,
