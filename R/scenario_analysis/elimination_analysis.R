@@ -44,7 +44,16 @@ load(here("calibration", "input", "accepted_parmsets_kmeans_170820.Rdata")) # pa
 # Comparison of status quo to no historical intervention is in Sensitivity analysis script ----
 # Target A1: Reduce chronic infection incidence by 90% from 2015 ----
 
+# Value in 2015
+round(quantile(apply(out2$timeseries$total_chronic_infections[
+  out2$timeseries$total_chronic_infections$time %in% c(2015,2015.5),-c(1:2)],2,sum),
+  c(0.5,0.025,0.975)),0)
+round(quantile(apply(out2$timeseries$total_hbv_deaths[
+  out2$timeseries$total_hbv_deaths$time %in% c(2015,2015.5),-c(1:2)],2,sum),
+  c(0.5,0.025,0.975)),0)
+
 # VALUES IN 2030
+
 # New chronic infections in 2030
 round(quantile(apply(out2$timeseries$total_chronic_infections[
   out2$timeseries$total_chronic_infections$time %in% c(2030,2030.5),-c(1:2)],2,sum),
@@ -713,3 +722,57 @@ prcc <- arrange(prcc, -abs(prcc))
 
 
 plot(x=as.numeric(median_prop), y = as.numeric(effect), xlim =c(0,1), ylim = c(0,1))
+
+
+# WOULD ELIMINATION BE ACHIEVED WITH TREATMENT PROGRAMME ALONE? ----
+out_path <-
+  "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/repeat_screening_anc_analysis/"
+
+monit_out7 <- readRDS(paste0(out_path, "a1_it_screen_2020_monit_out7_050321.rds"))
+monit_out7 <- monit_out7[[1]]
+
+pop_2020_anc_2050_sim7 <- readRDS(paste0(out_path, "pop_2020_anc_2050_no_rescreen_monit_sim7_300421.rds"))
+pop_2020_anc_2050_sim7 <- pop_2020_anc_2050_sim7[[1]]
+
+# When is a 90% reduction in incidence achieved?
+round(quantile((monit_out7$timeseries$total_chronic_infections[monit_out7$timeseries$total_chronic_infections$time==2015,
+                                                         -c(1:2)]-
+                  monit_out7$timeseries$total_chronic_infections[monit_out7$timeseries$total_chronic_infections$time==2053,
+                                                           -c(1:2)])/
+                 monit_out7$timeseries$total_chronic_infections[monit_out7$timeseries$total_chronic_infections$time==2015,
+                                                          -c(1:2)],
+               c(0.5,0.025,0.975)),2)
+round(quantile((pop_2020_anc_2050_sim7$timeseries$total_chronic_infections[pop_2020_anc_2050_sim7$timeseries$total_chronic_infections$time==2015,
+                                                               -c(1:2)]-
+                  pop_2020_anc_2050_sim7$timeseries$total_chronic_infections[pop_2020_anc_2050_sim7$timeseries$total_chronic_infections$time==2052,
+                                                                 -c(1:2)])/
+                 pop_2020_anc_2050_sim7$timeseries$total_chronic_infections[pop_2020_anc_2050_sim7$timeseries$total_chronic_infections$time==2015,
+                                                                -c(1:2)],
+               c(0.5,0.025,0.975)),2)
+
+
+round(quantile((monit_out7$timeseries$total_hbv_deaths[monit_out7$timeseries$total_hbv_deaths$time==2015,
+                                                 -c(1:2)]-
+                  monit_out7$timeseries$total_hbv_deaths[monit_out7$timeseries$total_hbv_deaths$time==2022,
+                                                   -c(1:2)])/
+                 monit_out7$timeseries$total_hbv_deaths[monit_out7$timeseries$total_hbv_deaths$time==2015,
+                                                  -c(1:2)],
+               c(0.5,0.025,0.975)),2)
+
+round(quantile(monit_out7$timeseries$total_hbv_deaths_rate[
+  monit_out7$timeseries$total_hbv_deaths_rate$time==2022,
+  -c(1:2)]*1000000, c(0.5,0.025,0.975)),0)
+
+plot(x=monit_out7$timeseries$total_hbv_deaths$time,
+     y=apply(monit_out7$timeseries$total_hbv_deaths[,-c(1,2)],1,median),
+     xlim =c(2010,2070), type="l")
+lines(x=out_bd_ppt_treat$timeseries$total_hbv_deaths$time,
+     y=apply(out_bd_ppt_treat$timeseries$total_hbv_deaths[,-c(1,2)],1,median),
+     xlim =c(2010,2070), type="l", col = "red")
+
+plot(x=monit_out7$timeseries$total_hbv_deaths_rate$time,
+     y=apply(monit_out7$timeseries$total_hbv_deaths_rate[,-c(1,2)],1,median)*1000000,
+     xlim =c(2010,2070), type="l")
+lines(x=out_bd_ppt_treat$timeseries$total_hbv_deaths_rate$time,
+      y=apply(out_bd_ppt_treat$timeseries$total_hbv_deaths_rate[,-c(1,2)],1,median)*1000000,
+      xlim =c(2010,2070), type="l", col = "red")

@@ -3223,6 +3223,7 @@ for (j in 1:length(threshold_vec)) {
 opt_strategy_by_threshold <- do.call("rbind",opt_strategy_by_threshold)
 
 #saveRDS(opt_strategy_by_threshold, "plot_probability_of_being_most_cost_effective_strategy_050521.rds")
+opt_strategy_by_threshold <- readRDS("C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/plot_probability_of_being_most_cost_effective_strategy_050521.rds")
 
 res <- opt_strategy_by_threshold %>%
   group_by(threshold) %>%
@@ -3230,7 +3231,7 @@ res <- opt_strategy_by_threshold %>%
   mutate(prob = n/183)
 
 templ <- data.frame(threshold = rep(c(0,unique(res$threshold)),each=17),
-                    scenario = rep(unique(res$scenario), length(threshold_vec)+1))
+                    scenario = rep(unique(res$scenario), 30+1))
 res <- left_join(templ, res, b=c("threshold", "scenario")) %>%
   filter(scenario != "None")
 res$prob[is.na(res$prob)] <- 0
@@ -3296,9 +3297,13 @@ ggplot() +
 # In grey are the strategies that are never have the highest probability to be
 # the most cost-effective
 
-brewer.pal(name="Paired", n = 5)[1]
+#ggsave("cost_acceptability_curve.pdf",
+#    width= 30, height=18, units = "cm")
+#ggsave("cost_acceptability_curve.png",
+#       width= 30, height=18, units = "cm")
 
-# ICER thesis/paper plots (improved) ----
+
+# ICER thesis/paper plots of plane (improved) ----
 
 age_df$frontier <- "Dominated"
 age_df$frontier[age_df$scenario %in% c("screen_2020_monit_1",
@@ -3651,7 +3656,7 @@ ggplot(data = subset(age_df, frontier == "Non-dominated" | scenario == "No treat
         legend.title = element_text(size = 14))
 # Notation: age group (frequency)
 
-# Cost-acceptability curve----
+# Cost-acceptability curve (old)----
 
 # For 1 screen_2020_monit_0,screen_2020_monit_sim7_10,screen_2020_monit_sim7,
 # screen_2020_monit_10  and screen_2020_monit_5

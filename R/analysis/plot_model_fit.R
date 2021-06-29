@@ -1471,12 +1471,68 @@ hcc_inc_plot <- ggplot(data = hcc_inc_2018,
         plot.title = element_text(hjust = 0.5, size = 15),
         plot.subtitle = element_text(hjust = 0.5, size = 12),
         legend.margin=margin(t = 0, unit="cm"),
-        legend.position = c(0.25,0.85),
+        legend.position = c(0.25,0.82),
         axis.title = element_text(size = 14),
         axis.text = element_text(size = 14),
         legend.text = element_text(size = 13),
         legend.title = element_blank())
 
+# HBeAg plot
+hbeag_p <- ggplot(data = subset(seromarker_out_mat, outcome == "HBeAg_prevalence")) +
+  geom_line(data = subset(seromarker_out_mat, outcome == "HBeAg_prevalence" & time == 1992),
+            aes(x = age,  y = model_median*100, linetype = "Model"), size = 1) +
+  geom_point(aes(x = age, y = data_value*100, fill = "Data"), col = "#458EBF",
+             shape = 4, stroke = 2) +
+  geom_ribbon(data = subset(seromarker_out_mat, outcome == "HBeAg_prevalence" & time == 1992),
+              aes(x=age, ymin=model_ci_lower*100, ymax=model_ci_upper*100, group = sex),
+              fill= "grey50", alpha = 0.1) +
+  geom_errorbar(aes(x = age, ymax = ci_upper*100, ymin = ci_lower*100),col = "#458EBF") +
+  scale_linetype_manual(name = NULL, values = c("Model" = "solid"), labels = "Model output") +
+  scale_fill_manual(name = NULL, values = c("Data" = "#458EBF"), labels = "Observed data") +
+  labs(y = "HBeAg prevalence (%)", x = "Age (years)",
+       fill = "") +
+  theme_classic() +
+  xlim(0,80) +
+  guides(linetype = guide_legend(order = 1),
+         fill = guide_legend(order = 2),
+         colour = guide_legend(order = 3)) +
+  #guides(linetype=FALSE, fill = FALSE) +
+ theme(panel.grid.major = element_blank(),
+      panel.grid.minor = element_blank(),
+      strip.background = element_blank(),
+      panel.border = element_rect(colour = "black", fill = NA),
+      legend.margin=margin(t = 0, unit="cm"),
+      legend.position = c(0.8,0.8),
+      axis.title.x = element_text(size = 14),
+      axis.title.y =element_text(size = 14),
+      axis.text = element_text(size = 14),
+      legend.text = element_text(size = 14),
+      legend.title = element_text(size = 14),
+      strip.text.x = element_text(size = 14))
+
+
+# COMBINED PLOT
+plot_a <- arrangeGrob(hbsag_p, top = textGrob("A", x = unit(0.01, "npc")
+                                              , y   = unit(1, "npc"), just=c("left","top"),
+                                              gp=gpar(col="black", fontsize=20)))
+
+plot_b <- arrangeGrob(hbeag_p, top = textGrob("B", x = unit(0.01, "npc")
+                                              , y   = unit(1, "npc"), just=c("left","top"),
+                                              gp=gpar(col="black", fontsize=20)))
+plot_c <- arrangeGrob(hcc_inc_plot, top = textGrob("C", x = unit(0.01, "npc")
+                                               , y   = unit(1, "npc"), just=c("left","top"),
+                                               gp=gpar(col="black", fontsize=20)))
+
+hbeag_hcc_p <- grid.arrange(plot_b, plot_c,nrow=2)
+
+model_fits <- grid.arrange(plot_a,
+             hbeag_hcc_p, ncol=2)
+#ggsave("model_fits.pdf", plot = model_fits,
+#       width= 30, height=20, units = "cm")
+#ggsave("model_fits.png", plot = model_fits,
+#       width= 30, height=20, units = "cm")
+
+# Previously included corrplot instead of HBeAg (Tim suggested to remove)
 # Correlation plot of data and accepted model values
 model_values_mat_accepted <- readRDS(file = here("calibration","output", "accepted_model_output_for_calibration_correlation_plot.rds"))
 
@@ -1509,22 +1565,6 @@ corrplot <- ggplot(model_values_mat_accepted[model_values_mat_accepted$data_valu
         legend.text = element_text(size = 13.5),
         legend.title = element_blank())
 
-# COMBINED PLOT
-plot_a <- arrangeGrob(corrplot, top = textGrob("A", x = unit(0.01, "npc")
-                                              , y   = unit(1, "npc"), just=c("left","top"),
-                                              gp=gpar(col="black", fontsize=18)))
-plot_b <- arrangeGrob(hcc_inc_plot, top = textGrob("B", x = unit(0.01, "npc")
-                                               , y   = unit(1, "npc"), just=c("left","top"),
-                                               gp=gpar(col="black", fontsize=18)))
-
-corr_hcc_p <- grid.arrange(plot_a, plot_b,nrow=2)
-
-plot_c <- arrangeGrob(hbsag_p, top = textGrob("C", x = unit(0.01, "npc")
-                                                   , y   = unit(1, "npc"), just=c("left","top"),
-                                                   gp=gpar(col="black", fontsize=18)))
-
-grid.arrange(corr_hcc_p,
-             plot_c, ncol=2)
 
 # CALIBRATION PLOTS FOR THESIS ----
 library(grid)

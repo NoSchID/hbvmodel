@@ -1583,7 +1583,8 @@ grid.arrange(x2_1,x2_2, ncol = 2)
 
 # PAPER PLOT / THESIS PLOT
 
-# Need to run: functions in moniotirng freq script, previous 2 sections,
+# Need to run: functions in monitoring_frequency_by_age_incremental_analysis.r script,
+# previous 2 sections (Population effects, Distribution of resource utilisation),
 # pp7 in Cumulative HBV/HCC deaths by age by 2100 to show shift in pattern section
 
 pp1 <- ggplot(data= subset(outcomes_by_age, scenario %in% c("a2_screen_2020_monit_0",
@@ -1805,9 +1806,15 @@ ppd <- arrangeGrob(pp7, top = textGrob("D", x = unit(0.1, "npc"),
 expl_plots <- grid.arrange(ppb,ppc,ppd, ncol=1)
 
 #tiff(file = "basic_programme_explanatory_plot.tiff", width=320, height=213, units = "mm", res=300, pointsize = 0.99)
-grid.arrange(ppa, expl_plots,
+treatment_panel_plot <- grid.arrange(ppa, expl_plots,
              ncol =2, widths=2:1)
 #dev.off()
+
+#ggsave("basic_programme_explanatory_plot.pdf", plot = treatment_panel_plot ,
+#       width= 32, height=21.3, units = "cm")
+#ggsave("basic_programme_explanatory_plot.png", plot = treatment_panel_plot ,
+#       width= 32, height=21.3, units = "cm")
+
 
 
 ### Population effects: Treatment effect over time ----
@@ -2244,7 +2251,7 @@ timeplot2 <- ggplot(data=subset(unmet_need_df2,scenario != "screen_2020_monit_si
         legend.title = element_text(size = 14))
 
 # V2: with repeat screening
-timeplot2_v2 <- ggplot(data=subset(unmet_need_df2)) +
+timeplot2_v2 <- ggplot(data=subset(unmet_need_df2, at_time != 2060)) +
   stat_summary(aes(x=reorder(scenario, -remaining_treatment_need),
                    y = remaining_treatment_need*100,
                    fill = scenario), colour="black",
@@ -2276,9 +2283,21 @@ timeplot2_v2 <- ggplot(data=subset(unmet_need_df2)) +
 grid.arrange(timeplot1, timeplot2, ncol = 2, widths = 3:2)
 
 # PAPER PLOT:
+timeplot1_v2_a <- arrangeGrob(timeplot1_v2, top = textGrob("A", x = unit(0.01, "npc"),
+                                                  y   = unit(1, "npc"), just=c("left","top"),
+                                                  gp=gpar(col="black", fontsize=20)))
+timeplot2_v2_b <- arrangeGrob(timeplot2_v2, top = textGrob("B", x = unit(0.01, "npc"),
+                                                           y   = unit(1, "npc"), just=c("left","top"),
+                                                           gp=gpar(col="black", fontsize=20)))
+
 #tiff(file = "timeplot.tiff", width=300, height=125, units = "mm", res=300, pointsize = 0.99)
-grid.arrange(timeplot1_v2, timeplot2_v2, ncol = 2, widths = 3:2)
+repeat_screen_plot <- grid.arrange(timeplot1_v2_a, timeplot2_v2_b, ncol = 2, widths = 3:2)
 #dev.off()
+
+ggsave("timeplot.pdf", plot=repeat_screen_plot,
+    width= 30, height=12.5, units = "cm")
+ggsave("timeplot.png",plot=repeat_screen_plot,
+    width= 30, height=12.5, units = "cm")
 
 # THESIS PLOT (combined with plot from repeat_screening_analysis.R):
 #png(file = "scenarios_timeplot.tiff", width=300/1.2, height=125/1.2, units = "mm", res=300, pointsize =0.99)
@@ -3074,7 +3093,7 @@ dalys_against_assessments <- subset(monitoring_prop_dalys_averted_summary, outco
 dalys_against_assessments$median_monitoring_assessments <- data.frame(group_by(interactions_df, scenario) %>%
   summarise(median = median(monitoring_assessments)))[,"median"]
 
-# THESIS PLOT
+# THESIS PLOT / PAPER PLOT
 
 #png(file = "monitoring_freq_plot.png", width=300, height=80, units = "mm", res=300, pointsize = 0.99)
 ggplot(dalys_against_assessments) +
@@ -3103,6 +3122,41 @@ ggplot(dalys_against_assessments) +
         legend.text = element_text(size = 18),
         legend.title = element_text(size = 18))
 #dev.off()
+
+# Flipped version:
+ggplot(dalys_against_assessments) +
+  geom_point(aes(x= median_monitoring_assessments/1000,
+                 y = median, colour = scenario), size = 4) +
+  geom_errorbar(aes(x=median_monitoring_assessments/1000,
+                    ymin = lower, ymax = upper, colour = scenario), width = 20) +
+  theme_classic() +
+  #guides(colour=FALSE) +
+  scale_colour_viridis_d(end=0.9, "Monitoring interval",
+                         labels=c("screen_2020_monit_20" = "20 years",
+                                  "screen_2020_monit_10" = "10 years",
+                                  "screen_2020_monit_5" = "5 years",
+                                  "screen_2020_monit_2" = "2 years",
+                                  "screen_2020_monit_1" = "1 year")) +
+  xlab("Monitoring assessments\n(thousands)") +
+  ylim(0,80) +
+  xlim(0,1500)+
+  ylab("DALYs averted (%)") +
+  coord_flip() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        panel.border = element_rect(colour = "black", fill = NA),
+        axis.text = element_text(size = 18),
+        axis.title = element_text(size = 18),
+        legend.text = element_text(size = 18),
+        legend.position = "bottom",
+        legend.title = element_text(size = 18))
+
+# For the flipped plot:
+#ggsave("monitoring_freq_plot.pdf",
+#    width= 30, height=10, units = "cm")
+#ggsave("monitoring_freq_plot.png",
+#       width= 30, height=10, units = "cm")
 
 
 # Hypothesis 1: incremental new treatment initiations per incremental assessments
