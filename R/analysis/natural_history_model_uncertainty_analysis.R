@@ -64,15 +64,26 @@ prior_summary <- gather(params_mat, key = "parameter", value = "sim") %>%
 prior_posterior_summary <- left_join(prior_summary, posterior_summary, by ="parameter")
 #write.csv(prior_posterior_summary, file=here("calibration", "output", "prior_posterior_summary_table_161120.csv"), row.names = FALSE)
 
+
+# Assign new names for density plots (load parameter_names below)
+prior2 <- prior
+posterior2 <- posterior
+
+parm_names_table <- data.frame(parm = names(prior2),
+                               new_name = names(prior2))
+parm_names_table$new_name <- factor(parm_names_table$new_name)
+levels(parm_names_table$new_name) <- parameter_names
+
 # Histograms of prior and posterior distribution
 plot_prior_posterior <- function(parm) {
-  plot(density(posterior[,parm]), xlim = c(min(min(prior[,parm]),min((posterior[,parm]))), max(max(prior[,parm]),max((posterior[,parm])))),
-       ylim = c(0, max(max(density(prior[,parm])$y),max((density(posterior[,parm])$y)))), main= parm,
+  plot(density(posterior2[,parm]), xlim = c(min(min(prior2[,parm]),min((posterior2[,parm]))), max(max(prior2[,parm]),max((posterior2[,parm])))),
+       ylim = c(0, max(max(density(prior2[,parm])$y),max((density(posterior2[,parm])$y)))),
+       main= parm_names_table$new_name[parm_names_table$parm==parm],
        lwd=3, col="red")
   if (parm %in% c("pr_ir_cc_age_threshold", "cancer_age_threshold")) {
-    lines(density(prior[,parm], bw = 1), lwd=3, lty=2, col="blue")
+    lines(density(prior2[,parm], bw = 1), lwd=3, lty=5, col="black")
   } else {
-    lines(density(prior[,parm]), lwd=3, lty=2, col="blue")
+    lines(density(prior2[,parm]), lwd=3, lty=5, col="black")
   }
   #  legend("bottomleft", legend=c("prior density","posterior density"),
   #         col=c("blue","red"), lty=c(3,1), lwd=c(3,3), cex = 1)
@@ -83,11 +94,12 @@ hist(prior[,"pr_ir_cc_age_threshold"], breaks=seq(min(prior[,"pr_ir_cc_age_thres
                                                   max(prior[,"pr_ir_cc_age_threshold"])+0.5, by=1))
 
 
-#pdf(file = here("calibration", "output", "prior_posterior_density_plots_300321.pdf"), title="Prior and posterior density")
+#pdf(file = here("calibration", "output", "prior_posterior_density_plots_010721.pdf"), title="Model parameters: prior and posterior density")
 par(mfrow=c(3,3))
-plot(x=0,y=0, col = "white", xlab = "", ylab = "")
-legend("center", legend=c("prior density","posterior density"),
-       col=c("blue","red"), lty=c(3,1), lwd=c(3,3), cex = 1)
+plot(x=0,y=0, col = "white", xlab = "", ylab = "", xaxt = "n", yaxt = "n")
+legend("center", legend=c("Prior density","Posterior density"),
+       col=c("black","red"), lty=c(5,1), lwd=c(3,3), cex=1.3)
+
 plot_prior_posterior("b1")
 plot_prior_posterior("b2")
 plot_prior_posterior("b3")
@@ -122,6 +134,53 @@ plot_prior_posterior("mu_hcc")
 plot_prior_posterior("vacc_eff")
 par(mfrow=c(1,1))
 #dev.off()
+
+# Save as png:
+#png(file = here("calibration", "output", "prior_posterior_density_plots1_020721.png"),
+#    width=2100, height=3500, res=300)
+par(mfrow=c(6,3))
+plot(x=0,y=0, col = "white", xlab = "", ylab = "", xaxt = "n", yaxt = "n")
+legend("center", legend=c("Prior density","Posterior density"),
+       col=c("black","red"), lty=c(5,1), lwd=c(3,3), cex=1.3)
+plot_prior_posterior("b1")
+plot_prior_posterior("b2")
+plot_prior_posterior("b3")
+plot_prior_posterior("alpha")
+plot_prior_posterior("mtct_prob_s")
+plot_prior_posterior("mtct_prob_e")
+plot_prior_posterior("p_chronic_in_mtct")
+plot_prior_posterior("p_chronic_function_r")
+plot_prior_posterior("p_chronic_function_s")
+plot_prior_posterior("pr_it_ir")
+plot_prior_posterior("pr_ir_ic")
+plot_prior_posterior("eag_prog_function_rate")
+plot_prior_posterior("pr_ir_enchb")
+plot_prior_posterior("pr_ir_cc_female")
+plot_prior_posterior("pr_ir_cc_age_threshold")
+plot_prior_posterior("pr_ic_enchb")
+plot_prior_posterior("sag_loss_slope")
+#dev.off()
+
+#png(file = here("calibration", "output", "prior_posterior_density_plots2_020721.png"),
+#    width=2100, height=2800, res=300)
+par(mfrow=c(5,3))
+plot_prior_posterior("pr_enchb_cc_female")
+plot_prior_posterior("cirrhosis_male_cofactor")
+plot_prior_posterior("pr_cc_dcc")
+plot_prior_posterior("cancer_prog_coefficient_female")
+plot_prior_posterior("cancer_age_threshold")
+plot_prior_posterior("cancer_male_cofactor")
+plot_prior_posterior("hccr_it")
+plot_prior_posterior("hccr_ir")
+plot_prior_posterior("hccr_enchb")
+plot_prior_posterior("hccr_cc")
+plot_prior_posterior("hccr_dcc")
+plot_prior_posterior("mu_cc")
+plot_prior_posterior("mu_dcc")
+plot_prior_posterior("mu_hcc")
+plot_prior_posterior("vacc_eff")
+#dev.off()
+
 
 # Plot of prior and posterior median and 95% CrI
 # Name for plots
