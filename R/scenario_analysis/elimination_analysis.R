@@ -60,27 +60,25 @@ round(quantile(apply(out2$timeseries$total_chronic_infections[
   c(0.5,0.025,0.975)),0)
 round(quantile(out2$timeseries$total_chronic_infections_rate[
   out2$timeseries$total_chronic_infections$time==2030,-c(1:2)],
-  c(0.5,0.025,0.975))*1000000,0)
+  c(0.5,0.025,0.975))*1000000*2,0)
 round(quantile(apply(out_bd$timeseries$total_chronic_infections[
   out_bd$timeseries$total_chronic_infections$time %in% c(2030,2030.5),-c(1:2)],2,sum),
   c(0.5,0.025,0.975)),0)
 round(quantile(out_bd$timeseries$total_chronic_infections_rate[
   out_bd$timeseries$total_chronic_infections$time==2030,-c(1:2)],
-  c(0.5,0.025,0.975))*1000000,0)
+  c(0.5,0.025,0.975))*1000000*2,0)
 round(quantile(apply(out_bd_ppt$timeseries$total_chronic_infections[
   out_bd_ppt$timeseries$total_chronic_infections$time %in% c(2030,2030.5),-c(1:2)],2,sum),
   c(0.5,0.025,0.975)),0)
 round(quantile(out_bd_ppt$timeseries$total_chronic_infections_rate[
   out_bd_ppt$timeseries$total_chronic_infections$time==2030,-c(1:2)],
-  c(0.5,0.025,0.975))*1000000,0)
-
+  c(0.5,0.025,0.975))*1000000*2,0)
 round(quantile(apply(out_bd_ppt_treat$timeseries$total_chronic_infections[
   out_bd_ppt_treat$timeseries$total_chronic_infections$time %in% c(2030,2030.5),-c(1:2)],2,sum),
   c(0.5,0.025,0.975)),0)
 round(quantile(out_bd_ppt_treat$timeseries$total_chronic_infections_rate[
   out_bd_ppt_treat$timeseries$total_chronic_infections$time==2030,-c(1:2)],
-  c(0.5,0.025,0.975))*1000000,0)
-
+  c(0.5,0.025,0.975))*1000000*2,0)
 
 round(quantile(out_bd$timeseries$prev_under5[
   out_bd$timeseries$prev_under5$time==2030,-c(1:2)],
@@ -106,8 +104,8 @@ round(quantile((out2$timeseries$total_chronic_infections[out2$timeseries$total_c
 
 # Could also look at rate (<10 per million people)
 round(quantile(out2$timeseries$total_chronic_infections_rate[
-  out2$timeseries$total_chronic_infections_rate$time==2056,
-  -c(1:2)]*1000000, c(0.5,0.025,0.975)),0)
+  out2$timeseries$total_chronic_infections_rate$time==2107,
+  -c(1:2)]*1000000*2, c(0.5,0.025,0.975)),0)
 
 # With BD:
 round(quantile((out_bd$timeseries$total_chronic_infections[
@@ -123,8 +121,8 @@ round(quantile((out_bd$timeseries$total_chronic_infections[
 
 # Rate (<10 per million people)
 round(quantile(out_bd$timeseries$total_chronic_infections_rate[
-  out_bd$timeseries$total_chronic_infections_rate$time==2067,
-  -c(1:2)]*1000000, c(0.5,0.025,0.975)),0)
+  out_bd$timeseries$total_chronic_infections_rate$time==2077,
+  -c(1:2)]*1000000*2, c(0.5,0.025,0.975)),0)
 
 # With BD+PPT:
 round(quantile((out_bd_ppt$timeseries$total_chronic_infections[
@@ -140,8 +138,8 @@ round(quantile((out_bd_ppt$timeseries$total_chronic_infections[
 
 # Rate (<10 per million people)
 round(quantile(out_bd_ppt$timeseries$total_chronic_infections_rate[
-  out_bd_ppt$timeseries$total_chronic_infections_rate$time==2064,
-  -c(1:2)]*1000000, c(0.5,0.025,0.975)),0)
+  out_bd_ppt$timeseries$total_chronic_infections_rate$time==2075,
+  -c(1:2)]*1000000*2, c(0.5,0.025,0.975)),0)
 
 # With BD+PPT+treatment:
 round(quantile((out_bd_ppt_treat$timeseries$total_chronic_infections[
@@ -154,8 +152,8 @@ round(quantile((out_bd_ppt_treat$timeseries$total_chronic_infections[
 
 # Rate (<10 per million people)
 round(quantile(out_bd_ppt_treat$timeseries$total_chronic_infections_rate[
-  out_bd_ppt_treat$timeseries$total_chronic_infections_rate$time==2065,
-  -c(1:2)]*1000000, c(0.5,0.025,0.975)),0)
+  out_bd_ppt_treat$timeseries$total_chronic_infections_rate$time==2076,
+  -c(1:2)]*1000000*2, c(0.5,0.025,0.975)),0)
 
 
 # With treatment programme:
@@ -232,26 +230,26 @@ round(quantile(apply(out2$timeseries$total_hbv_deaths[
   c(0.5,0.025,0.975)),0)
 round(quantile(out2$timeseries$total_hbv_deaths_rate[
   out2$timeseries$total_hbv_deaths_rate$time==2030,-c(1:2)],
-  c(0.5,0.025,0.975))*1000000,0)
+  c(0.5,0.025,0.975))*1000000*2,0)
 round(quantile(apply(out_bd$timeseries$total_hbv_deaths[
   out_bd$timeseries$total_hbv_deaths$time %in% c(2030,2030.5),-c(1:2)],2,sum),
   c(0.5,0.025,0.975)),0)
 round(quantile(out_bd$timeseries$total_hbv_deaths_rate[
   out_bd$timeseries$total_hbv_deaths_rate$time==2030,-c(1:2)],
-  c(0.5,0.025,0.975))*1000000,0)
+  c(0.5,0.025,0.975))*1000000*2,0)
 round(quantile(apply(out_bd_ppt$timeseries$total_hbv_deaths[
   out_bd_ppt$timeseries$total_hbv_deaths$time %in% c(2030,2030.5),-c(1:2)],2,sum),
   c(0.5,0.025,0.975)),0)
 round(quantile(out_bd_ppt$timeseries$total_hbv_deaths_rate[
   out_bd_ppt$timeseries$total_hbv_deaths_rate$time==2030,-c(1:2)],
-  c(0.5,0.025,0.975))*1000000,0)
+  c(0.5,0.025,0.975))*1000000*2,0)
 
 round(quantile(apply(out_bd_ppt_treat$timeseries$total_hbv_deaths[
   out_bd_ppt_treat$timeseries$total_hbv_deaths$time %in% c(2030,2030.5),-c(1:2)],2,sum),
   c(0.5,0.025,0.975)),0)
 round(quantile(out_bd_ppt_treat$timeseries$total_hbv_deaths_rate[
   out_bd_ppt_treat$timeseries$total_hbv_deaths_rate$time==2030,-c(1:2)],
-  c(0.5,0.025,0.975))*1000000,0)
+  c(0.5,0.025,0.975))*1000000*2,0)
 
 # HBV deaths in 2015
 out2$timeseries$total_hbv_deaths[out2$timeseries$total_hbv_deaths$time==2015,
@@ -272,8 +270,8 @@ round(quantile((out2$timeseries$total_hbv_deaths[out2$timeseries$total_hbv_death
 
 # <50 per million people
 round(quantile(out2$timeseries$total_hbv_deaths_rate[
-  out2$timeseries$total_hbv_deaths_rate$time==2054,
-  -c(1:2)]*1000000, c(0.5,0.025,0.975)),0)
+  out2$timeseries$total_hbv_deaths_rate$time==2068,
+  -c(1:2)]*1000000*2, c(0.5,0.025,0.975)),0)
 
 # Does BD bring forward death reduction?
 round(quantile((out_bd$timeseries$total_hbv_deaths[out_bd$timeseries$total_hbv_deaths$time==2015,
@@ -290,8 +288,8 @@ round(quantile((out_bd$timeseries$total_hbv_deaths[out_bd$timeseries$total_hbv_d
 
 # <50 per million people
 round(quantile(out_bd$timeseries$total_hbv_deaths_rate[
-  out_bd$timeseries$total_hbv_deaths_rate$time==2052,
-  -c(1:2)]*1000000, c(0.5,0.025,0.975)),0)
+  out_bd$timeseries$total_hbv_deaths_rate$time==2064,
+  -c(1:2)]*1000000*2, c(0.5,0.025,0.975)),0)
 
 # With BD+PPT
 round(quantile((out_bd_ppt$timeseries$total_hbv_deaths[
@@ -308,21 +306,22 @@ round(quantile((out_bd_ppt$timeseries$total_hbv_deaths[
 
 # <50 per million people
 round(quantile(out_bd_ppt$timeseries$total_hbv_deaths_rate[
-  out_bd_ppt$timeseries$total_hbv_deaths_rate$time==2052,
-  -c(1:2)]*1000000, c(0.5,0.025,0.975)),0)
+  out_bd_ppt$timeseries$total_hbv_deaths_rate$time==2064,
+  -c(1:2)]*1000000*2, c(0.5,0.025,0.975)),0)
 
 # With BD+PPT+treatment
 round(quantile((out_bd_ppt_treat$timeseries$total_hbv_deaths[
   out_bd_ppt_treat$timeseries$total_hbv_deaths$time==2015,-c(1:2)]-
     out_bd_ppt_treat$timeseries$total_hbv_deaths[
-      out_bd_ppt_treat$timeseries$total_hbv_deaths$time==2030, -c(1:2)])/
+      out_bd_ppt_treat$timeseries$total_hbv_deaths$time==2021, -c(1:2)])/
     out_bd_ppt_treat$timeseries$total_hbv_deaths[
       out_bd_ppt_treat$timeseries$total_hbv_deaths$time==2015,-c(1:2)],
   c(0.5,0.025,0.975)),2)
+
 # <50 per million people
 round(quantile(out_bd_ppt_treat$timeseries$total_hbv_deaths_rate[
-  out_bd_ppt_treat$timeseries$total_hbv_deaths_rate$time==2020,
-  -c(1:2)]*1000000, c(0.5,0.025,0.975)),0)
+  out_bd_ppt_treat$timeseries$total_hbv_deaths_rate$time==2035,
+  -c(1:2)]*1000000*2, c(0.5,0.025,0.975)),0)
 
 plot(x=out2$timeseries$total_hbv_deaths$time,
      y=apply(out2$timeseries$total_hbv_deaths[,-c(1,2)],1,median),
@@ -330,20 +329,14 @@ plot(x=out2$timeseries$total_hbv_deaths$time,
 lines(x=out_bd_ppt_treat$timeseries$total_hbv_deaths$time,
      y=apply(out_bd_ppt_treat$timeseries$total_hbv_deaths[,-c(1,2)],1,median), col = "red")
 
-# <50 per million people
-round(quantile(out_bd_ppt_treat$timeseries$total_hbv_deaths_rate[
-  out_bd_ppt_treat$timeseries$total_hbv_deaths_rate$time==2052,
-  -c(1:2)]*1000000, c(0.5,0.025,0.975)),0)
-
-
 # With treatment:
-quantile((out_treat$timeseries$total_hbv_deaths[out_treat$timeseries$total_hbv_deaths$time==2015,
-                                             -c(1:2)]-
-            out_treat$timeseries$total_hbv_deaths[out_treat$timeseries$total_hbv_deaths$time==2090,
-                                               -c(1:2)])/
-           out_treat$timeseries$total_hbv_deaths[out_treat$timeseries$total_hbv_deaths$time==2015,
-                                              -c(1:2)],
-         c(0.5,0.025,0.975))
+#quantile((out_treat$timeseries$total_hbv_deaths[out_treat$timeseries$total_hbv_deaths$time==2015,
+#                                             -c(1:2)]-
+#            out_treat$timeseries$total_hbv_deaths[out_treat$timeseries$total_hbv_deaths$time==2090,
+#                                               -c(1:2)])/
+#           out_treat$timeseries$total_hbv_deaths[out_treat$timeseries$total_hbv_deaths$time==2015,
+#                                              -c(1:2)],
+#         c(0.5,0.025,0.975))
 # In 2030: 49% (36-64%)
 
 # Median >=65% in 2060
@@ -724,7 +717,7 @@ prcc <- arrange(prcc, -abs(prcc))
 plot(x=as.numeric(median_prop), y = as.numeric(effect), xlim =c(0,1), ylim = c(0,1))
 
 
-# WOULD ELIMINATION BE ACHIEVED WITH TREATMENT PROGRAMME ALONE? ----
+# WOULD ELIMINATION BE ACHIEVED WITH ONE-TIME TREATMENT PROGRAMME ALONE? ----
 out_path <-
   "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/repeat_screening_anc_analysis/"
 
@@ -737,14 +730,14 @@ pop_2020_anc_2050_sim7 <- pop_2020_anc_2050_sim7[[1]]
 # When is a 90% reduction in incidence achieved?
 round(quantile((monit_out7$timeseries$total_chronic_infections[monit_out7$timeseries$total_chronic_infections$time==2015,
                                                          -c(1:2)]-
-                  monit_out7$timeseries$total_chronic_infections[monit_out7$timeseries$total_chronic_infections$time==2053,
+                  monit_out7$timeseries$total_chronic_infections[monit_out7$timeseries$total_chronic_infections$time==2030,
                                                            -c(1:2)])/
                  monit_out7$timeseries$total_chronic_infections[monit_out7$timeseries$total_chronic_infections$time==2015,
                                                           -c(1:2)],
                c(0.5,0.025,0.975)),2)
 round(quantile((pop_2020_anc_2050_sim7$timeseries$total_chronic_infections[pop_2020_anc_2050_sim7$timeseries$total_chronic_infections$time==2015,
                                                                -c(1:2)]-
-                  pop_2020_anc_2050_sim7$timeseries$total_chronic_infections[pop_2020_anc_2050_sim7$timeseries$total_chronic_infections$time==2052,
+                  pop_2020_anc_2050_sim7$timeseries$total_chronic_infections[pop_2020_anc_2050_sim7$timeseries$total_chronic_infections$time==2030,
                                                                  -c(1:2)])/
                  pop_2020_anc_2050_sim7$timeseries$total_chronic_infections[pop_2020_anc_2050_sim7$timeseries$total_chronic_infections$time==2015,
                                                                 -c(1:2)],
@@ -753,15 +746,19 @@ round(quantile((pop_2020_anc_2050_sim7$timeseries$total_chronic_infections[pop_2
 
 round(quantile((monit_out7$timeseries$total_hbv_deaths[monit_out7$timeseries$total_hbv_deaths$time==2015,
                                                  -c(1:2)]-
-                  monit_out7$timeseries$total_hbv_deaths[monit_out7$timeseries$total_hbv_deaths$time==2022,
+                  monit_out7$timeseries$total_hbv_deaths[monit_out7$timeseries$total_hbv_deaths$time==2030,
                                                    -c(1:2)])/
                  monit_out7$timeseries$total_hbv_deaths[monit_out7$timeseries$total_hbv_deaths$time==2015,
                                                   -c(1:2)],
                c(0.5,0.025,0.975)),2)
 
-round(quantile(monit_out7$timeseries$total_hbv_deaths_rate[
-  monit_out7$timeseries$total_hbv_deaths_rate$time==2022,
-  -c(1:2)]*1000000, c(0.5,0.025,0.975)),0)
+round(quantile((pop_2020_anc_2050_sim7$timeseries$total_hbv_deaths[pop_2020_anc_2050_sim7$timeseries$total_hbv_deaths$time==2015,
+                                                       -c(1:2)]-
+                  pop_2020_anc_2050_sim7$timeseries$total_hbv_deaths[pop_2020_anc_2050_sim7$timeseries$total_hbv_deaths$time==2030,
+                                                         -c(1:2)])/
+                 pop_2020_anc_2050_sim7$timeseries$total_hbv_deaths[pop_2020_anc_2050_sim7$timeseries$total_hbv_deaths$time==2015,
+                                                        -c(1:2)],
+               c(0.5,0.025,0.975)),2)
 
 plot(x=monit_out7$timeseries$total_hbv_deaths$time,
      y=apply(monit_out7$timeseries$total_hbv_deaths[,-c(1,2)],1,median),
@@ -771,8 +768,22 @@ lines(x=out_bd_ppt_treat$timeseries$total_hbv_deaths$time,
      xlim =c(2010,2070), type="l", col = "red")
 
 plot(x=monit_out7$timeseries$total_hbv_deaths_rate$time,
-     y=apply(monit_out7$timeseries$total_hbv_deaths_rate[,-c(1,2)],1,median)*1000000,
+     y=apply(monit_out7$timeseries$total_hbv_deaths_rate[,-c(1,2)]/0.5,1,median)*1000000,
      xlim =c(2010,2070), type="l")
 lines(x=out_bd_ppt_treat$timeseries$total_hbv_deaths_rate$time,
-      y=apply(out_bd_ppt_treat$timeseries$total_hbv_deaths_rate[,-c(1,2)],1,median)*1000000,
+      y=apply(out_bd_ppt_treat$timeseries$total_hbv_deaths_rate[,-c(1,2)]/0.5,1,median)*1000000,
       xlim =c(2010,2070), type="l", col = "red")
+lines(x=out2$timeseries$total_hbv_deaths_rate$time,
+      y=apply(out2$timeseries$total_hbv_deaths_rate[,-c(1,2)]/0.5,1,median)*1000000,
+      xlim =c(2010,2070), type="l", col = "red")
+
+# New interim WHO target for mortality: ≤4 HBV-related deaths per 100,000 persons per year
+round(quantile(monit_out7$timeseries$total_hbv_deaths_rate[
+  monit_out7$timeseries$total_hbv_deaths_rate$time==2030,
+  -c(1:2)]*1000000*2, c(0.5,0.025,0.975)),0)
+
+round(quantile(pop_2020_anc_2050_sim7$timeseries$total_hbv_deaths_rate[
+  pop_2020_anc_2050_sim7$timeseries$total_hbv_deaths_rate$time==2030,
+  -c(1:2)]*1000000*2, c(0.5,0.025,0.975)),0)
+
+

@@ -137,8 +137,8 @@ par(mfrow=c(1,1))
 
 # Save as png:
 #png(file = here("calibration", "output", "prior_posterior_density_plots1_020721.png"),
-#    width=2100, height=3500, res=300)
-par(mfrow=c(6,3))
+#    width=2100, height=2800, res=300)
+par(mfrow=c(5,3))
 plot(x=0,y=0, col = "white", xlab = "", ylab = "", xaxt = "n", yaxt = "n")
 legend("center", legend=c("Prior density","Posterior density"),
        col=c("black","red"), lty=c(5,1), lwd=c(3,3), cex=1.3)
@@ -156,14 +156,14 @@ plot_prior_posterior("pr_ir_ic")
 plot_prior_posterior("eag_prog_function_rate")
 plot_prior_posterior("pr_ir_enchb")
 plot_prior_posterior("pr_ir_cc_female")
-plot_prior_posterior("pr_ir_cc_age_threshold")
-plot_prior_posterior("pr_ic_enchb")
-plot_prior_posterior("sag_loss_slope")
 #dev.off()
 
 #png(file = here("calibration", "output", "prior_posterior_density_plots2_020721.png"),
-#    width=2100, height=2800, res=300)
-par(mfrow=c(5,3))
+#    width=2100, height=3500, res=300)
+par(mfrow=c(6,3))
+plot_prior_posterior("pr_ir_cc_age_threshold")
+plot_prior_posterior("pr_ic_enchb")
+plot_prior_posterior("sag_loss_slope")
 plot_prior_posterior("pr_enchb_cc_female")
 plot_prior_posterior("cirrhosis_male_cofactor")
 plot_prior_posterior("pr_cc_dcc")
