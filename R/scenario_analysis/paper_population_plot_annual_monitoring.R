@@ -15,10 +15,6 @@ out_path <-
 out_path_monit <-
   "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/monitoring_frequency/"
 
-out_path_repeat_screen <-
-  "C:/Users/Nora Schmit/Documents/Model development/hbvmodel - analysis output/repeat_screening_analysis/"
-
-
 # Screening (no monitoring) in separate age groups
 # A4 = 15-30
 # A5 = 30-45
@@ -27,12 +23,12 @@ out_path_repeat_screen <-
 ## Different output:
 
 # All simulations involve IT treatment
-a4_out3 <- readRDS(paste0(out_path, "a4_it_out3_screen_2020_monit_0_treatment_effect_270121.rds"))
-a4_out3 <- a4_out3[[1]]
-a5_out3 <- readRDS(paste0(out_path, "a5_it_out3_screen_2020_monit_0_treatment_effect_270121.rds"))
-a5_out3 <- a5_out3[[1]]
-a2_out3 <- readRDS(paste0(out_path, "a2_it_out3_screen_2020_monit_0_treatment_effect_270121.rds"))
-a2_out3 <- a2_out3[[1]]
+a4_out6 <- readRDS(paste0(out_path, "a4_it_out6_screen_2020_monit_1_treatment_effect_091221.rds"))
+a4_out6 <- a4_out6[[1]]
+a5_out6 <- readRDS(paste0(out_path, "a5_it_out6_screen_2020_monit_1_treatment_effect_091221.rds"))
+a5_out6 <- a5_out6[[1]]
+a2_out6 <- readRDS(paste0(out_path, "a2_it_out6_screen_2020_monit_1_treatment_effect_101221.rds"))
+a2_out6 <- a2_out6[[1]]
 
 # Same cohort simulations without treatment:
 a4_out1 <- readRDS(paste0(out_path, "a4_it_out1_screen_2020_monit_0_cohort_treatment_effect_270121.rds"))
@@ -98,12 +94,12 @@ a1_x1 <- a4_out1$cum_cohort_hbv_deaths_male_by_age_2100+
   a5_out1$cum_cohort_hbv_deaths_female_by_age_2100+
   a2_out1$cum_cohort_hbv_deaths_male_by_age_2100+
   a2_out1$cum_cohort_hbv_deaths_female_by_age_2100
-a1_x2 <- a4_out3$cum_screened_hbv_deaths_male_by_age_2100 +
-  a4_out3$cum_screened_hbv_deaths_female_by_age_2100+
-  a5_out3$cum_screened_hbv_deaths_male_by_age_2100 +
-  a5_out3$cum_screened_hbv_deaths_female_by_age_2100+
-  a2_out3$cum_screened_hbv_deaths_male_by_age_2100 +
-  a2_out3$cum_screened_hbv_deaths_female_by_age_2100
+a1_x2 <- a4_out6$cum_screened_hbv_deaths_male_by_age_2100 +
+  a4_out6$cum_screened_hbv_deaths_female_by_age_2100+
+  a5_out6$cum_screened_hbv_deaths_male_by_age_2100 +
+  a5_out6$cum_screened_hbv_deaths_female_by_age_2100+
+  a2_out6$cum_screened_hbv_deaths_male_by_age_2100 +
+  a2_out6$cum_screened_hbv_deaths_female_by_age_2100
 a1_x3 <- a1_x1-a1_x2
 a1_x4 <- a4_out3$cum_treated_hbv_deaths_male_by_age_2100+
   a4_out3$cum_treated_hbv_deaths_female_by_age_2100+

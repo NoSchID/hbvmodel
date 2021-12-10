@@ -3033,120 +3033,120 @@ run_alternative_outcomes_on_cluster <- function(..., default_parameter_list, cal
 
   # Reconstruct transmitters of horizontal infection
   # Which age group causes the most new chronic infections over time?
-
-  eag_positive_pop <- list()
-  eag_negative_pop <- list()
-  treated_pop <- list()
-  total_pop <- list()
-  infectious_prop <- list()
-  p_chronic_function <- list()
-  sus <- list()
-  susceptible_df <- list()
-  new_chronic_inf_i2  <- list()
-  new_chronic_inf_i3  <- list()
-  new_chronic_inf_i4  <- list()
-  new_chronic_inf  <- list()
-
-  i_1to4 <- which(ages == 0.5):which(ages == (5-da))
-  i_5to14 <- which(ages == 5):which(ages == (15-da))
-  i_15to100 <- which(ages == 15):which(ages == (100-da))
-
-  for (i in 1:183) {
-    eag_positive_pop[[i]] <- out[[i]]$eag_positive
-    eag_negative_pop[[i]] <- out[[i]]$carriers-
-      out[[i]]$eag_positive-
-      out[[i]]$treated_carriers_female-
-      out[[i]]$treated_carriers_male
-    treated_pop[[i]] <- out[[i]]$treated_carriers_female+
-      out[[i]]$treated_carriers_male
-    total_pop[[i]] <- out[[i]]$pop
-
-    infectious_prop[[i]] <- rbind(
-      data.frame(age="I2",
-                 time=out[[i]]$time,
-                 infectious_prop = (apply(eag_negative_pop[[i]][,i_1to4], 1,sum)/apply(total_pop[[i]][,i_1to4], 1,sum))+
-                   ((calibrated_parameter_sets[i,]$alpha*apply(eag_positive_pop[[i]][,i_1to4], 1,sum))/
-                      apply(total_pop[[i]][,i_1to4], 1,sum))+
-                   ((default_parameter_list$alpha2*apply(treated_pop[[i]][,i_1to4], 1,sum))/apply(total_pop[[i]][,i_1to4], 1,sum))),
-      data.frame(age="I3",
-                 time=out[[i]]$time,
-                 infectious_prop = (apply(eag_negative_pop[[i]][,i_5to14], 1,sum)/apply(total_pop[[i]][,i_5to14], 1,sum))+
-                   ((calibrated_parameter_sets[i,]$alpha*apply(eag_positive_pop[[i]][,i_5to14], 1,sum))/
-                      apply(total_pop[[i]][,i_5to14], 1,sum))+
-                   ((default_parameter_list$alpha2*apply(treated_pop[[i]][,i_5to14], 1,sum))/apply(total_pop[[i]][,i_5to14], 1,sum))),
-      data.frame(age="I4",
-                 time=out[[i]]$time,
-                 infectious_prop = (apply(eag_negative_pop[[i]][,i_15to100], 1,sum)/apply(total_pop[[i]][,i_15to100], 1,sum))+
-                   ((calibrated_parameter_sets[i,]$alpha*apply(eag_positive_pop[[i]][,i_15to100], 1,sum))/
-                      apply(total_pop[[i]][,i_15to100], 1,sum))+
-                   ((default_parameter_list$alpha2*apply(treated_pop[[i]][,i_15to100], 1,sum))/apply(total_pop[[i]][,i_15to100], 1,sum))))
-
-
-    # Susceptibles x p_chronic
-    p_chronic_function[[i]] <-  c(calibrated_parameter_sets[i,]$p_chronic_in_mtct,
-                                  exp(-calibrated_parameter_sets[i,]$p_chronic_function_r *
-                                        ages[which(ages == 0.5):which(ages==99.5)]^calibrated_parameter_sets[i,]$p_chronic_function_s))
-    sus[[i]] <- sweep(out[[i]]$sus, MARGIN=2,  p_chronic_function[[i]], `*`)
-
-    susceptible_df[[i]] <- rbind(
-      data.frame(age="S2",
-                 time=out[[i]]$time,
-                 sus=apply(sus[[i]][,i_1to4],1,sum)),
-      data.frame(age="S3",
-                 time=out[[i]]$time,
-                 sus=apply(sus[[i]][,i_5to14],1,sum)),
-      data.frame(age="S4",
-                 time=out[[i]]$time,
-                 sus=apply(sus[[i]][,i_15to100],1,sum))
-    )
-
-    # New chronic infections:
-    # Caused by 0.5-5 year olds = b1I2S2 + b2I2S3
-    new_chronic_inf_i2[[i]] <- (calibrated_parameter_sets[i,]$b1 *
-                                  subset(infectious_prop[[i]], age == "I2")$infectious_prop *
-                                  subset(susceptible_df[[i]], age == "S2")$sus) +
-      (calibrated_parameter_sets[i,]$b2 *
-         subset(infectious_prop[[i]], age == "I2")$infectious_prop *
-         subset(susceptible_df[[i]], age == "S3")$sus)
-
-    # Caused by 5-15 year olds = b2I3S2 + b2I3S3 + b3I3S4
-    new_chronic_inf_i3[[i]] <- (calibrated_parameter_sets[i,]$b2 *
-                                  subset(infectious_prop[[i]], age == "I3")$infectious_prop *
-                                  subset(susceptible_df[[i]], age == "S2")$sus) +
-      (calibrated_parameter_sets[i,]$b2 *
-         subset(infectious_prop[[i]], age == "I3")$infectious_prop *
-         subset(susceptible_df[[i]], age == "S3")$sus) +
-      (calibrated_parameter_sets[i,]$b3 *
-         subset(infectious_prop[[i]], age == "I3")$infectious_prop *
-         subset(susceptible_df[[i]], age == "S4")$sus)
-
-    # Caused by 15+ year olds = b3I4S3 + b3I4S4
-    new_chronic_inf_i4[[i]] <- (calibrated_parameter_sets[i,]$b3 *
-                                  subset(infectious_prop[[i]], age == "I4")$infectious_prop *
-                                  subset(susceptible_df[[i]], age == "S3")$sus) +
-      (calibrated_parameter_sets[i,]$b3 *
-         subset(infectious_prop[[i]], age == "I4")$infectious_prop *
-         subset(susceptible_df[[i]], age == "S4")$sus)
-
-    new_chronic_inf[[i]] <- data.frame(
-      time=out[[i]]$time,
-      new_inf_i2 = new_chronic_inf_i2[[i]]*da,
-      new_inf_i3 = new_chronic_inf_i3[[i]]*da,
-      new_inf_i4 = new_chronic_inf_i4[[i]]*da,
-      mtct = out[[i]]$incident_chronic_infections$chronic_births
-    )
-
-  }
-
-  gc()
-
-  # Combine outcomes
-  extracted_outcomes <- new_chronic_inf
-
-  outlist <- list("screen" = extracted_outcomes)
-  names(outlist) <- label
-
-  return(outlist)
+#
+#   eag_positive_pop <- list()
+#   eag_negative_pop <- list()
+#   treated_pop <- list()
+#   total_pop <- list()
+#   infectious_prop <- list()
+#   p_chronic_function <- list()
+#   sus <- list()
+#   susceptible_df <- list()
+#   new_chronic_inf_i2  <- list()
+#   new_chronic_inf_i3  <- list()
+#   new_chronic_inf_i4  <- list()
+#   new_chronic_inf  <- list()
+#
+#   i_1to4 <- which(ages == 0.5):which(ages == (5-da))
+#   i_5to14 <- which(ages == 5):which(ages == (15-da))
+#   i_15to100 <- which(ages == 15):which(ages == (100-da))
+#
+#   for (i in 1:183) {
+#     eag_positive_pop[[i]] <- out[[i]]$eag_positive
+#     eag_negative_pop[[i]] <- out[[i]]$carriers-
+#       out[[i]]$eag_positive-
+#       out[[i]]$treated_carriers_female-
+#       out[[i]]$treated_carriers_male
+#     treated_pop[[i]] <- out[[i]]$treated_carriers_female+
+#       out[[i]]$treated_carriers_male
+#     total_pop[[i]] <- out[[i]]$pop
+#
+#     infectious_prop[[i]] <- rbind(
+#       data.frame(age="I2",
+#                  time=out[[i]]$time,
+#                  infectious_prop = (apply(eag_negative_pop[[i]][,i_1to4], 1,sum)/apply(total_pop[[i]][,i_1to4], 1,sum))+
+#                    ((calibrated_parameter_sets[i,]$alpha*apply(eag_positive_pop[[i]][,i_1to4], 1,sum))/
+#                       apply(total_pop[[i]][,i_1to4], 1,sum))+
+#                    ((default_parameter_list$alpha2*apply(treated_pop[[i]][,i_1to4], 1,sum))/apply(total_pop[[i]][,i_1to4], 1,sum))),
+#       data.frame(age="I3",
+#                  time=out[[i]]$time,
+#                  infectious_prop = (apply(eag_negative_pop[[i]][,i_5to14], 1,sum)/apply(total_pop[[i]][,i_5to14], 1,sum))+
+#                    ((calibrated_parameter_sets[i,]$alpha*apply(eag_positive_pop[[i]][,i_5to14], 1,sum))/
+#                       apply(total_pop[[i]][,i_5to14], 1,sum))+
+#                    ((default_parameter_list$alpha2*apply(treated_pop[[i]][,i_5to14], 1,sum))/apply(total_pop[[i]][,i_5to14], 1,sum))),
+#       data.frame(age="I4",
+#                  time=out[[i]]$time,
+#                  infectious_prop = (apply(eag_negative_pop[[i]][,i_15to100], 1,sum)/apply(total_pop[[i]][,i_15to100], 1,sum))+
+#                    ((calibrated_parameter_sets[i,]$alpha*apply(eag_positive_pop[[i]][,i_15to100], 1,sum))/
+#                       apply(total_pop[[i]][,i_15to100], 1,sum))+
+#                    ((default_parameter_list$alpha2*apply(treated_pop[[i]][,i_15to100], 1,sum))/apply(total_pop[[i]][,i_15to100], 1,sum))))
+#
+#
+#     # Susceptibles x p_chronic
+#     p_chronic_function[[i]] <-  c(calibrated_parameter_sets[i,]$p_chronic_in_mtct,
+#                                   exp(-calibrated_parameter_sets[i,]$p_chronic_function_r *
+#                                         ages[which(ages == 0.5):which(ages==99.5)]^calibrated_parameter_sets[i,]$p_chronic_function_s))
+#     sus[[i]] <- sweep(out[[i]]$sus, MARGIN=2,  p_chronic_function[[i]], `*`)
+#
+#     susceptible_df[[i]] <- rbind(
+#       data.frame(age="S2",
+#                  time=out[[i]]$time,
+#                  sus=apply(sus[[i]][,i_1to4],1,sum)),
+#       data.frame(age="S3",
+#                  time=out[[i]]$time,
+#                  sus=apply(sus[[i]][,i_5to14],1,sum)),
+#       data.frame(age="S4",
+#                  time=out[[i]]$time,
+#                  sus=apply(sus[[i]][,i_15to100],1,sum))
+#     )
+#
+#     # New chronic infections:
+#     # Caused by 0.5-5 year olds = b1I2S2 + b2I2S3
+#     new_chronic_inf_i2[[i]] <- (calibrated_parameter_sets[i,]$b1 *
+#                                   subset(infectious_prop[[i]], age == "I2")$infectious_prop *
+#                                   subset(susceptible_df[[i]], age == "S2")$sus) +
+#       (calibrated_parameter_sets[i,]$b2 *
+#          subset(infectious_prop[[i]], age == "I2")$infectious_prop *
+#          subset(susceptible_df[[i]], age == "S3")$sus)
+#
+#     # Caused by 5-15 year olds = b2I3S2 + b2I3S3 + b3I3S4
+#     new_chronic_inf_i3[[i]] <- (calibrated_parameter_sets[i,]$b2 *
+#                                   subset(infectious_prop[[i]], age == "I3")$infectious_prop *
+#                                   subset(susceptible_df[[i]], age == "S2")$sus) +
+#       (calibrated_parameter_sets[i,]$b2 *
+#          subset(infectious_prop[[i]], age == "I3")$infectious_prop *
+#          subset(susceptible_df[[i]], age == "S3")$sus) +
+#       (calibrated_parameter_sets[i,]$b3 *
+#          subset(infectious_prop[[i]], age == "I3")$infectious_prop *
+#          subset(susceptible_df[[i]], age == "S4")$sus)
+#
+#     # Caused by 15+ year olds = b3I4S3 + b3I4S4
+#     new_chronic_inf_i4[[i]] <- (calibrated_parameter_sets[i,]$b3 *
+#                                   subset(infectious_prop[[i]], age == "I4")$infectious_prop *
+#                                   subset(susceptible_df[[i]], age == "S3")$sus) +
+#       (calibrated_parameter_sets[i,]$b3 *
+#          subset(infectious_prop[[i]], age == "I4")$infectious_prop *
+#          subset(susceptible_df[[i]], age == "S4")$sus)
+#
+#     new_chronic_inf[[i]] <- data.frame(
+#       time=out[[i]]$time,
+#       new_inf_i2 = new_chronic_inf_i2[[i]]*da,
+#       new_inf_i3 = new_chronic_inf_i3[[i]]*da,
+#       new_inf_i4 = new_chronic_inf_i4[[i]]*da,
+#       mtct = out[[i]]$incident_chronic_infections$chronic_births
+#     )
+#
+#   }
+#
+#   gc()
+#
+#   # Combine outcomes
+#   extracted_outcomes <- new_chronic_inf
+#
+#   outlist <- list("screen" = extracted_outcomes)
+#   names(outlist) <- label
+#
+#   return(outlist)
 
 
   ########
