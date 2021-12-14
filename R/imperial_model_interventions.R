@@ -3151,224 +3151,224 @@ run_alternative_outcomes_on_cluster <- function(..., default_parameter_list, cal
 
   ########
 
-  # Calculate proportion of deaths averted in different age groups in the population
-
-  ## Extract cumulative HBV deaths by age
-
-  index_cum_hbv_deathsm  <- which(grepl("^cum_hbv_deathsm.",names(out[[1]]$full_output)))
-  index_cum_screened_hbv_deathsm  <- which(grepl("^cum_screened_hbv_deathsm.",names(out[[1]]$full_output)))
-  index_cum_treated_hbv_deathsm  <- which(grepl("^cum_treated_hbv_deathsm.",names(out[[1]]$full_output)))
-  index_cum_negative_hbv_deathsm  <- which(grepl("^cum_negative_hbv_deathsm.",names(out[[1]]$full_output)))
-
-  index_cum_hbv_deathsf  <- which(grepl("^cum_hbv_deathsf.",names(out[[1]]$full_output)))
-  index_cum_screened_hbv_deathsf  <- which(grepl("^cum_screened_hbv_deathsf.",names(out[[1]]$full_output)))
-  index_cum_treated_hbv_deathsf  <- which(grepl("^cum_treated_hbv_deathsf.",names(out[[1]]$full_output)))
-  index_cum_negative_hbv_deathsf  <- which(grepl("^cum_negative_hbv_deathsf.",names(out[[1]]$full_output)))
-
-  # Extract based on indices
-  cum_hbv_deaths_male <- lapply(lapply(out, "[[", "full_output"), "[",
-                                         index_cum_hbv_deathsm)
-  cum_screened_hbv_deaths_male <- lapply(lapply(out, "[[", "full_output"), "[",
-                                         index_cum_screened_hbv_deathsm)
-  cum_treated_hbv_deaths_male <- lapply(lapply(out, "[[", "full_output"), "[",
-                                        index_cum_treated_hbv_deathsm)
-  cum_negative_hbv_deaths_male <- lapply(lapply(out, "[[", "full_output"), "[",
-                                         index_cum_negative_hbv_deathsm)
-
-  cum_hbv_deaths_female <- lapply(lapply(out, "[[", "full_output"), "[",
-                                           index_cum_hbv_deathsf)
-  cum_screened_hbv_deaths_female <- lapply(lapply(out, "[[", "full_output"), "[",
-                                           index_cum_screened_hbv_deathsf)
-  cum_treated_hbv_deaths_female <- lapply(lapply(out, "[[", "full_output"), "[",
-                                          index_cum_treated_hbv_deathsf)
-  cum_negative_hbv_deaths_female <- lapply(lapply(out, "[[", "full_output"), "[",
-                                           index_cum_negative_hbv_deathsf)
-
-
-  # Extract cumulative outcomes by age by 2100 (cohort and separate)
-  cum_total_hbv_deaths_male_by_age_2100 <- do.call("rbind", lapply(cum_screened_hbv_deaths_male,function(x) x[which(out[[1]]$time==2100),]))+
-    do.call("rbind", lapply(cum_treated_hbv_deaths_male, function(x) x[which(out[[1]]$time==2100),]))+
-    do.call("rbind", lapply(cum_hbv_deaths_male,function(x) x[which(out[[1]]$time==2100),]))+
-    do.call("rbind", lapply(cum_negative_hbv_deaths_male,function(x) x[which(out[[1]]$time==2100),]))
-
-  cum_total_hbv_deaths_female_by_age_2100 <- do.call("rbind", lapply(cum_screened_hbv_deaths_female,function(x) x[which(out[[1]]$time==2100),]))+
-    do.call("rbind", lapply(cum_treated_hbv_deaths_female, function(x) x[which(out[[1]]$time==2100),]))+
-    do.call("rbind", lapply(cum_hbv_deaths_female, function(x) x[which(out[[1]]$time==2100),]))+
-    do.call("rbind", lapply(cum_negative_hbv_deaths_female, function(x) x[which(out[[1]]$time==2100),]))
-
-  gc()
-
-  # Combine outcomes
-  extracted_outcomes <- list(
-    cum_total_hbv_deaths_male_by_age_2100 = cum_total_hbv_deaths_male_by_age_2100,
-    cum_total_hbv_deaths_female_by_age_2100 = cum_total_hbv_deaths_female_by_age_2100)
-
-  outlist <- list("screen" = extracted_outcomes)
-  names(outlist) <- label
-
-  return(outlist)
+  # # Calculate proportion of deaths averted in different age groups in the population
+  #
+  # ## Extract cumulative HBV deaths by age
+  #
+  # index_cum_hbv_deathsm  <- which(grepl("^cum_hbv_deathsm.",names(out[[1]]$full_output)))
+  # index_cum_screened_hbv_deathsm  <- which(grepl("^cum_screened_hbv_deathsm.",names(out[[1]]$full_output)))
+  # index_cum_treated_hbv_deathsm  <- which(grepl("^cum_treated_hbv_deathsm.",names(out[[1]]$full_output)))
+  # index_cum_negative_hbv_deathsm  <- which(grepl("^cum_negative_hbv_deathsm.",names(out[[1]]$full_output)))
+  #
+  # index_cum_hbv_deathsf  <- which(grepl("^cum_hbv_deathsf.",names(out[[1]]$full_output)))
+  # index_cum_screened_hbv_deathsf  <- which(grepl("^cum_screened_hbv_deathsf.",names(out[[1]]$full_output)))
+  # index_cum_treated_hbv_deathsf  <- which(grepl("^cum_treated_hbv_deathsf.",names(out[[1]]$full_output)))
+  # index_cum_negative_hbv_deathsf  <- which(grepl("^cum_negative_hbv_deathsf.",names(out[[1]]$full_output)))
+  #
+  # # Extract based on indices
+  # cum_hbv_deaths_male <- lapply(lapply(out, "[[", "full_output"), "[",
+  #                                        index_cum_hbv_deathsm)
+  # cum_screened_hbv_deaths_male <- lapply(lapply(out, "[[", "full_output"), "[",
+  #                                        index_cum_screened_hbv_deathsm)
+  # cum_treated_hbv_deaths_male <- lapply(lapply(out, "[[", "full_output"), "[",
+  #                                       index_cum_treated_hbv_deathsm)
+  # cum_negative_hbv_deaths_male <- lapply(lapply(out, "[[", "full_output"), "[",
+  #                                        index_cum_negative_hbv_deathsm)
+  #
+  # cum_hbv_deaths_female <- lapply(lapply(out, "[[", "full_output"), "[",
+  #                                          index_cum_hbv_deathsf)
+  # cum_screened_hbv_deaths_female <- lapply(lapply(out, "[[", "full_output"), "[",
+  #                                          index_cum_screened_hbv_deathsf)
+  # cum_treated_hbv_deaths_female <- lapply(lapply(out, "[[", "full_output"), "[",
+  #                                         index_cum_treated_hbv_deathsf)
+  # cum_negative_hbv_deaths_female <- lapply(lapply(out, "[[", "full_output"), "[",
+  #                                          index_cum_negative_hbv_deathsf)
+  #
+  #
+  # # Extract cumulative outcomes by age by 2100 (cohort and separate)
+  # cum_total_hbv_deaths_male_by_age_2100 <- do.call("rbind", lapply(cum_screened_hbv_deaths_male,function(x) x[which(out[[1]]$time==2100),]))+
+  #   do.call("rbind", lapply(cum_treated_hbv_deaths_male, function(x) x[which(out[[1]]$time==2100),]))+
+  #   do.call("rbind", lapply(cum_hbv_deaths_male,function(x) x[which(out[[1]]$time==2100),]))+
+  #   do.call("rbind", lapply(cum_negative_hbv_deaths_male,function(x) x[which(out[[1]]$time==2100),]))
+  #
+  # cum_total_hbv_deaths_female_by_age_2100 <- do.call("rbind", lapply(cum_screened_hbv_deaths_female,function(x) x[which(out[[1]]$time==2100),]))+
+  #   do.call("rbind", lapply(cum_treated_hbv_deaths_female, function(x) x[which(out[[1]]$time==2100),]))+
+  #   do.call("rbind", lapply(cum_hbv_deaths_female, function(x) x[which(out[[1]]$time==2100),]))+
+  #   do.call("rbind", lapply(cum_negative_hbv_deaths_female, function(x) x[which(out[[1]]$time==2100),]))
+  #
+  # gc()
+  #
+  # # Combine outcomes
+  # extracted_outcomes <- list(
+  #   cum_total_hbv_deaths_male_by_age_2100 = cum_total_hbv_deaths_male_by_age_2100,
+  #   cum_total_hbv_deaths_female_by_age_2100 = cum_total_hbv_deaths_female_by_age_2100)
+  #
+  # outlist <- list("screen" = extracted_outcomes)
+  # names(outlist) <- label
+  #
+  # return(outlist)
 
 
   ######
 
   ## Extract outcomes for repeat screening and prevalence
-  timevec <- out[[1]]$time[which(out[[1]]$time>=2015)]
-
-  # Cumulative HBV deaths, YLL and DALYs by 2100 (to calculate averted numbers and %)
-  cum_hbv_deaths_by_2100 <- extract_cumulative_hbv_deaths(out, scenario_label = label,
-                                                 from_year = 2020, by_year = 2100)
-  yll_and_dalys_by_2100 <- extract_yll_and_dalys(out, scenario_label = label,
-                                           from_year = 2020, by_year = 2100)
-
-  # Total number of HBV carriers over time
-  total_carriers_over_time <- sapply(lapply(out, "[[", "carriers"), rowSums)
-  total_carriers_15_to_65_over_time <- sapply(lapply(lapply(out, "[[", "carriers"), function(x) x[,which(ages==15):which(ages==64.5)]), rowSums)
-
-  # Total population over time
-  total_pop_over_time <- sapply(lapply(out, "[[", "pop"), rowSums)
-  total_pop_15_to_65_over_time <- sapply(lapply(lapply(out, "[[", "pop"),
-                                                function(x) x[,which(ages==15):which(ages==64.5)]), rowSums)
-
-  # Untreated carriers can be calculated from total carriers - treated carriers
-  # treated carriers = treated population - T_R compartments
-  treated_pop_over_time <- sapply(lapply(out, "[[", "treated_pop_female"), rowSums)+
-    sapply(lapply(out, "[[", "treated_pop_male"), rowSums)
-  treated_pop_15_to_65_over_time <- sapply(lapply(lapply(out, "[[", "treated_pop_female"),
-                 function(x) x[,which(ages==15):which(ages==64.5)]), rowSums)+
-    sapply(lapply(lapply(out, "[[", "treated_pop_male"),
-                  function(x) x[,which(ages==15):which(ages==64.5)]), rowSums)
-
-  # Remove T_R compartment since these are no longer carriers
-  t_rf_index <- which(grepl("^T_Rf.",names(out[[1]]$full_output)))
-  t_rm_index <- which(grepl("^T_Rm.",names(out[[1]]$full_output)))
-  t_r_female <- lapply(lapply(out, "[[", "full_output"), "[", t_rf_index)
-  t_r_male <- lapply(lapply(out, "[[", "full_output"), "[", t_rm_index)
-  t_r_total <- sapply(t_r_female, rowSums)+sapply(t_r_male, rowSums)
-
-  t_rf_index_15_to_65 <- which(grepl("^T_Rf.",names(out[[1]]$full_output)))[which(ages==15):which(ages==64.5)]
-  t_rm_index_15_to_65 <- which(grepl("^T_Rm.",names(out[[1]]$full_output)))[which(ages==15):which(ages==64.5)]
-  t_r_female_15_to_65 <- lapply(lapply(out, "[[", "full_output"), "[", t_rf_index_15_to_65)
-  t_r_male_15_to_65 <- lapply(lapply(out, "[[", "full_output"), "[", t_rm_index_15_to_65)
-  t_r_total_15_to_65 <- sapply(t_r_female_15_to_65, rowSums)+sapply(t_r_male_15_to_65, rowSums)
-
-  treated_carriers_over_time <- treated_pop_over_time-t_r_total
-  treated_carriers_15_to_65_over_time <- treated_pop_15_to_65_over_time-t_r_total_15_to_65
-
-  # Treatment need over time (across all ages)
-  itf_allages_index <- which(grepl("^ITf.",names(out[[1]]$full_output)))[which(ages==31):which(ages==99.5)]
-  itm_allages_index <- which(grepl("^ITm.",names(out[[1]]$full_output)))[which(ages==31):which(ages==99.5)]
-  irf_allages_index <- which(grepl("^IRf.",names(out[[1]]$full_output)))
-  irm_allages_index <- which(grepl("^IRm.",names(out[[1]]$full_output)))
-  enchbf_allages_index <- which(grepl("^ENCHBf.",names(out[[1]]$full_output)))
-  enchbm_allages_index <- which(grepl("^ENCHBm.",names(out[[1]]$full_output)))
-  ccf_allages_index <- which(grepl("^CCf.",names(out[[1]]$full_output)))
-  ccm_allages_index <- which(grepl("^CCm.",names(out[[1]]$full_output)))
-  dccf_allages_index <- which(grepl("^DCCf.",names(out[[1]]$full_output)))
-  dccm_allages_index <- which(grepl("^DCCm.",names(out[[1]]$full_output)))
-
-  screened_itf_allages_index <- which(grepl("^S_ITf.",names(out[[1]]$full_output)))[which(ages==31):which(ages==99.5)]
-  screened_itm_allages_index <- which(grepl("^S_ITm.",names(out[[1]]$full_output)))[which(ages==31):which(ages==99.5)]
-  screened_irf_allages_index <- which(grepl("^S_IRf.",names(out[[1]]$full_output)))
-  screened_irm_allages_index <- which(grepl("^S_IRm.",names(out[[1]]$full_output)))
-  screened_enchbf_allages_index <- which(grepl("^S_ENCHBf.",names(out[[1]]$full_output)))
-  screened_enchbm_allages_index <- which(grepl("^S_ENCHBm.",names(out[[1]]$full_output)))
-  screened_ccf_allages_index <- which(grepl("^S_CCf.",names(out[[1]]$full_output)))
-  screened_ccm_allages_index <- which(grepl("^S_CCm.",names(out[[1]]$full_output)))
-  screened_dccf_allages_index <- which(grepl("^S_DCCf.",names(out[[1]]$full_output)))
-  screened_dccm_allages_index <- which(grepl("^S_DCCm.",names(out[[1]]$full_output)))
-
-  # In targeted age group
-  itf_15_to_65_index <- which(grepl("^ITf.",names(out[[1]]$full_output)))[which(ages==31):which(ages==64.5)]
-  itm_15_to_65_index <- which(grepl("^ITm.",names(out[[1]]$full_output)))[which(ages==31):which(ages==64.5)]
-  irf_15_to_65_index <- which(grepl("^IRf.",names(out[[1]]$full_output)))[which(ages==15):which(ages==64.5)]
-  irm_15_to_65_index <- which(grepl("^IRm.",names(out[[1]]$full_output)))[which(ages==15):which(ages==64.5)]
-  enchbf_15_to_65_index <- which(grepl("^ENCHBf.",names(out[[1]]$full_output)))[which(ages==15):which(ages==64.5)]
-  enchbm_15_to_65_index <- which(grepl("^ENCHBm.",names(out[[1]]$full_output)))[which(ages==15):which(ages==64.5)]
-  ccf_15_to_65_index <- which(grepl("^CCf.",names(out[[1]]$full_output)))[which(ages==15):which(ages==64.5)]
-  ccm_15_to_65_index <- which(grepl("^CCm.",names(out[[1]]$full_output)))[which(ages==15):which(ages==64.5)]
-  dccf_15_to_65_index <- which(grepl("^DCCf.",names(out[[1]]$full_output)))[which(ages==15):which(ages==64.5)]
-  dccm_15_to_65_index <- which(grepl("^DCCm.",names(out[[1]]$full_output)))[which(ages==15):which(ages==64.5)]
-
-  screened_itf_15_to_65_index <- which(grepl("^S_ITf.",names(out[[1]]$full_output)))[which(ages==31):which(ages==64.5)]
-  screened_itm_15_to_65_index <- which(grepl("^S_ITm.",names(out[[1]]$full_output)))[which(ages==31):which(ages==64.5)]
-  screened_irf_15_to_65_index <- which(grepl("^S_IRf.",names(out[[1]]$full_output)))[which(ages==15):which(ages==64.5)]
-  screened_irm_15_to_65_index <- which(grepl("^S_IRm.",names(out[[1]]$full_output)))[which(ages==15):which(ages==64.5)]
-  screened_enchbf_15_to_65_index <- which(grepl("^S_ENCHBf.",names(out[[1]]$full_output)))[which(ages==15):which(ages==64.5)]
-  screened_enchbm_15_to_65_index <- which(grepl("^S_ENCHBm.",names(out[[1]]$full_output)))[which(ages==15):which(ages==64.5)]
-  screened_ccf_15_to_65_index <- which(grepl("^S_CCf.",names(out[[1]]$full_output)))[which(ages==15):which(ages==64.5)]
-  screened_ccm_15_to_65_index <- which(grepl("^S_CCm.",names(out[[1]]$full_output)))[which(ages==15):which(ages==64.5)]
-  screened_dccf_15_to_65_index <- which(grepl("^S_DCCf.",names(out[[1]]$full_output)))[which(ages==15):which(ages==64.5)]
-  screened_dccm_15_to_65_index <- which(grepl("^S_DCCm.",names(out[[1]]$full_output)))[which(ages==15):which(ages==64.5)]
-
-  treatment_eligible_carriers_undiagnosed_over_time <-
-    sapply(lapply(lapply(out, "[[", "full_output"), "[", itf_allages_index), rowSums)+
-    sapply(lapply(lapply(out, "[[", "full_output"), "[", itm_allages_index), rowSums)+
-    sapply(lapply(lapply(out, "[[", "full_output"), "[", irf_allages_index), rowSums)+
-    sapply(lapply(lapply(out, "[[", "full_output"), "[", irm_allages_index), rowSums)+
-    sapply(lapply(lapply(out, "[[", "full_output"), "[", enchbf_allages_index), rowSums)+
-    sapply(lapply(lapply(out, "[[", "full_output"), "[", enchbm_allages_index), rowSums)+
-    sapply(lapply(lapply(out, "[[", "full_output"), "[", ccf_allages_index), rowSums)+
-    sapply(lapply(lapply(out, "[[", "full_output"), "[", ccm_allages_index), rowSums)+
-    sapply(lapply(lapply(out, "[[", "full_output"), "[",dccf_allages_index), rowSums)+
-    sapply(lapply(lapply(out, "[[", "full_output"), "[", dccm_allages_index), rowSums)
-
-  treatment_eligible_carriers_screened_over_time <-
-    sapply(lapply(lapply(out, "[[", "full_output"), "[", screened_itf_allages_index), rowSums)+
-    sapply(lapply(lapply(out, "[[", "full_output"), "[", screened_itm_allages_index), rowSums)+
-    sapply(lapply(lapply(out, "[[", "full_output"), "[", screened_irf_allages_index), rowSums)+
-    sapply(lapply(lapply(out, "[[", "full_output"), "[", screened_irm_allages_index), rowSums)+
-    sapply(lapply(lapply(out, "[[", "full_output"), "[", screened_enchbf_allages_index), rowSums)+
-    sapply(lapply(lapply(out, "[[", "full_output"), "[", screened_enchbm_allages_index), rowSums)+
-    sapply(lapply(lapply(out, "[[", "full_output"), "[", screened_ccf_allages_index), rowSums)+
-    sapply(lapply(lapply(out, "[[", "full_output"), "[", screened_ccm_allages_index), rowSums)+
-    sapply(lapply(lapply(out, "[[", "full_output"), "[", screened_dccf_allages_index), rowSums)+
-    sapply(lapply(lapply(out, "[[", "full_output"), "[", screened_dccm_allages_index), rowSums)
-
-  treatment_eligible_carriers_undiagnosed_over_time_15_to_65 <-
-    sapply(lapply(lapply(out, "[[", "full_output"), "[", itf_15_to_65_index), rowSums)+
-    sapply(lapply(lapply(out, "[[", "full_output"), "[", itm_15_to_65_index), rowSums)+
-    sapply(lapply(lapply(out, "[[", "full_output"), "[", irf_15_to_65_index), rowSums)+
-    sapply(lapply(lapply(out, "[[", "full_output"), "[", irm_15_to_65_index), rowSums)+
-    sapply(lapply(lapply(out, "[[", "full_output"), "[", enchbf_15_to_65_index), rowSums)+
-    sapply(lapply(lapply(out, "[[", "full_output"), "[", enchbm_15_to_65_index), rowSums)+
-    sapply(lapply(lapply(out, "[[", "full_output"), "[", ccf_15_to_65_index), rowSums)+
-    sapply(lapply(lapply(out, "[[", "full_output"), "[", ccm_15_to_65_index), rowSums)+
-    sapply(lapply(lapply(out, "[[", "full_output"), "[",dccf_15_to_65_index), rowSums)+
-    sapply(lapply(lapply(out, "[[", "full_output"), "[", dccm_15_to_65_index), rowSums)
-
-  treatment_eligible_carriers_screened_over_time_15_to_65 <-
-    sapply(lapply(lapply(out, "[[", "full_output"), "[", screened_itf_15_to_65_index), rowSums)+
-    sapply(lapply(lapply(out, "[[", "full_output"), "[", screened_itm_15_to_65_index), rowSums)+
-    sapply(lapply(lapply(out, "[[", "full_output"), "[", screened_irf_15_to_65_index), rowSums)+
-    sapply(lapply(lapply(out, "[[", "full_output"), "[", screened_irm_15_to_65_index), rowSums)+
-    sapply(lapply(lapply(out, "[[", "full_output"), "[", screened_enchbf_15_to_65_index), rowSums)+
-    sapply(lapply(lapply(out, "[[", "full_output"), "[", screened_enchbm_15_to_65_index), rowSums)+
-    sapply(lapply(lapply(out, "[[", "full_output"), "[", screened_ccf_15_to_65_index), rowSums)+
-    sapply(lapply(lapply(out, "[[", "full_output"), "[", screened_ccm_15_to_65_index), rowSums)+
-    sapply(lapply(lapply(out, "[[", "full_output"), "[", screened_dccf_15_to_65_index), rowSums)+
-    sapply(lapply(lapply(out, "[[", "full_output"), "[", screened_dccm_15_to_65_index), rowSums)
-
-  # Combine outcomes
-  extracted_outcomes <- list(
-    time=timevec,
-    cum_hbv_deaths_by_2100=cum_hbv_deaths_by_2100,
-    yll_and_dalys_by_2100=yll_and_dalys_by_2100,
-    total_carriers_over_time=total_carriers_over_time[which(out[[1]]$time>=2015),],
-    total_carriers_15_to_65_over_time=total_carriers_15_to_65_over_time[which(out[[1]]$time>=2015),],
-    total_pop_over_time=total_pop_over_time[which(out[[1]]$time>=2015),],
-    total_pop_15_to_65_over_time= total_pop_15_to_65_over_time[which(out[[1]]$time>=2015),],
-    treated_carriers_over_time=treated_carriers_over_time[which(out[[1]]$time>=2015),],
-    treated_carriers_15_to_65_over_time=treated_carriers_15_to_65_over_time[which(out[[1]]$time>=2015),],
-    treatment_eligible_carriers_undiagnosed_over_time=treatment_eligible_carriers_undiagnosed_over_time[which(out[[1]]$time>=2015),],
-    treatment_eligible_carriers_screened_over_time=treatment_eligible_carriers_screened_over_time[which(out[[1]]$time>=2015),],
-    treatment_eligible_carriers_undiagnosed_over_time_15_to_65=treatment_eligible_carriers_undiagnosed_over_time_15_to_65[which(out[[1]]$time>=2015),],
-    treatment_eligible_carriers_screened_over_time_15_to_65=treatment_eligible_carriers_screened_over_time_15_to_65[which(out[[1]]$time>=2015),]
-  )
-
-  outlist <- list("screen" = extracted_outcomes)
-  names(outlist) <- label
-
-  return(outlist)
+  # timevec <- out[[1]]$time[which(out[[1]]$time>=2015)]
+  #
+  # # Cumulative HBV deaths, YLL and DALYs by 2100 (to calculate averted numbers and %)
+  # cum_hbv_deaths_by_2100 <- extract_cumulative_hbv_deaths(out, scenario_label = label,
+  #                                                from_year = 2020, by_year = 2100)
+  # yll_and_dalys_by_2100 <- extract_yll_and_dalys(out, scenario_label = label,
+  #                                          from_year = 2020, by_year = 2100)
+  #
+  # # Total number of HBV carriers over time
+  # total_carriers_over_time <- sapply(lapply(out, "[[", "carriers"), rowSums)
+  # total_carriers_15_to_65_over_time <- sapply(lapply(lapply(out, "[[", "carriers"), function(x) x[,which(ages==15):which(ages==64.5)]), rowSums)
+  #
+  # # Total population over time
+  # total_pop_over_time <- sapply(lapply(out, "[[", "pop"), rowSums)
+  # total_pop_15_to_65_over_time <- sapply(lapply(lapply(out, "[[", "pop"),
+  #                                               function(x) x[,which(ages==15):which(ages==64.5)]), rowSums)
+  #
+  # # Untreated carriers can be calculated from total carriers - treated carriers
+  # # treated carriers = treated population - T_R compartments
+  # treated_pop_over_time <- sapply(lapply(out, "[[", "treated_pop_female"), rowSums)+
+  #   sapply(lapply(out, "[[", "treated_pop_male"), rowSums)
+  # treated_pop_15_to_65_over_time <- sapply(lapply(lapply(out, "[[", "treated_pop_female"),
+  #                function(x) x[,which(ages==15):which(ages==64.5)]), rowSums)+
+  #   sapply(lapply(lapply(out, "[[", "treated_pop_male"),
+  #                 function(x) x[,which(ages==15):which(ages==64.5)]), rowSums)
+  #
+  # # Remove T_R compartment since these are no longer carriers
+  # t_rf_index <- which(grepl("^T_Rf.",names(out[[1]]$full_output)))
+  # t_rm_index <- which(grepl("^T_Rm.",names(out[[1]]$full_output)))
+  # t_r_female <- lapply(lapply(out, "[[", "full_output"), "[", t_rf_index)
+  # t_r_male <- lapply(lapply(out, "[[", "full_output"), "[", t_rm_index)
+  # t_r_total <- sapply(t_r_female, rowSums)+sapply(t_r_male, rowSums)
+  #
+  # t_rf_index_15_to_65 <- which(grepl("^T_Rf.",names(out[[1]]$full_output)))[which(ages==15):which(ages==64.5)]
+  # t_rm_index_15_to_65 <- which(grepl("^T_Rm.",names(out[[1]]$full_output)))[which(ages==15):which(ages==64.5)]
+  # t_r_female_15_to_65 <- lapply(lapply(out, "[[", "full_output"), "[", t_rf_index_15_to_65)
+  # t_r_male_15_to_65 <- lapply(lapply(out, "[[", "full_output"), "[", t_rm_index_15_to_65)
+  # t_r_total_15_to_65 <- sapply(t_r_female_15_to_65, rowSums)+sapply(t_r_male_15_to_65, rowSums)
+  #
+  # treated_carriers_over_time <- treated_pop_over_time-t_r_total
+  # treated_carriers_15_to_65_over_time <- treated_pop_15_to_65_over_time-t_r_total_15_to_65
+  #
+  # # Treatment need over time (across all ages)
+  # itf_allages_index <- which(grepl("^ITf.",names(out[[1]]$full_output)))[which(ages==31):which(ages==99.5)]
+  # itm_allages_index <- which(grepl("^ITm.",names(out[[1]]$full_output)))[which(ages==31):which(ages==99.5)]
+  # irf_allages_index <- which(grepl("^IRf.",names(out[[1]]$full_output)))
+  # irm_allages_index <- which(grepl("^IRm.",names(out[[1]]$full_output)))
+  # enchbf_allages_index <- which(grepl("^ENCHBf.",names(out[[1]]$full_output)))
+  # enchbm_allages_index <- which(grepl("^ENCHBm.",names(out[[1]]$full_output)))
+  # ccf_allages_index <- which(grepl("^CCf.",names(out[[1]]$full_output)))
+  # ccm_allages_index <- which(grepl("^CCm.",names(out[[1]]$full_output)))
+  # dccf_allages_index <- which(grepl("^DCCf.",names(out[[1]]$full_output)))
+  # dccm_allages_index <- which(grepl("^DCCm.",names(out[[1]]$full_output)))
+  #
+  # screened_itf_allages_index <- which(grepl("^S_ITf.",names(out[[1]]$full_output)))[which(ages==31):which(ages==99.5)]
+  # screened_itm_allages_index <- which(grepl("^S_ITm.",names(out[[1]]$full_output)))[which(ages==31):which(ages==99.5)]
+  # screened_irf_allages_index <- which(grepl("^S_IRf.",names(out[[1]]$full_output)))
+  # screened_irm_allages_index <- which(grepl("^S_IRm.",names(out[[1]]$full_output)))
+  # screened_enchbf_allages_index <- which(grepl("^S_ENCHBf.",names(out[[1]]$full_output)))
+  # screened_enchbm_allages_index <- which(grepl("^S_ENCHBm.",names(out[[1]]$full_output)))
+  # screened_ccf_allages_index <- which(grepl("^S_CCf.",names(out[[1]]$full_output)))
+  # screened_ccm_allages_index <- which(grepl("^S_CCm.",names(out[[1]]$full_output)))
+  # screened_dccf_allages_index <- which(grepl("^S_DCCf.",names(out[[1]]$full_output)))
+  # screened_dccm_allages_index <- which(grepl("^S_DCCm.",names(out[[1]]$full_output)))
+  #
+  # # In targeted age group
+  # itf_15_to_65_index <- which(grepl("^ITf.",names(out[[1]]$full_output)))[which(ages==31):which(ages==64.5)]
+  # itm_15_to_65_index <- which(grepl("^ITm.",names(out[[1]]$full_output)))[which(ages==31):which(ages==64.5)]
+  # irf_15_to_65_index <- which(grepl("^IRf.",names(out[[1]]$full_output)))[which(ages==15):which(ages==64.5)]
+  # irm_15_to_65_index <- which(grepl("^IRm.",names(out[[1]]$full_output)))[which(ages==15):which(ages==64.5)]
+  # enchbf_15_to_65_index <- which(grepl("^ENCHBf.",names(out[[1]]$full_output)))[which(ages==15):which(ages==64.5)]
+  # enchbm_15_to_65_index <- which(grepl("^ENCHBm.",names(out[[1]]$full_output)))[which(ages==15):which(ages==64.5)]
+  # ccf_15_to_65_index <- which(grepl("^CCf.",names(out[[1]]$full_output)))[which(ages==15):which(ages==64.5)]
+  # ccm_15_to_65_index <- which(grepl("^CCm.",names(out[[1]]$full_output)))[which(ages==15):which(ages==64.5)]
+  # dccf_15_to_65_index <- which(grepl("^DCCf.",names(out[[1]]$full_output)))[which(ages==15):which(ages==64.5)]
+  # dccm_15_to_65_index <- which(grepl("^DCCm.",names(out[[1]]$full_output)))[which(ages==15):which(ages==64.5)]
+  #
+  # screened_itf_15_to_65_index <- which(grepl("^S_ITf.",names(out[[1]]$full_output)))[which(ages==31):which(ages==64.5)]
+  # screened_itm_15_to_65_index <- which(grepl("^S_ITm.",names(out[[1]]$full_output)))[which(ages==31):which(ages==64.5)]
+  # screened_irf_15_to_65_index <- which(grepl("^S_IRf.",names(out[[1]]$full_output)))[which(ages==15):which(ages==64.5)]
+  # screened_irm_15_to_65_index <- which(grepl("^S_IRm.",names(out[[1]]$full_output)))[which(ages==15):which(ages==64.5)]
+  # screened_enchbf_15_to_65_index <- which(grepl("^S_ENCHBf.",names(out[[1]]$full_output)))[which(ages==15):which(ages==64.5)]
+  # screened_enchbm_15_to_65_index <- which(grepl("^S_ENCHBm.",names(out[[1]]$full_output)))[which(ages==15):which(ages==64.5)]
+  # screened_ccf_15_to_65_index <- which(grepl("^S_CCf.",names(out[[1]]$full_output)))[which(ages==15):which(ages==64.5)]
+  # screened_ccm_15_to_65_index <- which(grepl("^S_CCm.",names(out[[1]]$full_output)))[which(ages==15):which(ages==64.5)]
+  # screened_dccf_15_to_65_index <- which(grepl("^S_DCCf.",names(out[[1]]$full_output)))[which(ages==15):which(ages==64.5)]
+  # screened_dccm_15_to_65_index <- which(grepl("^S_DCCm.",names(out[[1]]$full_output)))[which(ages==15):which(ages==64.5)]
+  #
+  # treatment_eligible_carriers_undiagnosed_over_time <-
+  #   sapply(lapply(lapply(out, "[[", "full_output"), "[", itf_allages_index), rowSums)+
+  #   sapply(lapply(lapply(out, "[[", "full_output"), "[", itm_allages_index), rowSums)+
+  #   sapply(lapply(lapply(out, "[[", "full_output"), "[", irf_allages_index), rowSums)+
+  #   sapply(lapply(lapply(out, "[[", "full_output"), "[", irm_allages_index), rowSums)+
+  #   sapply(lapply(lapply(out, "[[", "full_output"), "[", enchbf_allages_index), rowSums)+
+  #   sapply(lapply(lapply(out, "[[", "full_output"), "[", enchbm_allages_index), rowSums)+
+  #   sapply(lapply(lapply(out, "[[", "full_output"), "[", ccf_allages_index), rowSums)+
+  #   sapply(lapply(lapply(out, "[[", "full_output"), "[", ccm_allages_index), rowSums)+
+  #   sapply(lapply(lapply(out, "[[", "full_output"), "[",dccf_allages_index), rowSums)+
+  #   sapply(lapply(lapply(out, "[[", "full_output"), "[", dccm_allages_index), rowSums)
+  #
+  # treatment_eligible_carriers_screened_over_time <-
+  #   sapply(lapply(lapply(out, "[[", "full_output"), "[", screened_itf_allages_index), rowSums)+
+  #   sapply(lapply(lapply(out, "[[", "full_output"), "[", screened_itm_allages_index), rowSums)+
+  #   sapply(lapply(lapply(out, "[[", "full_output"), "[", screened_irf_allages_index), rowSums)+
+  #   sapply(lapply(lapply(out, "[[", "full_output"), "[", screened_irm_allages_index), rowSums)+
+  #   sapply(lapply(lapply(out, "[[", "full_output"), "[", screened_enchbf_allages_index), rowSums)+
+  #   sapply(lapply(lapply(out, "[[", "full_output"), "[", screened_enchbm_allages_index), rowSums)+
+  #   sapply(lapply(lapply(out, "[[", "full_output"), "[", screened_ccf_allages_index), rowSums)+
+  #   sapply(lapply(lapply(out, "[[", "full_output"), "[", screened_ccm_allages_index), rowSums)+
+  #   sapply(lapply(lapply(out, "[[", "full_output"), "[", screened_dccf_allages_index), rowSums)+
+  #   sapply(lapply(lapply(out, "[[", "full_output"), "[", screened_dccm_allages_index), rowSums)
+  #
+  # treatment_eligible_carriers_undiagnosed_over_time_15_to_65 <-
+  #   sapply(lapply(lapply(out, "[[", "full_output"), "[", itf_15_to_65_index), rowSums)+
+  #   sapply(lapply(lapply(out, "[[", "full_output"), "[", itm_15_to_65_index), rowSums)+
+  #   sapply(lapply(lapply(out, "[[", "full_output"), "[", irf_15_to_65_index), rowSums)+
+  #   sapply(lapply(lapply(out, "[[", "full_output"), "[", irm_15_to_65_index), rowSums)+
+  #   sapply(lapply(lapply(out, "[[", "full_output"), "[", enchbf_15_to_65_index), rowSums)+
+  #   sapply(lapply(lapply(out, "[[", "full_output"), "[", enchbm_15_to_65_index), rowSums)+
+  #   sapply(lapply(lapply(out, "[[", "full_output"), "[", ccf_15_to_65_index), rowSums)+
+  #   sapply(lapply(lapply(out, "[[", "full_output"), "[", ccm_15_to_65_index), rowSums)+
+  #   sapply(lapply(lapply(out, "[[", "full_output"), "[",dccf_15_to_65_index), rowSums)+
+  #   sapply(lapply(lapply(out, "[[", "full_output"), "[", dccm_15_to_65_index), rowSums)
+  #
+  # treatment_eligible_carriers_screened_over_time_15_to_65 <-
+  #   sapply(lapply(lapply(out, "[[", "full_output"), "[", screened_itf_15_to_65_index), rowSums)+
+  #   sapply(lapply(lapply(out, "[[", "full_output"), "[", screened_itm_15_to_65_index), rowSums)+
+  #   sapply(lapply(lapply(out, "[[", "full_output"), "[", screened_irf_15_to_65_index), rowSums)+
+  #   sapply(lapply(lapply(out, "[[", "full_output"), "[", screened_irm_15_to_65_index), rowSums)+
+  #   sapply(lapply(lapply(out, "[[", "full_output"), "[", screened_enchbf_15_to_65_index), rowSums)+
+  #   sapply(lapply(lapply(out, "[[", "full_output"), "[", screened_enchbm_15_to_65_index), rowSums)+
+  #   sapply(lapply(lapply(out, "[[", "full_output"), "[", screened_ccf_15_to_65_index), rowSums)+
+  #   sapply(lapply(lapply(out, "[[", "full_output"), "[", screened_ccm_15_to_65_index), rowSums)+
+  #   sapply(lapply(lapply(out, "[[", "full_output"), "[", screened_dccf_15_to_65_index), rowSums)+
+  #   sapply(lapply(lapply(out, "[[", "full_output"), "[", screened_dccm_15_to_65_index), rowSums)
+  #
+  # # Combine outcomes
+  # extracted_outcomes <- list(
+  #   time=timevec,
+  #   cum_hbv_deaths_by_2100=cum_hbv_deaths_by_2100,
+  #   yll_and_dalys_by_2100=yll_and_dalys_by_2100,
+  #   total_carriers_over_time=total_carriers_over_time[which(out[[1]]$time>=2015),],
+  #   total_carriers_15_to_65_over_time=total_carriers_15_to_65_over_time[which(out[[1]]$time>=2015),],
+  #   total_pop_over_time=total_pop_over_time[which(out[[1]]$time>=2015),],
+  #   total_pop_15_to_65_over_time= total_pop_15_to_65_over_time[which(out[[1]]$time>=2015),],
+  #   treated_carriers_over_time=treated_carriers_over_time[which(out[[1]]$time>=2015),],
+  #   treated_carriers_15_to_65_over_time=treated_carriers_15_to_65_over_time[which(out[[1]]$time>=2015),],
+  #   treatment_eligible_carriers_undiagnosed_over_time=treatment_eligible_carriers_undiagnosed_over_time[which(out[[1]]$time>=2015),],
+  #   treatment_eligible_carriers_screened_over_time=treatment_eligible_carriers_screened_over_time[which(out[[1]]$time>=2015),],
+  #   treatment_eligible_carriers_undiagnosed_over_time_15_to_65=treatment_eligible_carriers_undiagnosed_over_time_15_to_65[which(out[[1]]$time>=2015),],
+  #   treatment_eligible_carriers_screened_over_time_15_to_65=treatment_eligible_carriers_screened_over_time_15_to_65[which(out[[1]]$time>=2015),]
+  # )
+  #
+  # outlist <- list("screen" = extracted_outcomes)
+  # names(outlist) <- label
+  #
+  # return(outlist)
 
 
   ## Extract outcomes for treatment effect in cohort
