@@ -23,11 +23,11 @@ out_path_monit <-
 ## Different output:
 
 # All simulations involve IT treatment
-a4_out6 <- readRDS(paste0(out_path, "a4_it_out6_screen_2020_monit_1_treatment_effect_091221.rds"))
+a4_out6 <- readRDS(paste0(out_path, "a4_it_out6_screen_2020_monit_1_treatment_effect_161221.rds"))
 a4_out6 <- a4_out6[[1]]
-a5_out6 <- readRDS(paste0(out_path, "a5_it_out6_screen_2020_monit_1_treatment_effect_091221.rds"))
+a5_out6 <- readRDS(paste0(out_path, "a5_it_out6_screen_2020_monit_1_treatment_effect_161221.rds"))
 a5_out6 <- a5_out6[[1]]
-a2_out6 <- readRDS(paste0(out_path, "a2_it_out6_screen_2020_monit_1_treatment_effect_101221.rds"))
+a2_out6 <- readRDS(paste0(out_path, "a2_it_out6_screen_2020_monit_1_treatment_effect_161221.rds"))
 a2_out6 <- a2_out6[[1]]
 
 # Same cohort simulations without treatment:
@@ -101,12 +101,12 @@ a1_x2 <- a4_out6$cum_screened_hbv_deaths_male_by_age_2100 +
   a2_out6$cum_screened_hbv_deaths_male_by_age_2100 +
   a2_out6$cum_screened_hbv_deaths_female_by_age_2100
 a1_x3 <- a1_x1-a1_x2
-a1_x4 <- a4_out3$cum_treated_hbv_deaths_male_by_age_2100+
-  a4_out3$cum_treated_hbv_deaths_female_by_age_2100+
-  a5_out3$cum_treated_hbv_deaths_male_by_age_2100+
-  a5_out3$cum_treated_hbv_deaths_female_by_age_2100+
-  a2_out3$cum_treated_hbv_deaths_male_by_age_2100+
-  a2_out3$cum_treated_hbv_deaths_female_by_age_2100
+a1_x4 <- a4_out6$cum_treated_hbv_deaths_male_by_age_2100+
+  a4_out6$cum_treated_hbv_deaths_female_by_age_2100+
+  a5_out6$cum_treated_hbv_deaths_male_by_age_2100+
+  a5_out6$cum_treated_hbv_deaths_female_by_age_2100+
+  a2_out6$cum_treated_hbv_deaths_male_by_age_2100+
+  a2_out6$cum_treated_hbv_deaths_female_by_age_2100
 a1_x3$sim <- rownames(a1_x3)
 a1_x4$sim <- rownames(a1_x4)
 
@@ -203,6 +203,7 @@ quantile(apply(a1_x3[,which(ages==15):which(ages==29.5)]-a1_x4[,which(ages==15):
 quantile(apply(a1_x3[,which(ages==15):which(ages==44.5)]-a1_x4[,which(ages==15):which(ages==44.5)],1,sum)/
            apply(a1_x3[,1:200]-a1_x4[,1:200],1,sum), c(0.5,0.025,0.975))
 
+
 deaths_averted_distribution_by_age2 <- gather(a1_x3[,1:200]-
                                                 a1_x4[,1:200], key = "age", value = "value")
 deaths_averted_distribution_by_age2$age <- rep(ages, each = 183)
@@ -221,7 +222,7 @@ pp7 <- ggplot(subset(deaths_averted_distribution_by_age2, age %in% 0:99)) +
                      limits=c(14,90)) +
   scale_fill_viridis_d("", begin=0.6, end = 0.8) +
   theme_classic() +
-  theme(legend.position = c(0.85, 0.70),
+  theme(legend.position = c(0.87, 0.70),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         strip.background = element_blank(),
@@ -249,139 +250,6 @@ ggplot(deaths_averted_distribution_by_age) +
         axis.title = element_text(size = 15),
         legend.text = element_text(size = 13),
         legend.title = element_text(size = 14))
-
-# HCC CASES
-
-# Treat ages 15-30:
-a4_x1 <- a4_out1$cum_cohort_hcc_cases_male_by_age_2100+
-  a4_out1$cum_cohort_hcc_cases_female_by_age_2100
-a4_x2 <- a4_out3$cum_screened_hcc_cases_male_by_age_2100 +
-  a4_out3$cum_screened_hcc_cases_female_by_age_2100
-a4_x3 <- a4_x1-a4_x2
-a4_x4 <- a4_out3$cum_treated_hcc_cases_male_by_age_2100+
-  a4_out3$cum_treated_hcc_cases_female_by_age_2100
-a4_x3$sim <- rownames(a4_x3)
-a4_x4$sim <- rownames(a4_x4)
-# Treat ages 30-45
-a5_x1 <- a5_out1$cum_cohort_hcc_cases_male_by_age_2100+
-  a5_out1$cum_cohort_hcc_cases_female_by_age_2100
-a5_x2 <- a5_out3$cum_screened_hcc_cases_male_by_age_2100 +
-  a5_out3$cum_screened_hcc_cases_female_by_age_2100
-a5_x3 <- a5_x1-a5_x2
-a5_x4 <- a5_out3$cum_treated_hcc_cases_male_by_age_2100+
-  a5_out3$cum_treated_hcc_cases_female_by_age_2100
-a5_x3$sim <- rownames(a5_x3)
-a5_x4$sim <- rownames(a5_x4)
-# Treat ages 45-65
-a2_x1 <- a2_out1$cum_cohort_hcc_cases_male_by_age_2100+
-  a2_out1$cum_cohort_hcc_cases_female_by_age_2100
-a2_x2 <- a2_out3$cum_screened_hcc_cases_male_by_age_2100 +
-  a2_out3$cum_screened_hcc_cases_female_by_age_2100
-a2_x3 <- a2_x1-a2_x2
-a2_x4 <- a2_out3$cum_treated_hcc_cases_male_by_age_2100+
-  a2_out3$cum_treated_hcc_cases_female_by_age_2100
-a2_x3$sim <- rownames(a2_x3)
-a2_x4$sim <- rownames(a2_x4)
-
-
-df <- rbind(
-  data.frame(type="No treatment", treated_age="15-30",
-             gather(a4_x3,key="age", value = "value",-sim)),
-  data.frame(type="With treatment", treated_age="15-30",
-             gather(a4_x4,key="age", value = "value",-sim)),
-  data.frame(type="No treatment", treated_age="30-45",
-             gather(a5_x3,key="age", value = "value",-sim)),
-  data.frame(type="With treatment", treated_age="30-45",
-             gather(a5_x4,key="age", value = "value",-sim)),
-  data.frame(type="No treatment", treated_age="45-65",
-             gather(a2_x3,key="age", value = "value",-sim)),
-  data.frame(type="With treatment", treated_age="45-65",
-             gather(a2_x4,key="age", value = "value",-sim))
-)
-df$age <- rep(ages, each = 183)
-
-# Divide deaths by 0.5 to get value in each 1-year age group
-ggplot(df) +
-  facet_wrap(~treated_age, ncol = 3) +
-  geom_line(data=subset(df, type == "No treatment"),
-            aes(x=age, y = value/0.5, group = sim), col = "grey70") +
-  geom_line(data=subset(df, type == "With treatment"),
-            aes(x=age, y = value/0.5, group = sim), col = "grey90") +
-  stat_summary(aes(x=age, y = value/0.5, colour=type), fun="median", geom = "line", size = 2)+
-  #facet_wrap(outcome~age,ncol = 3, scales = "free_y") +
-  ylab("Cumulative HBV-related HCC cases 2020-2100") +
-  theme_bw()
-
-
-# Ideally make separate plots and start them at age at enrollment into cohort (15/30/45)
-# or have no data at 0-entry and a vertical line
-age_p1 <- ggplot(subset(df, treated_age == "15-30")) +
-  stat_summary(aes(x=age, y = value/0.5, fill=type, colour = type),
-               fun.min= function(x) quantile(x,0.025),
-               fun.max= function(x) quantile(x,0.975),
-               geom = "ribbon", alpha = 0.05, lty ="dashed")+
-  stat_summary(aes(x=age, y = value/0.5, colour=type), fun="median", geom = "line", size = 1)+
-  ylab("Cumulative HBV-related HCC cases 2020-2100") +
-  xlab("Age at HCC onset (years)") +
-  labs(title = "15-30 year old cohort") +
-  geom_rect(aes(xmin=0, xmax=15, ymin=-Inf, ymax=Inf), fill = "grey") +
-  scale_fill_manual(values= c("No treatment"= "#A180A9",
-                              "With treatment" ="#1F968BFF")) +
-  scale_color_manual(values= c("No treatment"= "#A180A9",
-                               "With treatment" ="#1F968BFF"),
-                     guide = guide_legend(override.aes = list(color = "white"))) +
-  theme_bw()+
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-        legend.position = "bottom",
-        legend.direction="vertical",
-        legend.text = element_text(color = "white"),   # use these lines to make legend disappear
-        legend.title = element_text(color = "white"),
-        legend.key = element_rect(fill = "white"))
-
-age_p2 <-ggplot(subset(df, treated_age == "30-45")) +
-  stat_summary(aes(x=age, y = value/0.5, fill=type, colour = type),
-               fun.min= function(x) quantile(x,0.025),
-               fun.max= function(x) quantile(x,0.975),
-               geom = "ribbon", alpha = 0.05, lty ="dashed")+
-  stat_summary(aes(x=age, y = value/0.5, colour=type), fun="median", geom = "line", size = 1)+
-  ylab("Cumulative HBV-related HCC cases 2020-2100") +
-  xlab("Age at HCC onset (years)") +
-  scale_fill_manual(values= c("No treatment"= "#A180A9",
-                              "With treatment" ="#1F968BFF")) +
-  scale_color_manual(values= c("No treatment"= "#A180A9",
-                               "With treatment" ="#1F968BFF")) +
-  labs(fill = "Scenario:", colour = "Scenario:", title = "30-45 year old cohort") +
-  geom_rect(aes(xmin=0, xmax=30, ymin=-Inf, ymax=Inf), fill = "grey") +
-  theme_bw()+
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-        legend.position = "bottom", legend.direction="vertical")
-
-age_p3 <-ggplot(subset(df, treated_age == "45-65")) +
-  stat_summary(aes(x=age, y = value/0.5, fill=type, colour = type),
-               fun.min= function(x) quantile(x,0.025),
-               fun.max= function(x) quantile(x,0.975),
-               geom = "ribbon", alpha = 0.05, lty ="dashed")+
-  stat_summary(aes(x=age, y = value/0.5, colour=type), fun="median", geom = "line", size = 1)+
-  ylab("Cumulative HBV-related HCC cases 2020-2100") +
-  xlab("Age at HCC onset (years)") +
-  labs(title = "45-65 year old cohort") +
-  geom_rect(aes(xmin=0, xmax=45, ymin=-Inf, ymax=Inf), fill = "grey") +
-  theme_bw() +
-  scale_fill_manual(values= c("No treatment"= "#A180A9",
-                              "With treatment" ="#1F968BFF")) +
-  scale_color_manual(values= c("No treatment"= "#A180A9",
-                               "With treatment" ="#1F968BFF"),
-                     guide = guide_legend(override.aes = list(color = "white"))) +
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-        legend.position = "bottom",
-        legend.direction="vertical",
-        legend.text = element_text(color = "white"),   # use these lines to make legend disappear
-        legend.title = element_text(color = "white"),
-        legend.key = element_rect(fill = "white"))
-
-grid.arrange(age_p1,age_p2,age_p3,ncol = 3,
-             top ="Effect of antiviral therapy on HCC incidence in treatment-eligible HBV carriers")
-
 
 # Population effects: plot with resource utilisation ----
 # Number of deaths averted in each age group
@@ -677,6 +545,8 @@ interactions_by_age <- subset(interactions_by_age, !(interaction_type %in%
                                                        c("treatment_initiations_per_assessment",
                                                          "treatment_initiations_per_clinical_assessment",
                                                          "treatment_initiations_per_monitoring_assessment",
+                                                         "treatment_initiations_due_to_assessment",
+                                                         "treatment_initiations_due_to_monitoring",
                                                          "py_on_treatment_per_initiation")))
 
 # Merge deaths averted by age with carrier population by age and with DALYs averted
@@ -817,29 +687,29 @@ discounted_interactions_cost_median$interaction_type <- factor(discounted_intera
 # previous 2 sections (Population effects, Distribution of resource utilisation),
 # pp7 in Cumulative HBV/HCC deaths by age by 2100 to show shift in pattern section
 
-pp1 <- ggplot(data= subset(outcomes_by_age, scenario %in% c("a2_screen_2020_monit_0",
-                                                            "a4_screen_2020_monit_0",
-                                                            "a5_screen_2020_monit_0") &
-                             outcome == "deaths_averted")) +
-  stat_summary(aes(x=age_group, y= value/1000, fill = outcome),
-               fun="median", geom="bar", position = "dodge2", width = 0.95, colour="black")+
-  stat_summary(aes(x=age_group, y= value/1000),
-               fun.min = function(z) {quantile(z,0.025)},
-               fun.max = function(z) {quantile(z,0.975)},
-               geom="errorbar", position = "dodge2", width = 0.15)+
-  scale_fill_manual(values=c("deaths_averted" = "#31688EFF")) +
-  guides(fill=FALSE) +
-  xlab("Screened age group (years)")+
-  ylab("HBV-related deaths averted\n(thousands)") +
-  theme_classic() +
-  theme(panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        strip.background = element_blank(),
-        panel.border = element_rect(colour = "black", fill = NA),
-        axis.title.x = element_blank(),
-        axis.text = element_text(size = 14),  #13.5
-        axis.title = element_text(size = 15), #13.5
-        strip.text = element_text(size = 14))
+# pp1 <- ggplot(data= subset(outcomes_by_age, scenario %in% c("a2_screen_2020_monit_0",
+#                                                             "a4_screen_2020_monit_0",
+#                                                             "a5_screen_2020_monit_0") &
+#                              outcome == "deaths_averted")) +
+#   stat_summary(aes(x=age_group, y= value/1000, fill = outcome),
+#                fun="median", geom="bar", position = "dodge2", width = 0.95, colour="black")+
+#   stat_summary(aes(x=age_group, y= value/1000),
+#                fun.min = function(z) {quantile(z,0.025)},
+#                fun.max = function(z) {quantile(z,0.975)},
+#                geom="errorbar", position = "dodge2", width = 0.15)+
+#   scale_fill_manual(values=c("deaths_averted" = "#31688EFF")) +
+#   guides(fill=FALSE) +
+#   xlab("Screened age group (years)")+
+#   ylab("HBV-related deaths averted\n(thousands)") +
+#   theme_classic() +
+#   theme(panel.grid.major = element_blank(),
+#         panel.grid.minor = element_blank(),
+#         strip.background = element_blank(),
+#         panel.border = element_rect(colour = "black", fill = NA),
+#         axis.title.x = element_blank(),
+#         axis.text = element_text(size = 14),  #13.5
+#         axis.title = element_text(size = 15), #13.5
+#         strip.text = element_text(size = 14))
 
 # Alternative: distinguish effect of monitoring
 # Errorbars relate to total (with monitoring)
@@ -880,29 +750,29 @@ pp1 <- ggplot(data= subset(outcomes_by_age,
 #blue="#31688EFF"
 #yellow="#FDE725FF"
 
-pp2 <- ggplot(data= subset(outcomes_by_age, scenario %in% c("a2_screen_2020_monit_1",
-                                                            "a4_screen_2020_monit_1",
-                                                            "a5_screen_2020_monit_1") &
-                             outcome == "dalys_averted")) +
-  stat_summary(aes(x=age_group, y= value/1000, fill = outcome),
-               fun="median", geom="bar", position = "dodge2", width = 0.95, colour="black")+
-  stat_summary(aes(x=age_group, y= value/1000),
-               fun.min = function(z) {quantile(z,0.025)},
-               fun.max = function(z) {quantile(z,0.975)},
-               geom="errorbar", position = "dodge2", width = 0.15)+
-  scale_fill_manual(values=c("dalys_averted" = "#31688EFF")) +
-  guides(fill=FALSE) +
-  xlab("Screened age group (years)")+
-  ylab("DALYs averted \n(thousands)") +
-  theme_classic() +
-  theme(panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        strip.background = element_blank(),
-        panel.border = element_rect(colour = "black", fill = NA),
-        axis.title.x = element_blank(),
-        axis.text = element_text(size = 14),
-        axis.title = element_text(size = 15),
-        strip.text = element_text(size = 14))
+# pp2 <- ggplot(data= subset(outcomes_by_age, scenario %in% c("a2_screen_2020_monit_1",
+#                                                             "a4_screen_2020_monit_1",
+#                                                             "a5_screen_2020_monit_1") &
+#                              outcome == "dalys_averted")) +
+#   stat_summary(aes(x=age_group, y= value/1000, fill = outcome),
+#                fun="median", geom="bar", position = "dodge2", width = 0.95, colour="black")+
+#   stat_summary(aes(x=age_group, y= value/1000),
+#                fun.min = function(z) {quantile(z,0.025)},
+#                fun.max = function(z) {quantile(z,0.975)},
+#                geom="errorbar", position = "dodge2", width = 0.15)+
+#   scale_fill_manual(values=c("dalys_averted" = "#31688EFF")) +
+#   guides(fill=FALSE) +
+#   xlab("Screened age group (years)")+
+#   ylab("DALYs averted \n(thousands)") +
+#   theme_classic() +
+#   theme(panel.grid.major = element_blank(),
+#         panel.grid.minor = element_blank(),
+#         strip.background = element_blank(),
+#         panel.border = element_rect(colour = "black", fill = NA),
+#         axis.title.x = element_blank(),
+#         axis.text = element_text(size = 14),
+#         axis.title = element_text(size = 15),
+#         strip.text = element_text(size = 14))
 
 # New plot:
 pp2 <- ggplot(data= subset(outcomes_by_age,
@@ -957,7 +827,7 @@ pp3 <- ggplot() +
                                "treatment_initiations" = "#440154FF",
                                "monitoring_assessments" = "#31688EFF")) +
    #scale_linetype_manual(values = c("HBV carriers" = "dashed")) +
-  scale_y_continuous(breaks=c(0,1,2), limits=c(0,2)) +
+  scale_y_continuous(breaks=c(0,1,2), limits=c(0,1.1)) +
   guides(linetype=guide_legend(title=NULL),
          fill=guide_legend(title=NULL)) +
   theme_classic() +
@@ -1058,32 +928,32 @@ interactions_by_age_rel$with_monitoring[interactions_by_age_rel$scenario %in% c(
 ## New
 # Want  treatment initiations break up into initial+monitoring
 
-pp6 <- ggplot(subset(interactions_by_age_rel, with_monitoring == "No" & interaction_type==
-                       "treatment_initiations_per_clinical_assessment")) +
-  stat_summary(aes(x=age_group, y= value*100, colour=age_group),
-               fun="median",
-               fun.min = function(z) {quantile(z,0.025)},
-               fun.max = function(z) {quantile(z,0.975)},
-               geom="pointrange", size = 1)+
-  stat_summary(aes(x=age_group, y= value*100, colour=age_group),
-               fun="median",
-               fun.min = function(z) {quantile(z,0.025)},
-               fun.max = function(z) {quantile(z,0.975)},
-               geom="errorbar", width = 0.1, size = 1)+
-  scale_colour_viridis_d("", begin=0.6, end = 0.8) +
-  guides(colour=FALSE) +
-  coord_cartesian(ylim=c(0, 25)) +
-  xlab("Age group (years)")+
-  ylab("Treatment eligibility (%)") +
-  theme_classic() +
-  theme(panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        strip.background = element_blank(),
-        panel.border = element_rect(colour = "black", fill = NA),
-        axis.text = element_text(size = 14),
-        axis.title = element_text(size = 14),
-        strip.text = element_text(size = 14),
-        plot.margin = unit(c(5.5,5.5,5.5,5.5), "pt"))
+# pp6 <- ggplot(subset(interactions_by_age_rel, with_monitoring == "No" & interaction_type==
+#                        "treatment_initiations_per_clinical_assessment")) +
+#   stat_summary(aes(x=age_group, y= value*100, colour=age_group),
+#                fun="median",
+#                fun.min = function(z) {quantile(z,0.025)},
+#                fun.max = function(z) {quantile(z,0.975)},
+#                geom="pointrange", size = 1)+
+#   stat_summary(aes(x=age_group, y= value*100, colour=age_group),
+#                fun="median",
+#                fun.min = function(z) {quantile(z,0.025)},
+#                fun.max = function(z) {quantile(z,0.975)},
+#                geom="errorbar", width = 0.1, size = 1)+
+#   scale_colour_viridis_d("", begin=0.6, end = 0.8) +
+#   guides(colour=FALSE) +
+#   coord_cartesian(ylim=c(0, 25)) +
+#   xlab("Age group (years)")+
+#   ylab("Treatment eligibility (%)") +
+#   theme_classic() +
+#   theme(panel.grid.major = element_blank(),
+#         panel.grid.minor = element_blank(),
+#         strip.background = element_blank(),
+#         panel.border = element_rect(colour = "black", fill = NA),
+#         axis.text = element_text(size = 14),
+#         axis.title = element_text(size = 14),
+#         strip.text = element_text(size = 14),
+#         plot.margin = unit(c(5.5,5.5,5.5,5.5), "pt"))
 
 # NEW:
 pp6a <-ggplot(subset(interactions_by_age_rel, with_monitoring == "Yes" & interaction_type==
@@ -1186,10 +1056,10 @@ treatment_panel_plot <- grid.arrange(ppa, expl_plots,
 # NEED TO ADD IN LEGEND THAT Population affected for monitoring
 # actually means monitoring assessments
 
-# ggsave("basic_programme_explanatory_plot_annual_monitoring_to_update.pdf", plot = treatment_panel_plot ,
-#        width= 36.5, height=21.3, units = "cm")
-# ggsave("basic_programme_explanatory_plot_annual_monitoring_to_update.png", plot = treatment_panel_plot ,
-#        width= 36.5, height=21.3, units = "cm")
+# ggsave("basic_programme_explanatory_plot_annual_monitoring.pdf", plot = treatment_panel_plot ,
+#         width= 36.5, height=21.3, units = "cm")
+# ggsave("basic_programme_explanatory_plot_annual_monitoring.png", plot = treatment_panel_plot ,
+#         width= 36.5, height=21.3, units = "cm")
 
 
 
