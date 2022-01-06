@@ -200,9 +200,10 @@ deaths_averted_distribution_by_age <- rbind(
 
 quantile(apply(a1_x3[,which(ages==15):which(ages==29.5)]-a1_x4[,which(ages==15):which(ages==29.5)],1,sum)/
            apply(a1_x3[,1:200]-a1_x4[,1:200],1,sum), c(0.5,0.025,0.975))
+# For annual monitoring: 4.5% (2.1-10.8%)
 quantile(apply(a1_x3[,which(ages==15):which(ages==44.5)]-a1_x4[,which(ages==15):which(ages==44.5)],1,sum)/
            apply(a1_x3[,1:200]-a1_x4[,1:200],1,sum), c(0.5,0.025,0.975))
-
+# 30.2% (29.0-46.6%)
 
 deaths_averted_distribution_by_age2 <- gather(a1_x3[,1:200]-
                                                 a1_x4[,1:200], key = "age", value = "value")
@@ -678,6 +679,24 @@ discounted_interactions_cost_median$interaction_type <- factor(discounted_intera
                                                                levels= c("total_interactions","monitoring_assessments",
                                                                          "py_on_treatment", "treatment_initiations",
                                                                          "clinical_assessments","hbsag_tests"))
+# Annual monitoring makes up 46% of total cost of programme:
+xxx <- cbind(discounted_interactions %>%
+  ungroup() %>%
+  filter(scenario %in% c("a2_screen_2020_monit_1",
+                         "a4_screen_2020_monit_1",
+                         "a5_screen_2020_monit_1")) %>%
+  filter(interaction_type != "treatment_initiations") %>%
+  group_by(sim) %>%
+  summarise(total_cost=sum(cost)),
+  discounted_interactions %>%
+  ungroup() %>%
+    filter(scenario %in% c("a2_screen_2020_monit_1",
+                           "a4_screen_2020_monit_1",
+                           "a5_screen_2020_monit_1")) %>%
+  filter(interaction_type == "monitoring_assessments") %>%
+  group_by(sim) %>%
+  summarise(monitoring_cost=sum(cost)))
+quantile(xxx$monitoring_cost/xxx$total_cost, c(0.5,0.025,0.975))
 
 # Paper panel plot of no monitoring programme ----
 
